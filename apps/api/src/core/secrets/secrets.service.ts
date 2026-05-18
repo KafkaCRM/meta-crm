@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import type { SecretsBackend, SecretError } from './backends/secrets-backend.interface';
 import type { Result } from 'neverthrow';
 
@@ -6,7 +6,7 @@ import type { Result } from 'neverthrow';
 export class SecretsService {
   private readonly logger = new Logger(SecretsService.name);
 
-  constructor(private readonly backend: SecretsBackend) {}
+  constructor(@Inject('SECRETS_BACKEND') private readonly backend: SecretsBackend) {}
 
   async get(ref: string): Promise<Result<string, SecretError>> {
     this.logger.log(`Resolving secret ref: ${ref}`);
