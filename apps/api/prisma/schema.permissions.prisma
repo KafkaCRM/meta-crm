@@ -10,6 +10,8 @@ model Role {
   tenant         Tenant           @relation(fields: [tenant_id], references: [id])
   rolePermissions RolePermission[]
   userRoles       UserRole[]
+
+  @@unique([tenant_id, name])
 }
 
 model RolePermission {
@@ -33,4 +35,6 @@ model UserRole {
   user   User   @relation(fields: [user_id], references: [id])
   role   Role   @relation(fields: [role_id], references: [id])
   tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@unique([user_id, role_id])
 }

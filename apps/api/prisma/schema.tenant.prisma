@@ -96,6 +96,8 @@ model PlatformUserRole {
   role             String
 
   platformUser PlatformUser @relation(fields: [platform_user_id], references: [id])
+
+  @@unique([platform_user_id, role])
 }
 
 model RefreshToken {

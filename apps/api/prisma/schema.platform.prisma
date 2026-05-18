@@ -1,6 +1,6 @@
 model SubscriptionPlan {
   id           String   @id @default(cuid())
-  name         String
+  name         String   @unique
   max_branches Int
   max_users    Int
   max_plugins  Int
