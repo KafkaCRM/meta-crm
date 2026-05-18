@@ -1,22 +1,26 @@
 import { Injectable } from '@nestjs/common';
+import type { Server } from 'socket.io';
 
 @Injectable()
 export class RoomManagerService {
-  private tenantRooms = new Map<string, Set<string>>();
+  private server: Server | null = null;
 
-  joinTenantRoom(socketId: string, tenantId: string): void {
-    if (!this.tenantRooms.has(tenantId)) {
-      this.tenantRooms.set(tenantId, new Set());
-    }
-    this.tenantRooms.get(tenantId)!.add(socketId);
+  setServer(server: Server): void {
+    this.server = server;
   }
 
-  leaveTenantRoom(socketId: string, tenantId: string): void {
-    this.tenantRooms.get(tenantId)?.delete(socketId);
+  broadcastToTenant(tenantId: string, event: string, payload: unknown): void {
+    if (!this.server) return;
+    this.server.to(`tenant:${tenantId}`).emit(event, payload);
   }
 
-  broadcastToTenant(tenantId: string, event: string, data: unknown): void {
-    // Socket.io broadcast will be implemented when the gateway is wired up.
-    // For now, this is a stub that satisfies the stage transition contract.
+  broadcastToUser(userId: string, event: string, payload: unknown): void {
+    if (!this.server) return;
+    this.server.to(`user:${userId}`).emit(event, payload);
+  }
+
+  broadcastToAssignment(assignmentId: string, event: string, payload: unknown): void {
+    if (!this.server) return;
+    this.server.to(`assignment:${assignmentId}`).emit(event, payload);
   }
 }
