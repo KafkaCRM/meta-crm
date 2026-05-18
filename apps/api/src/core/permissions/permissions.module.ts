@@ -1,10 +1,11 @@
-import { Module } from '@nestjs/common';
+import { Module, Global } from '@nestjs/common';
 import Redis from 'ioredis';
 import { REDIS_CLIENT } from './redis-client.token';
 import { PermissionCacheService } from './permission-cache.service';
 import { PermissionsService } from './permissions.service';
 import { PermissionsGuard, PlatformPermissionsGuard } from './permissions.guard';
 
+@Global()
 @Module({
   providers: [
     {
