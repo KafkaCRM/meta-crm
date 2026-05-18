@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/auth.context';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Shield } from 'lucide-react';
 
 export function LoginPage() {
   const { login, isLoading } = useAuth();
@@ -18,45 +21,72 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100">
-      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-md">
-        <h1 className="mb-6 text-center text-2xl font-bold">Meta CRM Admin</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="mb-1 block text-sm font-medium">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded border border-gray-300 px-3 py-2"
-              required
-            />
+    <div className="flex min-h-screen items-center justify-center bg-[#f5f1ec]">
+      <div className="w-full max-w-sm">
+        {/* Logo mark */}
+        <div className="text-center mb-8">
+          <div className="inline-flex w-10 h-10 rounded-xl bg-[#111111] items-center justify-center mb-4">
+            <Shield size={18} className="text-white" />
           </div>
-          <div>
-            <label htmlFor="password" className="mb-1 block text-sm font-medium">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded border border-gray-300 px-3 py-2"
-              required
-            />
-          </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {isLoading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
+          <h1 className="text-2xl font-medium text-[#111111] tracking-tight mb-1">
+            Admin Console
+          </h1>
+          <p className="text-sm text-[#9c9fa5]">
+            Restricted access · Platform team only
+          </p>
+        </div>
+
+        {/* Card */}
+        <div className="bg-white rounded-2xl border border-[#d3cec6] p-8">
+          {error && (
+            <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <label htmlFor="admin-email" className="text-sm font-medium text-[#111111]">
+                Email address
+              </label>
+              <Input
+                id="admin-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@company.com"
+                className="bg-[#f5f1ec] border-[#d3cec6] placeholder:text-[#9c9fa5] focus-visible:ring-[#111111] focus-visible:border-[#111111] h-10"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="admin-password" className="text-sm font-medium text-[#111111]">
+                Password
+              </label>
+              <Input
+                id="admin-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="bg-[#f5f1ec] border-[#d3cec6] focus-visible:ring-[#111111] focus-visible:border-[#111111] h-10"
+                required
+              />
+            </div>
+
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-[#111111] hover:bg-black text-white font-medium rounded-lg h-10 mt-2"
+            >
+              {isLoading ? 'Signing in…' : 'Sign in'}
+            </Button>
+          </form>
+        </div>
+
+        <p className="text-center text-xs text-[#9c9fa5] mt-4">
+          Meta CRM Admin · Platform access
+        </p>
       </div>
     </div>
   );
