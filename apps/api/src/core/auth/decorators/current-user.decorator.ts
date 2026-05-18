@@ -1,5 +1,5 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import type { RequestScope } from '../jwt.strategy';
+import type { RequestScope } from '../../tenant/request-scope.interface';
 
 export const CurrentUser = createParamDecorator(
   (data: keyof RequestScope | undefined, ctx: ExecutionContext): RequestScope | RequestScope[keyof RequestScope] => {

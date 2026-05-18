@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from './core/auth/auth.module';
+import { TenantModule } from './core/tenant/tenant.module';
 
 @Module({
   imports: [
+    TenantModule,
     AuthModule,
     // Core modules added in TASK-006 through TASK-014
     // Capability modules added in TASK-030+

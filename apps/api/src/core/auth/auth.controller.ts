@@ -14,7 +14,7 @@ import { AuthService } from './auth.service';
 import type { LoginResponse, RefreshResponse, AuthError } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
-import type { RequestScope } from './jwt.strategy';
+import type { RequestScope } from '../tenant/request-scope.interface';
 
 export class LoginDto {
   @IsEmail()

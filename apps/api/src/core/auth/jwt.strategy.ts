@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ClsService } from 'nestjs-cls';
 import type { TenantRole, PlatformRole } from '@meta-crm/types';
+import type { RequestScope } from '../tenant/request-scope.interface';
 
 export interface JwtPayload {
   sub: string;
@@ -12,14 +13,6 @@ export interface JwtPayload {
   platform_role?: PlatformRole;
   iat: number;
   exp: number;
-}
-
-export interface RequestScope {
-  user_id: string;
-  tenant_id: string;
-  assignment_ids: string[];
-  role: TenantRole;
-  platform_role?: PlatformRole | undefined;
 }
 
 @Injectable()
