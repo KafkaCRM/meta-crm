@@ -1,0 +1,39 @@
+{
+  "name": "Property Deal Pipeline",
+  "entity_type": "deal",
+  "field_definitions": {
+    "Party": [
+      { "name": "property_type", "label": "Property Type", "field_type": "select", "options": ["Apartment", "Villa", "Plot", "Commercial"], "order": 1 },
+      { "name": "budget_range", "label": "Budget Range", "field_type": "text", "order": 2 }
+    ],
+    "Case": [
+      { "name": "property_value", "label": "Property Value", "field_type": "number", "order": 1 },
+      { "name": "negotiation_status", "label": "Negotiation Status", "field_type": "select", "options": ["Initial", "In Progress", "Final", "Closed"], "order": 2 }
+    ]
+  },
+  "workflow_definition": {
+    "name": "Property Deal Pipeline",
+    "entity_type": "deal",
+    "stages": [
+      { "name": "Lead", "order": 0, "entry_criteria": [], "sla_hours": 48 },
+      { "name": "Site Visit", "order": 1, "entry_criteria": [], "sla_hours": 72 },
+      { "name": "Negotiation", "order": 2, "entry_criteria": [], "sla_hours": null },
+      { "name": "Closed Won", "order": 3, "entry_criteria": [], "sla_hours": null },
+      { "name": "Closed Lost", "order": 4, "entry_criteria": [], "sla_hours": null }
+    ],
+    "transitions": [
+      { "from_stage": "Lead", "to_stage": "Site Visit" },
+      { "from_stage": "Lead", "to_stage": "Closed Lost" },
+      { "from_stage": "Site Visit", "to_stage": "Negotiation" },
+      { "from_stage": "Site Visit", "to_stage": "Closed Lost" },
+      { "from_stage": "Negotiation", "to_stage": "Closed Won" },
+      { "from_stage": "Negotiation", "to_stage": "Closed Lost" }
+    ]
+  },
+  "label_overrides": {
+    "party.singular": "Client",
+    "party.plural": "Clients",
+    "case.singular": "Deal",
+    "case.plural": "Deals"
+  }
+}
