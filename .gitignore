@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+.turbo/
+coverage/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project governance (not source code)
+CONSTITUTION.md
+DEPS.lock.json
+TASK-PROMPTS.md
+TASKS.md
+specs/
+specification/
+
+# Logs
+*.log
