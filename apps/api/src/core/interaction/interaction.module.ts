@@ -5,5 +5,6 @@ import { InteractionService } from './interaction.service';
 @Module({
   controllers: [InteractionController],
   providers: [InteractionService],
+  exports: [InteractionService],
 })
 export class InteractionModule {}
