@@ -5,6 +5,7 @@ import { UnauthorizedPage } from '@/components/UnauthorizedPage';
 import { AdminLayout } from '@/components/AdminLayout';
 import { TenantList, TenantDetail, CreateTenantForm, ImpersonateView } from '@/components/tenants';
 import { PluginRegistry, PublishPlugin, PluginDetail } from '@/components/plugins';
+import { PlatformUserList, InvitePlatformUser, PlatformRoleMatrix } from '@/components/team';
 import { queryClient } from '@/lib/query-client';
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -215,9 +216,25 @@ const usersRoute = createRoute({
   path: '/admin/users',
   component: () => (
     <AuthGuard>
-      <div>
-        <h1 className="text-2xl font-bold">Users</h1>
-        <p className="mt-2 text-gray-600">Manage platform users</p>
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold">Platform Team</h1>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div>
+            <h2 className="mb-3 text-lg font-semibold">Team Members</h2>
+            <PlatformUserList />
+          </div>
+          <div>
+            <h2 className="mb-3 text-lg font-semibold">Invite User</h2>
+            <InvitePlatformUser />
+          </div>
+        </div>
+        <div>
+          <h2 className="mb-3 text-lg font-semibold">Role Permissions Matrix</h2>
+          <p className="mb-3 text-sm text-gray-500">
+            Platform roles are system-defined and cannot be modified.
+          </p>
+          <PlatformRoleMatrix />
+        </div>
       </div>
     </AuthGuard>
   ),

@@ -160,3 +160,42 @@ export async function disablePlugin(id: string): Promise<{ message: string }> {
 export async function getPlugin(id: string): Promise<PluginRegistry & { tenant_count: number }> {
   return apiCall<PluginRegistry & { tenant_count: number }>(`/platform/plugins/${id}`);
 }
+
+export interface PlatformUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string | null;
+  status: string;
+  created_at: string;
+}
+
+export interface InvitePlatformUserRequest {
+  name: string;
+  email: string;
+  role: string;
+}
+
+export async function listPlatformUsers(): Promise<PlatformUser[]> {
+  return apiCall<PlatformUser[]>('/platform/team');
+}
+
+export async function invitePlatformUser(data: InvitePlatformUserRequest): Promise<PlatformUser> {
+  return apiCall<PlatformUser>('/platform/team/invite', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function changePlatformUserRole(userId: string, role: string): Promise<{ message: string }> {
+  return apiCall<{ message: string }>(`/platform/team/${userId}/role`, {
+    method: 'PATCH',
+    body: JSON.stringify({ role }),
+  });
+}
+
+export async function deactivatePlatformUser(userId: string): Promise<{ message: string }> {
+  return apiCall<{ message: string }>(`/platform/team/${userId}`, {
+    method: 'DELETE',
+  });
+}
