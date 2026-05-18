@@ -1,7 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { usePermissions } from '@/hooks/usePermissions';
 import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 import {
   Building2,
   Users,
@@ -12,62 +13,67 @@ import {
   Puzzle,
   Plug,
   Layers,
-  Link,
+  Link2,
+  GitBranch,
+  Sliders,
+  Tags,
+  UserCog,
+  ChevronRight,
 } from 'lucide-react';
 
-interface SettingsSection {
+/* ------------------------------------------------------------------ */
+/*  Settings nav structure                                             */
+/* ------------------------------------------------------------------ */
+
+interface SettingsNavItem {
   id: string;
   label: string;
-  icon: React.ReactNode;
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number }>;
   permission?: [string, string];
-  children: { id: string; label: string }[];
 }
 
-const SECTIONS: SettingsSection[] = [
+interface SettingsNavSection {
+  group: string;
+  items: SettingsNavItem[];
+}
+
+const NAV: SettingsNavSection[] = [
   {
-    id: 'organisation',
-    label: 'Organisation',
-    icon: <Building2 className="h-4 w-4" />,
-    permission: ['manage', 'Branch'],
-    children: [
-      { id: 'branches', label: 'Branches' },
-      { id: 'brands', label: 'Brands' },
-      { id: 'assignments', label: 'Assignments' },
+    group: 'Organisation',
+    items: [
+      { id: 'branches', label: 'Branches', icon: GitBranch, permission: ['manage', 'Branch'] },
+      { id: 'brands', label: 'Brands', icon: Building2, permission: ['manage', 'Branch'] },
+      { id: 'assignments', label: 'Assignments', icon: UserCog, permission: ['manage', 'Branch'] },
     ],
   },
   {
-    id: 'people',
-    label: 'People',
-    icon: <Users className="h-4 w-4" />,
-    permission: ['manage', 'User'],
-    children: [
-      { id: 'users', label: 'Users' },
-      { id: 'roles', label: 'Roles' },
+    group: 'People',
+    items: [
+      { id: 'users', label: 'Users', icon: Users, permission: ['manage', 'User'] },
+      { id: 'roles', label: 'Roles & Permissions', icon: Shield, permission: ['manage', 'User'] },
     ],
   },
   {
-    id: 'crm',
-    label: 'CRM',
-    icon: <Workflow className="h-4 w-4" />,
-    permission: ['manage', 'Workflow'],
-    children: [
-      { id: 'workflows', label: 'Workflows' },
-      { id: 'fields', label: 'Fields' },
-      { id: 'labels', label: 'Labels' },
+    group: 'CRM',
+    items: [
+      { id: 'workflows', label: 'Workflows', icon: Workflow, permission: ['manage', 'Workflow'] },
+      { id: 'fields', label: 'Custom Fields', icon: Sliders, permission: ['manage', 'Workflow'] },
+      { id: 'labels', label: 'Labels', icon: Tags, permission: ['manage', 'Workflow'] },
     ],
   },
   {
-    id: 'extensions',
-    label: 'Extensions',
-    icon: <Puzzle className="h-4 w-4" />,
-    permission: ['manage', 'Plugin'],
-    children: [
-      { id: 'capabilities', label: 'Capabilities' },
-      { id: 'plugins', label: 'Plugins' },
-      { id: 'integrations', label: 'Integrations' },
+    group: 'Extensions',
+    items: [
+      { id: 'capabilities', label: 'Capabilities', icon: Layers, permission: ['manage', 'Plugin'] },
+      { id: 'plugins', label: 'Plugins', icon: Puzzle, permission: ['manage', 'Plugin'] },
+      { id: 'integrations', label: 'Integrations', icon: Link2, permission: ['manage', 'Plugin'] },
     ],
   },
 ];
+
+/* ------------------------------------------------------------------ */
+/*  Settings Layout                                                    */
+/* ------------------------------------------------------------------ */
 
 interface SettingsLayoutProps {
   children: React.ReactNode;
@@ -78,23 +84,7 @@ export function SettingsLayout({ children }: SettingsLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    () => new Set(SECTIONS.map((s) => s.id)),
-  );
-
   const currentPath = location.pathname;
-
-  const toggleSection = useCallback((sectionId: string) => {
-    setExpandedSections((prev) => {
-      const next = new Set(prev);
-      if (next.has(sectionId)) {
-        next.delete(sectionId);
-      } else {
-        next.add(sectionId);
-      }
-      return next;
-    });
-  }, []);
 
   const navigateTo = useCallback(
     (pageId: string) => {
@@ -103,83 +93,62 @@ export function SettingsLayout({ children }: SettingsLayoutProps) {
     [navigate],
   );
 
-  const visibleSections = SECTIONS.filter(
-    (s) => !s.permission || can(s.permission[0] as any, s.permission[1] as any),
-  );
-
   return (
-    <div className="flex h-[calc(100vh-60px)]">
-      <aside className="w-64 border-r bg-card overflow-auto flex-shrink-0">
-        <div className="p-4 border-b">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Settings2 className="h-5 w-5" />
-            Settings
-          </h2>
+    <div className="flex h-full min-h-[calc(100vh-56px)] max-w-[1280px] gap-0">
+      {/* Settings sidebar */}
+      <aside className="w-56 flex-shrink-0 border-r border-[#d3cec6] bg-[#f5f1ec] pr-0">
+        {/* Header */}
+        <div className="px-4 py-4 flex items-center gap-2">
+          <Settings2 size={16} className="text-[#9c9fa5]" />
+          <h2 className="text-sm font-semibold text-[#111111] tracking-tight">Settings</h2>
         </div>
+        <Separator className="bg-[#d3cec6]" />
 
-        <nav className="p-2 space-y-1">
-          {visibleSections.map((section) => {
-            const isExpanded = expandedSections.has(section.id);
-            const hasActiveChild = section.children.some(
-              (c) => currentPath === `/settings/${c.id}`,
+        {/* Nav groups */}
+        <nav className="py-3 space-y-4 px-2">
+          {NAV.map((section) => {
+            const visibleItems = section.items.filter(
+              (item) => !item.permission || can(item.permission[0] as any, item.permission[1] as any),
             );
+            if (visibleItems.length === 0) return null;
 
             return (
-              <div key={section.id}>
-                <button
-                  className={cn(
-                    'w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors',
-                    hasActiveChild
-                      ? 'bg-muted font-medium'
-                      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
-                  )}
-                  onClick={() => toggleSection(section.id)}
-                >
-                  <span className="flex items-center gap-2">
-                    {section.icon}
-                    {section.label}
-                  </span>
-                  <svg
-                    className={cn(
-                      'h-4 w-4 transition-transform',
-                      isExpanded && 'rotate-90',
-                    )}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-
-                {isExpanded && (
-                  <div className="ml-6 mt-1 space-y-0.5">
-                    {section.children.map((child) => {
-                      const isActive = currentPath === `/settings/${child.id}`;
-                      return (
-                        <button
-                          key={child.id}
-                          className={cn(
-                            'w-full text-left px-3 py-1.5 text-sm rounded-md transition-colors',
-                            isActive
-                              ? 'bg-primary/10 text-primary font-medium'
-                              : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
-                          )}
-                          onClick={() => navigateTo(child.id)}
-                        >
-                          {child.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+              <div key={section.group}>
+                <p className="px-2 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-[#9c9fa5]">
+                  {section.group}
+                </p>
+                <div className="space-y-0.5">
+                  {visibleItems.map((item) => {
+                    const isActive = currentPath === `/settings/${item.id}` ||
+                      currentPath === `/settings/${item.id}/`;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => navigateTo(item.id)}
+                        className={cn(
+                          'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-colors text-left',
+                          isActive
+                            ? 'bg-white text-[#111111] font-medium shadow-sm border border-[#d3cec6]'
+                            : 'text-[#626260] hover:bg-[#ebe7e1] hover:text-[#111111]',
+                        )}
+                      >
+                        <item.icon size={14} strokeWidth={isActive ? 2 : 1.75} />
+                        <span className="flex-1">{item.label}</span>
+                        {isActive && (
+                          <ChevronRight size={12} className="text-[#9c9fa5]" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             );
           })}
         </nav>
       </aside>
 
-      <main className="flex-1 overflow-auto p-6">
+      {/* Settings content */}
+      <main className="flex-1 overflow-auto p-6 min-w-0">
         {children}
       </main>
     </div>
