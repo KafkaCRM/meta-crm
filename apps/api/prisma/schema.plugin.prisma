@@ -1,0 +1,22 @@
+model PluginRegistry {
+  id           String   @id @default(cuid())
+  package_name String
+  version      String
+  manifest     Json
+  status       String   @default("active")
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  tenantPlugins TenantPlugin[]
+}
+
+model TenantPlugin {
+  id                String   @id @default(cuid())
+  tenant_id         String
+  plugin_registry_id String
+  enabled           Boolean  @default(true)
+  installed_at      DateTime @default(now())
+
+  tenant         Tenant         @relation(fields: [tenant_id], references: [id])
+  pluginRegistry PluginRegistry @relation(fields: [plugin_registry_id], references: [id])
+}

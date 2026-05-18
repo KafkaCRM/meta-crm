@@ -1,0 +1,99 @@
+model Tenant {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  industry    String
+  config_json Json     @default("{}")
+  schema_name String?
+  status      String   @default("active")
+  created_at  DateTime @default(now())
+
+  brands                 Brand[]
+  branches               Branch[]
+  branchBrandAssignments BranchBrandAssignment[]
+  users                  User[]
+  roles                  Role[]
+  userRoles              UserRole[]
+  fieldDefinitions       FieldDefinition[]
+  labelOverrides         LabelOverride[]
+  workflowDefinitions    WorkflowDefinition[]
+  integrationConfigs     IntegrationConfig[]
+  webhookSubscriptions   WebhookSubscription[]
+  tenantPlugins          TenantPlugin[]
+  tenantPlans            TenantPlan[]
+}
+
+model Brand {
+  id         String   @id @default(cuid())
+  tenant_id  String
+  name       String
+  logo_url   String?
+  created_at DateTime @default(now())
+
+  tenant                   Tenant                   @relation(fields: [tenant_id], references: [id])
+  branchBrandAssignments   BranchBrandAssignment[]
+}
+
+model Branch {
+  id         String   @id @default(cuid())
+  tenant_id  String
+  name       String
+  address    String?
+  city       String?
+  manager_id String?
+  created_at DateTime @default(now())
+
+  tenant                   Tenant                   @relation(fields: [tenant_id], references: [id])
+  branchBrandAssignments   BranchBrandAssignment[]
+}
+
+model BranchBrandAssignment {
+  id         String   @id @default(cuid())
+  tenant_id  String
+  branch_id  String
+  brand_id   String
+  is_primary Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+  brand  Brand  @relation(fields: [brand_id], references: [id])
+  branch Branch @relation(fields: [branch_id], references: [id])
+
+  @@unique([branch_id, brand_id])
+}
+
+model User {
+  id            String   @id @default(cuid())
+  tenant_id     String
+  name          String
+  email         String
+  password_hash String
+  status        String   @default("active")
+  created_at    DateTime @default(now())
+
+  tenant    Tenant       @relation(fields: [tenant_id], references: [id])
+  userRoles UserRole[]
+  parties   Party[]
+  cases     Case[]       @relation("AssignedCases")
+
+  @@unique([email, tenant_id])
+}
+
+model PlatformUser {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  password_hash String
+  status        String   @default("active")
+  created_at    DateTime @default(now())
+
+  platformUserRoles PlatformUserRole[]
+}
+
+model PlatformUserRole {
+  id               String @id @default(cuid())
+  platform_user_id String
+  role             String
+
+  platformUser PlatformUser @relation(fields: [platform_user_id], references: [id])
+}

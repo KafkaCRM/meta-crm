@@ -1,0 +1,31 @@
+model WorkflowDefinition {
+  id          String @id @default(cuid())
+  tenant_id   String
+  name        String
+  entity_type String
+
+  tenant     Tenant              @relation(fields: [tenant_id], references: [id])
+  stages     WorkflowStage[]
+  transitions WorkflowTransition[]
+}
+
+model WorkflowStage {
+  id                    String @id @default(cuid())
+  workflow_definition_id String
+  name                  String
+  order                 Int
+  entry_criteria        Json   @default("[]")
+  sla_hours             Int?
+
+  workflowDefinition WorkflowDefinition @relation(fields: [workflow_definition_id], references: [id])
+}
+
+model WorkflowTransition {
+  id              String @id @default(cuid())
+  workflow_definition_id String
+  from_stage_id   String
+  to_stage_id     String
+  triggers        Json   @default("[]")
+
+  workflowDefinition WorkflowDefinition @relation(fields: [workflow_definition_id], references: [id])
+}

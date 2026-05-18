@@ -1,0 +1,36 @@
+model FieldDefinition {
+  id              String   @id @default(cuid())
+  tenant_id       String
+  entity_type     String
+  name            String
+  label           String
+  field_type      String
+  options         Json?
+  required        Boolean  @default(false)
+  order           Int      @default(0)
+  visibility_rules Json     @default("[]")
+  created_at      DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id, entity_type])
+}
+
+model LabelOverride {
+  id              String @id @default(cuid())
+  tenant_id       String
+  label_key       String
+  override_value  String
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@unique([tenant_id, label_key])
+}
+
+model IndustryTemplate {
+  id         String   @id @default(cuid())
+  industry   String
+  template   Json
+  version    String   @default("1.0")
+  created_at DateTime @default(now())
+}

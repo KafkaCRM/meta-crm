@@ -1,0 +1,36 @@
+model Role {
+  id            String   @id @default(cuid())
+  tenant_id     String
+  name          String
+  slug          String
+  description   String?
+  is_system_role Boolean @default(false)
+  created_at    DateTime @default(now())
+
+  tenant         Tenant           @relation(fields: [tenant_id], references: [id])
+  rolePermissions RolePermission[]
+  userRoles       UserRole[]
+}
+
+model RolePermission {
+  id         String  @id @default(cuid())
+  role_id    String
+  resource   String
+  action     String
+  conditions Json?
+
+  role Role @relation(fields: [role_id], references: [id])
+}
+
+model UserRole {
+  id            String   @id @default(cuid())
+  user_id       String
+  role_id       String
+  tenant_id     String
+  assignment_id String?
+  created_at    DateTime @default(now())
+
+  user   User   @relation(fields: [user_id], references: [id])
+  role   Role   @relation(fields: [role_id], references: [id])
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+}

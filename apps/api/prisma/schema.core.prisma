@@ -1,0 +1,105 @@
+model Party {
+  id                        String            @id @default(cuid())
+  tenant_id                 String
+  branch_brand_assignment_id String
+  type                      String
+  name                      String
+  email                     String?
+  phone_raw                 String
+  phone_normalized          String
+  source                    String
+  attributes                Json              @default("{}")
+  merge_status              String            @default("canonical")
+  merged_into_id            String?
+  created_at                DateTime          @default(now())
+  updated_at                DateTime          @updatedAt
+
+  user                    User?              @relation(fields: [tenant_id], references: [id])
+  cases                   Case[]
+  interactions            Interaction[]
+  mergeQueuePrimary       PartyMergeQueue[]  @relation("PrimaryParty")
+  mergeQueueDuplicate     PartyMergeQueue[]  @relation("DuplicateParty")
+
+  @@index([tenant_id, phone_normalized])
+  @@index([tenant_id, created_at])
+}
+
+model Case {
+  id                        String   @id @default(cuid())
+  tenant_id                 String
+  branch_brand_assignment_id String
+  party_id                  String
+  type                      String
+  title                     String
+  stage                     String
+  workflow_definition_id    String
+  assigned_to_id            String?
+  attributes                Json     @default("{}")
+  created_at                DateTime @default(now())
+  updated_at                DateTime @updatedAt
+
+  party             Party          @relation(fields: [party_id], references: [id])
+  assignedTo        User?          @relation("AssignedCases", fields: [assigned_to_id], references: [id])
+  caseEvents        CaseEvent[]
+  interactions      Interaction[]
+
+  @@index([tenant_id, stage])
+  @@index([tenant_id, party_id])
+  @@index([tenant_id, assigned_to_id])
+  @@index([tenant_id, created_at])
+}
+
+model CaseEvent {
+  id          String   @id @default(cuid())
+  case_id     String
+  tenant_id   String
+  event_type  String
+  from_stage  String?
+  to_stage    String?
+  actor_id    String
+  actor_type  String
+  payload     Json     @default("{}")
+  occurred_at DateTime @default(now())
+
+  case Case @relation(fields: [case_id], references: [id])
+
+  @@index([case_id, occurred_at])
+  @@index([tenant_id, occurred_at])
+}
+
+model Interaction {
+  id         String   @id @default(cuid())
+  tenant_id  String
+  party_id   String
+  case_id    String?
+  channel    String
+  direction  String
+  content    String
+  thread_id  String?
+  is_pinned  Boolean  @default(false)
+  pinned_by  String?
+  metadata   Json     @default("{}")
+  created_at DateTime @default(now())
+
+  party Party @relation(fields: [party_id], references: [id])
+  case  Case? @relation(fields: [case_id], references: [id])
+
+  @@index([tenant_id, party_id, created_at])
+  @@index([tenant_id, case_id, created_at])
+  @@index([thread_id])
+}
+
+model PartyMergeQueue {
+  id                 String  @id @default(cuid())
+  tenant_id          String
+  primary_party_id   String
+  duplicate_party_id String
+  confidence_score   Float
+  source             String
+  status             String  @default("pending_review")
+  reviewed_by        String?
+  created_at         DateTime @default(now())
+
+  primaryParty   Party @relation("PrimaryParty", fields: [primary_party_id], references: [id])
+  duplicateParty Party @relation("DuplicateParty", fields: [duplicate_party_id], references: [id])
+}

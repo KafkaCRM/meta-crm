@@ -1,0 +1,22 @@
+model SubscriptionPlan {
+  id           String   @id @default(cuid())
+  name         String
+  max_branches Int
+  max_users    Int
+  max_plugins  Int
+  price_monthly Decimal?
+  created_at   DateTime @default(now())
+
+  tenantPlans TenantPlan[]
+}
+
+model TenantPlan {
+  id         String    @id @default(cuid())
+  tenant_id  String    @unique
+  plan_id    String
+  started_at DateTime  @default(now())
+  expires_at DateTime?
+
+  tenant Tenant             @relation(fields: [tenant_id], references: [id])
+  plan   SubscriptionPlan   @relation(fields: [plan_id], references: [id])
+}
