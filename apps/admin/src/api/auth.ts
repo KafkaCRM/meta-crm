@@ -19,10 +19,10 @@ export interface RefreshResponse {
 }
 
 export async function platformLogin(data: PlatformLoginRequest): Promise<PlatformLoginResponse> {
-  const response = await fetch('/api/auth/login', {
+  const response = await fetch('/api/v1/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...data, tenant_slug: '__platform__' }),
+    body: JSON.stringify(data),
   });
 
   if (!response.ok) {
@@ -36,7 +36,7 @@ export async function platformLogin(data: PlatformLoginRequest): Promise<Platfor
 }
 
 export async function refreshToken(token: string): Promise<RefreshResponse> {
-  const response = await fetch('/api/auth/refresh', {
+  const response = await fetch('/api/v1/auth/refresh', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refresh_token: token }),
@@ -50,7 +50,7 @@ export async function refreshToken(token: string): Promise<RefreshResponse> {
 }
 
 export async function logout(token: string): Promise<void> {
-  await fetch('/api/auth/logout', {
+  await fetch('/api/v1/auth/logout', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
