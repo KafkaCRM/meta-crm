@@ -7,6 +7,7 @@ import { RealtimeModule } from './core/realtime/realtime.module';
 import { CaseModule } from './core/case/case.module';
 import { InteractionModule } from './core/interaction/interaction.module';
 import { MetadataModule } from './core/metadata/metadata.module';
+import { ReportModule } from './core/report/report.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { MetadataModule } from './core/metadata/metadata.module';
     CaseModule,
     InteractionModule,
     MetadataModule,
+    ReportModule,
     // Core modules added in TASK-006 through TASK-014
     // Capability modules added in TASK-030+
     // Integration modules added in TASK-016, TASK-017+
