@@ -1,0 +1,173 @@
+import { apiCall } from '@/lib/api';
+
+export interface Branch {
+  id: string;
+  tenant_id: string;
+  name: string;
+  address?: string;
+  city?: string;
+  manager_id?: string;
+  created_at: string;
+}
+
+export interface Brand {
+  id: string;
+  tenant_id: string;
+  name: string;
+  logo_url?: string;
+  created_at: string;
+}
+
+export interface Assignment {
+  id: string;
+  tenant_id: string;
+  branch_id: string;
+  brand_id: string;
+  is_primary: boolean;
+  created_at: string;
+}
+
+export interface User {
+  id: string;
+  tenant_id: string;
+  name: string;
+  email: string;
+  status: string;
+  created_at: string;
+  roles?: { role_id: string; role_name: string; assignment_id?: string }[];
+}
+
+export interface Role {
+  id: string;
+  tenant_id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  is_system_role: boolean;
+  permissions: { resource: string; action: string; conditions?: Record<string, unknown> }[];
+  created_at: string;
+}
+
+export interface FieldDefinition {
+  id: string;
+  tenant_id: string;
+  entity_type: string;
+  name: string;
+  label: string;
+  field_type: string;
+  options?: string[];
+  required: boolean;
+  order: number;
+  visibility_rules?: unknown[];
+  created_at: string;
+}
+
+export interface LabelOverride {
+  label_key: string;
+  override_value: string;
+}
+
+export interface IntegrationConfig {
+  id: string;
+  tenant_id: string;
+  provider: string;
+  status: 'connected' | 'disconnected' | 'error';
+  configured_at?: string;
+  has_credentials: boolean;
+}
+
+export interface Plugin {
+  id: string;
+  name: string;
+  description: string;
+  version: string;
+  enabled: boolean;
+  requires_plan?: string;
+  installed: boolean;
+}
+
+export const settingsApi = {
+  branches: {
+    list: () => apiCall<Branch[]>('/branches'),
+    create: (data: { name: string; address?: string; city?: string }) =>
+      apiCall<Branch>('/branches', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: { name?: string; address?: string; city?: string }) =>
+      apiCall<Branch>(`/branches/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    remove: (id: string) =>
+      apiCall<{ message: string }>(`/branches/${id}`, { method: 'DELETE' }),
+  },
+
+  brands: {
+    list: () => apiCall<Brand[]>('/brands'),
+    create: (data: { name: string; logo_url?: string }) =>
+      apiCall<Brand>('/brands', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: { name?: string; logo_url?: string }) =>
+      apiCall<Brand>(`/brands/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  },
+
+  assignments: {
+    list: () => apiCall<Assignment[]>('/assignments'),
+    create: (data: { branch_id: string; brand_id: string; is_primary?: boolean }) =>
+      apiCall<Assignment>('/assignments', { method: 'POST', body: JSON.stringify(data) }),
+    remove: (id: string) =>
+      apiCall<{ message: string }>(`/assignments/${id}`, { method: 'DELETE' }),
+  },
+
+  users: {
+    list: () => apiCall<User[]>('/users'),
+    invite: (data: { name: string; email: string; role_ids: string[]; assignment_ids?: string[] }) =>
+      apiCall<User>('/users/invite', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: { name?: string; role_ids?: string[]; assignment_ids?: string[] }) =>
+      apiCall<User>(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    remove: (id: string) =>
+      apiCall<{ message: string }>(`/users/${id}`, { method: 'DELETE' }),
+  },
+
+  roles: {
+    list: () => apiCall<Role[]>('/roles'),
+    create: (data: { name: string; slug: string; description?: string }) =>
+      apiCall<Role>('/roles', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: { name?: string; description?: string; permissions?: { resource: string; action: string; conditions?: Record<string, unknown> }[] }) =>
+      apiCall<Role>(`/roles/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    remove: (id: string) =>
+      apiCall<{ message: string }>(`/roles/${id}`, { method: 'DELETE' }),
+  },
+
+  fieldDefinitions: {
+    list: (entityType: string) => apiCall<FieldDefinition[]>(`/field-definitions?entity_type=${entityType}`),
+    create: (data: { entity_type: string; name: string; label: string; field_type: string; options?: string[]; required?: boolean; order?: number; visibility_rules?: unknown[] }) =>
+      apiCall<FieldDefinition>('/field-definitions', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<{ label: string; field_type: string; options: string[]; required: boolean; order: number; visibility_rules: unknown[] }>) =>
+      apiCall<FieldDefinition>(`/field-definitions/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    remove: (id: string) =>
+      apiCall<{ message: string }>(`/field-definitions/${id}`, { method: 'DELETE' }),
+  },
+
+  labels: {
+    list: () => apiCall<Record<string, string>>('/labels'),
+    update: (key: string, value: string) =>
+      apiCall<LabelOverride>(`/labels/${key}`, { method: 'PUT', body: JSON.stringify({ override_value: value }) }),
+  },
+
+  capabilities: {
+    list: () => apiCall<{ id: string; name: string; description: string; enabled: boolean }[]>('/capabilities'),
+    toggle: (id: string, enabled: boolean) =>
+      apiCall<{ id: string; enabled: boolean }>(`/capabilities/${id}`, { method: 'PATCH', body: JSON.stringify({ enabled }) }),
+  },
+
+  plugins: {
+    list: () => apiCall<Plugin[]>('/plugins'),
+    install: (id: string) =>
+      apiCall<Plugin>(`/plugins/${id}/install`, { method: 'POST' }),
+    uninstall: (id: string) =>
+      apiCall<Plugin>(`/plugins/${id}/uninstall`, { method: 'POST' }),
+  },
+
+  integrations: {
+    list: () => apiCall<IntegrationConfig[]>('/integrations'),
+    configure: (provider: string, data: Record<string, string>) =>
+      apiCall<IntegrationConfig>(`/integrations/${provider}/configure`, { method: 'POST', body: JSON.stringify(data) }),
+    disconnect: (provider: string) =>
+      apiCall<{ message: string }>(`/integrations/${provider}`, { method: 'DELETE' }),
+  },
+};

@@ -172,6 +172,21 @@ import {
   partyEditRoute,
 } from './routes/party';
 
+import {
+  settingsRoute,
+  settingsBranchesRoute,
+  settingsBrandsRoute,
+  settingsAssignmentsRoute,
+  settingsUsersRoute,
+  settingsRolesRoute,
+  settingsWorkflowsRoute,
+  settingsFieldsRoute,
+  settingsLabelsRoute,
+  settingsCapabilitiesRoute,
+  settingsPluginsRoute,
+  settingsIntegrationsRoute,
+} from './routes/settings';
+
 /* ------------------------------------------------------------------ */
 /*  Route tree + router                                                */
 /* ------------------------------------------------------------------ */
@@ -183,6 +198,18 @@ export const routeTree = rootRoute.addChildren([
   partiesNewRoute,
   partyDetailRoute,
   partyEditRoute,
+  settingsRoute,
+  settingsBranchesRoute,
+  settingsBrandsRoute,
+  settingsAssignmentsRoute,
+  settingsUsersRoute,
+  settingsRolesRoute,
+  settingsWorkflowsRoute,
+  settingsFieldsRoute,
+  settingsLabelsRoute,
+  settingsCapabilitiesRoute,
+  settingsPluginsRoute,
+  settingsIntegrationsRoute,
 ]);
 
 export const router = createRouter({ routeTree });
