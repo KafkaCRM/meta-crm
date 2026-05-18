@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger, Inject } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { ClsService } from 'nestjs-cls';
 import { TenantScopedPrismaService } from '../../core/tenant/tenant-scoped-prisma.service';
@@ -15,7 +15,7 @@ export class EnrollmentTriggersService implements OnModuleInit {
   constructor(
     private readonly db: TenantScopedPrismaService,
     private readonly cls: ClsService,
-    private readonly messagingAdapter: MessagingAdapter,
+    @Inject('MESSAGING_ADAPTER') private readonly messagingAdapter: MessagingAdapter,
   ) {}
 
   onModuleInit() {
