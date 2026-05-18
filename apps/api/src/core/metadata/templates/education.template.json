@@ -1,0 +1,49 @@
+{
+  "name": "Admissions Pipeline",
+  "entity_type": "enrollment",
+  "field_definitions": {
+    "Party": [
+      { "name": "course_interested", "label": "Course Interested In", "field_type": "select", "options": ["JEE Mains", "JEE Advanced", "NEET", "CAT/MBA", "Foundation"], "order": 1 },
+      { "name": "current_class", "label": "Current Class", "field_type": "select", "options": ["9th", "10th", "11th", "12th", "Dropper"], "order": 2 },
+      { "name": "board", "label": "Board", "field_type": "select", "options": ["CBSE", "State Board", "ICSE", "Other"], "order": 3 },
+      { "name": "parent_name", "label": "Parent Name", "field_type": "text", "order": 4 },
+      { "name": "city", "label": "City", "field_type": "text", "order": 5 }
+    ],
+    "Case": [
+      { "name": "counselling_date", "label": "Counselling Date", "field_type": "date", "required": true, "order": 1 },
+      { "name": "fee_amount", "label": "Fee Amount", "field_type": "number", "order": 2 },
+      { "name": "fee_paid", "label": "Fee Paid", "field_type": "boolean", "order": 3 },
+      { "name": "batch_preference", "label": "Batch Preference", "field_type": "select", "options": ["Morning", "Afternoon", "Evening", "Weekend"], "order": 4 }
+    ]
+  },
+  "workflow_definition": {
+    "name": "Admissions Pipeline",
+    "entity_type": "enrollment",
+    "stages": [
+      { "name": "Enquiry", "order": 0, "entry_criteria": [], "sla_hours": 48 },
+      { "name": "Counselling Scheduled", "order": 1, "entry_criteria": [{ "field": "counselling_date", "operator": "exists" }], "sla_hours": 72 },
+      { "name": "Counselling Done", "order": 2, "entry_criteria": [], "sla_hours": 48 },
+      { "name": "Form Submitted", "order": 3, "entry_criteria": [], "sla_hours": null },
+      { "name": "Fee Paid", "order": 4, "entry_criteria": [], "sla_hours": null },
+      { "name": "Enrolled", "order": 5, "entry_criteria": [], "sla_hours": null },
+      { "name": "Dropped", "order": 6, "entry_criteria": [], "sla_hours": null }
+    ],
+    "transitions": [
+      { "from_stage": "Enquiry", "to_stage": "Counselling Scheduled" },
+      { "from_stage": "Counselling Scheduled", "to_stage": "Counselling Done" },
+      { "from_stage": "Counselling Done", "to_stage": "Form Submitted" },
+      { "from_stage": "Form Submitted", "to_stage": "Fee Paid" },
+      { "from_stage": "Fee Paid", "to_stage": "Enrolled" },
+      { "from_stage": "Enquiry", "to_stage": "Dropped" },
+      { "from_stage": "Counselling Scheduled", "to_stage": "Dropped" },
+      { "from_stage": "Counselling Done", "to_stage": "Dropped" },
+      { "from_stage": "Form Submitted", "to_stage": "Dropped" }
+    ]
+  },
+  "label_overrides": {
+    "party.singular": "Student",
+    "party.plural": "Students",
+    "case.singular": "Admission",
+    "case.plural": "Admissions"
+  }
+}
