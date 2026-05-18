@@ -3,12 +3,15 @@ import { useNavigate, useLocation } from '@tanstack/react-router';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { reportsApi, type ReportParams } from '@/api/reports';
 import { getDateRangeFromSearch } from '../DateRangePicker';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface PartySourceWidgetProps {
   className?: string;
 }
 
-const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+/* DESIGN.md report palette — inside analytics surfaces only */
+const COLORS = ['#65b5ff', '#0bdf50', '#b3e01c', '#03b2cb', '#ff2067', '#ff5600'];
 
 export function PartySourceWidget({ className }: PartySourceWidgetProps) {
   const navigate = useNavigate();
@@ -25,19 +28,23 @@ export function PartySourceWidget({ className }: PartySourceWidgetProps) {
 
   if (isLoading) {
     return (
-      <div className={`rounded-lg border bg-card p-4 ${className ?? ''}`}>
-        <h3 className="text-sm font-medium mb-3">Party Sources</h3>
-        <div className="h-48 bg-muted rounded animate-pulse" />
-      </div>
+      <Card className={`bg-white border-[#d3cec6] rounded-xl shadow-none ${className ?? ''}`}>
+        <CardContent className="pt-5 pb-5">
+          <Skeleton className="h-4 w-28 bg-[#ebe7e1] mb-4" />
+          <Skeleton className="h-36 bg-[#ebe7e1] rounded-xl" />
+        </CardContent>
+      </Card>
     );
   }
 
   if (error) {
     return (
-      <div className={`rounded-lg border bg-card p-4 ${className ?? ''}`}>
-        <h3 className="text-sm font-medium mb-3">Party Sources</h3>
-        <p className="text-sm text-destructive">Failed to load</p>
-      </div>
+      <Card className={`bg-white border-[#d3cec6] rounded-xl shadow-none ${className ?? ''}`}>
+        <CardContent className="pt-5 pb-5">
+          <p className="text-xs font-medium text-[#9c9fa5] uppercase tracking-wider mb-2">Contact Sources</p>
+          <p className="text-sm text-[#c41c1c]">Failed to load</p>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -50,54 +57,59 @@ export function PartySourceWidget({ className }: PartySourceWidgetProps) {
   const total = data?.sources.reduce((sum, s) => sum + s.count, 0) ?? 0;
 
   return (
-    <div className={`rounded-lg border bg-card p-4 ${className ?? ''}`}>
-      <h3 className="text-sm font-medium mb-3">Party Sources</h3>
-      <ResponsiveContainer width="100%" height={180}>
-        <PieChart>
-          <Pie
-            data={chartData}
-            cx="50%"
-            cy="50%"
-            innerRadius={50}
-            outerRadius={80}
-            paddingAngle={2}
-            dataKey="value"
-          >
-            {chartData.map((entry, index) => (
-              <Cell key={index} fill={entry.fill} />
-            ))}
-          </Pie>
-          <Tooltip />
-        </PieChart>
-      </ResponsiveContainer>
-      <div className="mt-2 space-y-1">
-        {data?.sources.map((source, i) => (
-          <button
-            key={source.source}
-            className="w-full flex items-center justify-between text-left hover:bg-muted/50 rounded px-2 py-1 transition-colors"
-            onClick={() => {
-              navigate({
-                to: '/parties',
-                search: `?source=${encodeURIComponent(source.source)}`,
-              });
-            }}
-          >
-            <div className="flex items-center gap-2">
-              <div
-                className="h-3 w-3 rounded-full"
-                style={{ backgroundColor: COLORS[i % COLORS.length] }}
-              />
-              <span className="text-sm capitalize">{source.source}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold">{source.count}</span>
-              <span className="text-xs text-muted-foreground">
-                {total > 0 ? Math.round((source.count / total) * 100) : 0}%
-              </span>
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
+    <Card className={`bg-white border-[#d3cec6] rounded-xl shadow-none ${className ?? ''}`}>
+      <CardContent className="pt-5 pb-5">
+        <p className="text-xs font-medium text-[#9c9fa5] uppercase tracking-wider mb-3">Contact Sources</p>
+        <ResponsiveContainer width="100%" height={160}>
+          <PieChart>
+            <Pie
+              data={chartData}
+              cx="50%"
+              cy="50%"
+              innerRadius={45}
+              outerRadius={70}
+              paddingAngle={2}
+              dataKey="value"
+            >
+              {chartData.map((entry, index) => (
+                <Cell key={index} fill={entry.fill} strokeWidth={0} />
+              ))}
+            </Pie>
+            <Tooltip
+              contentStyle={{
+                background: '#ffffff',
+                border: '1px solid #d3cec6',
+                borderRadius: '8px',
+                fontSize: '12px',
+                color: '#111111',
+              }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+        <div className="mt-3 space-y-1.5">
+          {data?.sources.map((source, i) => (
+            <button
+              key={source.source}
+              className="w-full flex items-center justify-between text-left hover:bg-[#f5f1ec] rounded-lg px-2 py-1.5 transition-colors"
+              onClick={() => navigate({ to: '/parties', search: `?source=${encodeURIComponent(source.source)}` } as any)}
+            >
+              <div className="flex items-center gap-2">
+                <div
+                  className="h-2 w-2 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: COLORS[i % COLORS.length] }}
+                />
+                <span className="text-sm text-[#111111] capitalize">{source.source}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-[#111111]">{source.count}</span>
+                <span className="text-xs text-[#9c9fa5]">
+                  {total > 0 ? Math.round((source.count / total) * 100) : 0}%
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
