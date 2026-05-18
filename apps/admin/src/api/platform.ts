@@ -199,3 +199,94 @@ export async function deactivatePlatformUser(userId: string): Promise<{ message:
     method: 'DELETE',
   });
 }
+
+export interface TenantCountResponse {
+  total: number;
+  by_industry: { industry: string; count: number }[];
+}
+
+export interface MauResponse {
+  monthly_active: { tenant_id: string; active_users: number }[];
+}
+
+export interface CasesPerDayResponse {
+  daily: { date: string; count: number }[];
+}
+
+export interface PluginUsageResponse {
+  plugins: { plugin_package: string; tenant_count: number }[];
+}
+
+export async function getTenantCount(): Promise<TenantCountResponse> {
+  return apiCall<TenantCountResponse>('/platform/reports/tenant-count');
+}
+
+export async function getMau(params?: { date_from?: string; date_to?: string }): Promise<MauResponse> {
+  const qs = new URLSearchParams();
+  if (params?.date_from) qs.set('date_from', params.date_from);
+  if (params?.date_to) qs.set('date_to', params.date_to);
+  return apiCall<MauResponse>(`/platform/reports/mau?${qs.toString()}`);
+}
+
+export async function getCasesPerDay(params?: { date_from?: string; date_to?: string }): Promise<CasesPerDayResponse> {
+  const qs = new URLSearchParams();
+  if (params?.date_from) qs.set('date_from', params.date_from);
+  if (params?.date_to) qs.set('date_to', params.date_to);
+  return apiCall<CasesPerDayResponse>(`/platform/reports/cases-per-day?${qs.toString()}`);
+}
+
+export async function getPluginUsage(): Promise<PluginUsageResponse> {
+  return apiCall<PluginUsageResponse>('/platform/reports/plugin-usage');
+}
+
+export interface QueueStatus {
+  waiting: number;
+  active: number;
+  completed: number;
+  failed: number;
+  delayed: number;
+  processing_rate: number;
+}
+
+export interface FailedJob {
+  id: string;
+  queue: string;
+  name: string;
+  attempts: number;
+  max_attempts: number;
+  failed_at: string;
+  error: string;
+}
+
+export interface WebhookFailure {
+  id: string;
+  tenant_id: string;
+  event_type: string;
+  last_error: string;
+  attempts: number;
+  failed_at: string;
+}
+
+export async function getQueueStatus(): Promise<QueueStatus> {
+  return apiCall<QueueStatus>('/platform/system/queue/status');
+}
+
+export async function getFailedJobs(): Promise<FailedJob[]> {
+  return apiCall<FailedJob[]>('/platform/system/queue/failed');
+}
+
+export async function retryFailedJob(jobId: string): Promise<{ message: string }> {
+  return apiCall<{ message: string }>(`/platform/system/queue/failed/${jobId}/retry`, {
+    method: 'POST',
+  });
+}
+
+export async function getWebhookFailures(): Promise<WebhookFailure[]> {
+  return apiCall<WebhookFailure[]>('/platform/system/webhooks/failures');
+}
+
+export async function retryWebhookFailure(failureId: string): Promise<{ message: string }> {
+  return apiCall<{ message: string }>(`/platform/system/webhooks/failures/${failureId}/retry`, {
+    method: 'POST',
+  });
+}

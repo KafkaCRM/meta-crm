@@ -6,6 +6,8 @@ import { AdminLayout } from '@/components/AdminLayout';
 import { TenantList, TenantDetail, CreateTenantForm, ImpersonateView } from '@/components/tenants';
 import { PluginRegistry, PublishPlugin, PluginDetail } from '@/components/plugins';
 import { PlatformUserList, InvitePlatformUser, PlatformRoleMatrix } from '@/components/team';
+import { PlatformReports } from '@/components/reports';
+import { QueueMonitor, WebhookFailures } from '@/components/system';
 import { queryClient } from '@/lib/query-client';
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -203,9 +205,12 @@ const reportsRoute = createRoute({
   path: '/admin/reports',
   component: () => (
     <AuthGuard>
-      <div>
-        <h1 className="text-2xl font-bold">Reports</h1>
-        <p className="mt-2 text-gray-600">View platform reports</p>
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold">Platform Reports</h1>
+        <p className="text-sm text-gray-500">
+          Aggregate metrics only — no PII is displayed.
+        </p>
+        <PlatformReports />
       </div>
     </AuthGuard>
   ),
@@ -245,9 +250,16 @@ const healthRoute = createRoute({
   path: '/admin/health',
   component: () => (
     <AuthGuard>
-      <div>
+      <div className="space-y-6">
         <h1 className="text-2xl font-bold">System Health</h1>
-        <p className="mt-2 text-gray-600">Monitor system health</p>
+        <div>
+          <h2 className="mb-3 text-lg font-semibold">Queue Monitor</h2>
+          <QueueMonitor />
+        </div>
+        <div>
+          <h2 className="mb-3 text-lg font-semibold">Webhook Failures</h2>
+          <WebhookFailures />
+        </div>
       </div>
     </AuthGuard>
   ),
