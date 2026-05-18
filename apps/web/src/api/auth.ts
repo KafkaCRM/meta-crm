@@ -25,7 +25,7 @@ export interface RefreshResponse {
 }
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {
-  const response = await fetch('/api/auth/login', {
+  const response = await fetch('/api/v1/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -42,7 +42,7 @@ export async function login(data: LoginRequest): Promise<LoginResponse> {
 }
 
 export async function refreshToken(token: string): Promise<RefreshResponse> {
-  const response = await fetch('/api/auth/refresh', {
+  const response = await fetch('/api/v1/auth/refresh', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refresh_token: token }),
@@ -56,7 +56,7 @@ export async function refreshToken(token: string): Promise<RefreshResponse> {
 }
 
 export async function logout(token: string): Promise<void> {
-  await fetch('/api/auth/logout', {
+  const response = await fetch('/api/v1/auth/logout', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
