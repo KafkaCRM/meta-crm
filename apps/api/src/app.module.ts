@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { BullModule } from '@nestjs/bullmq';
 import { AuthModule } from './core/auth/auth.module';
 import { TenantModule } from './core/tenant/tenant.module';
 import { PartyModule } from './core/party/party.module';
@@ -19,6 +21,15 @@ const CAPABILITY_MODULES = [
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '../../.env',
+    }),
+    BullModule.forRoot({
+      connection: {
+        url: process.env['REDIS_URL'] || 'redis://localhost:6379',
+      },
+    }),
     TenantModule,
     AuthModule,
     PartyModule,

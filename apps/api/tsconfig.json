@@ -4,6 +4,7 @@
     "rootDirs": ["src", "../../packages/types", "../../packages/permissions"],
     "outDir": "dist",
     "baseUrl": ".",
+    "exactOptionalPropertyTypes": false,
     "paths": {
       "@meta-crm/types": ["../../packages/types/src/index.ts"],
       "@meta-crm/permissions": ["../../packages/permissions/src/index.ts"]

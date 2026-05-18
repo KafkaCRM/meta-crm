@@ -10,9 +10,7 @@ import { PermissionsGuard, PlatformPermissionsGuard } from './permissions.guard'
     {
       provide: REDIS_CLIENT,
       useFactory: () =>
-        new Redis({
-          host: process.env['REDIS_HOST'] || 'localhost',
-          port: Number(process.env['REDIS_PORT']) || 6379,
+        new Redis(process.env['REDIS_URL'] || 'redis://localhost:6379', {
           maxRetriesPerRequest: null,
           lazyConnect: true,
         }),
