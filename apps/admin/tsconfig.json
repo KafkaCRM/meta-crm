@@ -1,0 +1,13 @@
+{
+  "extends": "@meta-crm/config-ts/react",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"],
+      "@meta-crm/types": ["../../packages/types/src/index.ts"],
+      "@meta-crm/permissions": ["../../packages/permissions/src/index.ts"],
+      "@meta-crm/ui": ["../../packages/ui/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
