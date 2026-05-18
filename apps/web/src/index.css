@@ -1,0 +1,188 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Google Fonts - Inter as Saans substitute (per DESIGN.md recommendation) */
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  /* Font system */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, 'JetBrains Mono', monospace;
+
+  /* Radius scale — DESIGN.md: xs=4, sm=6, md=8, lg=12, xl=16, xxl=24 */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-pill: 9999px;
+
+  /* Shadcn default token overrides — map to Intercom palette */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Chart colors — DESIGN.md report palette */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Sidebar */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Intercom custom tokens */
+  --color-canvas: #f5f1ec;
+  --color-surface-1: #ffffff;
+  --color-surface-2: #ebe7e1;
+  --color-hairline: #d3cec6;
+  --color-hairline-soft: #ebe7e1;
+  --color-ink: #111111;
+  --color-ink-muted: #626260;
+  --color-ink-subtle: #7b7b78;
+  --color-ink-tertiary: #9c9fa5;
+  --color-fin-orange: #ff5600;
+  --color-report-blue: #65b5ff;
+  --color-report-green: #0bdf50;
+  --color-report-pink: #ff2067;
+  --color-report-lime: #b3e01c;
+  --color-report-cyan: #03b2cb;
+  --color-brand-blue: #0007cb;
+}
+
+:root {
+  /* DESIGN.md: Canvas = #f5f1ec (cream), NOT pure white */
+  --background: oklch(0.967 0.008 80);        /* #f5f1ec cream canvas */
+  --foreground: oklch(0.129 0 0);              /* #111111 charcoal ink */
+
+  /* Cards = pure white floating on cream */
+  --card: oklch(1 0 0);                        /* #ffffff */
+  --card-foreground: oklch(0.129 0 0);         /* #111111 */
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.129 0 0);
+
+  /* Primary = charcoal ink (not blue!) */
+  --primary: oklch(0.129 0 0);                 /* #111111 */
+  --primary-foreground: oklch(1 0 0);          /* #ffffff */
+
+  /* Secondary = surface-2 cream */
+  --secondary: oklch(0.938 0.008 80);          /* #ebe7e1 */
+  --secondary-foreground: oklch(0.129 0 0);
+
+  /* Muted */
+  --muted: oklch(0.938 0.008 80);              /* #ebe7e1 */
+  --muted-foreground: oklch(0.476 0.005 60);   /* #626260 ink-muted */
+
+  /* Accent = surface-2 */
+  --accent: oklch(0.938 0.008 80);
+  --accent-foreground: oklch(0.129 0 0);
+
+  /* Semantic */
+  --destructive: oklch(0.444 0.177 26);        /* #c41c1c */
+
+  /* Borders — hairline warm gray */
+  --border: oklch(0.844 0.009 73);             /* #d3cec6 */
+  --input: oklch(0.844 0.009 73);
+  --ring: oklch(0.476 0.005 60);               /* ink-muted */
+
+  /* Border radius — DESIGN.md md=8px */
+  --radius: 0.5rem;
+
+  /* Chart — report palette */
+  --chart-1: #65b5ff;
+  --chart-2: #0bdf50;
+  --chart-3: #ff2067;
+  --chart-4: #b3e01c;
+  --chart-5: #03b2cb;
+
+  /* Sidebar — cream bg, charcoal nav */
+  --sidebar: oklch(0.938 0.008 80);            /* #ebe7e1 slight cream */
+  --sidebar-foreground: oklch(0.129 0 0);
+  --sidebar-primary: oklch(0.129 0 0);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.967 0.008 80);     /* canvas cream */
+  --sidebar-accent-foreground: oklch(0.129 0 0);
+  --sidebar-border: oklch(0.844 0.009 73);
+  --sidebar-ring: oklch(0.476 0.005 60);
+}
+
+/* No dark mode per DESIGN.md: "Dark mode is not documented because the marketing site does not ship a dark theme" */
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  html {
+    @apply font-sans;
+  }
+
+  /* Typography scale — DESIGN.md */
+  h1, h2, h3, h4 {
+    font-weight: 500;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+
+  /* Scrollbar subtle styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #f5f1ec;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #d3cec6;
+    border-radius: 3px;
+  }
+}
+
+/* === Intercom-specific utility classes === */
+@layer utilities {
+  .canvas { background-color: #f5f1ec; }
+  .surface-1 { background-color: #ffffff; }
+  .surface-2 { background-color: #ebe7e1; }
+  .fin-orange { color: #ff5600; }
+  .bg-fin-orange { background-color: #ff5600; }
+  .ink { color: #111111; }
+  .ink-muted { color: #626260; }
+  .ink-subtle { color: #7b7b78; }
+  .hairline { border-color: #d3cec6; }
+  .tracking-display { letter-spacing: -0.03em; }
+  .tracking-headline { letter-spacing: -0.02em; }
+}
