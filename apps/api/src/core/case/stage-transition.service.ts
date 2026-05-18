@@ -126,13 +126,16 @@ export class StageTransitionService {
     }
 
     // 7. Trigger failure handling is in the BullMQ processor (separate file)
-    // 8. Emit HooksService event
+    // 8. Emit HooksService event (enriched payload for plugins)
     await this.hooks.emit('case:stage_changed', {
       case_id: caseId,
       from_stage: fromStage,
       to_stage: toStageId,
+      to_stage_name: targetStage.name,
       tenant_id: scope?.tenant_id,
       actor_id: actorId,
+      case_attributes: caseRecord.attributes,
+      party_phone: caseRecord.party?.phone_normalized,
     });
 
     // 9. Emit Socket.io event to tenant room
