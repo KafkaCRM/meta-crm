@@ -7,6 +7,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@meta-crm/types': path.resolve(__dirname, '../../packages/types/src/index.ts'),
+      '@meta-crm/permissions': path.resolve(__dirname, '../../packages/permissions/src/index.ts'),
+      '@meta-crm/ui': path.resolve(__dirname, '../../packages/ui/src/index.ts'),
     },
   },
   server: {
