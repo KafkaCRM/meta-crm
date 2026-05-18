@@ -10,8 +10,10 @@ import { PlatformPluginsService } from './plugins/platform-plugins.service';
 import { PlatformTeamController } from './team/platform-team.controller';
 import { PlatformTeamService } from './team/platform-team.service';
 
+import { TenantModule } from '../core/tenant/tenant.module';
+
 @Module({
-  imports: [AuthModule, PermissionsModule],
+  imports: [AuthModule, PermissionsModule, TenantModule],
   controllers: [
     PlatformTenantsController,
     PlatformPlansController,
