@@ -110,3 +110,53 @@ export async function assignPlan(tenantId: string, planId: string): Promise<{ me
     body: JSON.stringify({ plan_id: planId }),
   });
 }
+
+export interface PluginRegistry {
+  id: string;
+  package_name: string;
+  version: string;
+  manifest: {
+    id: string;
+    name: string;
+    description: string;
+    compatible_industries: string[];
+    hooks: string[];
+    extends: string[];
+  };
+  status: string;
+  created_at: string;
+  tenant_count?: number;
+}
+
+export interface CreatePluginRequest {
+  package_name: string;
+  version: string;
+  manifest: Record<string, unknown>;
+}
+
+export async function listPlugins(): Promise<PluginRegistry[]> {
+  return apiCall<PluginRegistry[]>('/platform/plugins');
+}
+
+export async function createPlugin(data: CreatePluginRequest): Promise<PluginRegistry> {
+  return apiCall<PluginRegistry>('/platform/plugins', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deprecatePlugin(id: string): Promise<{ message: string }> {
+  return apiCall<{ message: string }>(`/platform/plugins/${id}/deprecate`, {
+    method: 'PATCH',
+  });
+}
+
+export async function disablePlugin(id: string): Promise<{ message: string }> {
+  return apiCall<{ message: string }>(`/platform/plugins/${id}/disable`, {
+    method: 'PATCH',
+  });
+}
+
+export async function getPlugin(id: string): Promise<PluginRegistry & { tenant_count: number }> {
+  return apiCall<PluginRegistry & { tenant_count: number }>(`/platform/plugins/${id}`);
+}

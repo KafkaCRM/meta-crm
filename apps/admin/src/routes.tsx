@@ -4,6 +4,7 @@ import { LoginPage } from '@/components/LoginPage';
 import { UnauthorizedPage } from '@/components/UnauthorizedPage';
 import { AdminLayout } from '@/components/AdminLayout';
 import { TenantList, TenantDetail, CreateTenantForm, ImpersonateView } from '@/components/tenants';
+import { PluginRegistry, PublishPlugin, PluginDetail } from '@/components/plugins';
 import { queryClient } from '@/lib/query-client';
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -154,9 +155,43 @@ const pluginsRoute = createRoute({
   path: '/admin/plugins',
   component: () => (
     <AuthGuard>
-      <div>
-        <h1 className="text-2xl font-bold">Plugins</h1>
-        <p className="mt-2 text-gray-600">Manage platform plugins</p>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Plugins</h1>
+          <a
+            href="/admin/plugins/new"
+            className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+          >
+            Register Plugin
+          </a>
+        </div>
+        <PluginRegistry />
+      </div>
+    </AuthGuard>
+  ),
+});
+
+const publishPluginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/plugins/new',
+  component: () => (
+    <AuthGuard>
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold">Register Plugin</h1>
+        <PublishPlugin />
+      </div>
+    </AuthGuard>
+  ),
+});
+
+const pluginDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/plugins/$id',
+  component: () => (
+    <AuthGuard>
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold">Plugin Details</h1>
+        <PluginDetail pluginId={pluginDetailRoute.useParams().id} />
       </div>
     </AuthGuard>
   ),
@@ -224,6 +259,8 @@ const routeTree = rootRoute.addChildren([
   tenantImpersonateRoute,
   plansRoute,
   pluginsRoute,
+  publishPluginRoute,
+  pluginDetailRoute,
   reportsRoute,
   usersRoute,
   healthRoute,
