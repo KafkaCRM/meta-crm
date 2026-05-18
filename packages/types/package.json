@@ -1,0 +1,30 @@
+{
+  "name": "@meta-crm/types",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "test": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@meta-crm/config-ts": "workspace:*",
+    "@meta-crm/config-eslint": "workspace:*",
+    "typescript": "5.8.3",
+    "vitest": "4.1.6"
+  },
+  "dependencies": {
+    "zod": "4.4.3"
+  }
+}
