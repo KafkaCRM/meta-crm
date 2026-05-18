@@ -10,6 +10,7 @@ import { MetadataModule } from './core/metadata/metadata.module';
 import { ReportModule } from './core/report/report.module';
 import { PlatformModule } from './platform/platform.module';
 import { GenericWebhookModule } from './integrations/generic-webhook/generic-webhook.module';
+import { WhatsAppModule } from './integrations/whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { GenericWebhookModule } from './integrations/generic-webhook/generic-web
     ReportModule,
     PlatformModule,
     GenericWebhookModule,
+    WhatsAppModule,
     // Core modules added in TASK-006 through TASK-014
     // Capability modules added in TASK-030+
     // Integration modules added in TASK-016, TASK-017+
