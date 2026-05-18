@@ -13,8 +13,12 @@ import { TenantScopeGuard } from './tenant-scope.guard';
     {
       provide: PRISMA_CLIENT,
       useFactory: () => {
+        let url = process.env.DATABASE_URL || '';
+        if (url && !url.includes('uselibpqcompat')) {
+          url += url.includes('?') ? '&uselibpqcompat=true' : '?uselibpqcompat=true';
+        }
         const pool = new Pool({
-          connectionString: process.env.DATABASE_URL,
+          connectionString: url,
           ssl: { rejectUnauthorized: false },
         });
         const adapter = new PrismaPg(pool);
