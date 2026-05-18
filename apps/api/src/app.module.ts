@@ -2,12 +2,18 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from './core/auth/auth.module';
 import { TenantModule } from './core/tenant/tenant.module';
 import { PartyModule } from './core/party/party.module';
+import { HooksModule } from './core/hooks/hooks.module';
+import { RealtimeModule } from './core/realtime/realtime.module';
+import { CaseModule } from './core/case/case.module';
 
 @Module({
   imports: [
     TenantModule,
     AuthModule,
     PartyModule,
+    HooksModule,
+    RealtimeModule,
+    CaseModule,
     // Core modules added in TASK-006 through TASK-014
     // Capability modules added in TASK-030+
     // Integration modules added in TASK-016, TASK-017+
