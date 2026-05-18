@@ -17,7 +17,14 @@ import { WhatsAppWebhookService } from './whatsapp-webhook.service';
     InteractionModule,
   ],
   controllers: [WhatsAppWebhookController],
-  providers: [WhatsAppAdapter, WhatsAppWebhookService],
-  exports: [WhatsAppAdapter],
+  providers: [
+    WhatsAppAdapter,
+    WhatsAppWebhookService,
+    {
+      provide: 'MESSAGING_ADAPTER',
+      useExisting: WhatsAppAdapter,
+    },
+  ],
+  exports: [WhatsAppAdapter, 'MESSAGING_ADAPTER'],
 })
 export class WhatsAppModule {}
