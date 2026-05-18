@@ -1,7 +1,8 @@
 export enum TenantRole {
   BranchUser = 'branch_user',
-  BranchManager = 'branch_manager',
   BranchSupervisor = 'branch_supervisor',
+  BranchManager = 'branch_manager',
+  BrandManager = 'brand_manager',
   TenantAdmin = 'tenant_admin',
   TenantOwner = 'tenant_owner',
 }
