@@ -2,10 +2,15 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useLocation } from '@tanstack/react-router';
 import { reportsApi, type ReportParams } from '@/api/reports';
 import { getDateRangeFromSearch } from '../DateRangePicker';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface PipelineFunnelWidgetProps {
   className?: string;
 }
+
+/* DESIGN.md report palette — used inside analytics surfaces */
+const STAGE_COLORS = ['#65b5ff', '#0bdf50', '#b3e01c', '#03b2cb', '#ff2067', '#ff5600'];
 
 export function PipelineFunnelWidget({ className }: PipelineFunnelWidgetProps) {
   const navigate = useNavigate();
@@ -22,55 +27,61 @@ export function PipelineFunnelWidget({ className }: PipelineFunnelWidgetProps) {
 
   if (isLoading) {
     return (
-      <div className={`rounded-lg border bg-card p-4 ${className ?? ''}`}>
-        <h3 className="text-sm font-medium mb-3">Pipeline Funnel</h3>
-        <div className="space-y-2">
+      <Card className={`bg-white border-[#d3cec6] rounded-xl shadow-none ${className ?? ''}`}>
+        <CardContent className="pt-5 pb-5">
+          <Skeleton className="h-4 w-28 bg-[#ebe7e1] mb-4" />
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-6 bg-muted rounded animate-pulse" />
+            <Skeleton key={i} className="h-6 bg-[#ebe7e1] mb-2 rounded-lg" />
           ))}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     );
   }
 
   if (error) {
     return (
-      <div className={`rounded-lg border bg-card p-4 ${className ?? ''}`}>
-        <h3 className="text-sm font-medium mb-3">Pipeline Funnel</h3>
-        <p className="text-sm text-destructive">Failed to load</p>
-      </div>
+      <Card className={`bg-white border-[#d3cec6] rounded-xl shadow-none ${className ?? ''}`}>
+        <CardContent className="pt-5 pb-5">
+          <p className="text-xs font-medium text-[#9c9fa5] uppercase tracking-wider mb-2">Pipeline Funnel</p>
+          <p className="text-sm text-[#c41c1c]">Failed to load</p>
+        </CardContent>
+      </Card>
     );
   }
 
+  const maxCount = Math.max(...(data?.stages.map((s) => s.count) ?? [1]));
+
   return (
-    <div className={`rounded-lg border bg-card p-4 ${className ?? ''}`}>
-      <h3 className="text-sm font-medium mb-3">Pipeline Funnel</h3>
-      <div className="space-y-2">
-        {data?.stages.map((stage, i) => (
-          <button
-            key={stage.name}
-            className="w-full flex items-center justify-between text-left hover:bg-muted/50 rounded px-2 py-1 transition-colors"
-            onClick={() => {
-              navigate({
-                to: '/cases',
-                search: `?stage=${encodeURIComponent(stage.name)}`,
-              });
-            }}
-          >
-            <div className="flex items-center gap-2">
-              <div
-                className="h-3 rounded-full bg-primary"
-                style={{ width: `${Math.max(8, stage.percentage)}px` }}
-              />
-              <span className="text-sm">{stage.name}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold">{stage.count}</span>
-              <span className="text-xs text-muted-foreground">{Math.round(stage.percentage)}%</span>
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
+    <Card className={`bg-white border-[#d3cec6] rounded-xl shadow-none ${className ?? ''}`}>
+      <CardContent className="pt-5 pb-5">
+        <p className="text-xs font-medium text-[#9c9fa5] uppercase tracking-wider mb-4">Pipeline Funnel</p>
+        <div className="space-y-2.5">
+          {data?.stages.map((stage, i) => (
+            <button
+              key={stage.name}
+              className="w-full text-left group"
+              onClick={() => navigate({ to: '/cases', search: `?stage=${encodeURIComponent(stage.name)}` } as any)}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm text-[#111111]">{stage.name}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-[#111111]">{stage.count}</span>
+                  <span className="text-xs text-[#9c9fa5]">{Math.round(stage.percentage)}%</span>
+                </div>
+              </div>
+              <div className="w-full h-1.5 bg-[#ebe7e1] rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{
+                    width: `${maxCount > 0 ? (stage.count / maxCount) * 100 : 0}%`,
+                    backgroundColor: STAGE_COLORS[i % STAGE_COLORS.length],
+                  }}
+                />
+              </div>
+            </button>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
