@@ -1,0 +1,131 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { ClsService } from 'nestjs-cls';
+import { ok, err } from 'neverthrow';
+import type { Result } from 'neverthrow';
+import { TenantScopedPrismaService } from '../tenant/tenant-scoped-prisma.service';
+import type { RequestScope } from '../tenant/request-scope.interface';
+import type { CreatePartyDto } from './dto/create-party.dto';
+import type { UpdatePartyDto } from './dto/update-party.dto';
+
+export type PartyErrorCode = 'NOT_FOUND' | 'INVALID_PHONE';
+
+export interface PartyError {
+  code: PartyErrorCode;
+  message: string;
+}
+
+@Injectable()
+export class PartyService {
+  constructor(
+    private readonly db: TenantScopedPrismaService,
+    private readonly cls: ClsService,
+  ) {}
+
+  async findMany(params: {
+    cursor?: string;
+    limit?: number;
+    phone?: string;
+    name?: string;
+    source?: string;
+    type?: string;
+  }): Promise<Result<{ data: any[]; next_cursor?: string }, PartyError>> {
+    const scope = this.cls.get<RequestScope>('scope');
+    const limit = Math.min(params.limit ?? 50, 100);
+
+    const where: any = {};
+    if (params.phone) where.phone_normalized = { contains: params.phone };
+    if (params.name) where.name = { contains: params.name, mode: 'insensitive' };
+    if (params.source) where.source = params.source;
+    if (params.type) where.type = params.type;
+
+    const parties = await this.db.getClient().party.findMany({
+      where,
+      take: limit + 1,
+      ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
+      orderBy: { created_at: 'desc' },
+    });
+
+    const hasMore = parties.length > limit;
+    const data = hasMore ? parties.slice(0, limit) : parties;
+
+    return ok({
+      data,
+      ...(hasMore ? { next_cursor: data[data.length - 1]?.id } : {}),
+    });
+  }
+
+  async findOne(id: string): Promise<Result<any, PartyError>> {
+    const scope = this.cls.get<RequestScope>('scope');
+    const party = await this.db.getClient().party.findUnique({
+      where: { id },
+      include: {
+        cases: {
+          include: { caseEvents: { orderBy: { occurred_at: 'desc' }, take: 5 } },
+        },
+      },
+    });
+
+    if (!party) {
+      return err({ code: 'NOT_FOUND', message: 'Party not found' });
+    }
+
+    return ok(party);
+  }
+
+  async create(dto: CreatePartyDto): Promise<Result<any, PartyError>> {
+    const party = await this.db.getClient().party.create({
+      data: {
+        type: dto.type,
+        name: dto.name,
+        email: dto.email,
+        phone_raw: dto.phone ?? '',
+        phone_normalized: dto.phone ?? '',
+        source: dto.source ?? 'manual',
+        branch_brand_assignment_id: dto.branch_brand_assignment_id,
+        attributes: (dto.attributes ?? {}) as any,
+      },
+    });
+
+    return ok(party);
+  }
+
+  async update(id: string, dto: UpdatePartyDto): Promise<Result<any, PartyError>> {
+    const existing = await this.db.getClient().party.findUnique({ where: { id } });
+    if (!existing) {
+      return err({ code: 'NOT_FOUND', message: 'Party not found' });
+    }
+
+    const updateData: any = {};
+    if (dto.type !== undefined) updateData.type = dto.type;
+    if (dto.name !== undefined) updateData.name = dto.name;
+    if (dto.email !== undefined) updateData.email = dto.email;
+    if (dto.phone !== undefined) {
+      updateData.phone_raw = dto.phone;
+      updateData.phone_normalized = dto.phone;
+    }
+    if (dto.branch_brand_assignment_id !== undefined) updateData.branch_brand_assignment_id = dto.branch_brand_assignment_id;
+    if (dto.source !== undefined) updateData.source = dto.source;
+    if (dto.attributes !== undefined) updateData.attributes = dto.attributes as any;
+
+    const updated = await this.db.getClient().party.update({
+      where: { id },
+      data: updateData,
+    });
+
+    return ok(updated);
+  }
+
+  async softDelete(id: string): Promise<Result<void, PartyError>> {
+    const existing = await this.db.getClient().party.findUnique({ where: { id } });
+    if (!existing) {
+      return err({ code: 'NOT_FOUND', message: 'Party not found' });
+    }
+
+    await this.db.getClient().party.update({
+      where: { id },
+      data: { merge_status: 'merged' },
+    });
+
+    return ok(undefined);
+  }
+}
