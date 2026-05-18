@@ -1,2 +1,1 @@
-// Populated in TASK-019+
-export {};
+export { VirtualTable } from './components/VirtualTable';

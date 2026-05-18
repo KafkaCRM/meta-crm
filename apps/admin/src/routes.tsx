@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from '@/contexts/auth.context';
 import { LoginPage } from '@/components/LoginPage';
 import { UnauthorizedPage } from '@/components/UnauthorizedPage';
 import { AdminLayout } from '@/components/AdminLayout';
+import { TenantList, TenantDetail, CreateTenantForm, ImpersonateView } from '@/components/tenants';
 import { queryClient } from '@/lib/query-client';
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -61,9 +62,75 @@ const tenantsRoute = createRoute({
   path: '/admin/tenants',
   component: () => (
     <AuthGuard>
-      <div>
-        <h1 className="text-2xl font-bold">Tenants</h1>
-        <p className="mt-2 text-gray-600">Manage platform tenants</p>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Tenants</h1>
+          <a
+            href="/admin/tenants/new"
+            className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+          >
+            Create Tenant
+          </a>
+        </div>
+        <TenantList />
+      </div>
+    </AuthGuard>
+  ),
+});
+
+const createTenantRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/tenants/new',
+  component: () => (
+    <AuthGuard>
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold">Create Tenant</h1>
+        <CreateTenantForm />
+      </div>
+    </AuthGuard>
+  ),
+});
+
+const tenantDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/tenants/$id',
+  component: () => (
+    <AuthGuard>
+      <TenantDetailRouteContent />
+    </AuthGuard>
+  ),
+});
+
+function TenantDetailRouteContent() {
+  const { ability } = useAuth();
+  const { id } = tenantDetailRoute.useParams();
+  const isSupport = ability?.cannot('update', 'PlatformTenant') ?? false;
+
+  if (isSupport) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold">Tenant View (Read-Only)</h1>
+        <ImpersonateView tenantId={id} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <h1 className="text-2xl font-bold">Tenant Details</h1>
+      <TenantDetail tenantId={id} />
+    </div>
+  );
+}
+
+const tenantImpersonateRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/tenants/$id/impersonate',
+  component: () => (
+    <AuthGuard>
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold">Tenant View (Read-Only)</h1>
+        <ImpersonateView tenantId={tenantImpersonateRoute.useParams().id} />
       </div>
     </AuthGuard>
   ),
@@ -152,6 +219,9 @@ const routeTree = rootRoute.addChildren([
   unauthorizedRoute,
   dashboardRoute,
   tenantsRoute,
+  createTenantRoute,
+  tenantDetailRoute,
+  tenantImpersonateRoute,
   plansRoute,
   pluginsRoute,
   reportsRoute,
