@@ -7,5 +7,6 @@ import { PartyMergeService } from './party-merge.service';
 @Module({
   controllers: [PartyController],
   providers: [PartyService, PartyUpsertService, PartyMergeService],
+  exports: [PartyService, PartyUpsertService, PartyMergeService],
 })
 export class PartyModule {}
