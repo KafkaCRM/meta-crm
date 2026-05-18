@@ -6,6 +6,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useLabels } from '@/hooks/useLabels';
 import { AbilityProvider } from '@/contexts/permissions.context';
 import { LabelsProvider } from '@/contexts/labels.context';
+import { Dashboard } from '@/components/dashboard';
 
 /* ------------------------------------------------------------------ */
 /*  Root layout                                                        */
@@ -154,45 +155,10 @@ const loginRoute = createRoute({
 /*  Dashboard (index)                                                  */
 /* ------------------------------------------------------------------ */
 
-function DashboardPage() {
-  const { user } = useAuth();
-  const { can } = usePermissions();
-  const { t } = useLabels();
-
-  return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">{t('dashboard.title') ?? 'Dashboard'}</h1>
-      <p className="text-muted-foreground">
-        Welcome, {user?.name} ({user?.role})
-      </p>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {can('read', 'Case') && (
-          <div className="rounded-lg border bg-card p-4">
-            <h2 className="font-semibold">{t('case.plural') ?? 'Cases'}</h2>
-            <p className="text-sm text-muted-foreground">Pipeline overview</p>
-          </div>
-        )}
-        {can('read', 'Party') && (
-          <div className="rounded-lg border bg-card p-4">
-            <h2 className="font-semibold">{t('party.plural') ?? 'Parties'}</h2>
-            <p className="text-sm text-muted-foreground">Contacts and organizations</p>
-          </div>
-        )}
-        {can('read', 'Report') && (
-          <div className="rounded-lg border bg-card p-4">
-            <h2 className="font-semibold">{t('report.plural') ?? 'Reports'}</h2>
-            <p className="text-sm text-muted-foreground">Analytics and insights</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  component: DashboardPage,
+  component: Dashboard,
 });
 
 /* ------------------------------------------------------------------ */
