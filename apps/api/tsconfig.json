@@ -1,8 +1,9 @@
 {
   "extends": "@meta-crm/config-ts/nestjs",
   "compilerOptions": {
-    "rootDir": "src",
+    "rootDirs": ["src", "../../packages/types", "../../packages/permissions"],
     "outDir": "dist",
+    "baseUrl": ".",
     "paths": {
       "@meta-crm/types": ["../../packages/types/src/index.ts"],
       "@meta-crm/permissions": ["../../packages/permissions/src/index.ts"]

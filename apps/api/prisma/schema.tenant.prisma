@@ -97,3 +97,16 @@ model PlatformUserRole {
 
   platformUser PlatformUser @relation(fields: [platform_user_id], references: [id])
 }
+
+model RefreshToken {
+  id         String    @id @default(cuid())
+  user_id    String
+  user_type  String
+  token_hash String
+  expires_at DateTime
+  revoked_at DateTime?
+  created_at DateTime  @default(now())
+
+  @@index([token_hash])
+  @@index([user_id])
+}
