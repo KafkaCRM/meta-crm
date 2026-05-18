@@ -5,6 +5,7 @@ import { PartyModule } from './core/party/party.module';
 import { HooksModule } from './core/hooks/hooks.module';
 import { RealtimeModule } from './core/realtime/realtime.module';
 import { CaseModule } from './core/case/case.module';
+import { InteractionModule } from './core/interaction/interaction.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { CaseModule } from './core/case/case.module';
     HooksModule,
     RealtimeModule,
     CaseModule,
+    InteractionModule,
     // Core modules added in TASK-006 through TASK-014
     // Capability modules added in TASK-030+
     // Integration modules added in TASK-016, TASK-017+
