@@ -26,7 +26,19 @@ export const CaseResponseSchema = z.object({
   attributes: z.record(z.string(), z.unknown()),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
+  last_stage_changed_at: z.string().datetime(),
 });
+
+export const WorkflowStageSchema = z.object({
+  id: z.string(),
+  workflow_definition_id: z.string(),
+  name: z.string(),
+  order: z.number().int(),
+  entry_criteria: z.array(z.unknown()).default([]),
+  sla_hours: z.number().int().nullable(),
+});
+
+export type WorkflowStage = z.infer<typeof WorkflowStageSchema>;
 
 export const CaseEventResponseSchema = z.object({
   id: z.string(),

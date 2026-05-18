@@ -41,6 +41,7 @@ export {
   CaseEventResponseSchema,
   TransitionStageSchema,
   TransitionErrorSchema,
+  WorkflowStageSchema,
 } from './case.schema';
 
 export type {
@@ -50,6 +51,7 @@ export type {
   CaseEventResponse,
   TransitionStage,
   TransitionError,
+  WorkflowStage,
 } from './case.schema';
 
 export {
