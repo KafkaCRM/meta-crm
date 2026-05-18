@@ -37,7 +37,7 @@ function RootLayout() {
   );
 }
 
-const rootRoute = createRootRoute({
+export const rootRoute = createRootRoute({
   component: RootLayout,
 });
 
@@ -196,9 +196,27 @@ const indexRoute = createRoute({
 });
 
 /* ------------------------------------------------------------------ */
+/*  Party routes                                                       */
+/* ------------------------------------------------------------------ */
+
+import {
+  partiesRoute,
+  partiesNewRoute,
+  partyDetailRoute,
+  partyEditRoute,
+} from './routes/party';
+
+/* ------------------------------------------------------------------ */
 /*  Route tree + router                                                */
 /* ------------------------------------------------------------------ */
 
-export const routeTree = rootRoute.addChildren([indexRoute, loginRoute]);
+export const routeTree = rootRoute.addChildren([
+  indexRoute,
+  loginRoute,
+  partiesRoute,
+  partiesNewRoute,
+  partyDetailRoute,
+  partyEditRoute,
+]);
 
 export const router = createRouter({ routeTree });
