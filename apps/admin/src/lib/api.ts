@@ -83,7 +83,7 @@ export async function apiCall<T>(
     ...(init?.headers as Record<string, string> ?? {}),
   };
 
-  const response = await fetch(`/api${path}`, {
+  const response = await fetch(`/api/v1${path}`, {
     ...init,
     headers,
   });
@@ -96,7 +96,7 @@ export async function apiCall<T>(
     }
 
     headers.Authorization = `Bearer ${refreshed}`;
-    const retryResponse = await fetch(`/api${path}`, {
+    const retryResponse = await fetch(`/api/v1${path}`, {
       ...init,
       headers,
     });
