@@ -1,0 +1,36 @@
+{
+  "name": "Patient Care Pipeline",
+  "entity_type": "appointment",
+  "field_definitions": {
+    "Party": [
+      { "name": "blood_group", "label": "Blood Group", "field_type": "select", "options": ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"], "order": 1 },
+      { "name": "emergency_contact", "label": "Emergency Contact", "field_type": "phone", "order": 2 }
+    ],
+    "Case": [
+      { "name": "symptoms", "label": "Symptoms", "field_type": "text", "order": 1 },
+      { "name": "diagnosis", "label": "Diagnosis", "field_type": "text", "order": 2 }
+    ]
+  },
+  "workflow_definition": {
+    "name": "Patient Care Pipeline",
+    "entity_type": "appointment",
+    "stages": [
+      { "name": "Appointment Scheduled", "order": 0, "entry_criteria": [], "sla_hours": 24 },
+      { "name": "Consultation", "order": 1, "entry_criteria": [], "sla_hours": null },
+      { "name": "Follow-up", "order": 2, "entry_criteria": [], "sla_hours": null },
+      { "name": "Closed", "order": 3, "entry_criteria": [], "sla_hours": null }
+    ],
+    "transitions": [
+      { "from_stage": "Appointment Scheduled", "to_stage": "Consultation" },
+      { "from_stage": "Consultation", "to_stage": "Follow-up" },
+      { "from_stage": "Consultation", "to_stage": "Closed" },
+      { "from_stage": "Follow-up", "to_stage": "Closed" }
+    ]
+  },
+  "label_overrides": {
+    "party.singular": "Patient",
+    "party.plural": "Patients",
+    "case.singular": "Appointment",
+    "case.plural": "Appointments"
+  }
+}
