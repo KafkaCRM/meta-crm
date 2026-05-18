@@ -99,7 +99,7 @@ export class CaseService {
         branch_brand_assignment_id: dto.branch_brand_assignment_id,
         assigned_to_id: dto.assigned_to_id,
         attributes: (dto.attributes ?? {}) as any,
-      },
+      } as any,
     });
 
     await this.caseEvent.write({

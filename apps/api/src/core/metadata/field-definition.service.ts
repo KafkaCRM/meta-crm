@@ -30,11 +30,11 @@ export class FieldDefinitionService {
         name: dto.name,
         label: dto.label,
         field_type: dto.field_type,
-        options: dto.options ?? null,
+        options: dto.options as any,
         required: dto.required ?? false,
         order: dto.order ?? 0,
         visibility_rules: (dto.visibility_rules ?? []) as any,
-      },
+      } as any,
     });
     return ok(field);
   }

@@ -126,8 +126,8 @@ export class InteractionService {
       data: this.toInteractionDto(i),
     }));
     pinnedItems.sort((a, b) => {
-      const tA = new Date(a.data.created_at).getTime();
-      const tB = new Date(b.data.created_at).getTime();
+      const tA = new Date((a.data as any).created_at ?? (a.data as any).last_at ?? 0).getTime();
+      const tB = new Date((b.data as any).created_at ?? (b.data as any).last_at ?? 0).getTime();
       return tB - tA;
     });
 
@@ -178,7 +178,7 @@ export class InteractionService {
         content: dto.content,
         thread_id: dto.thread_id,
         metadata: (dto.metadata ?? {}) as any,
-      },
+      } as any,
     });
 
     return ok(this.toInteractionDto(interaction));

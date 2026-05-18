@@ -101,7 +101,7 @@ export class PartyUpsertService {
               confidence_score: confidence,
               source: 'webhook_upsert',
               status: 'pending_review',
-            },
+            } as any,
           });
           return ok({ action: 'queued_for_review', merge_queue_id: mq.id });
         }
@@ -118,7 +118,7 @@ export class PartyUpsertService {
               branch_brand_assignment_id: data.branch_brand_assignment_id,
               attributes: (data.attributes ?? {}) as any,
               merge_status: 'canonical',
-            },
+            } as any,
           });
 
           await this.db.getClient().partyMergeQueue.create({
@@ -128,7 +128,7 @@ export class PartyUpsertService {
               confidence_score: confidence,
               source: 'webhook_upsert',
               status: 'pending_review',
-            },
+            } as any,
           });
 
           return ok({ action: 'created', party });
@@ -147,7 +147,7 @@ export class PartyUpsertService {
         branch_brand_assignment_id: data.branch_brand_assignment_id,
         attributes: (data.attributes ?? {}) as any,
         merge_status: 'canonical',
-      },
+      } as any,
     });
 
     return ok({ action: 'created', party });

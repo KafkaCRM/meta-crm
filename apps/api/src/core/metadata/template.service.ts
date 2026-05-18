@@ -140,7 +140,7 @@ export class TemplateService {
             data: {
               from_stage_id: fromId,
               to_stage_id: toId,
-            },
+            } as any,
           });
         }
 

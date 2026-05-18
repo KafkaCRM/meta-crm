@@ -101,7 +101,7 @@ export class StageTransitionService {
             to_stage: toStageId,
             actor_id: actorId,
             actor_type: 'user',
-          },
+          } as any,
         }),
       ]);
     } catch (e: any) {

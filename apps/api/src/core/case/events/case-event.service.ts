@@ -26,7 +26,7 @@ export class CaseEventService {
         actor_id: input.actor_id,
         actor_type: input.actor_type,
         payload: (input.payload ?? {}) as any,
-      },
+      } as any,
     });
   }
 }
