@@ -128,7 +128,8 @@ async function main() {
     create: {
       tenant_id: tenant.id,
       name: 'admin',
-      slug: 'admin',
+      slug: 'tenant_admin',
+      is_system_role: true,
       description: 'Tenant administrator',
     },
   });

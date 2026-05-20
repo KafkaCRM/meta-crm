@@ -28,13 +28,23 @@ interface VirtualTableProps<TData> {
   emptyState?: React.ReactNode;
 }
 
-function parseSearchParams(search: string): Record<string, string> {
+function parseSearchParams(search: any): Record<string, string> {
   const params: Record<string, string> = {};
-  const query = search.startsWith('?') ? search.slice(1) : search;
-  for (const pair of query.split('&')) {
-    const [key, ...rest] = pair.split('=');
-    if (key) {
-      params[decodeURIComponent(key)] = decodeURIComponent(rest.join('='));
+  if (typeof search === 'string') {
+    const query = search.startsWith('?') ? search.slice(1) : search;
+    if (query) {
+      for (const pair of query.split('&')) {
+        const [key, ...rest] = pair.split('=');
+        if (key) {
+          params[decodeURIComponent(key)] = decodeURIComponent(rest.join('='));
+        }
+      }
+    }
+  } else if (search && typeof search === 'object') {
+    for (const [k, v] of Object.entries(search)) {
+      if (v !== undefined && v !== null) {
+        params[k] = String(v);
+      }
     }
   }
   return params;
@@ -90,9 +100,30 @@ export function VirtualTable<TData>({
     if (globalFilter) {
       params.search = globalFilter;
     }
-    const query = new URLSearchParams(params).toString();
-    navigate({ to: location.pathname, search: query ? `?${query}` : undefined, replace: true });
-  }, [sorting, columnFilters, globalFilter, location.pathname, navigate]);
+
+    const currentSort = searchParams.sort ?? '';
+    const currentFilter = searchParams.filter ?? '';
+    const currentSearchVal = searchParams.search ?? '';
+
+    const targetSort = params.sort ?? '';
+    const targetFilter = params.filter ?? '';
+    const targetSearchVal = params.search ?? '';
+
+    if (
+      currentSort !== targetSort ||
+      currentFilter !== targetFilter ||
+      currentSearchVal !== targetSearchVal
+    ) {
+      navigate({
+        to: location.pathname,
+        search: (prev: any) => ({
+          ...prev,
+          ...params,
+        }),
+        replace: true,
+      });
+    }
+  }, [sorting, columnFilters, globalFilter, location.pathname, searchParams, navigate]);
 
   const table = useReactTable({
     data,

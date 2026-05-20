@@ -7,11 +7,23 @@ interface DateRangePickerProps {
   className?: string;
 }
 
-function parseDateRange(search: string): { date_from: string; date_to: string } {
-  const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
-  const date_from = params.get('date_from') ?? dayjs().subtract(30, 'day').format('YYYY-MM-DD');
-  const date_to = params.get('date_to') ?? dayjs().format('YYYY-MM-DD');
-  return { date_from, date_to };
+function parseDateRange(search: any): { date_from: string; date_to: string } {
+  let date_from: string | null = null;
+  let date_to: string | null = null;
+
+  if (typeof search === 'string') {
+    const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
+    date_from = params.get('date_from');
+    date_to = params.get('date_to');
+  } else if (search && typeof search === 'object') {
+    date_from = search.date_from;
+    date_to = search.date_to;
+  }
+
+  return {
+    date_from: date_from ?? dayjs().subtract(30, 'day').format('YYYY-MM-DD'),
+    date_to: date_to ?? dayjs().format('YYYY-MM-DD'),
+  };
 }
 
 export function DateRangePicker({ className }: DateRangePickerProps) {
@@ -21,15 +33,16 @@ export function DateRangePicker({ className }: DateRangePickerProps) {
 
   const handleChange = useCallback(
     (field: 'date_from' | 'date_to', value: string) => {
-      const params = new URLSearchParams(location.search.startsWith('?') ? location.search.slice(1) : location.search);
-      params.set(field, value);
       navigate({
         to: location.pathname,
-        search: `?${params.toString()}`,
+        search: (prev: any) => ({
+          ...prev,
+          [field]: value,
+        }),
         replace: true,
       });
     },
-    [location.pathname, location.search, navigate],
+    [location.pathname, navigate],
   );
 
   return (
@@ -52,6 +65,6 @@ export function DateRangePicker({ className }: DateRangePickerProps) {
   );
 }
 
-export function getDateRangeFromSearch(search: string): { date_from: string; date_to: string } {
+export function getDateRangeFromSearch(search: any): { date_from: string; date_to: string } {
   return parseDateRange(search);
 }

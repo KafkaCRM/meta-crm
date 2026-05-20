@@ -1,4 +1,4 @@
-import { createRoute } from '@tanstack/react-router';
+import { createRoute, Outlet, redirect } from '@tanstack/react-router';
 import { rootRoute } from '../routes';
 import { SettingsLayout } from '@/components/settings/SettingsLayout';
 import { BranchManager } from '@/components/settings/BranchManager';
@@ -20,71 +20,80 @@ function SettingsPage({ children }: { children: React.ReactNode }) {
 export const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/settings',
-  component: () => <SettingsPage><BranchManager /></SettingsPage>,
+  beforeLoad: ({ location }) => {
+    if (location.pathname === '/settings' || location.pathname === '/settings/') {
+      throw redirect({ to: '/settings/branches' });
+    }
+  },
+  component: () => (
+    <SettingsPage>
+      <Outlet />
+    </SettingsPage>
+  ),
 });
 
 export const settingsBranchesRoute = createRoute({
   getParentRoute: () => settingsRoute,
   path: 'branches',
-  component: () => <SettingsPage><BranchManager /></SettingsPage>,
+  component: BranchManager,
 });
 
 export const settingsBrandsRoute = createRoute({
   getParentRoute: () => settingsRoute,
   path: 'brands',
-  component: () => <SettingsPage><BrandManager /></SettingsPage>,
+  component: BrandManager,
 });
 
 export const settingsAssignmentsRoute = createRoute({
   getParentRoute: () => settingsRoute,
   path: 'assignments',
-  component: () => <SettingsPage><AssignmentManager /></SettingsPage>,
+  component: AssignmentManager,
 });
 
 export const settingsUsersRoute = createRoute({
   getParentRoute: () => settingsRoute,
   path: 'users',
-  component: () => <SettingsPage><UserManager /></SettingsPage>,
+  component: UserManager,
 });
 
 export const settingsRolesRoute = createRoute({
   getParentRoute: () => settingsRoute,
   path: 'roles',
-  component: () => <SettingsPage><RoleMatrix /></SettingsPage>,
+  component: RoleMatrix,
 });
 
 export const settingsWorkflowsRoute = createRoute({
   getParentRoute: () => settingsRoute,
   path: 'workflows',
-  component: () => <SettingsPage><WorkflowBuilder /></SettingsPage>,
+  component: WorkflowBuilder,
 });
 
 export const settingsFieldsRoute = createRoute({
   getParentRoute: () => settingsRoute,
   path: 'fields',
-  component: () => <SettingsPage><FieldEditor /></SettingsPage>,
+  component: FieldEditor,
 });
 
 export const settingsLabelsRoute = createRoute({
   getParentRoute: () => settingsRoute,
   path: 'labels',
-  component: () => <SettingsPage><LabelEditor /></SettingsPage>,
+  component: LabelEditor,
 });
 
 export const settingsCapabilitiesRoute = createRoute({
   getParentRoute: () => settingsRoute,
   path: 'capabilities',
-  component: () => <SettingsPage><CapabilityToggle /></SettingsPage>,
+  component: CapabilityToggle,
 });
 
 export const settingsPluginsRoute = createRoute({
   getParentRoute: () => settingsRoute,
   path: 'plugins',
-  component: () => <SettingsPage><PluginStore /></SettingsPage>,
+  component: PluginStore,
 });
 
 export const settingsIntegrationsRoute = createRoute({
   getParentRoute: () => settingsRoute,
   path: 'integrations',
-  component: () => <SettingsPage><IntegrationSettings /></SettingsPage>,
+  component: IntegrationSettings,
 });

@@ -1,5 +1,5 @@
 import { createRootRoute, createRoute, createRouter, Outlet } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, Link, useLocation } from '@tanstack/react-router';
 import { useAuth } from '@/contexts/auth.context';
 import { AbilityProvider } from '@/contexts/permissions.context';
@@ -173,8 +173,18 @@ function AppSidebar() {
 /* ------------------------------------------------------------------ */
 
 function RootLayout() {
-  const { isAuthenticated, ability } = useAuth();
+  const { isAuthenticated, ability, isLoading } = useAuth();
   const location = useLocation();
+  const router = useRouter();
+
+  console.log('RootLayout render:', { isAuthenticated, isLoading, pathname: location.pathname });
+
+  // Redirect to login if not authenticated (called unconditionally)
+  useEffect(() => {
+    if (location.pathname !== '/login' && !isAuthenticated && !isLoading) {
+      router.navigate({ to: '/login' });
+    }
+  }, [isAuthenticated, isLoading, location.pathname, router]);
 
   if (location.pathname === '/login') {
     return <Outlet />;
@@ -242,7 +252,6 @@ function LoginPage() {
     setIsLoading(true);
     try {
       await login(email, password, tenantSlug);
-      router.navigate({ to: '/' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
