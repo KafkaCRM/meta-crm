@@ -19,6 +19,10 @@ model Party {
   interactions            Interaction[]
   mergeQueuePrimary       PartyMergeQueue[]  @relation("PrimaryParty")
   mergeQueueDuplicate     PartyMergeQueue[]  @relation("DuplicateParty")
+  appointments            Appointment[]
+  invoices                Invoice[]
+  orders                  Order[]
+  onboardings             Onboarding[]
 
   @@index([tenant_id, phone_normalized])
   @@index([tenant_id, created_at])
