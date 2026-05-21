@@ -13,10 +13,13 @@ import { CaseAttributePanel } from './CaseAttributePanel';
 import { Timeline } from './Timeline';
 import { ComposeBar } from './ComposeBar';
 import { PluginSlot, usePluginTabs } from '@/lib/plugins';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface CaseDetailProps {
   caseId: string;
   onBack?: () => void;
+  activePlugins?: string[];
+  activeCapabilities?: string[];
 }
 
 const ATTRIBUTE_FIELDS = [
@@ -26,7 +29,12 @@ const ATTRIBUTE_FIELDS = [
   { key: 'notes', label: 'Notes', type: 'text' as const },
 ];
 
-export function CaseDetail({ caseId, onBack }: CaseDetailProps) {
+export function CaseDetail({
+  caseId,
+  onBack,
+  activePlugins = [],
+  activeCapabilities = [],
+}: CaseDetailProps) {
   const queryClient = useQueryClient();
   const { can } = usePermissions();
 
@@ -142,8 +150,11 @@ export function CaseDetail({ caseId, onBack }: CaseDetailProps) {
 
   const currentStage = stages?.find((s) => s.id === caseData.stage);
 
-  const { tabs: pluginTabs } = usePluginTabs({ caseId, caseData });
-  const [activeTab, setActiveTab] = useState<string>('timeline');
+  const { tabs: pluginTabs } = usePluginTabs({ caseId, caseData }, activePlugins);
+
+  const hasAcademicCapability = activeCapabilities.some(
+    (c) => c === 'capability/enrollment' || c === 'capability-enrollment'
+  );
 
   return (
     <div className="flex flex-col h-[calc(100vh-60px)]">
@@ -189,39 +200,39 @@ export function CaseDetail({ caseId, onBack }: CaseDetailProps) {
         )}
       </div>
 
-      {/* Tabs navigation for left panel */}
-      {pluginTabs.length > 0 && (
-        <div className="flex-shrink-0 bg-surface-1 border-b border-hairline px-4 py-2 flex items-center gap-2">
-          <button
-            onClick={() => setActiveTab('timeline')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-              activeTab === 'timeline'
-                ? 'bg-primary text-primary-foreground'
-                : 'text-ink-muted hover:bg-surface-2 hover:text-ink'
-            }`}
-          >
-            Activity Timeline
-          </button>
-          {pluginTabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-                activeTab === tab.id
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-ink-muted hover:bg-surface-2 hover:text-ink'
-              }`}
+      <Tabs defaultValue="timeline" className="flex-1 flex flex-col overflow-hidden gap-0">
+        {/* Tabs navigation for left panel */}
+        <div className="flex-shrink-0 bg-surface-1 border-b border-hairline px-4 py-2 flex items-center justify-between">
+          <TabsList className="bg-transparent border-b-0 p-0 gap-2 flex">
+            <TabsTrigger
+              value="timeline"
+              className="px-3 py-1.5 text-xs font-semibold rounded-md transition-colors text-ink-muted hover:bg-surface-2 hover:text-ink data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             >
-              {tab.label}
-            </button>
-          ))}
+              Activity Timeline
+            </TabsTrigger>
+            {hasAcademicCapability && (
+              <TabsTrigger
+                value="academic"
+                className="px-3 py-1.5 text-xs font-semibold rounded-md transition-colors text-ink-muted hover:bg-surface-2 hover:text-ink data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
+                Academic Documents
+              </TabsTrigger>
+            )}
+            {pluginTabs.map((tab) => (
+              <TabsTrigger
+                key={tab.id}
+                value={tab.id}
+                className="px-3 py-1.5 text-xs font-semibold rounded-md transition-colors text-ink-muted hover:bg-surface-2 hover:text-ink data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
         </div>
-      )}
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1 flex flex-col min-w-0 bg-surface-1">
-          {activeTab === 'timeline' ? (
-            <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex flex-1 overflow-hidden">
+          <div className="flex-1 flex flex-col min-w-0 bg-surface-1">
+            <TabsContent value="timeline" className="flex-1 flex flex-col overflow-hidden data-[state=inactive]:hidden m-0">
               <div className="flex-1 overflow-hidden flex flex-col">
                 <Timeline
                   items={timelineItems}
@@ -238,26 +249,30 @@ export function CaseDetail({ caseId, onBack }: CaseDetailProps) {
                   availableChannels={[Channel.WhatsApp, Channel.Email, Channel.Note]}
                 />
               )}
-            </div>
-          ) : (
-            <div className="flex-1 overflow-hidden p-4">
-              {pluginTabs.map((tab) => {
-                if (tab.id !== activeTab) return null;
-                const Component = tab.Component;
-                return <Component key={tab.id} caseId={caseId} caseData={caseData} />;
-              })}
-            </div>
-          )}
-        </div>
+            </TabsContent>
 
-        <div className="w-80 border-l overflow-auto flex-shrink-0 p-4 space-y-4 bg-canvas">
-          <CaseAttributePanel
-            caseData={caseData}
-            fields={ATTRIBUTE_FIELDS}
-          />
-          <PluginSlot anchor="CaseSidePanel" context={{ caseId, caseData }} />
+            {hasAcademicCapability && (
+              <TabsContent value="academic" className="flex-1 overflow-auto p-4 data-[state=inactive]:hidden m-0">
+                <PluginSlot anchor="CaseMainTabs" activePlugins={activePlugins} contextData={{ caseId, caseData }} />
+              </TabsContent>
+            )}
+
+            {pluginTabs.map((tab) => (
+              <TabsContent key={tab.id} value={tab.id} className="flex-1 overflow-auto p-4 data-[state=inactive]:hidden m-0">
+                <tab.Component caseId={caseId} caseData={caseData} />
+              </TabsContent>
+            ))}
+          </div>
+
+          <div className="w-80 border-l overflow-auto flex-shrink-0 p-4 space-y-4 bg-canvas">
+            <CaseAttributePanel
+              caseData={caseData}
+              fields={ATTRIBUTE_FIELDS}
+            />
+            <PluginSlot anchor="CaseSidePanel" activePlugins={activePlugins} contextData={{ caseId, caseData }} />
+          </div>
         </div>
-      </div>
+      </Tabs>
     </div>
   );
 }
