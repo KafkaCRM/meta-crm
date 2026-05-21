@@ -4,10 +4,21 @@ import { SYSTEM_ROLE_MAP } from './system-role-maps';
 import type { TenantAction, TenantSubject } from './types';
 
 export interface TenantRoleEntry {
-  role: TenantRole;
+  role: TenantRole | string;
 }
 
 type TenantAbility = Ability<[TenantAction, TenantSubject], Record<string, any>>;
+
+const DEFAULT_PERMISSIONS = [
+  { action: 'create' as TenantAction, resource: 'Party' as TenantSubject },
+  { action: 'read' as TenantAction, resource: 'Party' as TenantSubject },
+  { action: 'update' as TenantAction, resource: 'Party' as TenantSubject },
+  { action: 'create' as TenantAction, resource: 'Case' as TenantSubject },
+  { action: 'read' as TenantAction, resource: 'Case' as TenantSubject },
+  { action: 'update' as TenantAction, resource: 'Case' as TenantSubject },
+  { action: 'create' as TenantAction, resource: 'Interaction' as TenantSubject },
+  { action: 'read' as TenantAction, resource: 'Interaction' as TenantSubject },
+];
 
 export function buildTenantAbility(
   roles: TenantRoleEntry[],
@@ -15,9 +26,20 @@ export function buildTenantAbility(
 ): TenantAbility {
   const { can, build } = new AbilityBuilder<TenantAbility>(Ability);
 
+  if (roles.length === 0) {
+    for (const perm of DEFAULT_PERMISSIONS) {
+      can(perm.action, perm.resource);
+    }
+    return build();
+  }
+
+  let matchedAny = false;
+
   for (const entry of roles) {
-    const permissions = SYSTEM_ROLE_MAP[entry.role];
+    const permissions = SYSTEM_ROLE_MAP[entry.role as TenantRole];
     if (!permissions) continue;
+
+    matchedAny = true;
 
     for (const perm of permissions) {
       if (perm.conditions?.own_assignment_only) {
@@ -27,6 +49,12 @@ export function buildTenantAbility(
       } else {
         can(perm.action, perm.resource);
       }
+    }
+  }
+
+  if (!matchedAny) {
+    for (const perm of DEFAULT_PERMISSIONS) {
+      can(perm.action, perm.resource);
     }
   }
 

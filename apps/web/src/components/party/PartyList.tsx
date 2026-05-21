@@ -177,23 +177,23 @@ export function PartyList() {
                 className="pl-8 h-8 bg-[#f5f1ec] border-[#d3cec6] text-sm placeholder:text-[#9c9fa5] focus-visible:ring-[#111111]/30"
               />
             </div>
-            <Select value={filterSource} onValueChange={setFilterSource}>
+            <Select value={filterSource} onValueChange={(v) => setFilterSource(v === 'all' ? '' : v)}>
               <SelectTrigger className="h-8 w-[140px] bg-[#f5f1ec] border-[#d3cec6] text-sm">
                 <SelectValue placeholder="All sources" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All sources</SelectItem>
+                <SelectItem value="all">All sources</SelectItem>
                 {Object.values(PartySource).map((s) => (
                   <SelectItem key={s} value={s}>{s}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Select value={filterType} onValueChange={setFilterType}>
+            <Select value={filterType} onValueChange={(v) => setFilterType(v === 'all' ? '' : v)}>
               <SelectTrigger className="h-8 w-[130px] bg-[#f5f1ec] border-[#d3cec6] text-sm">
                 <SelectValue placeholder="All types" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All types</SelectItem>
+                <SelectItem value="all">All types</SelectItem>
                 {Object.values(PartyType).map((tp) => (
                   <SelectItem key={tp} value={tp}>{tp}</SelectItem>
                 ))}
@@ -215,17 +215,8 @@ export function PartyList() {
           enableColumnVisibility
           enableMultiSort={false}
           pageSize={50}
-          emptyState={
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-10 h-10 rounded-full bg-[#f5f1ec] flex items-center justify-center mb-3">
-                <Users size={20} className="text-[#9c9fa5]" />
-              </div>
-              <h3 className="text-base font-medium text-[#111111] mb-1">No contacts found</h3>
-              <p className="text-sm text-[#9c9fa5]">
-                Try adjusting your filters or add a new contact
-              </p>
-            </div>
-          }
+          emptyTitle="No contacts found"
+          emptyDescription="Try adjusting your filters or add a new contact"
         />
       </Card>
     </div>

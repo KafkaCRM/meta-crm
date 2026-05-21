@@ -1,5 +1,8 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
+import { X, Loader2, UserPlus, ArrowRight, Download } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 
 export interface BulkAction<TData = any> {
   id: string;
@@ -15,6 +18,12 @@ interface BulkActionBarProps<TData = any> {
   onClearSelection: () => void;
   resource: string;
 }
+
+const defaultIcons: Record<string, React.ReactNode> = {
+  assign: <UserPlus size={14} />,
+  'move-stage': <ArrowRight size={14} />,
+  export: <Download size={14} />,
+};
 
 export function BulkActionBar<TData>({
   selectedRows,
@@ -32,14 +41,15 @@ export function BulkActionBar<TData>({
 
       setExecuting(action.id);
 
-      const previousState = [...selectedRows];
-
       try {
         await action.action(selectedRows);
-        toast.success(`${action.label} applied to ${selectedRows.length} items`);
+        toast.success(
+          `${action.label} applied to ${selectedRows.length} ${selectedRows.length === 1 ? 'item' : 'items'}`,
+        );
         onClearSelection();
       } catch (error) {
-        toast.error(`Failed to ${action.label.toLowerCase()}`);
+        const message = error instanceof Error ? error.message : `Failed to ${action.label.toLowerCase()}`;
+        toast.error(message);
       } finally {
         setExecuting(null);
       }
@@ -52,34 +62,63 @@ export function BulkActionBar<TData>({
   }
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-lg border bg-popover px-4 py-3 shadow-lg">
-      <span className="text-sm font-medium">
-        {selectedRows.length} selected
-      </span>
+    <div
+      className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none"
+      style={{
+        animation: 'slideUp 0.3s ease-out',
+      }}
+    >
+      <div className="pointer-events-auto mx-auto mb-4 flex items-center gap-3 rounded-xl border border-[#d3cec6] bg-white px-4 py-3 shadow-lg shadow-black/5">
+        <span className="text-sm font-semibold text-[#111111] min-w-[80px]">
+          {selectedRows.length} selected
+        </span>
 
-      <div className="h-4 w-px bg-border" />
+        <Separator orientation="vertical" className="h-5 bg-[#d3cec6]" />
 
-      <div className="flex items-center gap-2">
-        {actions.map((action) => (
-          <button
-            key={action.id}
-            className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium hover:bg-muted disabled:opacity-50"
-            onClick={() => handleAction(action)}
-            disabled={executing !== null}
-          >
-            {action.icon}
-            {executing === action.id ? 'Processing...' : action.label}
-          </button>
-        ))}
+        <div className="flex items-center gap-1.5">
+          {actions.map((action) => (
+            <Button
+              key={action.id}
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs border-[#d3cec6] hover:bg-[#f5f1ec] hover:text-[#111111]"
+              onClick={() => handleAction(action)}
+              disabled={executing !== null}
+            >
+              {executing === action.id ? (
+                <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+              ) : (
+                action.icon ?? defaultIcons[action.id]
+              )}
+              {executing === action.id ? 'Processing...' : action.label}
+            </Button>
+          ))}
+        </div>
+
+        <Separator orientation="vertical" className="h-5 bg-[#d3cec6]" />
+
+        <button
+          className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-[#f5f1ec] transition-colors text-[#9c9fa5] hover:text-[#111111]"
+          onClick={onClearSelection}
+          disabled={executing !== null}
+          aria-label="Clear selection"
+        >
+          <X size={15} />
+        </button>
       </div>
 
-      <button
-        className="ml-2 text-sm text-muted-foreground hover:text-foreground"
-        onClick={onClearSelection}
-        disabled={executing !== null}
-      >
-        Clear
-      </button>
+      <style>{`
+        @keyframes slideUp {
+          from {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+      `}</style>
     </div>
   );
 }

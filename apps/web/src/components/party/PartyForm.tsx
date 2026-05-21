@@ -2,13 +2,15 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useForm, useWatch, useFormState } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useNavigate, useSearch } from '@tanstack/react-router';
+import { useNavigate, useLocation } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { PartySource, PartyType } from '@meta-crm/types';
+import { PartySource, PartyType, evaluateVisibilityRules } from '@meta-crm/types';
 import type { PartyResponse, CheckDuplicateResponse, FieldDefinitionResponse } from '@meta-crm/types';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useLabels } from '@/hooks/useLabels';
 import { partiesApi } from '@/api/parties';
+import { settingsApi } from '@/api/settings';
 import { queryClient } from '@/lib/query-client';
 
 const PartyFormSchema = z.object({
@@ -32,7 +34,10 @@ export function PartyForm({ party, fieldDefinitions }: PartyFormProps) {
   const { can } = usePermissions();
   const { t } = useLabels();
   const navigate = useNavigate();
-  const search = useSearch({ from: '/_root/parties/new' }) as Record<string, string> | undefined;
+  const location = useLocation();
+  const search = (location.search && typeof location.search === 'object'
+    ? location.search
+    : {}) as Record<string, string> | undefined;
 
   const isEdit = !!party;
   const [duplicateInfo, setDuplicateInfo] = useState<CheckDuplicateResponse | null>(null);
@@ -46,8 +51,16 @@ export function PartyForm({ party, fieldDefinitions }: PartyFormProps) {
   const [prefillData, setPrefillData] = useState<Record<string, unknown> | null>(null);
   const [prefillLoading, setPrefillLoading] = useState(false);
 
+  const { data: fetchedFieldDefinitions } = useQuery({
+    queryKey: ['settings', 'fields', 'Party'],
+    queryFn: () => settingsApi.fieldDefinitions.list('Party'),
+    enabled: !fieldDefinitions,
+    staleTime: 60_000,
+  });
+  const customFields = (fieldDefinitions ?? fetchedFieldDefinitions ?? []) as FieldDefinitionResponse[];
+
   const form = useForm<PartyFormValues>({
-    resolver: zodResolver(PartyFormSchema) as any,
+    resolver: (zodResolver as any)(PartyFormSchema),
     defaultValues: party
       ? {
           type: party.type as PartyType,
@@ -344,6 +357,26 @@ export function PartyForm({ party, fieldDefinitions }: PartyFormProps) {
           type="text"
         />
 
+        {customFields.map((field) => {
+          const values = {
+            ...watchedValues,
+            ...((watchedValues.attributes as Record<string, unknown> | undefined) ?? {}),
+          };
+          const isVisible = field.visibility_rules
+            ? evaluateVisibilityRules(field.visibility_rules as any, values)
+            : true;
+          if (!isVisible) return null;
+
+          return (
+            <CustomAttributeField
+              key={field.id}
+              field={field}
+              form={form}
+              canUpdate={canUpdate}
+            />
+          );
+        })}
+
         <div className="flex gap-2 pt-4">
           <button
             type="submit"
@@ -369,6 +402,95 @@ export function PartyForm({ party, fieldDefinitions }: PartyFormProps) {
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+interface CustomAttributeFieldProps {
+  field: FieldDefinitionResponse;
+  form: ReturnType<typeof useForm<PartyFormValues>>;
+  canUpdate: boolean;
+}
+
+function CustomAttributeField({ field, form, canUpdate }: CustomAttributeFieldProps) {
+  const name = `attributes.${field.name}` as const;
+  const value = form.watch(name as any);
+  const error = (form.formState.errors.attributes as Record<string, { message?: string }> | undefined)?.[field.name];
+  const baseInputClass = `w-full rounded-md border px-3 py-2 text-sm ${error ? 'border-destructive' : 'border-input'}`;
+
+  if (!canUpdate) {
+    return (
+      <div className="space-y-1">
+        <label className="block text-sm font-medium">{field.label}</label>
+        <span className="block rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">
+          {value !== undefined && value !== null && value !== '' ? String(value) : '—'}
+        </span>
+      </div>
+    );
+  }
+
+  let input: React.ReactNode;
+  const inputProps = form.register(name as any, {
+    required: field.required ? `${field.label} is required` : false,
+  });
+
+  if (field.field_type === 'select' && Array.isArray(field.options)) {
+    input = (
+      <select {...inputProps} className={baseInputClass}>
+        <option value="">Select...</option>
+        {field.options.map((opt: string) => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+      </select>
+    );
+  } else if (field.field_type === 'multi_select' && Array.isArray(field.options)) {
+    const selected = Array.isArray(value) ? value as string[] : [];
+    input = (
+      <select
+        multiple
+        value={selected}
+        onChange={(e) => {
+          const next = Array.from(e.currentTarget.selectedOptions).map((opt) => opt.value);
+          form.setValue(name as any, next, { shouldDirty: true, shouldValidate: true });
+        }}
+        className={baseInputClass}
+      >
+        {field.options.map((opt: string) => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+      </select>
+    );
+  } else if (field.field_type === 'boolean') {
+    input = (
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={Boolean(value)}
+          onChange={(e) => form.setValue(name as any, e.currentTarget.checked, { shouldDirty: true, shouldValidate: true })}
+        />
+        Yes
+      </label>
+    );
+  } else {
+    const type = field.field_type === 'number'
+      ? 'number'
+      : field.field_type === 'date'
+        ? 'date'
+        : field.field_type === 'email'
+          ? 'email'
+          : field.field_type === 'phone'
+            ? 'tel'
+            : 'text';
+    input = <input {...inputProps} type={type} className={baseInputClass} />;
+  }
+
+  return (
+    <div className="space-y-1">
+      <label className="block text-sm font-medium">
+        {field.label}{field.required ? ' *' : ''}
+      </label>
+      {input}
+      {error && <p className="text-xs text-destructive">{error.message}</p>}
     </div>
   );
 }
