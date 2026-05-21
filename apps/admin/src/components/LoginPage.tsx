@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import { useAuth } from '@/contexts/auth.context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,6 +7,7 @@ import { Shield } from 'lucide-react';
 
 export function LoginPage() {
   const { login, isLoading } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -15,6 +17,8 @@ export function LoginPage() {
     setError('');
     try {
       await login(email, password);
+      // Navigate to dashboard after successful login
+      navigate({ to: '/' });
     } catch {
       setError('Invalid email or password');
     }
