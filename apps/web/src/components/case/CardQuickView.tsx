@@ -4,6 +4,7 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { cn } from '@/lib/utils';
 import type { CaseDto } from '@meta-crm/types';
+import { useNavigate } from '@tanstack/react-router';
 
 dayjs.extend(relativeTime);
 
@@ -15,6 +16,7 @@ interface CardQuickViewProps {
 }
 
 export function CardQuickView({ open, onOpenChange, caseData, stageName }: CardQuickViewProps) {
+  const navigate = useNavigate();
   const attributeEntries = Object.entries(caseData.attributes ?? {});
 
   return (
@@ -92,7 +94,7 @@ export function CardQuickView({ open, onOpenChange, caseData, stageName }: CardQ
               )}
               onClick={() => {
                 onOpenChange(false);
-                window.location.href = `/cases/${caseData.id}`;
+                navigate({ to: '/cases/$id', params: { id: caseData.id } });
               }}
             >
               <ExternalLink className="h-4 w-4" />
