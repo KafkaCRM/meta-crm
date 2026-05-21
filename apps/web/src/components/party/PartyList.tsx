@@ -1,6 +1,6 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useLocation } from '@tanstack/react-router';
 import { createColumnHelper } from '@tanstack/react-table';
 import { PartySource, PartyType, MergeStatus } from '@meta-crm/types';
 import type { PartyResponse } from '@meta-crm/types';
@@ -8,52 +8,60 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useLabels } from '@/hooks/useLabels';
 import { partiesApi } from '@/api/parties';
 import { VirtualTable } from '@/components/shared/VirtualTable';
+import { BulkActionBar, type BulkAction } from '@/components/shared/BulkActionBar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Search, SlidersHorizontal, Users } from 'lucide-react';
+import { Plus, Search, Users, Download, UserPlus } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import dayjs from 'dayjs';
 
 const columnHelper = createColumnHelper<PartyResponse>();
 
-/* Source badge colors — DESIGN.md: use report palette sparingly */
+const SOURCE_COLORS: Record<string, string> = {
+  [PartySource.WhatsApp]: 'bg-[#0bdf50]/10 text-[#0a7f2e] border-[#0bdf50]/20',
+  [PartySource.JustDial]: 'bg-[#ff8c00]/10 text-[#cc7000] border-[#ff8c00]/20',
+  [PartySource.Facebook]: 'bg-[#1877f2]/10 text-[#1565c0] border-[#1877f2]/20',
+  [PartySource.Manual]: 'bg-[#9c9fa5]/10 text-[#626260] border-[#9c9fa5]/20',
+  [PartySource.WebForm]: 'bg-[#8b5cf6]/10 text-[#7c3aed] border-[#8b5cf6]/20',
+  [PartySource.Api]: 'bg-[#ff5600]/10 text-[#cc4400] border-[#ff5600]/20',
+};
+
 function SourceBadge({ source }: { source: string }) {
-  const styles: Record<string, string> = {
-    [PartySource.WhatsApp]: 'bg-[#0bdf50]/10 text-[#0a7f2e] border-[#0bdf50]/20',
-    [PartySource.JustDial]: 'bg-[#65b5ff]/10 text-[#0050aa] border-[#65b5ff]/20',
-    [PartySource.Facebook]: 'bg-[#0007cb]/10 text-[#0007cb] border-[#0007cb]/20',
-    [PartySource.Manual]: 'bg-[#ebe7e1] text-[#626260] border-[#d3cec6]',
-    [PartySource.WebForm]: 'bg-[#b3e01c]/10 text-[#5a6e00] border-[#b3e01c]/20',
-    [PartySource.Api]: 'bg-[#ff5600]/10 text-[#cc4400] border-[#ff5600]/20',
-  };
-  const cls = styles[source] ?? 'bg-[#ebe7e1] text-[#626260] border-[#d3cec6]';
+  const cls = SOURCE_COLORS[source] ?? 'bg-[#9c9fa5]/10 text-[#626260] border-[#9c9fa5]/20';
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${cls}`}>
-      {source}
+      {source === PartySource.WhatsApp ? 'WhatsApp' : source === PartySource.JustDial ? 'JustDial' : source === PartySource.Facebook ? 'Facebook' : source === PartySource.WebForm ? 'Web Form' : source === PartySource.Manual ? 'Manual' : source}
     </span>
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  if (status === MergeStatus.Merged) {
-    return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-[#c41c1c]/10 text-[#c41c1c] border border-[#c41c1c]/20">
-        Merged
-      </span>
-    );
-  }
-  if (status === MergeStatus.PendingReview) {
-    return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-amber-100 text-amber-700 border border-amber-200">
-        Pending
-      </span>
-    );
-  }
+const STAGE_COLORS: Record<string, string> = {
+  new: 'bg-[#3b82f6]/10 text-[#2563eb] border-[#3b82f6]/20',
+  contacted: 'bg-[#3b82f6]/10 text-[#2563eb] border-[#3b82f6]/20',
+  qualified: 'bg-[#f59e0b]/10 text-[#d97706] border-[#f59e0b]/20',
+  negotiation: 'bg-[#f59e0b]/10 text-[#d97706] border-[#f59e0b]/20',
+  won: 'bg-[#0bdf50]/10 text-[#0a7f2e] border-[#0bdf50]/20',
+  enrolled: 'bg-[#0bdf50]/10 text-[#0a7f2e] border-[#0bdf50]/20',
+  lost: 'bg-[#c41c1c]/10 text-[#c41c1c] border-[#c41c1c]/20',
+  dropped: 'bg-[#c41c1c]/10 text-[#c41c1c] border-[#c41c1c]/20',
+};
+
+function StageBadge({ stage }: { stage: string }) {
+  const cls = STAGE_COLORS[stage] ?? 'bg-[#9c9fa5]/10 text-[#626260] border-[#9c9fa5]/20';
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-[#0bdf50]/10 text-[#0a7f2e] border border-[#0bdf50]/20">
-      Active
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border capitalize ${cls}`}>
+      {stage}
     </span>
   );
 }
@@ -62,20 +70,41 @@ export function PartyList() {
   const { can } = usePermissions();
   const { t } = useLabels();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [searchName, setSearchName] = useState('');
-  const [searchPhone, setSearchPhone] = useState('');
-  const [filterSource, setFilterSource] = useState<string>('');
-  const [filterType, setFilterType] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [filterSources, setFilterSources] = useState<string[]>([]);
+  const [filterCounsellor, setFilterCounsellor] = useState<string>('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [selectedRows, setSelectedRows] = useState<PartyResponse[]>([]);
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [searchQuery]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['parties', searchName, searchPhone, filterSource, filterType],
+    queryKey: ['parties', debouncedSearch, filterSources, filterCounsellor, dateFrom, dateTo],
     queryFn: () => {
-      const params: Record<string, string | number> = { limit: 50 };
-      if (searchName) params.name = searchName;
-      if (searchPhone) params.phone = searchPhone;
-      if (filterSource) params.source = filterSource;
-      if (filterType) params.type = filterType;
+      const params: Record<string, string | number> = { limit: 500 };
+      if (debouncedSearch) {
+        if (/^\+?\d/.test(debouncedSearch)) {
+          params.phone = debouncedSearch;
+        } else {
+          params.name = debouncedSearch;
+        }
+      }
+      if (filterSources.length > 0) params.source = filterSources.join(',');
+      if (filterCounsellor) params.assigned_to = filterCounsellor;
+      if (dateFrom) params.date_from = dateFrom;
+      if (dateTo) params.date_to = dateTo;
       return partiesApi.list(params as any);
     },
     staleTime: 30_000,
@@ -92,28 +121,30 @@ export function PartyList() {
       columnHelper.accessor('phone_raw', {
         header: t('party.phone') ?? 'Phone',
         cell: (info) => (
-          <span className="text-[#626260] text-sm">{info.getValue()}</span>
-        ),
-      }),
-      columnHelper.accessor('email', {
-        header: t('party.email') ?? 'Email',
-        cell: (info) => (
-          <span className="text-[#626260] text-sm">{info.getValue() ?? '—'}</span>
+          <span className="text-[#626260] text-sm font-mono">{info.getValue()}</span>
         ),
       }),
       columnHelper.accessor('source', {
         header: t('party.source') ?? 'Source',
         cell: (info) => <SourceBadge source={info.getValue()} />,
       }),
-      columnHelper.accessor('type', {
-        header: t('party.type') ?? 'Type',
-        cell: (info) => (
-          <span className="text-sm text-[#626260] capitalize">{info.getValue()}</span>
-        ),
-      }),
       columnHelper.accessor('merge_status', {
         header: 'Status',
-        cell: (info) => <StatusBadge status={info.getValue()} />,
+        cell: (info) => {
+          const status = info.getValue();
+          if (status === MergeStatus.Merged) {
+            return <span className="text-xs text-[#c41c1c]">Merged</span>;
+          }
+          return <span className="text-xs text-[#0bdf50]">Active</span>;
+        },
+      }),
+      columnHelper.accessor('created_at', {
+        header: 'Created',
+        cell: (info) => (
+          <span className="text-sm text-[#9c9fa5]">
+            {dayjs(info.getValue()).format('DD MMM YYYY')}
+          </span>
+        ),
       }),
     ],
     [t],
@@ -127,8 +158,42 @@ export function PartyList() {
   );
 
   const parties = data?.data ?? [];
-  const hasNext = !!data?.next_cursor;
-  const rowCount = parties.length + (hasNext ? 1 : 0);
+
+  const bulkActions: BulkAction<PartyResponse>[] = useMemo(() => {
+    const actions: BulkAction<PartyResponse>[] = [];
+    if (can('update', 'Party')) {
+      actions.push({
+        id: 'assign',
+        label: 'Assign',
+        icon: <UserPlus size={14} />,
+        action: async (rows) => {
+          // TODO: implement bulk assign
+        },
+      });
+    }
+    actions.push({
+      id: 'export',
+      label: 'Export CSV',
+      icon: <Download size={14} />,
+      action: async (rows) => {
+        const headers = ['Name', 'Phone', 'Email', 'Source', 'Created'];
+        const csvRows = rows.map((r) =>
+          [r.name, r.phone_raw, r.email ?? '', r.source, r.created_at].map((v) => `"${v}"`).join(','),
+        );
+        const csv = [headers.join(','), ...csvRows].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'parties.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+    });
+    return actions;
+  }, [can]);
+
+  const hasActiveFilters = debouncedSearch || filterSources.length > 0 || filterCounsellor || dateFrom || dateTo;
 
   return (
     <div className="space-y-5 max-w-[1280px]">
@@ -139,7 +204,7 @@ export function PartyList() {
             {t('party.plural') ?? 'Contacts'}
           </h1>
           <p className="text-sm text-[#9c9fa5] mt-0.5">
-            {parties.length > 0 ? `${parties.length} contacts` : 'Manage your contacts and companies'}
+            {parties.length > 0 ? `${parties.length} ${t('party.plural')?.toLowerCase() ?? 'contacts'}` : `Manage your ${t('party.plural')?.toLowerCase() ?? 'contacts'}`}
           </p>
         </div>
         {can('create', 'Party') && (
@@ -148,7 +213,7 @@ export function PartyList() {
             className="bg-[#111111] hover:bg-black text-white rounded-lg h-9 px-4 text-sm font-medium"
           >
             <Plus size={15} className="mr-1.5" />
-            {t('party.new') ?? 'New Contact'}
+            New {t('party.singular') ?? 'Contact'}
           </Button>
         )}
       </div>
@@ -157,48 +222,71 @@ export function PartyList() {
       <Card className="bg-white border-[#d3cec6] rounded-xl shadow-none">
         <CardContent className="p-4">
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="relative flex-1 min-w-[180px]">
+            <div className="relative flex-1 min-w-[200px]">
               <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9c9fa5]" />
               <Input
                 type="text"
-                placeholder="Search by name…"
-                value={searchName}
-                onChange={(e) => setSearchName(e.target.value)}
+                placeholder="Search by name or phone…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-8 h-8 bg-[#f5f1ec] border-[#d3cec6] text-sm placeholder:text-[#9c9fa5] focus-visible:ring-[#111111]/30"
               />
             </div>
-            <div className="relative min-w-[160px]">
-              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9c9fa5]" />
-              <Input
-                type="text"
-                placeholder="Search by phone…"
-                value={searchPhone}
-                onChange={(e) => setSearchPhone(e.target.value)}
-                className="pl-8 h-8 bg-[#f5f1ec] border-[#d3cec6] text-sm placeholder:text-[#9c9fa5] focus-visible:ring-[#111111]/30"
-              />
+
+            <div className="min-w-[160px]">
+              <Select
+                value={(filterSources.length > 0 ? filterSources[0] : 'all') as string}
+                onValueChange={(v) => {
+                  if (v === 'all') setFilterSources([]);
+                  else setFilterSources([v]);
+                }}
+              >
+                <SelectTrigger className="h-8 w-full bg-[#f5f1ec] border-[#d3cec6] text-sm">
+                  <SelectValue placeholder="All sources" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All sources</SelectItem>
+                  {Object.values(PartySource).map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s === PartySource.WhatsApp ? 'WhatsApp' : s === PartySource.JustDial ? 'JustDial' : s === PartySource.WebForm ? 'Web Form' : s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <Select value={filterSource} onValueChange={(v) => setFilterSource(v === 'all' ? '' : v)}>
-              <SelectTrigger className="h-8 w-[140px] bg-[#f5f1ec] border-[#d3cec6] text-sm">
-                <SelectValue placeholder="All sources" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All sources</SelectItem>
-                {Object.values(PartySource).map((s) => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterType} onValueChange={(v) => setFilterType(v === 'all' ? '' : v)}>
-              <SelectTrigger className="h-8 w-[130px] bg-[#f5f1ec] border-[#d3cec6] text-sm">
-                <SelectValue placeholder="All types" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All types</SelectItem>
-                {Object.values(PartyType).map((tp) => (
-                  <SelectItem key={tp} value={tp}>{tp}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              placeholder="From"
+              className="h-8 w-[140px] bg-[#f5f1ec] border-[#d3cec6] text-sm"
+            />
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              placeholder="To"
+              className="h-8 w-[140px] bg-[#f5f1ec] border-[#d3cec6] text-sm"
+            />
+
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearchQuery('');
+                  setDebouncedSearch('');
+                  setFilterSources([]);
+                  setFilterCounsellor('');
+                  setDateFrom('');
+                  setDateTo('');
+                }}
+                className="h-8 text-xs text-[#9c9fa5] hover:text-[#111111]"
+              >
+                Clear
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -208,17 +296,37 @@ export function PartyList() {
         <VirtualTable<PartyResponse>
           data={parties}
           columns={columns}
-          rowCount={rowCount}
+          rowCount={parties.length}
           isLoading={isLoading}
           resource="Party"
           onRowClick={handleRowClick}
+          onSelectionChange={setSelectedRows}
           enableColumnVisibility
-          enableMultiSort={false}
+          enableMultiSort
           pageSize={50}
-          emptyTitle="No contacts found"
-          emptyDescription="Try adjusting your filters or add a new contact"
+          tableId="party-list"
+          emptyTitle={`No ${t('party.plural')?.toLowerCase() ?? 'contacts'} yet`}
+          emptyDescription={`Add your first ${t('party.singular')?.toLowerCase() ?? 'contact'} to get started`}
+          {...(can('create', 'Party') ? {
+            emptyCta: {
+              label: `+ Add your first ${t('party.singular') ?? 'contact'}`,
+              onClick: () => navigate({ to: '/parties/new' }),
+            },
+          } : {})}
+          emptyIcon={
+            <div className="w-12 h-12 rounded-full bg-[#f5f1ec] flex items-center justify-center mb-4">
+              <Users size={20} className="text-[#9c9fa5]" />
+            </div>
+          }
         />
       </Card>
+
+      <BulkActionBar
+        selectedRows={selectedRows}
+        actions={bulkActions}
+        onClearSelection={() => setSelectedRows([])}
+        resource="Party"
+      />
     </div>
   );
 }

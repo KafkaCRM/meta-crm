@@ -1,9 +1,14 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { PartySource } from '@meta-crm/types';
 import type { PartyResponse } from '@meta-crm/types';
 import { partiesApi } from '@/api/parties';
 import { queryClient } from '@/lib/query-client';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Loader2, X, ChevronRight, ArrowLeft, GitMerge, CheckCircle2 } from 'lucide-react';
 
 interface MergeWizardProps {
   party: PartyResponse;
@@ -13,20 +18,49 @@ interface MergeWizardProps {
 
 type WizardStep = 'select-candidate' | 'review-diff' | 'confirm';
 
+const SOURCE_COLORS: Record<string, string> = {
+  [PartySource.WhatsApp]: 'bg-[#0bdf50]/10 text-[#0a7f2e] border-[#0bdf50]/20',
+  [PartySource.JustDial]: 'bg-[#ff8c00]/10 text-[#cc7000] border-[#ff8c00]/20',
+  [PartySource.Facebook]: 'bg-[#1877f2]/10 text-[#1565c0] border-[#1877f2]/20',
+  [PartySource.Manual]: 'bg-[#9c9fa5]/10 text-[#626260] border-[#9c9fa5]/20',
+  [PartySource.WebForm]: 'bg-[#8b5cf6]/10 text-[#7c3aed] border-[#8b5cf6]/20',
+  [PartySource.Api]: 'bg-[#ff5600]/10 text-[#cc4400] border-[#ff5600]/20',
+};
+
+function SourceBadge({ source }: { source: string }) {
+  const cls = SOURCE_COLORS[source] ?? 'bg-[#9c9fa5]/10 text-[#626260] border-[#9c9fa5]/20';
+  const label = source === PartySource.WhatsApp ? 'WhatsApp' : source === PartySource.JustDial ? 'JustDial' : source === PartySource.Facebook ? 'Facebook' : source === PartySource.WebForm ? 'Web Form' : source === PartySource.Manual ? 'Manual' : source;
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${cls}`}>
+      {label}
+    </span>
+  );
+}
+
+const DIFF_FIELDS = [
+  { key: 'name', label: 'Name' },
+  { key: 'phone_raw', label: 'Phone' },
+  { key: 'email', label: 'Email' },
+  { key: 'source', label: 'Source' },
+  { key: 'type', label: 'Type' },
+];
+
 export function MergeWizard({ party, onClose, onMergeComplete }: MergeWizardProps) {
   const [step, setStep] = useState<WizardStep>('select-candidate');
   const [selectedCandidate, setSelectedCandidate] = useState<PartyResponse | null>(null);
   const [canonicalId, setCanonicalId] = useState<string>(party.id);
+  const [fieldKeep, setFieldKeep] = useState<Record<string, 'left' | 'right'>>({});
 
   const { data: candidates, isLoading: candidatesLoading } = useQuery({
     queryKey: ['parties', 'candidates', party.phone_normalized, party.name],
-    queryFn: () =>
-      partiesApi.listCandidates(party.phone_normalized, party.name),
+    queryFn: () => partiesApi.listCandidates(party.phone_normalized, party.name),
     staleTime: 30_000,
   });
 
-  const filteredCandidates =
-    candidates?.data.filter((c) => c.id !== party.id && c.merge_status !== 'merged') ?? [];
+  const filteredCandidates = useMemo(
+    () => candidates?.data.filter((c) => c.id !== party.id && c.merge_status !== 'merged').slice(0, 5) ?? [],
+    [candidates, party.id],
+  );
 
   const mergeMutation = useMutation({
     mutationFn: () =>
@@ -37,6 +71,7 @@ export function MergeWizard({ party, onClose, onMergeComplete }: MergeWizardProp
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parties'] });
       queryClient.invalidateQueries({ queryKey: ['parties', canonicalId] });
+      toast.success('Parties merged successfully');
       onMergeComplete();
     },
     onError: () => {
@@ -46,20 +81,10 @@ export function MergeWizard({ party, onClose, onMergeComplete }: MergeWizardProp
 
   const handleSelectCandidate = useCallback((candidate: PartyResponse) => {
     setSelectedCandidate(candidate);
+    setCanonicalId(party.id);
+    setFieldKeep({});
     setStep('review-diff');
-  }, []);
-
-  const handleConfirmMerge = useCallback(() => {
-    mergeMutation.mutate();
-  }, [mergeMutation]);
-
-  const diffFields = [
-    { key: 'name', label: 'Name' },
-    { key: 'phone_raw', label: 'Phone' },
-    { key: 'email', label: 'Email' },
-    { key: 'source', label: 'Source' },
-    { key: 'type', label: 'Type' },
-  ];
+  }, [party.id]);
 
   const getFieldValue = (p: PartyResponse, key: string): string => {
     const val = (p as any)[key];
@@ -68,170 +93,266 @@ export function MergeWizard({ party, onClose, onMergeComplete }: MergeWizardProp
     return String(val);
   };
 
+  const canonicalParty = canonicalId === party.id ? party : selectedCandidate!;
+  const mergedParty = canonicalId === party.id ? selectedCandidate! : party;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="mx-auto max-w-3xl w-full rounded-lg bg-card p-6 shadow-lg max-h-[80vh] overflow-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold">Merge Parties</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="mx-auto max-w-4xl w-full rounded-xl bg-white shadow-2xl max-h-[90vh] overflow-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#d3cec6]">
+          <div className="flex items-center gap-2">
+            <GitMerge size={18} className="text-[#111111]" />
+            <h2 className="text-lg font-semibold text-[#111111]">Merge Parties</h2>
+          </div>
           <button
-            className="rounded-md p-1 hover:bg-muted"
+            className="rounded-md p-1.5 hover:bg-[#f5f1ec] transition-colors text-[#9c9fa5]"
             onClick={onClose}
             disabled={mergeMutation.isPending}
           >
-            ✕
+            <X size={16} />
           </button>
         </div>
 
-        {step === 'select-candidate' && (
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Select a party to merge with <strong>{party.name}</strong>
-            </p>
-
-            {candidatesLoading ? (
-              <div className="py-8 text-center text-muted-foreground">
-                Searching for candidates...
-              </div>
-            ) : filteredCandidates.length === 0 ? (
-              <div className="py-8 text-center text-muted-foreground">
-                No merge candidates found
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {filteredCandidates.map((candidate) => (
-                  <button
-                    key={candidate.id}
-                    className="flex w-full items-center justify-between rounded-md border p-3 text-left hover:bg-muted"
-                    onClick={() => handleSelectCandidate(candidate)}
-                  >
-                    <div>
-                      <p className="font-medium">{candidate.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {candidate.phone_raw} · {candidate.source}
-                      </p>
-                    </div>
-                    <span className="text-sm text-muted-foreground">
-                      Created {new Date(candidate.created_at).toLocaleDateString()}
+        {/* Step indicators */}
+        <div className="flex items-center gap-0 px-6 py-3 bg-[#faf9f7] border-b border-[#d3cec6]">
+          {(['select-candidate', 'review-diff', 'confirm'] as WizardStep[]).map((s, i) => {
+            const stepLabels = ['Select Candidate', 'Review Differences', 'Confirm'];
+            const isActive = step === s;
+            const isPast = (step === 'review-diff' && i === 0) || step === 'confirm';
+            return (
+              <div key={s} className="flex items-center gap-2">
+                <div className={`flex items-center gap-1.5 text-sm ${
+                  isActive ? 'text-[#111111] font-medium' : isPast ? 'text-[#0bdf50]' : 'text-[#9c9fa5]'
+                }`}>
+                  {isPast ? (
+                    <CheckCircle2 size={14} />
+                  ) : (
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${
+                      isActive ? 'bg-[#111111] text-white' : 'bg-[#d3cec6] text-[#626260]'
+                    }`}>
+                      {i + 1}
                     </span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {step === 'review-diff' && selectedCandidate && (
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Compare attributes and select the canonical record
-            </p>
-
-            <div className="grid grid-cols-3 gap-4 text-sm">
-              <div className="font-medium">Field</div>
-              <div className="font-medium">{party.name} (Current)</div>
-              <div className="font-medium">{selectedCandidate.name} (Candidate)</div>
-            </div>
-
-            {diffFields.map(({ key, label }) => {
-              const valA = getFieldValue(party, key);
-              const valB = getFieldValue(selectedCandidate, key);
-              const differs = valA !== valB;
-
-              return (
-                <div
-                  key={key}
-                  className={`grid grid-cols-3 gap-4 rounded-md p-2 ${
-                    differs ? 'bg-amber-50' : ''
-                  }`}
-                >
-                  <div className="font-medium text-muted-foreground">{label}</div>
-                  <div
-                    className={`cursor-pointer rounded px-2 py-1 ${
-                      canonicalId === party.id ? 'ring-2 ring-blue-500' : ''
-                    }`}
-                    onClick={() => setCanonicalId(party.id)}
-                  >
-                    {valA}
-                  </div>
-                  <div
-                    className={`cursor-pointer rounded px-2 py-1 ${
-                      canonicalId === selectedCandidate.id ? 'ring-2 ring-blue-500' : ''
-                    }`}
-                    onClick={() => setCanonicalId(selectedCandidate.id)}
-                  >
-                    {valB}
-                  </div>
+                  )}
+                  <span className="hidden sm:inline">{stepLabels[i]}</span>
                 </div>
-              );
-            })}
+                {i < 2 && <ChevronRight size={14} className="text-[#d3cec6]" />}
+              </div>
+            );
+          })}
+        </div>
 
-            <div className="mt-4 rounded-md bg-blue-50 p-3 text-sm text-blue-800">
-              <p className="font-medium">Canonical record: {canonicalId === party.id ? party.name : selectedCandidate.name}</p>
-              <p className="text-blue-600">
-                The non-canonical party will be marked as merged. All cases and interactions will be transferred to the canonical record.
+        <div className="p-6">
+          {/* Step 1: Candidate selection */}
+          {step === 'select-candidate' && (
+            <div className="space-y-4">
+              <p className="text-sm text-[#626260]">
+                Select a party to merge with <strong className="text-[#111111]">{party.name}</strong>
               </p>
-            </div>
 
-            <div className="flex gap-2 pt-2">
-              <button
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                onClick={() => setStep('confirm')}
-              >
-                Continue
-              </button>
-              <button
-                className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
-                onClick={() => setStep('select-candidate')}
-                disabled={mergeMutation.isPending}
-              >
-                Back
-              </button>
+              {candidatesLoading ? (
+                <div className="py-12 text-center">
+                  <Loader2 size={20} className="animate-spin mx-auto text-[#9c9fa5]" />
+                  <p className="text-sm text-[#9c9fa5] mt-2">Searching for candidates...</p>
+                </div>
+              ) : filteredCandidates.length === 0 ? (
+                <div className="py-12 text-center">
+                  <p className="text-sm text-[#9c9fa5]">No merge candidates found</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {filteredCandidates.map((candidate) => (
+                    <button
+                      key={candidate.id}
+                      className="flex w-full items-center justify-between rounded-lg border border-[#d3cec6] p-4 text-left hover:bg-[#f5f1ec] transition-colors"
+                      onClick={() => handleSelectCandidate(candidate)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-[#111111] flex items-center justify-center text-white font-medium text-sm">
+                          {candidate.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-medium text-[#111111]">{candidate.name}</p>
+                          <p className="text-sm text-[#626260]">
+                            {candidate.phone_raw} · <SourceBadge source={candidate.source} />
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-[#9c9fa5]">
+                          Created {new Date(candidate.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          )}
 
-        {step === 'confirm' && selectedCandidate && (
-          <div className="space-y-4">
-            <div className="rounded-md border border-amber-200 bg-amber-50 p-4">
-              <p className="font-medium text-amber-800">Confirm Merge</p>
-              <p className="text-sm text-amber-700 mt-1">
-                This will merge{' '}
-                <strong>
-                  {canonicalId === party.id ? selectedCandidate.name : party.name}
-                </strong>{' '}
-                into{' '}
-                <strong>
-                  {canonicalId === party.id ? party.name : selectedCandidate.name}
-                </strong>
-                . This action cannot be undone.
+          {/* Step 2: Diff view */}
+          {step === 'review-diff' && selectedCandidate && (
+            <div className="space-y-4">
+              <p className="text-sm text-[#626260]">
+                Compare fields and choose which values to keep
               </p>
-            </div>
 
-            <div className="flex gap-2">
-              <button
-                className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
-                onClick={handleConfirmMerge}
-                disabled={mergeMutation.isPending}
-              >
-                {mergeMutation.isPending ? 'Merging...' : 'Confirm Merge'}
-              </button>
-              <button
-                className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
-                onClick={() => setStep('review-diff')}
-                disabled={mergeMutation.isPending}
-              >
-                Back
-              </button>
-              <button
-                className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
-                onClick={onClose}
-                disabled={mergeMutation.isPending}
-              >
-                Cancel
-              </button>
+              <div className="grid grid-cols-4 gap-3 text-sm font-medium text-[#9c9fa5] pb-2 border-b border-[#d3cec6]">
+                <div>Field</div>
+                <div>{party.name}</div>
+                <div>{selectedCandidate.name}</div>
+                <div>Keep</div>
+              </div>
+
+              {DIFF_FIELDS.map(({ key, label }) => {
+                const valA = getFieldValue(party, key);
+                const valB = getFieldValue(selectedCandidate, key);
+                const differs = valA !== valB;
+                const keep = fieldKeep[key] ?? (canonicalId === party.id ? 'left' : 'right');
+
+                return (
+                  <div
+                    key={key}
+                    className={`grid grid-cols-4 gap-3 rounded-lg p-3 text-sm items-center ${
+                      differs ? 'bg-amber-50/60 border border-amber-200/60' : ''
+                    }`}
+                  >
+                    <div className="font-medium text-[#626260]">{label}</div>
+                    <div
+                      className={`rounded-md px-2.5 py-1.5 cursor-pointer transition-colors ${
+                        keep === 'left' ? 'bg-[#111111] text-white' : 'bg-[#f5f1ec] text-[#111111]'
+                      }`}
+                      onClick={() => { setCanonicalId(party.id); setFieldKeep((prev) => ({ ...prev, [key]: 'left' })); }}
+                    >
+                      {valA}
+                    </div>
+                    <div
+                      className={`rounded-md px-2.5 py-1.5 cursor-pointer transition-colors ${
+                        keep === 'right' ? 'bg-[#111111] text-white' : 'bg-[#f5f1ec] text-[#111111]'
+                      }`}
+                      onClick={() => { setCanonicalId(selectedCandidate.id); setFieldKeep((prev) => ({ ...prev, [key]: 'right' })); }}
+                    >
+                      {valB}
+                    </div>
+                    <div className="text-xs text-[#9c9fa5]">
+                      {differs ? (
+                        <span className="text-amber-600 font-medium">Differs</span>
+                      ) : (
+                        <span className="text-[#0bdf50]">Same</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              <div className="flex gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const allLeft: Record<string, 'left' | 'right'> = {};
+                    DIFF_FIELDS.forEach((f) => { allLeft[f.key] = 'left'; });
+                    setFieldKeep(allLeft);
+                    setCanonicalId(party.id);
+                  }}
+                  className="h-8 text-xs border-[#d3cec6]"
+                >
+                  Keep all left
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const allRight: Record<string, 'left' | 'right'> = {};
+                    DIFF_FIELDS.forEach((f) => { allRight[f.key] = 'right'; });
+                    setFieldKeep(allRight);
+                    setCanonicalId(selectedCandidate.id);
+                  }}
+                  className="h-8 text-xs border-[#d3cec6]"
+                >
+                  Keep all right
+                </Button>
+              </div>
+
+              <div className="rounded-lg bg-[#3b82f6]/5 border border-[#3b82f6]/20 p-3 text-sm">
+                <p className="font-medium text-[#111111]">
+                  Canonical record: <span className="text-[#3b82f6]">{canonicalParty.name}</span>
+                </p>
+                <p className="text-[#626260] mt-1">
+                  {mergedParty.name} will be marked as merged. All cases and interactions will transfer.
+                </p>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <Button
+                  onClick={() => setStep('confirm')}
+                  className="bg-[#111111] hover:bg-black text-white rounded-lg h-9 text-sm font-medium"
+                >
+                  Continue
+                  <ChevronRight size={14} className="ml-1" />
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setStep('select-candidate')}
+                  disabled={mergeMutation.isPending}
+                  className="h-9 text-sm border-[#d3cec6]"
+                >
+                  <ArrowLeft size={14} className="mr-1" />
+                  Back
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+
+          {/* Step 3: Confirmation */}
+          {step === 'confirm' && selectedCandidate && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-amber-200 bg-amber-50/80 p-4">
+                <p className="font-semibold text-amber-800">Confirm Merge</p>
+                <p className="text-sm text-amber-700 mt-1">
+                  This will merge{' '}
+                  <strong>{mergedParty.name}</strong>{' '}
+                  into{' '}
+                  <strong>{canonicalParty.name}</strong>.
+                </p>
+                <p className="text-xs text-amber-600 mt-2">
+                  This action cannot be undone. All cases, interactions, and relationships from the merged party will be transferred to the canonical record.
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => mergeMutation.mutate()}
+                  disabled={mergeMutation.isPending}
+                  className="bg-[#c41c1c] hover:bg-[#a01818] text-white rounded-lg h-9 text-sm font-medium"
+                >
+                  {mergeMutation.isPending ? (
+                    <Loader2 size={14} className="mr-1.5 animate-spin" />
+                  ) : (
+                    <GitMerge size={14} className="mr-1.5" />
+                  )}
+                  {mergeMutation.isPending ? 'Merging...' : 'Confirm Merge'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setStep('review-diff')}
+                  disabled={mergeMutation.isPending}
+                  className="h-9 text-sm border-[#d3cec6]"
+                >
+                  Back
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={onClose}
+                  disabled={mergeMutation.isPending}
+                  className="h-9 text-sm border-[#d3cec6]"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
