@@ -1,0 +1,38 @@
+{
+  "name": "Retail Sale Pipeline",
+  "entity_type": "order",
+  "field_definitions": {
+    "Party": [
+      { "name": "preferred_category", "label": "Preferred Category", "field_type": "select", "options": ["Fashion", "Electronics", "Home & Living", "Groceries", "Beauty"], "order": 1 },
+      { "name": "loyalty_tier", "label": "Loyalty Tier", "field_type": "select", "options": ["Bronze", "Silver", "Gold", "Platinum"], "order": 2 }
+    ],
+    "Case": [
+      { "name": "order_value", "label": "Order Value", "field_type": "number", "order": 1 },
+      { "name": "payment_method", "label": "Payment Method", "field_type": "select", "options": ["Credit Card", "PayPal", "Cash on Delivery", "Bank Transfer"], "order": 2 }
+    ]
+  },
+  "workflow_definition": {
+    "name": "Retail Sale Pipeline",
+    "entity_type": "order",
+    "stages": [
+      { "name": "New Order", "order": 0, "entry_criteria": [], "sla_hours": 12 },
+      { "name": "Processing", "order": 1, "entry_criteria": [], "sla_hours": 24 },
+      { "name": "Shipped", "order": 2, "entry_criteria": [], "sla_hours": 72 },
+      { "name": "Delivered", "order": 3, "entry_criteria": [], "sla_hours": null },
+      { "name": "Returned", "order": 4, "entry_criteria": [], "sla_hours": null }
+    ],
+    "transitions": [
+      { "from_stage": "New Order", "to_stage": "Processing" },
+      { "from_stage": "Processing", "to_stage": "Shipped" },
+      { "from_stage": "Shipped", "to_stage": "Delivered" },
+      { "from_stage": "Processing", "to_stage": "Returned" },
+      { "from_stage": "Delivered", "to_stage": "Returned" }
+    ]
+  },
+  "label_overrides": {
+    "party.singular": "Customer",
+    "party.plural": "Customers",
+    "case.singular": "Order",
+    "case.plural": "Orders"
+  }
+}
