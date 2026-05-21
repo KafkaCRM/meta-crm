@@ -42,7 +42,11 @@ export function PlanForm({ planId }: PlanFormProps) {
       setMaxBranches(plan.max_branches);
       setMaxUsers(plan.max_users);
       setMaxPlugins(plan.max_plugins);
-      setPriceMonthly(plan.price_monthly !== null && plan.price_monthly !== undefined ? plan.price_monthly : '');
+      setPriceMonthly(
+        plan.price_monthly !== null && plan.price_monthly !== undefined
+          ? parseFloat(String(plan.price_monthly))
+          : ''
+      );
     }
   }, [plan]);
 

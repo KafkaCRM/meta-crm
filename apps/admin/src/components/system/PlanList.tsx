@@ -32,8 +32,9 @@ export function PlanList() {
         cell: ({ row }) => {
           const val = row.original.price_monthly;
           if (val === null || val === undefined) return 'Free';
-          if (val === 0) return 'Free';
-          return `$${val.toFixed(2)}/mo`;
+          const num = parseFloat(String(val));
+          if (isNaN(num) || num === 0) return 'Free';
+          return `$${num.toFixed(2)}/mo`;
         },
       },
       {
