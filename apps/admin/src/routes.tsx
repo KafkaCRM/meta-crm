@@ -1,4 +1,5 @@
-import { createRouter, createRoute, createRootRoute, Outlet } from '@tanstack/react-router';
+import { createRouter, createRoute, createRootRoute, Outlet, useNavigate } from '@tanstack/react-router';
+import { useEffect } from 'react';
 import { AuthProvider, useAuth } from '@/contexts/auth.context';
 import { LoginPage } from '@/components/LoginPage';
 import { UnauthorizedPage } from '@/components/UnauthorizedPage';
@@ -71,10 +72,23 @@ const rootRoute = createRootRoute({
 /*  Login & unauthorized                                               */
 /* ------------------------------------------------------------------ */
 
+function LoginRouteComponent() {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate({ from: '/login' });
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate({ to: '/' });
+    }
+  }, [isAuthenticated, navigate]);
+
+  return <LoginPage />;
+}
+
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/login',
-  component: LoginPage,
+  component: LoginRouteComponent,
 });
 
 const unauthorizedRoute = createRoute({
