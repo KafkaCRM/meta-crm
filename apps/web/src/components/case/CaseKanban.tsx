@@ -10,6 +10,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { produce } from 'immer';
 import { evaluateVisibilityRules } from '@meta-crm/types';
@@ -70,6 +71,7 @@ function evaluateCriteriaForStage(
 }
 
 export function CaseKanban({ workflowDefinitionId }: CaseKanbanProps) {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { can } = usePermissions();
 
@@ -285,8 +287,8 @@ export function CaseKanban({ workflowDefinitionId }: CaseKanbanProps) {
   }, []);
 
   const handleAddCase = useCallback((_stageId: string) => {
-    toast.info('Create case form coming in TASK-022');
-  }, []);
+    navigate({ to: '/cases/new' });
+  }, [navigate]);
 
   const activeCase = useMemo(() => {
     if (!activeId) return null;
@@ -558,7 +560,7 @@ export function CaseKanban({ workflowDefinitionId }: CaseKanbanProps) {
             resource="Case"
             tableId="cases-list"
             onRowClick={(row) => {
-              toast.info(`Open case ${row.title}`);
+              navigate({ to: '/cases/$id', params: { id: row.id } });
             }}
             onSelectionChange={handleSelectionChange}
           />
