@@ -24,6 +24,18 @@ export const INDUSTRY_PRESETS: Record<string, Record<string, string>> = {
     'party.singular': 'Lead',
     'party.plural': 'Leads',
   },
+  retail: {
+    'party.singular': 'Customer',
+    'party.plural': 'Customers',
+  },
+  technology: {
+    'party.singular': 'Account',
+    'party.plural': 'Accounts',
+  },
+  finance: {
+    'party.singular': 'Client',
+    'party.plural': 'Clients',
+  },
 };
 
 export function resolveLabel(key: string, overrides: Record<string, string>, industry?: string): string {
