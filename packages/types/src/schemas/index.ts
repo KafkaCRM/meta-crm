@@ -74,3 +74,15 @@ export type {
 
 export { CursorPaginatedResponseSchema, CursorQuerySchema } from './pagination.schema';
 export type { CursorQuery } from './pagination.schema';
+
+export {
+  FrontendPluginManifestSchema,
+  TenantActiveModulesSchema,
+} from './plugin.schema';
+
+export type {
+  FrontendPluginManifest,
+  TenantActiveModules,
+  SlotContextData,
+} from './plugin.schema';
+

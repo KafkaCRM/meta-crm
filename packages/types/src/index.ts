@@ -29,6 +29,8 @@ export {
   InteractionListResponseSchema,
   CursorPaginatedResponseSchema,
   CursorQuerySchema,
+  FrontendPluginManifestSchema,
+  TenantActiveModulesSchema,
 } from './schemas';
 
 export type {
@@ -58,6 +60,9 @@ export type {
   TimelineItem,
   InteractionListResponse,
   CursorQuery,
+  FrontendPluginManifest,
+  TenantActiveModules,
+  SlotContextData,
 } from './schemas';
 
 // DTOs
