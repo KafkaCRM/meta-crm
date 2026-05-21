@@ -75,6 +75,7 @@ model User {
   userRoles UserRole[]
   parties   Party[]
   cases     Case[]       @relation("AssignedCases")
+  appointments Appointment[]
 
   @@unique([email, tenant_id])
 }
