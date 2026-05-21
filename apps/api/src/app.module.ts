@@ -15,9 +15,20 @@ import { PlatformModule } from './platform/platform.module';
 import { GenericWebhookModule } from './integrations/generic-webhook/generic-webhook.module';
 import { WhatsAppModule } from './integrations/whatsapp/whatsapp.module';
 import { EnrollmentModule } from './capabilities/enrollment/enrollment.module';
+import { CapabilityModule } from './core/capability/capability.module';
+import { AppointmentModule } from './capabilities/appointment/appointment.module';
+import { BillingModule } from './capabilities/billing/billing.module';
+import { PropertyModule } from './capabilities/property/property.module';
+import { OrderManagementModule } from './capabilities/order-management/order-management.module';
+import { CustomerOnboardingModule } from './capabilities/customer-onboarding/customer-onboarding.module';
 
 const CAPABILITY_MODULES = [
   EnrollmentModule,
+  AppointmentModule,
+  BillingModule,
+  PropertyModule,
+  OrderManagementModule,
+  CustomerOnboardingModule,
 ];
 
 @Module({
@@ -44,6 +55,7 @@ const CAPABILITY_MODULES = [
     PlatformModule,
     GenericWebhookModule,
     WhatsAppModule,
+    CapabilityModule,
     ...CAPABILITY_MODULES,
   ],
 })
