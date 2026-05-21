@@ -61,6 +61,7 @@ const navItems = [
     items: [
       { label: 'Dashboard', path: '/', icon: LayoutDashboard },
       { label: 'Contacts', path: '/parties', icon: Users },
+      { label: 'Cases', path: '/cases', icon: Workflow },
     ],
   },
   {
@@ -372,6 +373,12 @@ import {
 } from './routes/party';
 
 import {
+  casesRoute,
+  casesNewRoute,
+  caseDetailRoute,
+} from './routes/case';
+
+import {
   settingsRoute,
   settingsBranchesRoute,
   settingsBrandsRoute,
@@ -397,6 +404,9 @@ export const routeTree = rootRoute.addChildren([
   partiesNewRoute,
   partyDetailRoute,
   partyEditRoute,
+  casesRoute,
+  casesNewRoute,
+  caseDetailRoute,
   settingsRoute,
   settingsBranchesRoute,
   settingsBrandsRoute,
