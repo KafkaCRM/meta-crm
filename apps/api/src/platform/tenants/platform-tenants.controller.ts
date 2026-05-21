@@ -14,7 +14,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { IsString, IsOptional, IsNumber, Min, Max, IsEmail, ValidateNested } from 'class-validator';
+import { IsString, IsOptional, IsNumber, Min, Max, IsEmail, ValidateNested, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { PlatformPermissionsGuard } from '../../core/permissions/permissions.guard';
@@ -62,6 +62,12 @@ class TenantListQuery {
 class ApplyTemplateBody {
   @IsString()
   industry!: string;
+}
+
+class UpdateEntitlementsBody {
+  @IsArray()
+  @IsString({ each: true })
+  plugin_ids!: string[];
 }
 
 @Controller('platform/tenants')
@@ -154,5 +160,22 @@ export class PlatformTenantsController {
       }
     }
     return { message: 'Template applied' };
+  }
+
+  @Patch(':id/entitlements')
+  @HttpCode(HttpStatus.OK)
+  @CheckPlatformPermissions('update', 'Billing')
+  async updateEntitlements(
+    @Param('id') id: string,
+    @Body() body: UpdateEntitlementsBody,
+  ) {
+    const result = await this.service.updateEntitlements(id, body.plugin_ids);
+    if (result.isErr()) {
+      if (result.error.code === 'TENANT_NOT_FOUND') {
+        throw new NotFoundException(result.error);
+      }
+      throw new InternalServerErrorException(result.error);
+    }
+    return result.value;
   }
 }

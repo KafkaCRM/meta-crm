@@ -62,6 +62,7 @@ export interface TenantDetail {
   branch_count: number;
   user_count: number;
   plugin_list: string[];
+  plugin_ids: string[];
 }
 
 @Injectable()
@@ -83,7 +84,7 @@ export class PlatformTenantsService {
     const page = hasMore ? tenants.slice(0, limit) : tenants;
 
     const data: TenantListItem[] = await Promise.all(
-      page.map(async (t) => {
+      page.map(async (t: any) => {
         const [branchCount, userCount, caseCount] = await Promise.all([
           this.db.client.branch.count({ where: { tenant_id: t.id } }),
           this.db.client.user.count({ where: { tenant_id: t.id } }),
@@ -120,7 +121,7 @@ export class PlatformTenantsService {
       this.db.client.user.count({ where: { tenant_id: id } }),
       this.db.client.tenantPlugin.findMany({
         where: { tenant_id: id },
-        include: { pluginRegistry: { select: { package_name: true } } },
+        include: { pluginRegistry: { select: { id: true, package_name: true } } },
       }),
     ]);
 
@@ -133,8 +134,58 @@ export class PlatformTenantsService {
       created_at: tenant.created_at,
       branch_count: branchCount,
       user_count: userCount,
-      plugin_list: plugins.map((p) => p.pluginRegistry.package_name),
+      plugin_list: plugins.map((p: any) => p.pluginRegistry.package_name),
+      plugin_ids: plugins.map((p: any) => p.pluginRegistry.id),
     });
+  }
+
+  async updateEntitlements(
+    id: string,
+    pluginIds: string[],
+  ): Promise<Result<TenantDetail, PlatformTenantError>> {
+    const tenant = await this.db.client.tenant.findUnique({ where: { id } });
+    if (!tenant) {
+      return err({ code: 'TENANT_NOT_FOUND', message: 'Tenant not found' });
+    }
+
+    try {
+      await this.db.client.$transaction(async (tx: any) => {
+        const existing = await tx.tenantPlugin.findMany({
+          where: { tenant_id: id },
+        });
+
+        const existingRegIds = existing.map((p: any) => p.plugin_registry_id);
+
+        const toDeleteRegIds = existingRegIds.filter((regId: string) => !pluginIds.includes(regId));
+        const toCreateRegIds = pluginIds.filter((regId: string) => !existingRegIds.includes(regId));
+
+        if (toDeleteRegIds.length > 0) {
+          await tx.tenantPlugin.deleteMany({
+            where: {
+              tenant_id: id,
+              plugin_registry_id: { in: toDeleteRegIds },
+            },
+          });
+        }
+
+        if (toCreateRegIds.length > 0) {
+          await tx.tenantPlugin.createMany({
+            data: toCreateRegIds.map((regId: string) => ({
+              tenant_id: id,
+              plugin_registry_id: regId,
+              enabled: true,
+            })),
+          });
+        }
+      });
+
+      return this.findOne(id);
+    } catch (e: any) {
+      return err({
+        code: 'TRANSACTION_FAILED',
+        message: e?.message ?? 'Transaction failed to update entitlements',
+      });
+    }
   }
 
   async create(input: CreateTenantInput): Promise<Result<CreateTenantResponse, PlatformTenantError>> {
@@ -152,7 +203,7 @@ export class PlatformTenantsService {
     const passwordHash = await bcrypt.hash(temporaryPassword, BCRYPT_COST);
 
     try {
-      const tenant = await this.db.client.$transaction(async (tx) => {
+      const tenant = await this.db.client.$transaction(async (tx: any) => {
         const t = await tx.tenant.create({
           data: {
             name: input.name,
