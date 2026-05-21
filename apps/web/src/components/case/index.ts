@@ -7,3 +7,4 @@ export { StageBar } from './StageBar';
 export { CaseAttributePanel } from './CaseAttributePanel';
 export { Timeline } from './Timeline';
 export { ComposeBar } from './ComposeBar';
+export { CaseForm } from './CaseForm';
