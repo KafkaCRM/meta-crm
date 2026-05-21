@@ -12,6 +12,7 @@ import { StageBar } from './StageBar';
 import { CaseAttributePanel } from './CaseAttributePanel';
 import { Timeline } from './Timeline';
 import { ComposeBar } from './ComposeBar';
+import { PluginSlot, usePluginTabs } from '@/lib/plugins';
 
 interface CaseDetailProps {
   caseId: string;
@@ -141,6 +142,9 @@ export function CaseDetail({ caseId, onBack }: CaseDetailProps) {
 
   const currentStage = stages?.find((s) => s.id === caseData.stage);
 
+  const { tabs: pluginTabs } = usePluginTabs({ caseId, caseData });
+  const [activeTab, setActiveTab] = useState<string>('timeline');
+
   return (
     <div className="flex flex-col h-[calc(100vh-60px)]">
       <div className="flex-shrink-0 border-b bg-card px-4 py-3">
@@ -185,31 +189,73 @@ export function CaseDetail({ caseId, onBack }: CaseDetailProps) {
         )}
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1 flex flex-col min-w-0">
-          <div className="flex-1 overflow-hidden flex flex-col">
-            <Timeline
-              items={timelineItems}
-              isLoading={timelineLoading}
-              hasNextPage={hasNextPage ?? false}
-              fetchNextPage={fetchNextPage}
-            />
-          </div>
+      {/* Tabs navigation for left panel */}
+      {pluginTabs.length > 0 && (
+        <div className="flex-shrink-0 bg-surface-1 border-b border-hairline px-4 py-2 flex items-center gap-2">
+          <button
+            onClick={() => setActiveTab('timeline')}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+              activeTab === 'timeline'
+                ? 'bg-primary text-primary-foreground'
+                : 'text-ink-muted hover:bg-surface-2 hover:text-ink'
+            }`}
+          >
+            Activity Timeline
+          </button>
+          {pluginTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                activeTab === tab.id
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-ink-muted hover:bg-surface-2 hover:text-ink'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
 
-          {can('create', 'Interaction') && caseData.party_id && (
-            <ComposeBar
-              caseId={caseId}
-              partyId={caseData.party_id}
-              availableChannels={[Channel.WhatsApp, Channel.Email, Channel.Note]}
-            />
+      <div className="flex flex-1 overflow-hidden">
+        <div className="flex-1 flex flex-col min-w-0 bg-surface-1">
+          {activeTab === 'timeline' ? (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex-1 overflow-hidden flex flex-col">
+                <Timeline
+                  items={timelineItems}
+                  isLoading={timelineLoading}
+                  hasNextPage={hasNextPage ?? false}
+                  fetchNextPage={fetchNextPage}
+                />
+              </div>
+
+              {can('create', 'Interaction') && caseData.party_id && (
+                <ComposeBar
+                  caseId={caseId}
+                  partyId={caseData.party_id}
+                  availableChannels={[Channel.WhatsApp, Channel.Email, Channel.Note]}
+                />
+              )}
+            </div>
+          ) : (
+            <div className="flex-1 overflow-hidden p-4">
+              {pluginTabs.map((tab) => {
+                if (tab.id !== activeTab) return null;
+                const Component = tab.Component;
+                return <Component key={tab.id} caseId={caseId} caseData={caseData} />;
+              })}
+            </div>
           )}
         </div>
 
-        <div className="w-80 border-l overflow-auto flex-shrink-0 p-4 space-y-4">
+        <div className="w-80 border-l overflow-auto flex-shrink-0 p-4 space-y-4 bg-canvas">
           <CaseAttributePanel
             caseData={caseData}
             fields={ATTRIBUTE_FIELDS}
           />
+          <PluginSlot anchor="CaseSidePanel" context={{ caseId, caseData }} />
         </div>
       </div>
     </div>
