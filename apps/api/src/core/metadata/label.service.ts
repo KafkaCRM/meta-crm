@@ -38,6 +38,24 @@ export const INDUSTRY_DEFAULTS: Record<string, Record<string, string>> = {
     'case.singular': 'Deal',
     'case.plural': 'Deals',
   },
+  retail: {
+    'party.singular': 'Customer',
+    'party.plural': 'Customers',
+    'case.singular': 'Order',
+    'case.plural': 'Orders',
+  },
+  technology: {
+    'party.singular': 'Account',
+    'party.plural': 'Accounts',
+    'case.singular': 'Onboarding',
+    'case.plural': 'Onboardings',
+  },
+  finance: {
+    'party.singular': 'Client',
+    'party.plural': 'Clients',
+    'case.singular': 'Case',
+    'case.plural': 'Cases',
+  },
 };
 
 @Injectable()
