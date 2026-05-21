@@ -47,47 +47,69 @@ import {
   UserCog,
   Layers,
   Sliders,
+  Calendar,
+  Receipt,
+  Home,
+  ShoppingCart,
+  ClipboardList,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
+import { useCapabilities } from '@/hooks/useCapabilities';
 
 /* ------------------------------------------------------------------ */
 /*  App Shell Sidebar                                                  */
 /* ------------------------------------------------------------------ */
 
-const navItems = [
-  {
-    group: 'Main',
-    items: [
-      { label: 'Dashboard', path: '/', icon: LayoutDashboard },
-      { label: 'Contacts', path: '/parties', icon: Users },
-      { label: 'Cases', path: '/cases', icon: Workflow },
-    ],
-  },
-  {
-    group: 'Settings',
-    items: [
-      { label: 'Users', path: '/settings/users', icon: UserCog },
-      { label: 'Roles', path: '/settings/roles', icon: Shield },
-      { label: 'Branches', path: '/settings/branches', icon: GitBranch },
-      { label: 'Brands', path: '/settings/brands', icon: Building2 },
-      { label: 'Workflows', path: '/settings/workflows', icon: Workflow },
-      { label: 'Fields', path: '/settings/fields', icon: Sliders },
-      { label: 'Labels', path: '/settings/labels', icon: Tags },
-      { label: 'Capabilities', path: '/settings/capabilities', icon: Layers },
-      { label: 'Plugins', path: '/settings/plugins', icon: Puzzle },
-      { label: 'Integrations', path: '/settings/integrations', icon: Link2 },
-    ],
-  },
-];
-
 function AppSidebar() {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const { isEnabled } = useCapabilities();
 
   const initials = user?.name
     ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : 'U';
+
+  const dynamicNavItems = [
+    {
+      group: 'Main',
+      items: [
+        { label: 'Dashboard', path: '/', icon: LayoutDashboard },
+        { label: 'Contacts', path: '/parties', icon: Users },
+        { label: 'Cases', path: '/cases', icon: Workflow },
+        ...(isEnabled('capability/appointment')
+          ? [{ label: 'Appointments', path: '/appointments', icon: Calendar }]
+          : []),
+        ...(isEnabled('capability/billing')
+          ? [{ label: 'Invoices', path: '/invoices', icon: Receipt }]
+          : []),
+        ...(isEnabled('capability/property-listing')
+          ? [{ label: 'Properties', path: '/properties', icon: Home }]
+          : []),
+        ...(isEnabled('capability/order-management')
+          ? [{ label: 'Orders', path: '/orders', icon: ShoppingCart }]
+          : []),
+        ...(isEnabled('capability/customer-onboarding')
+          ? [{ label: 'Onboardings', path: '/onboardings', icon: ClipboardList }]
+          : []),
+      ],
+    },
+    {
+      group: 'Settings',
+      items: [
+        { label: 'Users', path: '/settings/users', icon: UserCog },
+        { label: 'Roles', path: '/settings/roles', icon: Shield },
+        { label: 'Branches', path: '/settings/branches', icon: GitBranch },
+        { label: 'Brands', path: '/settings/brands', icon: Building2 },
+        { label: 'Workflows', path: '/settings/workflows', icon: Workflow },
+        { label: 'Fields', path: '/settings/fields', icon: Sliders },
+        { label: 'Labels', path: '/settings/labels', icon: Tags },
+        { label: 'Capabilities', path: '/settings/capabilities', icon: Layers },
+        { label: 'Plugins', path: '/settings/plugins', icon: Puzzle },
+        { label: 'Integrations', path: '/settings/integrations', icon: Link2 },
+      ],
+    },
+  ];
 
   return (
     <Sidebar className="border-r border-[#d3cec6] bg-[#ebe7e1]">
@@ -101,7 +123,7 @@ function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="px-2 py-3">
-        {navItems.map((group) => (
+        {dynamicNavItems.map((group) => (
           <SidebarGroup key={group.group}>
             <SidebarGroupLabel className="text-[#9c9fa5] text-xs font-medium px-2 mb-1 uppercase tracking-wider">
               {group.group}
@@ -404,6 +426,12 @@ import {
   settingsIntegrationsRoute,
 } from './routes/settings';
 
+import { appointmentsRoute } from './routes/appointments';
+import { billingRoute } from './routes/billing';
+import { propertiesRoute } from './routes/properties';
+import { ordersRoute } from './routes/orders';
+import { onboardingsRoute } from './routes/onboardings';
+
 /* ------------------------------------------------------------------ */
 /*  Route tree + router                                                */
 /* ------------------------------------------------------------------ */
@@ -418,6 +446,11 @@ export const routeTree = rootRoute.addChildren([
   casesRoute,
   casesNewRoute,
   caseDetailRoute,
+  appointmentsRoute,
+  billingRoute,
+  propertiesRoute,
+  ordersRoute,
+  onboardingsRoute,
   settingsRoute,
   settingsBranchesRoute,
   settingsBrandsRoute,
