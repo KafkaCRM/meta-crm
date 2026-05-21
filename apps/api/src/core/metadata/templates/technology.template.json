@@ -1,0 +1,39 @@
+{
+  "name": "Tech Account Pipeline",
+  "entity_type": "onboarding",
+  "field_definitions": {
+    "Party": [
+      { "name": "company_size", "label": "Company Size", "field_type": "select", "options": ["1-10", "11-50", "51-200", "201-1000", "1000+"], "order": 1 },
+      { "name": "tech_stack", "label": "Tech Stack", "field_type": "text", "order": 2 }
+    ],
+    "Case": [
+      { "name": "contract_value", "label": "Contract Value", "field_type": "number", "order": 1 },
+      { "name": "setup_completed", "label": "Setup Completed", "field_type": "boolean", "order": 2 }
+    ]
+  },
+  "workflow_definition": {
+    "name": "Tech Account Pipeline",
+    "entity_type": "onboarding",
+    "stages": [
+      { "name": "Prospect", "order": 0, "entry_criteria": [], "sla_hours": 48 },
+      { "name": "Trial Active", "order": 1, "entry_criteria": [], "sla_hours": 168 },
+      { "name": "Onboarding", "order": 2, "entry_criteria": [], "sla_hours": 72 },
+      { "name": "Active Account", "order": 3, "entry_criteria": [], "sla_hours": null },
+      { "name": "Churned", "order": 4, "entry_criteria": [], "sla_hours": null }
+    ],
+    "transitions": [
+      { "from_stage": "Prospect", "to_stage": "Trial Active" },
+      { "from_stage": "Trial Active", "to_stage": "Onboarding" },
+      { "from_stage": "Onboarding", "to_stage": "Active Account" },
+      { "from_stage": "Trial Active", "to_stage": "Churned" },
+      { "from_stage": "Onboarding", "to_stage": "Churned" },
+      { "from_stage": "Active Account", "to_stage": "Churned" }
+    ]
+  },
+  "label_overrides": {
+    "party.singular": "Lead",
+    "party.plural": "Leads",
+    "case.singular": "Onboarding",
+    "case.plural": "Onboardings"
+  }
+}
