@@ -21,11 +21,16 @@ import {
   Download,
 } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
+import { useCapabilities } from '@/hooks/useCapabilities';
+import { AppointmentsWidget } from './widgets/AppointmentsWidget';
+import { BillingWidget } from './widgets/BillingWidget';
+import { PropertiesWidget } from './widgets/PropertiesWidget';
 
 export function Dashboard() {
   const { can } = usePermissions();
   const { t } = useLabels();
   const { user } = useAuth();
+  const { isEnabled } = useCapabilities();
 
   const hasReportPermission = can('read', 'Report');
   const canExport = can('export', 'Report');
@@ -71,6 +76,15 @@ export function Dashboard() {
         <MyCasesWidget />
         <MyFollowUpsWidget />
       </div>
+
+      {/* Dynamic Capability Overviews */}
+      {(isEnabled('capability/appointment') || isEnabled('capability/billing') || isEnabled('capability/property-listing')) && (
+        <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          {isEnabled('capability/appointment') && <AppointmentsWidget />}
+          {isEnabled('capability/billing') && <BillingWidget />}
+          {isEnabled('capability/property-listing') && <PropertiesWidget />}
+        </div>
+      )}
 
       {/* Report widgets — with permission gating */}
       {hasReportPermission ? (
