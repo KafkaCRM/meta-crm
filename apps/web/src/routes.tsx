@@ -191,6 +191,17 @@ function RootLayout() {
     return <Outlet />;
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f5f1ec]">
+        <div className="flex items-center gap-2 text-sm text-[#9c9fa5]">
+          <div className="w-4 h-4 border-2 border-[#d3cec6] border-t-[#111111] rounded-full animate-spin" />
+          Loading…
+        </div>
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     return null;
   }
