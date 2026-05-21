@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   DndContext,
   type DragEndEvent,
@@ -20,6 +20,14 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { KanbanColumn } from './KanbanColumn';
 import { KanbanCard } from './KanbanCard';
 import { BulkActionBar, type BulkAction } from '@/components/shared/BulkActionBar';
+import { VirtualTable } from '@/components/shared/VirtualTable';
+import type { ColumnDef } from '@tanstack/react-table';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import { LayoutGrid, List } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+dayjs.extend(relativeTime);
 
 interface CaseKanbanProps {
   workflowDefinitionId: string;
@@ -68,6 +76,19 @@ export function CaseKanban({ workflowDefinitionId }: CaseKanbanProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overStageId, setOverStageId] = useState<string | null>(null);
+  const [view, setView] = useState<'kanban' | 'list'>(() => {
+    try {
+      return (localStorage.getItem('case-view') as 'kanban' | 'list') ?? 'kanban';
+    } catch {
+      return 'kanban';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('case-view', view);
+    } catch {}
+  }, [view]);
 
   const { data, isLoading } = useQuery<CasesByStage>({
     queryKey: ['cases', 'kanban', workflowDefinitionId],
@@ -293,6 +314,92 @@ export function CaseKanban({ workflowDefinitionId }: CaseKanbanProps) {
     return result;
   }, [selectedIds, casesByStage]);
 
+  const allCases = useMemo(() => {
+    const result: CaseDto[] = [];
+    for (const cases of Object.values(casesByStage)) {
+      result.push(...cases);
+    }
+    return result;
+  }, [casesByStage]);
+
+  const listColumns = useMemo((): ColumnDef<CaseDto>[] => {
+    return [
+      {
+        accessorKey: 'title',
+        header: 'Title',
+        cell: ({ row }) => (
+          <div className="font-medium truncate max-w-xs" title={row.original.title}>
+            {row.original.title}
+          </div>
+        ),
+      },
+      {
+        accessorKey: 'stage',
+        header: 'Stage',
+        cell: ({ row }) => {
+          const stage = stageMap.get(row.original.stage);
+          return stage ? (
+            <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+              {stage.name}
+            </span>
+          ) : (
+            row.original.stage
+          );
+        },
+      },
+      {
+        accessorKey: 'type',
+        header: 'Type',
+        cell: ({ row }) => (
+          <span className="capitalize">{row.original.type}</span>
+        ),
+      },
+      {
+        accessorKey: 'assigned_to_id',
+        header: 'Assigned',
+        cell: ({ row }) => (
+          row.original.assigned_to_id ? 'Yes' : 'No'
+        ),
+      },
+      {
+        accessorKey: 'attributes.priority',
+        header: 'Priority',
+        cell: ({ row }) => {
+          const priority = row.original.attributes?.priority;
+          if (!priority) return null;
+          const priorityStr = String(priority);
+          const colorClass =
+            priorityStr === 'high'
+              ? 'text-red-700'
+              : priorityStr === 'medium'
+                ? 'text-blue-700'
+                : 'text-green-700';
+          return <span className={`capitalize font-medium ${colorClass}`}>{priorityStr}</span>;
+        },
+      },
+      {
+        accessorKey: 'attributes.course',
+        header: 'Course',
+        cell: ({ row }) => {
+          const course = row.original.attributes?.course;
+          return course ? String(course) : null;
+        },
+      },
+      {
+        header: 'Age',
+        cell: ({ row }) => (
+          <span className="text-muted-foreground">
+            {dayjs(row.original.created_at).fromNow()}
+          </span>
+        ),
+      },
+    ];
+  }, [stageMap]);
+
+  const handleSelectionChange = useCallback((rows: CaseDto[]) => {
+    setSelectedIds(new Set(rows.map((r) => r.id)));
+  }, []);
+
   const bulkActions = useMemo((): BulkAction<CaseDto>[] => {
     const actions: BulkAction<CaseDto>[] = [];
 
@@ -357,6 +464,8 @@ export function CaseKanban({ workflowDefinitionId }: CaseKanbanProps) {
     );
   }
 
+  const totalCases = allCases.length;
+
   return (
     <DndContext
       sensors={sensors}
@@ -364,46 +473,97 @@ export function CaseKanban({ workflowDefinitionId }: CaseKanbanProps) {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-4 overflow-x-auto p-4 h-[calc(100vh-140px)]">
-        {stages.map((stage) => {
-          const stageCases = casesByStage[stage.id] ?? [];
-
-          const overStage = overStageId === stage.id;
-
-          const criteriaCheck = activeCase && stageMap.has(stage.id)
-            ? evaluateCriteriaForStage(activeCase, stageMap.get(stage.id)!)
-            : { met: true, unmet: [] };
-
-          return (
-            <KanbanColumn
-              key={stage.id}
-              stage={stage}
-              cases={stageCases}
-              selectedIds={selectedIds}
-              onToggleSelect={handleToggleSelect}
-              onSelectAll={handleSelectAll}
-              onAddCase={handleAddCase}
-              isOver={overStage}
-              criteriaMet={criteriaCheck.met}
-              unmetCriteria={criteriaCheck.unmet}
-            />
-          );
-        })}
+      <div className="flex items-center justify-between px-4 py-2 border-b">
+        <span className="text-sm text-muted-foreground">
+          {totalCases} {totalCases === 1 ? 'case' : 'cases'}
+        </span>
+        <div className="flex items-center gap-1 bg-muted rounded-md p-1">
+          <button
+            className={cn(
+              'flex items-center gap-1.5 rounded-sm px-2.5 py-1 text-xs font-medium transition-colors',
+              view === 'kanban'
+                ? 'bg-background shadow-sm text-foreground'
+                : 'text-muted-foreground hover:text-foreground',
+            )}
+            onClick={() => setView('kanban')}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" />
+            Kanban
+          </button>
+          <button
+            className={cn(
+              'flex items-center gap-1.5 rounded-sm px-2.5 py-1 text-xs font-medium transition-colors',
+              view === 'list'
+                ? 'bg-background shadow-sm text-foreground'
+                : 'text-muted-foreground hover:text-foreground',
+            )}
+            onClick={() => setView('list')}
+          >
+            <List className="h-3.5 w-3.5" />
+            List
+          </button>
+        </div>
       </div>
 
-      <DragOverlay>
-        {activeCase && activeCaseStage ? (
-          <div className="w-72 rotate-2 shadow-xl">
-            <KanbanCard
-              caseData={activeCase}
-              stage={activeCaseStage}
-              isSelected={false}
-              onToggleSelect={() => {}}
-              disabled
-            />
+      {view === 'kanban' ? (
+        <>
+          <div className="flex gap-4 overflow-x-auto p-4 h-[calc(100vh-140px)]">
+            {stages.map((stage) => {
+              const stageCases = casesByStage[stage.id] ?? [];
+
+              const overStage = overStageId === stage.id;
+
+              const criteriaCheck = activeCase && stageMap.has(stage.id)
+                ? evaluateCriteriaForStage(activeCase, stageMap.get(stage.id)!)
+                : { met: true, unmet: [] };
+
+              return (
+                <KanbanColumn
+                  key={stage.id}
+                  stage={stage}
+                  cases={stageCases}
+                  selectedIds={selectedIds}
+                  onToggleSelect={handleToggleSelect}
+                  onSelectAll={handleSelectAll}
+                  onAddCase={handleAddCase}
+                  isOver={overStage}
+                  criteriaMet={criteriaCheck.met}
+                  unmetCriteria={criteriaCheck.unmet}
+                />
+              );
+            })}
           </div>
-        ) : null}
-      </DragOverlay>
+
+          <DragOverlay>
+            {activeCase && activeCaseStage ? (
+              <div className="w-72 rotate-2 shadow-xl">
+                <KanbanCard
+                  caseData={activeCase}
+                  stage={activeCaseStage}
+                  isSelected={false}
+                  onToggleSelect={() => {}}
+                  disabled
+                />
+              </div>
+            ) : null}
+          </DragOverlay>
+        </>
+      ) : (
+        <div className="p-4">
+          <VirtualTable
+            data={allCases}
+            columns={listColumns}
+            rowCount={allCases.length}
+            isLoading={false}
+            resource="Case"
+            tableId="cases-list"
+            onRowClick={(row) => {
+              toast.info(`Open case ${row.title}`);
+            }}
+            onSelectionChange={handleSelectionChange}
+          />
+        </div>
+      )}
 
       <BulkActionBar
         selectedRows={selectedCases}

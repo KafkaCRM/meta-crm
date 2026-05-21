@@ -10,6 +10,10 @@ import { cn } from '@/lib/utils';
 import { evaluateVisibilityRules, type VisibilityRuleEntry } from '@meta-crm/types';
 import type { CaseDto, WorkflowStageDto } from '@meta-crm/types';
 import { KanbanCard } from './KanbanCard';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime);
 
 const CARD_HEIGHT = 112;
 
@@ -118,6 +122,19 @@ export function KanbanColumn({
 
   const allSelected = cases.length > 0 && cases.every((c) => selectedIds.has(c.id));
 
+  const avgAge = useMemo(() => {
+    if (cases.length === 0) return null;
+    const now = dayjs();
+    const totalHours = cases.reduce((sum, c) => {
+      if (!c.created_at) return sum;
+      return sum + now.diff(dayjs(c.created_at), 'hour');
+    }, 0);
+    const avg = Math.round(totalHours / cases.length);
+    if (avg < 1) return '<1h';
+    if (avg < 24) return `${avg}h`;
+    return `${Math.round(avg / 24)}d`;
+  }, [cases]);
+
   const containerRef = useRef<HTMLDivElement>(null);
 
   const virtualizer = useVirtualizer({
@@ -167,6 +184,11 @@ export function KanbanColumn({
           <span className="flex-shrink-0 text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">
             {cases.length}
           </span>
+          {avgAge && (
+            <span className="flex-shrink-0 text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">
+              avg {avgAge}
+            </span>
+          )}
 
           {!criteriaMet && columnIsOver && unmetCriteria.length > 0 && (
             <TooltipProvider>

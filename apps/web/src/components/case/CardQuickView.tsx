@@ -18,13 +18,11 @@ export function CardQuickView({ open, onOpenChange, caseData, stageName }: CardQ
   const attributeEntries = Object.entries(caseData.attributes ?? {});
 
   return (
-    <Drawer.Root open={open} onOpenChange={onOpenChange}>
+    <Drawer.Root open={open} onOpenChange={onOpenChange} direction="right">
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
-        <Drawer.Content className="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] rounded-t-xl bg-background border border-border flex flex-col">
-          <div className="mx-auto w-12 h-1.5 rounded-full bg-muted my-3" />
-
-          <div className="flex items-start justify-between px-6 pb-4">
+        <Drawer.Content className="fixed right-0 top-0 bottom-0 z-50 w-[400px] bg-background border-l border-border flex flex-col">
+          <div className="flex items-start justify-between px-6 py-4 border-b">
             <div className="space-y-1">
               <Drawer.Title className="text-lg font-semibold">{caseData.title}</Drawer.Title>
               <Drawer.Description className="flex items-center gap-2">
@@ -52,7 +50,7 @@ export function CardQuickView({ open, onOpenChange, caseData, stageName }: CardQ
                 <Calendar className="h-4 w-4" />
                 <span>Created {dayjs(caseData.created_at).fromNow()}</span>
               </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
+              <div className="flex items-center gap-2 text-muted-foreground col-span-2">
                 <Clock className="h-4 w-4" />
                 <span>Stage changed {dayjs(caseData.last_stage_changed_at).fromNow()}</span>
               </div>
