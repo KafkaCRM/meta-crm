@@ -18,6 +18,7 @@ const DEFAULT_PERMISSIONS = [
   { action: 'update' as TenantAction, resource: 'Case' as TenantSubject },
   { action: 'create' as TenantAction, resource: 'Interaction' as TenantSubject },
   { action: 'read' as TenantAction, resource: 'Interaction' as TenantSubject },
+  { action: 'read' as TenantAction, resource: 'Plugin' as TenantSubject },
 ];
 
 export function buildTenantAbility(
