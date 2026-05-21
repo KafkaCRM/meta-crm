@@ -15,18 +15,41 @@ export interface ConversionRateResponse {
   rate: number;
   total: number;
   converted: number;
+  trend: { date: string; rate: number }[];
 }
 
 export interface StageTimeResponse {
-  stages: { name: string; avg_hours: number; min_hours: number; max_hours: number }[];
+  stages: { name: string; avg_hours: number; min_hours: number; max_hours: number; sla_hours: number }[];
 }
 
 export interface InteractionVolumeResponse {
   channels: { channel: string; count: number; inbound: number; outbound: number }[];
+  daily: { date: string; inbound: number; outbound: number }[];
 }
 
 export interface PartySourcesResponse {
   sources: { source: string; count: number }[];
+  total: number;
+}
+
+export interface MyCasesResponse {
+  cases: {
+    id: string;
+    title: string;
+    party_name: string;
+    stage: string;
+    last_updated: string;
+  }[];
+}
+
+export interface MyFollowUpsResponse {
+  followUps: {
+    id: string;
+    party_name: string;
+    type: string;
+    time: string;
+    channel: string;
+  }[];
 }
 
 export const reportsApi = {
@@ -54,6 +77,16 @@ export const reportsApi = {
     const qs = buildQuery(params);
     return apiCall<PartySourcesResponse>(`/reports/party-sources${qs}`);
   },
+
+  myCases: (params: ReportParams = {}) => {
+    const qs = buildQuery(params);
+    return apiCall<MyCasesResponse>(`/cases?assigned_to_me=true&limit=5${qs}`);
+  },
+
+  myFollowUps: (params: ReportParams = {}) => {
+    const qs = buildQuery(params);
+    return apiCall<MyFollowUpsResponse>(`/interactions?follow_up_today=true&limit=5${qs}`);
+  },
 };
 
 function buildQuery(params: ReportParams): string {
@@ -63,5 +96,5 @@ function buildQuery(params: ReportParams): string {
   if (params.assignment_id) qs.set('assignment_id', params.assignment_id);
   if (params.workflow_id) qs.set('workflow_id', params.workflow_id);
   const query = qs.toString();
-  return query ? `?${query}` : '';
+  return query ? `&${query}` : '';
 }
