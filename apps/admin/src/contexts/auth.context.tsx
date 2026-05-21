@@ -6,6 +6,9 @@ import { platformLogin as apiLogin, refreshToken as apiRefresh, logout as apiLog
 import { initAuthHelpers } from '@/lib/api';
 import { queryClient } from '@/lib/query-client';
 
+const RT_KEY = 'meta_crm_admin_rt';
+const USER_KEY = 'meta_crm_admin_user';
+
 interface AuthUser {
   id: string;
   name: string;
@@ -49,14 +52,26 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
   }
 }
 
+function readStoredUser(): AuthUser | null {
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw ? (JSON.parse(raw) as AuthUser) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const storedRT = localStorage.getItem(RT_KEY);
+
   const [state, setState] = useState<AuthState>({
     user: null,
     accessToken: null,
-    refreshToken: null,
+    refreshToken: storedRT,
     ability: null,
     isAuthenticated: false,
-    isLoading: false,
+    // Show loading while we attempt a silent refresh on boot.
+    isLoading: !!storedRT,
     isUnauthorized: false,
   });
 
@@ -82,13 +97,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const platformRole = payload.platform_role as PlatformRole;
       const ability = buildPlatformAbility(platformRole);
 
+      const user: AuthUser = {
+        id: result.user.id,
+        name: result.user.name,
+        email: result.user.email,
+        platform_role: platformRole,
+      };
+
+      // Persist session so it survives page refreshes.
+      localStorage.setItem(RT_KEY, result.refresh_token);
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+
       setState({
-        user: {
-          id: result.user.id,
-          name: result.user.name,
-          email: result.user.email,
-          platform_role: platformRole,
-        },
+        user,
         accessToken: result.access_token,
         refreshToken: result.refresh_token,
         ability,
@@ -106,6 +127,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (state.accessToken) {
       await apiLogout(state.accessToken).catch(() => {});
     }
+    // Clear persisted session.
+    localStorage.removeItem(RT_KEY);
+    localStorage.removeItem(USER_KEY);
     setState({
       user: null,
       accessToken: null,
@@ -129,6 +153,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return null;
     }
   }, [state.refreshToken, logout]);
+
+  // Boot-time silent restore: exchange a stored refresh token for a fresh
+  // access token before the router renders any protected route.
+  useEffect(() => {
+    const storedToken = localStorage.getItem(RT_KEY);
+    if (!storedToken) return;
+
+    const storedUser = readStoredUser();
+
+    apiRefresh(storedToken)
+      .then((result) => {
+        if (!storedUser) throw new Error('no_user');
+
+        const ability = buildPlatformAbility(storedUser.platform_role);
+
+        setState({
+          user: storedUser,
+          accessToken: result.access_token,
+          refreshToken: storedToken,
+          ability,
+          isAuthenticated: true,
+          isLoading: false,
+          isUnauthorized: false,
+        });
+      })
+      .catch(() => {
+        // Stored token is stale / invalid — clear and go to login.
+        localStorage.removeItem(RT_KEY);
+        localStorage.removeItem(USER_KEY);
+        setState({
+          user: null,
+          accessToken: null,
+          refreshToken: null,
+          ability: null,
+          isAuthenticated: false,
+          isLoading: false,
+          isUnauthorized: false,
+        });
+      });
+
+    // Only run once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     initAuthHelpers({
