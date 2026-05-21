@@ -1,0 +1,147 @@
+model Appointment {
+  id           String   @id @default(cuid())
+  tenant_id    String
+  party_id     String
+  user_id      String?
+  title        String
+  description  String?
+  start_time   DateTime
+  end_time     DateTime
+  room         String?
+  status       String   @default("scheduled")
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  party Party @relation(fields: [party_id], references: [id])
+  user  User? @relation(fields: [user_id], references: [id])
+
+  @@index([tenant_id, start_time])
+  @@index([tenant_id, party_id])
+  @@index([tenant_id, user_id])
+}
+
+model Invoice {
+  id             String   @id @default(cuid())
+  tenant_id      String
+  party_id       String
+  amount         Float
+  status         String   @default("draft")
+  issue_date     DateTime @default(now())
+  due_date       DateTime
+  billing_details Json?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  party    Party             @relation(fields: [party_id], references: [id])
+  payments Payment[]
+  items    InvoiceLineItem[]
+
+  @@index([tenant_id, due_date])
+  @@index([tenant_id, party_id])
+}
+
+model InvoiceLineItem {
+  id          String @id @default(cuid())
+  invoice_id  String
+  description String
+  quantity    Float
+  unit_price  Float
+  amount      Float
+
+  invoice Invoice @relation(fields: [invoice_id], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id           String   @id @default(cuid())
+  tenant_id    String
+  invoice_id   String
+  amount       Float
+  payment_date DateTime @default(now())
+  method       String
+  reference    String?
+  created_at   DateTime @default(now())
+
+  invoice Invoice @relation(fields: [invoice_id], references: [id])
+
+  @@index([tenant_id, invoice_id])
+}
+
+model Property {
+  id             String   @id @default(cuid())
+  tenant_id      String
+  title          String
+  description    String?
+  address        String
+  city           String
+  price          Float
+  bedrooms       Int
+  bathrooms      Float
+  square_footage Float
+  latitude       Float?
+  longitude      Float?
+  status         String   @default("available")
+  images         Json     @default("[]")
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  @@index([tenant_id, price])
+  @@index([tenant_id, status])
+}
+
+model Order {
+  id             String            @id @default(cuid())
+  tenant_id      String
+  party_id       String
+  total_amount   Float
+  status         String            @default("pending")
+  payment_method String?
+  payment_status String            @default("unpaid")
+  created_at     DateTime          @default(now())
+  updated_at     DateTime          @updatedAt
+
+  party Party             @relation(fields: [party_id], references: [id])
+  items OrderLineItem[]
+
+  @@index([tenant_id, status])
+  @@index([tenant_id, party_id])
+}
+
+model OrderLineItem {
+  id           String @id @default(cuid())
+  order_id     String
+  product_name String
+  quantity     Int
+  unit_price   Float
+  amount       Float
+
+  order Order @relation(fields: [order_id], references: [id], onDelete: Cascade)
+}
+
+model Onboarding {
+  id             String           @id @default(cuid())
+  tenant_id      String
+  party_id       String
+  status         String           @default("active")
+  contract_value Float?
+  setup_completed Boolean          @default(false)
+  created_at     DateTime         @default(now())
+  updated_at     DateTime         @updatedAt
+
+  party Party            @relation(fields: [party_id], references: [id])
+  steps OnboardingStep[]
+
+  @@index([tenant_id, status])
+  @@index([tenant_id, party_id])
+}
+
+model OnboardingStep {
+  id            String    @id @default(cuid())
+  onboarding_id String
+  title         String
+  completed     Boolean   @default(false)
+  completed_at  DateTime?
+  order         Int
+
+  onboarding Onboarding @relation(fields: [onboarding_id], references: [id], onDelete: Cascade)
+}
+
