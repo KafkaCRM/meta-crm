@@ -67,20 +67,38 @@ function getPluginKey(plugin: { id: string; name: string }) {
   return null;
 }
 
-export function PluginSlot({ anchor, context }: { anchor: string; context: SlotContextData }) {
+export function PluginSlot({
+  anchor,
+  context,
+  contextData,
+  activePlugins,
+}: {
+  anchor: string;
+  context?: SlotContextData;
+  contextData?: SlotContextData;
+  activePlugins?: string[];
+}) {
+  const mergedContext = contextData || context;
+  if (!mergedContext) {
+    throw new Error('PluginSlot: context or contextData must be provided.');
+  }
+
   const { data: plugins = [], isLoading } = useQuery({
     queryKey: ['plugins'],
     queryFn: () => settingsApi.plugins.list(),
     staleTime: 60_000,
+    enabled: !activePlugins,
   });
 
-  if (isLoading) {
+  if (isLoading && !activePlugins) {
     return <PluginSlotSkeleton />;
   }
 
-  const activePlugins = plugins.filter((p) => p.installed && p.enabled);
+  const resolvedActivePlugins = activePlugins
+    ? activePlugins.map((p) => ({ id: p, name: p, installed: true, enabled: true }))
+    : plugins.filter((p) => p.installed && p.enabled);
 
-  const matchedComponents = activePlugins
+  const matchedComponents = resolvedActivePlugins
     .map((plugin) => {
       const key = getPluginKey(plugin);
       if (!key) return null;
@@ -103,7 +121,7 @@ export function PluginSlot({ anchor, context }: { anchor: string; context: SlotC
       {matchedComponents.map(({ pluginId, Component }) => (
         <Suspense key={pluginId} fallback={<PluginSlotSkeleton />}>
           <ErrorBoundary>
-            <Component {...context} />
+            <Component {...mergedContext} />
           </ErrorBoundary>
         </Suspense>
       ))}
@@ -111,16 +129,19 @@ export function PluginSlot({ anchor, context }: { anchor: string; context: SlotC
   );
 }
 
-export function usePluginTabs(context: SlotContextData) {
+export function usePluginTabs(context: SlotContextData, activePlugins?: string[]) {
   const { data: plugins = [], isLoading } = useQuery({
     queryKey: ['plugins'],
     queryFn: () => settingsApi.plugins.list(),
     staleTime: 60_000,
+    enabled: !activePlugins,
   });
 
-  const activePlugins = plugins.filter((p) => p.installed && p.enabled);
+  const resolvedActivePlugins = activePlugins
+    ? activePlugins.map((p) => ({ id: p, name: p, installed: true, enabled: true }))
+    : plugins.filter((p) => p.installed && p.enabled);
 
-  const tabs = activePlugins
+  const tabs = resolvedActivePlugins
     .map((plugin) => {
       const key = getPluginKey(plugin);
       if (!key) return null;
@@ -130,11 +151,12 @@ export function usePluginTabs(context: SlotContextData) {
         id: key,
         label: plugin.name.includes('@meta-crm/plugin-')
           ? plugin.name.replace('@meta-crm/plugin-', '').replace(/^\w/, (c) => c.toUpperCase())
-          : plugin.name,
+          : plugin.name.replace(/^\w/, (c) => c.toUpperCase()),
         Component,
       };
     })
     .filter((t): t is { id: string; label: string; Component: React.ComponentType<any> } => t !== null);
 
-  return { tabs, isLoading };
+  return { tabs, isLoading: !activePlugins && isLoading };
 }
+
