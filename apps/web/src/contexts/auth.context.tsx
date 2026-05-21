@@ -7,6 +7,9 @@ import { initAuthHelpers, apiCall } from '@/lib/api';
 import { initSocket, disconnectSocket, onReconnecting, onDisconnect } from '@/lib/socket';
 import { queryClient } from '@/lib/query-client';
 
+const RT_KEY = 'meta_crm_rt';
+const USER_KEY = 'meta_crm_user';
+
 interface AuthUser {
   id: string;
   name: string;
@@ -37,14 +40,26 @@ export function useAuth(): AuthContextValue {
   return ctx;
 }
 
+function readStoredUser(): AuthUser | null {
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw ? (JSON.parse(raw) as AuthUser) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const storedRT = localStorage.getItem(RT_KEY);
+
   const [state, setState] = useState<AuthState>({
     user: null,
     accessToken: null,
-    refreshToken: null,
+    refreshToken: storedRT,
     ability: null,
     isAuthenticated: false,
-    isLoading: false,
+    // Show a loading screen while we attempt a silent token refresh on boot.
+    isLoading: !!storedRT,
   });
 
   const login = useCallback(async (email: string, password: string, tenantSlug: string) => {
@@ -54,6 +69,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const roles: TenantRoleEntry[] = [{ role: result.user.role as TenantRoleEntry['role'] }];
       const ability = buildTenantAbility(roles, result.user.assignment_ids);
+
+      // Persist session so it survives page refreshes.
+      localStorage.setItem(RT_KEY, result.refresh_token);
+      localStorage.setItem(USER_KEY, JSON.stringify(result.user));
 
       setState({
         user: result.user,
@@ -75,6 +94,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (state.accessToken) {
       await apiLogout(state.accessToken).catch(() => {});
     }
+    localStorage.removeItem(RT_KEY);
+    localStorage.removeItem(USER_KEY);
     disconnectSocket();
     setState({
       user: null,
@@ -98,6 +119,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return null;
     }
   }, [state.refreshToken, logout]);
+
+  // Boot-time silent restore: if a refresh token is stored, exchange it for
+  // a new access token and rehydrate auth state — all before the router
+  // renders a protected route.
+  useEffect(() => {
+    const storedToken = localStorage.getItem(RT_KEY);
+    if (!storedToken) return;
+
+    const storedUser = readStoredUser();
+
+    apiRefresh(storedToken)
+      .then((result) => {
+        if (!storedUser) {
+          // No cached user — can't restore fully, force re-login.
+          throw new Error('no_user');
+        }
+
+        const roles: TenantRoleEntry[] = [{ role: storedUser.role as TenantRoleEntry['role'] }];
+        const ability = buildTenantAbility(roles, storedUser.assignment_ids);
+
+        setState({
+          user: storedUser,
+          accessToken: result.access_token,
+          refreshToken: storedToken,
+          ability,
+          isAuthenticated: true,
+          isLoading: false,
+        });
+
+        initSocket(result.access_token);
+      })
+      .catch(() => {
+        // Stored token is stale / invalid — clear everything and send to login.
+        localStorage.removeItem(RT_KEY);
+        localStorage.removeItem(USER_KEY);
+        setState({
+          user: null,
+          accessToken: null,
+          refreshToken: null,
+          ability: null,
+          isAuthenticated: false,
+          isLoading: false,
+        });
+      });
+
+    // Only run once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     initAuthHelpers({
