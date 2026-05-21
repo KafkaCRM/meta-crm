@@ -85,17 +85,21 @@ export class EnrollmentTriggersService implements OnModuleInit {
       return this.capabilityCache.get(tenantId)!;
     }
 
-    const plugin = await this.db.getClient().tenantPlugin.findFirst({
-      where: {
-        tenant_id: tenantId,
-        pluginRegistry: {
-          package_name: { contains: 'enrollment' },
-        },
-        enabled: true,
-      },
+    const tenant = await this.db.getClient().tenant.findFirst({
+      where: { id: tenantId },
     });
 
-    const enabled = !!plugin;
+    if (!tenant) {
+      this.capabilityCache.set(tenantId, false);
+      return false;
+    }
+
+    const config = (tenant.config_json ?? {}) as Record<string, any>;
+    const enabledCapabilities = Array.isArray(config.enabled_capabilities)
+      ? (config.enabled_capabilities as string[])
+      : [];
+
+    const enabled = enabledCapabilities.includes(ENROLLMENT_CAPABILITY_KEY);
     this.capabilityCache.set(tenantId, enabled);
     return enabled;
   }
