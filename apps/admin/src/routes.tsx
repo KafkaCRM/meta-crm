@@ -7,7 +7,7 @@ import { TenantList, TenantDetail, CreateTenantForm, ImpersonateView } from '@/c
 import { PluginRegistry, PublishPlugin, PluginDetail } from '@/components/plugins';
 import { PlatformUserList, InvitePlatformUser, PlatformRoleMatrix } from '@/components/team';
 import { PlatformReports } from '@/components/reports';
-import { QueueMonitor, WebhookFailures } from '@/components/system';
+import { QueueMonitor, WebhookFailures, PlanList, PlanForm } from '@/components/system';
 import { queryClient } from '@/lib/query-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -330,26 +330,84 @@ const tenantImpersonateRoute = createRoute({
 const plansRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/admin/plans',
+  component: () => {
+    const { ability } = useAuth();
+    const canCreate = ability?.can('create', 'PlatformPlan') ?? false;
+
+    return (
+      <AuthGuard>
+        <div className="space-y-5 max-w-[1280px]">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-medium text-[#111111] tracking-tight">Plans</h1>
+              <p className="text-sm text-[#9c9fa5] mt-0.5">Manage subscription plans and pricing</p>
+            </div>
+            {canCreate && (
+              <Link to="/admin/plans/new">
+                <Button className="bg-[#111111] hover:bg-black text-white rounded-lg h-9 px-4 text-sm font-medium">
+                  <Plus size={15} className="mr-1.5" />
+                  Create Plan
+                </Button>
+              </Link>
+            )}
+          </div>
+          <Card className="bg-white border-[#d3cec6] rounded-xl shadow-none">
+            <CardContent className="p-0 overflow-hidden">
+              <PlanList />
+            </CardContent>
+          </Card>
+        </div>
+      </AuthGuard>
+    );
+  },
+});
+
+const createPlanRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/plans/new',
   component: () => (
     <AuthGuard>
-      <div className="space-y-5 max-w-[1280px]">
+      <div className="space-y-5 max-w-2xl">
         <div>
-          <h1 className="text-2xl font-medium text-[#111111] tracking-tight">Plans</h1>
-          <p className="text-sm text-[#9c9fa5] mt-0.5">Manage subscription plans and pricing</p>
+          <h1 className="text-2xl font-medium text-[#111111] tracking-tight">Create Plan</h1>
+          <p className="text-sm text-[#9c9fa5] mt-0.5">Define a new platform subscription plan</p>
         </div>
         <Card className="bg-white border-[#d3cec6] rounded-xl shadow-none">
-          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-10 h-10 rounded-full bg-[#f5f1ec] flex items-center justify-center mb-3">
-              <CreditCard size={20} className="text-[#9c9fa5]" />
-            </div>
-            <h3 className="text-base font-medium text-[#111111] mb-1">Plans management</h3>
-            <p className="text-sm text-[#9c9fa5]">Configure subscription plans and billing cycles</p>
+          <CardContent className="pt-6">
+            <PlanForm />
           </CardContent>
         </Card>
       </div>
     </AuthGuard>
   ),
 });
+
+const editPlanRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/plans/$id',
+  component: () => (
+    <AuthGuard>
+      <EditPlanRouteContent />
+    </AuthGuard>
+  ),
+});
+
+function EditPlanRouteContent() {
+  const { id } = editPlanRoute.useParams();
+  return (
+    <div className="space-y-5 max-w-2xl">
+      <div>
+        <h1 className="text-2xl font-medium text-[#111111] tracking-tight">Edit Plan</h1>
+        <p className="text-sm text-[#9c9fa5] mt-0.5">Modify subscription plan limits and billing</p>
+      </div>
+      <Card className="bg-white border-[#d3cec6] rounded-xl shadow-none">
+        <CardContent className="pt-6">
+          <PlanForm planId={id} />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 /* ------------------------------------------------------------------ */
 /*  Plugins                                                            */
@@ -585,6 +643,8 @@ const routeTree = rootRoute.addChildren([
   tenantDetailRoute,
   tenantImpersonateRoute,
   plansRoute,
+  createPlanRoute,
+  editPlanRoute,
   pluginsRoute,
   publishPluginRoute,
   pluginDetailRoute,
