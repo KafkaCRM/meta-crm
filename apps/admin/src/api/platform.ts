@@ -290,3 +290,10 @@ export async function retryWebhookFailure(failureId: string): Promise<{ message:
     method: 'POST',
   });
 }
+
+export async function updateTenantEntitlements(id: string, pluginIds: string[]): Promise<{ message: string }> {
+  return apiCall<{ message: string }>(`/platform/tenants/${id}/entitlements`, {
+    method: 'PATCH',
+    body: JSON.stringify({ plugin_ids: pluginIds }),
+  });
+}
