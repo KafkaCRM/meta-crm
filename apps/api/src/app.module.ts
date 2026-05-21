@@ -10,6 +10,7 @@ import { CaseModule } from './core/case/case.module';
 import { InteractionModule } from './core/interaction/interaction.module';
 import { MetadataModule } from './core/metadata/metadata.module';
 import { ReportModule } from './core/report/report.module';
+import { PluginModule } from './core/plugin/plugin.module';
 import { PlatformModule } from './platform/platform.module';
 import { GenericWebhookModule } from './integrations/generic-webhook/generic-webhook.module';
 import { WhatsAppModule } from './integrations/whatsapp/whatsapp.module';
@@ -39,6 +40,7 @@ const CAPABILITY_MODULES = [
     InteractionModule,
     MetadataModule,
     ReportModule,
+    PluginModule,
     PlatformModule,
     GenericWebhookModule,
     WhatsAppModule,
