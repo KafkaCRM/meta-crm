@@ -5,3 +5,6 @@ export { ConversionRateWidget } from './widgets/ConversionRateWidget';
 export { StageTimeWidget } from './widgets/StageTimeWidget';
 export { InteractionVolumeWidget } from './widgets/InteractionVolumeWidget';
 export { PartySourceWidget } from './widgets/PartySourceWidget';
+export { AppointmentsWidget } from './widgets/AppointmentsWidget';
+export { BillingWidget } from './widgets/BillingWidget';
+export { PropertiesWidget } from './widgets/PropertiesWidget';
