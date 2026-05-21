@@ -100,8 +100,37 @@ export async function applyTemplate(id: string, industry: string): Promise<{ mes
   });
 }
 
+export interface CreatePlanRequest {
+  name: string;
+  max_branches: number;
+  max_users: number;
+  max_plugins: number;
+  price_monthly?: number;
+}
+
+export interface UpdatePlanRequest {
+  max_branches?: number;
+  max_users?: number;
+  max_plugins?: number;
+  price_monthly?: number;
+}
+
 export async function listPlans(): Promise<SubscriptionPlan[]> {
   return apiCall<SubscriptionPlan[]>('/platform/plans');
+}
+
+export async function createPlan(data: CreatePlanRequest): Promise<SubscriptionPlan> {
+  return apiCall<SubscriptionPlan>('/platform/plans', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updatePlan(id: string, data: UpdatePlanRequest): Promise<SubscriptionPlan> {
+  return apiCall<SubscriptionPlan>(`/platform/plans/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
 }
 
 export async function assignPlan(tenantId: string, planId: string): Promise<{ message: string }> {
