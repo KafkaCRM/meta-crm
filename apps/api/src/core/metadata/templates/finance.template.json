@@ -1,0 +1,38 @@
+{
+  "name": "Financial Lead Pipeline",
+  "entity_type": "application",
+  "field_definitions": {
+    "Party": [
+      { "name": "credit_score", "label": "Credit Score", "field_type": "number", "order": 1 },
+      { "name": "income_range", "label": "Income Range", "field_type": "select", "options": ["Under $50k", "$50k-$100k", "$100k-$200k", "Over $200k"], "order": 2 }
+    ],
+    "Case": [
+      { "name": "requested_amount", "label": "Requested Amount", "field_type": "number", "order": 1 },
+      { "name": "document_status", "label": "Document Status", "field_type": "select", "options": ["Pending", "Verified", "Rejected"], "order": 2 }
+    ]
+  },
+  "workflow_definition": {
+    "name": "Financial Lead Pipeline",
+    "entity_type": "application",
+    "stages": [
+      { "name": "Lead Received", "order": 0, "entry_criteria": [], "sla_hours": 24 },
+      { "name": "Document Collection", "order": 1, "entry_criteria": [], "sla_hours": 48 },
+      { "name": "Underwriting", "order": 2, "entry_criteria": [], "sla_hours": 72 },
+      { "name": "Approved", "order": 3, "entry_criteria": [], "sla_hours": null },
+      { "name": "Rejected", "order": 4, "entry_criteria": [], "sla_hours": null }
+    ],
+    "transitions": [
+      { "from_stage": "Lead Received", "to_stage": "Document Collection" },
+      { "from_stage": "Document Collection", "to_stage": "Underwriting" },
+      { "from_stage": "Underwriting", "to_stage": "Approved" },
+      { "from_stage": "Underwriting", "to_stage": "Rejected" },
+      { "from_stage": "Document Collection", "to_stage": "Rejected" }
+    ]
+  },
+  "label_overrides": {
+    "party.singular": "Client",
+    "party.plural": "Clients",
+    "case.singular": "Application",
+    "case.plural": "Applications"
+  }
+}
