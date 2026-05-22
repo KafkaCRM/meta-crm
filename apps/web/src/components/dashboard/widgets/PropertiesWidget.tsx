@@ -27,14 +27,14 @@ export function PropertiesWidget({ className }: PropertiesWidgetProps) {
 
   if (isLoading) {
     return (
-      <Card className={`bg-white border-[#d3cec6] rounded-xl shadow-none ${className ?? ''}`}>
+      <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none ${className ?? ''}`}>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-[#111111]">Property Listings</CardTitle>
+          <CardTitle className="text-sm font-semibold text-[#0f172a]">Property Listings</CardTitle>
         </CardHeader>
-        <Separator className="bg-[#ebe7e1]" />
+        <Separator className="bg-[#e2e8f0]" />
         <CardContent className="pt-4 space-y-3">
-          <Skeleton className="h-4 w-28 bg-[#ebe7e1]" />
-          <Skeleton className="h-12 w-full bg-[#ebe7e1]" />
+          <Skeleton className="h-4 w-28 bg-[#e2e8f0]" />
+          <Skeleton className="h-12 w-full bg-[#e2e8f0]" />
         </CardContent>
       </Card>
     );
@@ -42,11 +42,11 @@ export function PropertiesWidget({ className }: PropertiesWidgetProps) {
 
   if (error) {
     return (
-      <Card className={`bg-white border-[#d3cec6] rounded-xl shadow-none ${className ?? ''}`}>
+      <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none ${className ?? ''}`}>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-[#111111]">Property Listings</CardTitle>
+          <CardTitle className="text-sm font-semibold text-[#0f172a]">Property Listings</CardTitle>
         </CardHeader>
-        <Separator className="bg-[#ebe7e1]" />
+        <Separator className="bg-[#e2e8f0]" />
         <CardContent className="pt-4">
           <p className="text-xs text-[#c41c1c]">Failed to load property listings.</p>
         </CardContent>
@@ -59,25 +59,25 @@ export function PropertiesWidget({ className }: PropertiesWidgetProps) {
   };
 
   return (
-    <Card className={`bg-white border-[#d3cec6] rounded-xl shadow-none hover:shadow-md transition-shadow ${className ?? ''}`}>
+    <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none hover:shadow-md transition-shadow ${className ?? ''}`}>
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
-        <CardTitle className="text-sm font-semibold text-[#111111]">Property Listings</CardTitle>
-        <Home size={16} className="text-[#9c9fa5]" />
+        <CardTitle className="text-sm font-semibold text-[#0f172a]">Property Listings</CardTitle>
+        <Home size={16} className="text-[#94a3b8]" />
       </CardHeader>
-      <Separator className="bg-[#ebe7e1]" />
+      <Separator className="bg-[#e2e8f0]" />
       <CardContent className="pt-4 space-y-3">
         {/* Status summary grid */}
         <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="bg-[#f5f1ec] rounded-lg p-2 border border-[#ebe7e1]">
-            <p className="text-[10px] text-[#9c9fa5] font-semibold uppercase">Available</p>
-            <p className="text-lg font-bold text-[#111111] mt-0.5">{available}</p>
+          <div className="bg-[#f8fafc] rounded-lg p-2 border border-[#e2e8f0]">
+            <p className="text-[10px] text-[#94a3b8] font-semibold uppercase">Available</p>
+            <p className="text-lg font-bold text-[#0f172a] mt-0.5">{available}</p>
           </div>
-          <div className="bg-[#f5f1ec] rounded-lg p-2 border border-[#ebe7e1]">
-            <p className="text-[10px] text-[#9c9fa5] font-semibold uppercase">Pending</p>
+          <div className="bg-[#f8fafc] rounded-lg p-2 border border-[#e2e8f0]">
+            <p className="text-[10px] text-[#94a3b8] font-semibold uppercase">Pending</p>
             <p className="text-lg font-bold text-[#d97706] mt-0.5">{pending}</p>
           </div>
-          <div className="bg-[#f5f1ec] rounded-lg p-2 border border-[#ebe7e1]">
-            <p className="text-[10px] text-[#9c9fa5] font-semibold uppercase">Sold</p>
+          <div className="bg-[#f8fafc] rounded-lg p-2 border border-[#e2e8f0]">
+            <p className="text-[10px] text-[#94a3b8] font-semibold uppercase">Sold</p>
             <p className="text-lg font-bold text-[#0a7f2e] mt-0.5">{sold}</p>
           </div>
         </div>
@@ -85,17 +85,17 @@ export function PropertiesWidget({ className }: PropertiesWidgetProps) {
         {/* Recent listings */}
         {properties.length > 0 && (
           <div className="space-y-2">
-            <p className="text-2xs font-semibold text-[#9c9fa5] uppercase tracking-wider">Recent Listings</p>
+            <p className="text-2xs font-semibold text-[#94a3b8] uppercase tracking-wider">Recent Listings</p>
             <div className="space-y-1.5 max-h-[140px] overflow-y-auto">
               {properties.slice(0, 2).map(prop => (
                 <div
                   key={prop.id}
-                  className="flex items-center justify-between rounded-lg border border-[#ebe7e1] p-2 hover:bg-[#f5f1ec] transition-colors"
+                  className="flex items-center justify-between rounded-lg border border-[#e2e8f0] p-2 hover:bg-[#f8fafc] transition-colors"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold text-[#111111] truncate">{prop.title}</p>
-                    <p className="text-2xs text-[#9c9fa5] truncate">{prop.address}, {prop.city}</p>
-                    <div className="flex items-center gap-2 mt-1 text-[10px] text-[#626260]">
+                    <p className="text-xs font-semibold text-[#0f172a] truncate">{prop.title}</p>
+                    <p className="text-2xs text-[#94a3b8] truncate">{prop.address}, {prop.city}</p>
+                    <div className="flex items-center gap-2 mt-1 text-[10px] text-[#64748b]">
                       <span className="flex items-center gap-0.5">
                         <BedDouble size={10} />
                         {prop.bedrooms} Bed
@@ -108,7 +108,7 @@ export function PropertiesWidget({ className }: PropertiesWidgetProps) {
                     </div>
                   </div>
                   <div className="text-right ml-2 shrink-0">
-                    <p className="text-xs font-bold text-[#111111]">{formatCurrency(prop.price)}</p>
+                    <p className="text-xs font-bold text-[#0f172a]">{formatCurrency(prop.price)}</p>
                     <span className={`inline-flex items-center px-1 py-0.5 rounded text-[8px] font-semibold uppercase border mt-0.5 ${
                       prop.status === 'available'
                         ? 'bg-blue-50 text-blue-700 border-blue-100'
@@ -125,12 +125,12 @@ export function PropertiesWidget({ className }: PropertiesWidgetProps) {
           </div>
         )}
 
-        <div className="pt-2 border-t border-[#ebe7e1]">
+        <div className="pt-2 border-t border-[#e2e8f0]">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate({ to: '/properties' })}
-            className="w-full h-7 text-xs text-[#626260] hover:text-[#111111]"
+            className="w-full h-7 text-xs text-[#64748b] hover:text-[#0f172a]"
           >
             Manage Listings
             <ArrowUpRight size={12} className="ml-1" />

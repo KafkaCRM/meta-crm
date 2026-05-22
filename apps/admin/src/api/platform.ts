@@ -27,6 +27,8 @@ export interface TenantDetail {
   branch_count: number;
   user_count: number;
   plugin_list: string[];
+  plugin_ids: string[];
+  enabled_capabilities: string[];
 }
 
 export interface CreateTenantRequest {
@@ -324,5 +326,18 @@ export async function updateTenantEntitlements(id: string, pluginIds: string[]):
   return apiCall<{ message: string }>(`/platform/tenants/${id}/entitlements`, {
     method: 'PATCH',
     body: JSON.stringify({ plugin_ids: pluginIds }),
+  });
+}
+
+export async function updateTenantCapabilities(id: string, capabilities: string[]): Promise<TenantDetail> {
+  return apiCall<TenantDetail>(`/platform/tenants/${id}/capabilities`, {
+    method: 'PATCH',
+    body: JSON.stringify({ capabilities }),
+  });
+}
+
+export async function resetTenantOwnerPassword(id: string): Promise<{ email: string; temporary_password: string }> {
+  return apiCall<{ email: string; temporary_password: string }>(`/platform/tenants/${id}/reset-owner-password`, {
+    method: 'PATCH',
   });
 }

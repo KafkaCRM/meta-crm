@@ -20,11 +20,6 @@ function SettingsPage({ children }: { children: React.ReactNode }) {
 export const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/settings',
-  beforeLoad: ({ location }) => {
-    if (location.pathname === '/settings' || location.pathname === '/settings/') {
-      throw redirect({ to: '/settings/branches' });
-    }
-  },
   component: () => (
     <SettingsPage>
       <Outlet />

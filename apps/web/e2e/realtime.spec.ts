@@ -10,14 +10,12 @@ test.describe('Realtime Updates', () => {
 
     try {
       await page1.goto('/login');
-      await page1.fill('#tenant', process.env['E2E_TENANT_SLUG'] ?? 'test-tenant');
       await page1.fill('#email', process.env['E2E_USER_EMAIL'] ?? 'admin@test.com');
       await page1.fill('#password', process.env['E2E_USER_PASSWORD'] ?? 'password123');
       await page1.click('button[type="submit"]');
       await expect(page1).toHaveURL('/');
 
       await page2.goto('/login');
-      await page2.fill('#tenant', process.env['E2E_TENANT_SLUG'] ?? 'test-tenant');
       await page2.fill('#email', process.env['E2E_USER_2_EMAIL'] ?? 'manager@test.com');
       await page2.fill('#password', process.env['E2E_USER_2_PASSWORD'] ?? 'password123');
       await page2.click('button[type="submit"]');

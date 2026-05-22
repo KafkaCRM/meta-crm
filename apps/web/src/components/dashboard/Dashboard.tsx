@@ -40,10 +40,10 @@ export function Dashboard() {
       {/* Page header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-medium text-[#111111] tracking-tight">
+          <h1 className="text-2xl font-medium text-[#0f172a] tracking-tight">
             {t('dashboard.title') ?? 'Dashboard'}
           </h1>
-          <p className="text-sm text-[#9c9fa5] mt-0.5">
+          <p className="text-sm text-[#94a3b8] mt-0.5">
             Overview of your workspace activity
           </p>
         </div>
@@ -53,7 +53,7 @@ export function Dashboard() {
             <Button
               variant="outline"
               size="sm"
-              className="h-8 text-xs border-[#d3cec6] text-[#626260] hover:bg-[#f5f1ec]"
+              className="h-8 text-xs border-[#e2e8f0] text-[#64748b] hover:bg-[#f8fafc]"
             >
               <Download size={13} className="mr-1.5" />
               Export
@@ -62,7 +62,7 @@ export function Dashboard() {
           <Link to="/parties/new">
             <Button
               size="sm"
-              className="bg-[#111111] hover:bg-black text-white rounded-lg text-sm font-medium h-8 px-3"
+              className="bg-[#0f172a] hover:bg-[#1e293b] text-white rounded-lg text-sm font-medium h-8 px-3"
             >
               <Plus size={14} className="mr-1.5" />
               New {t('party.singular') ?? 'Contact'}
@@ -106,40 +106,40 @@ export function Dashboard() {
             <PartySourceWidget />
 
             {/* Recent activity card */}
-            <Card className="bg-white border-[#d3cec6] rounded-xl shadow-none hover:shadow-md transition-shadow lg:col-span-2">
+            <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none hover:shadow-md transition-shadow lg:col-span-2">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base font-medium text-[#111111]">
+                  <CardTitle className="text-base font-medium text-[#0f172a]">
                     Recent Activity
                   </CardTitle>
                   <Badge
                     variant="secondary"
-                    className="bg-[#f5f1ec] text-[#626260] border-0 text-xs rounded-md"
+                    className="bg-[#f8fafc] text-[#64748b] border-0 text-xs rounded-md"
                   >
                     <Activity size={11} className="mr-1" />
                     Live
                   </Badge>
                 </div>
               </CardHeader>
-              <Separator className="bg-[#ebe7e1]" />
+              <Separator className="bg-[#e2e8f0]" />
               <CardContent className="pt-4">
                 {[
                   { action: 'New contact added', name: 'Sarah Chen', time: '2 min ago', color: '#3b82f6' },
                   { action: 'Deal moved to Proposal', name: 'TechCorp Inc.', time: '18 min ago', color: '#0bdf50' },
-                  { action: 'Note added', name: 'James Wilson', time: '1h ago', color: '#9c9fa5' },
+                  { action: 'Note added', name: 'James Wilson', time: '1h ago', color: '#94a3b8' },
                   { action: 'Email sent', name: 'GlobEx Ltd.', time: '2h ago', color: '#3b82f6' },
                   { action: 'Contact converted', name: 'Maria Santos', time: '4h ago', color: '#0bdf50' },
                 ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 py-2.5 border-b border-[#ebe7e1] last:border-0">
+                  <div key={i} className="flex items-center gap-3 py-2.5 border-b border-[#e2e8f0] last:border-0">
                     <div
                       className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                       style={{ backgroundColor: item.color }}
                     />
                     <div className="flex-1 min-w-0">
-                      <span className="text-sm text-[#626260]">{item.action} · </span>
-                      <span className="text-sm font-medium text-[#111111]">{item.name}</span>
+                      <span className="text-sm text-[#64748b]">{item.action} · </span>
+                      <span className="text-sm font-medium text-[#0f172a]">{item.name}</span>
                     </div>
-                    <span className="text-xs text-[#9c9fa5] flex-shrink-0">{item.time}</span>
+                    <span className="text-xs text-[#94a3b8] flex-shrink-0">{item.time}</span>
                   </div>
                 ))}
               </CardContent>
@@ -148,24 +148,24 @@ export function Dashboard() {
         </>
       ) : (
         /* Permission-locked state for non-report users */
-        <Card className="bg-white border-[#d3cec6] rounded-xl shadow-none relative overflow-hidden">
+        <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none relative overflow-hidden">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <div className="absolute inset-0 backdrop-blur-sm bg-white/60 flex items-center justify-center z-10">
               <div className="text-center">
-                <div className="w-12 h-12 rounded-full bg-[#f5f1ec] flex items-center justify-center mx-auto mb-3">
-                  <TrendingUp size={20} className="text-[#9c9fa5]" />
+                <div className="w-12 h-12 rounded-full bg-[#f8fafc] flex items-center justify-center mx-auto mb-3">
+                  <TrendingUp size={20} className="text-[#94a3b8]" />
                 </div>
-                <h3 className="text-base font-medium text-[#111111] mb-1">Reports not available</h3>
-                <p className="text-sm text-[#9c9fa5] max-w-xs">
+                <h3 className="text-base font-medium text-[#0f172a] mb-1">Reports not available</h3>
+                <p className="text-sm text-[#94a3b8] max-w-xs">
                   Upgrade your role to view analytics and reports. Contact your administrator.
                 </p>
               </div>
             </div>
-            <div className="w-12 h-12 rounded-full bg-[#f5f1ec] flex items-center justify-center mb-3 opacity-30">
-              <TrendingUp size={20} className="text-[#9c9fa5]" />
+            <div className="w-12 h-12 rounded-full bg-[#f8fafc] flex items-center justify-center mb-3 opacity-30">
+              <TrendingUp size={20} className="text-[#94a3b8]" />
             </div>
-            <h3 className="text-base font-medium text-[#111111] mb-1 opacity-30">Reports</h3>
-            <p className="text-sm text-[#9c9fa5] max-w-xs opacity-30">
+            <h3 className="text-base font-medium text-[#0f172a] mb-1 opacity-30">Reports</h3>
+            <p className="text-sm text-[#94a3b8] max-w-xs opacity-30">
               Analytics and reports are locked
             </p>
           </CardContent>

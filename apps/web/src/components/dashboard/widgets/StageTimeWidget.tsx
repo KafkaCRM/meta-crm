@@ -30,17 +30,17 @@ export function StageTimeWidget({ className, hasPermission = true }: StageTimeWi
 
   if (!hasPermission) {
     return (
-      <Card className={`bg-white border-[#d3cec6] rounded-xl shadow-none relative overflow-hidden ${className ?? ''}`}>
+      <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none relative overflow-hidden ${className ?? ''}`}>
         <CardContent className="pt-5 pb-5">
           <div className="absolute inset-0 backdrop-blur-sm bg-white/60 flex items-center justify-center z-10">
             <div className="text-center">
-              <Lock size={20} className="mx-auto text-[#9c9fa5] mb-2" />
-              <p className="text-xs font-medium text-[#626260]">Upgrade your role to view this report</p>
+              <Lock size={20} className="mx-auto text-[#94a3b8] mb-2" />
+              <p className="text-xs font-medium text-[#64748b]">Upgrade your role to view this report</p>
             </div>
           </div>
-          <p className="text-xs font-medium text-[#9c9fa5] uppercase tracking-wider mb-4">Avg Time per Stage</p>
+          <p className="text-xs font-medium text-[#94a3b8] uppercase tracking-wider mb-4">Avg Time per Stage</p>
           {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-8 bg-[#ebe7e1] mb-2 rounded-lg" />
+            <Skeleton key={i} className="h-8 bg-[#e2e8f0] mb-2 rounded-lg" />
           ))}
         </CardContent>
       </Card>
@@ -49,14 +49,14 @@ export function StageTimeWidget({ className, hasPermission = true }: StageTimeWi
 
   if (isLoading) {
     return (
-      <Card className={`bg-white border-[#d3cec6] rounded-xl shadow-none ${className ?? ''}`}>
+      <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none ${className ?? ''}`}>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-[#111111]">Avg Time per Stage</CardTitle>
+          <CardTitle className="text-sm font-semibold text-[#0f172a]">Avg Time per Stage</CardTitle>
         </CardHeader>
-        <Separator className="bg-[#ebe7e1]" />
+        <Separator className="bg-[#e2e8f0]" />
         <CardContent className="pt-5">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-8 bg-[#ebe7e1] mb-2 rounded-lg" />
+            <Skeleton key={i} className="h-8 bg-[#e2e8f0] mb-2 rounded-lg" />
           ))}
         </CardContent>
       </Card>
@@ -65,18 +65,18 @@ export function StageTimeWidget({ className, hasPermission = true }: StageTimeWi
 
   if (error) {
     return (
-      <Card className={`bg-white border-[#d3cec6] rounded-xl shadow-none ${className ?? ''}`}>
+      <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none ${className ?? ''}`}>
         <CardContent className="pt-5 pb-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-[#9c9fa5] uppercase tracking-wider mb-1">Avg Time per Stage</p>
+              <p className="text-xs font-medium text-[#94a3b8] uppercase tracking-wider mb-1">Avg Time per Stage</p>
               <p className="text-sm text-[#c41c1c]">Could not load data. Retry.</p>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={() => window.location.reload()}
-              className="h-7 text-xs border-[#d3cec6]"
+              className="h-7 text-xs border-[#e2e8f0]"
             >
               <RefreshCw size={12} className="mr-1" />
               Retry
@@ -90,11 +90,11 @@ export function StageTimeWidget({ className, hasPermission = true }: StageTimeWi
   const maxHours = Math.max(...(data?.stages.map((s) => s.avg_hours) ?? [1]));
 
   return (
-    <Card className={`bg-white border-[#d3cec6] rounded-xl shadow-none hover:shadow-md transition-shadow ${className ?? ''}`}>
+    <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none hover:shadow-md transition-shadow ${className ?? ''}`}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-semibold text-[#111111]">Avg Time per Stage</CardTitle>
+        <CardTitle className="text-sm font-semibold text-[#0f172a]">Avg Time per Stage</CardTitle>
       </CardHeader>
-      <Separator className="bg-[#ebe7e1]" />
+      <Separator className="bg-[#e2e8f0]" />
       <CardContent className="pt-5">
         <div className="space-y-3">
           {data?.stages.map((stage, i) => {
@@ -109,19 +109,19 @@ export function StageTimeWidget({ className, hasPermission = true }: StageTimeWi
               <div key={stage.name} className="group">
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
-                    <Clock size={12} className="text-[#9c9fa5]" />
-                    <span className="text-sm text-[#111111]">{stage.name}</span>
+                    <Clock size={12} className="text-[#94a3b8]" />
+                    <span className="text-sm text-[#0f172a]">{stage.name}</span>
                   </div>
                   <div className="text-right">
-                    <span className={`text-sm font-semibold ${pastSLA ? 'text-[#c41c1c]' : 'text-[#111111]'}`}>
+                    <span className={`text-sm font-semibold ${pastSLA ? 'text-[#c41c1c]' : 'text-[#0f172a]'}`}>
                       {Math.round(stage.avg_hours)}h
                     </span>
-                    <span className="text-xs text-[#9c9fa5] ml-1.5">
+                    <span className="text-xs text-[#94a3b8] ml-1.5">
                       SLA: {stage.sla_hours}h
                     </span>
                   </div>
                 </div>
-                <div className="relative w-full h-2 bg-[#ebe7e1] rounded-full overflow-hidden">
+                <div className="relative w-full h-2 bg-[#e2e8f0] rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all"
                     style={{
@@ -131,7 +131,7 @@ export function StageTimeWidget({ className, hasPermission = true }: StageTimeWi
                   />
                   {stage.sla_hours > 0 && maxHours > 0 && (
                     <div
-                      className="absolute top-0 h-full w-0.5 bg-[#9c9fa5]/40"
+                      className="absolute top-0 h-full w-0.5 bg-[#94a3b8]/40"
                       style={{ left: `${(stage.sla_hours / maxHours) * 100}%` }}
                     />
                   )}

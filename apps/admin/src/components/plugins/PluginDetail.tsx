@@ -2,6 +2,11 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { deprecatePlugin, disablePlugin } from '@/api/platform';
 import { useAuth } from '@/contexts/auth.context';
+import { ShieldAlert, AlertTriangle, Play, Database, Layers, Radio, HelpCircle, CheckCircle2, ChevronRight } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { Link } from '@tanstack/react-router';
 
 interface PluginDetailProps {
   pluginId: string;
@@ -18,7 +23,7 @@ export function PluginDetail({ pluginId }: PluginDetailProps) {
     queryKey: ['plugin', pluginId],
     queryFn: () =>
       fetch(`/api/platform/plugins/${pluginId}`).then((res) => {
-        if (!res.ok) throw new Error('Failed to fetch plugin');
+        if (!res.ok) throw new Error('Failed to fetch plugin metadata');
         return res.json();
       }),
   });
@@ -30,6 +35,10 @@ export function PluginDetail({ pluginId }: PluginDetailProps) {
       queryClient.invalidateQueries({ queryKey: ['plugins'] });
       setShowDeprecateDialog(false);
       setConfirmName('');
+      toast.warning('Platform plugin marked as deprecated');
+    },
+    onError: (err: any) => {
+      toast.error(err.message ?? 'Failed to deprecate plugin');
     },
   });
 
@@ -40,169 +49,268 @@ export function PluginDetail({ pluginId }: PluginDetailProps) {
       queryClient.invalidateQueries({ queryKey: ['plugins'] });
       setShowDisableDialog(false);
       setConfirmName('');
+      toast.error('Platform plugin disabled immediately (Emergency trigger)');
+    },
+    onError: (err: any) => {
+      toast.error(err.message ?? 'Emergency disable failed');
     },
   });
 
   const canManage = ability?.can('manage', 'PlatformPlugin') ?? false;
 
   if (isLoading) {
-    return <div className="py-12 text-center">Loading...</div>;
+    return (
+      <div className="py-16 flex flex-col items-center justify-center gap-2 text-slate-400 text-sm">
+        <div className="w-5 h-5 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin" />
+        Resolving plugin manifest payload...
+      </div>
+    );
   }
 
   if (!plugin) {
-    return <div className="py-12 text-center">Plugin not found</div>;
+    return (
+      <div className="py-16 text-center text-slate-400 text-sm">
+        <ShieldAlert size={28} className="mx-auto mb-2 text-rose-500 animate-bounce" />
+        Platform plugin record was not found or is inactive.
+      </div>
+    );
   }
 
   const tenantCount = plugin.tenant_count ?? 0;
-
-  const handleDeprecate = () => {
-    if (confirmName !== plugin.package_name) return;
-    deprecateMutation.mutate();
-  };
-
-  const handleDisable = () => {
-    if (confirmName !== plugin.package_name) return;
-    disableMutation.mutate();
-  };
+  const isUniversal = plugin.manifest?.compatible_industries?.includes('*') ?? false;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div className="rounded-lg bg-white p-6 shadow-md">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold">{plugin.package_name}</h2>
-            <p className="text-sm text-gray-500">{plugin.manifest?.name}</p>
+    <div className="space-y-6 animate-in fade-in duration-200">
+      
+      {/* Premium Details Shell */}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        
+        {/* Banner header */}
+        <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
+          <div className="space-y-1">
+            <span className="text-[10px] uppercase font-mono tracking-widest text-indigo-500 font-bold">Extension Details</span>
+            <h2 className="text-lg font-extrabold text-slate-900 leading-tight">{plugin.manifest?.name ?? 'Plugin Manifest'}</h2>
+            <p className="text-xs text-slate-400 font-mono mt-0.5">{plugin.package_name}</p>
           </div>
-          <span
-            className={`inline-flex rounded-full px-3 py-1 text-sm font-medium ${
-              plugin.status === 'active'
-                ? 'bg-green-100 text-green-800'
+
+          <div className="flex gap-2">
+            {isUniversal && (
+              <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100/50 hover:bg-emerald-50 text-xs px-2.5 py-0.5 rounded font-bold shadow-none">
+                Universal Extension
+              </Badge>
+            )}
+            <Badge className={`text-xs px-2.5 py-0.5 rounded font-bold border shadow-none ${
+              plugin.status === 'active' 
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
                 : plugin.status === 'deprecated'
-                  ? 'bg-yellow-100 text-yellow-800'
-                  : 'bg-red-100 text-red-800'
-            }`}
-          >
-            {plugin.status}
-          </span>
+                  ? 'bg-amber-50 text-amber-700 border-amber-100 animate-pulse'
+                  : 'bg-rose-50 text-rose-700 border-rose-100'
+            }`}>
+              {plugin.status.toUpperCase()}
+            </Badge>
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="font-medium text-gray-500">Version:</span>
-            <p className="font-mono">{plugin.version}</p>
+        {/* Content body */}
+        <div className="p-6 space-y-6">
+          
+          {/* Main info panel */}
+          <div className="grid gap-6 md:grid-cols-3">
+            
+            <div className="bg-slate-50/60 p-4 rounded-xl border border-slate-200/60 space-y-1 font-mono text-xs">
+              <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Package Version</span>
+              <p className="text-sm font-extrabold text-slate-900 mt-1 flex items-center gap-1.5">
+                <Database size={13} className="text-slate-400" />
+                v{plugin.version}
+              </p>
+            </div>
+
+            <div className="bg-slate-50/60 p-4 rounded-xl border border-slate-200/60 space-y-1 font-mono text-xs">
+              <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Subscriber Density</span>
+              <p className="text-sm font-extrabold text-slate-900 mt-1 flex items-center gap-1.5">
+                <Layers size={13} className="text-slate-400" />
+                {tenantCount} active workspaces
+              </p>
+            </div>
+
+            <div className="bg-slate-50/60 p-4 rounded-xl border border-slate-200/60 space-y-1 font-mono text-xs">
+              <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Requires Service Plan</span>
+              <p className="text-sm font-extrabold text-indigo-600 mt-1 flex items-center gap-1.5">
+                <Play size={13} className="text-indigo-400" />
+                {plugin.manifest?.requires_plan ?? 'Standard (Any)'}
+              </p>
+            </div>
+
           </div>
-          <div>
-            <span className="font-medium text-gray-500">Tenants using:</span>
-            <p>{tenantCount}</p>
+
+          {/* Description */}
+          <div className="space-y-1.5">
+            <span className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Developer Description</span>
+            <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100">
+              {plugin.manifest?.description ?? 'No detailed description declared in manifest.'}
+            </p>
           </div>
-          <div>
-            <span className="font-medium text-gray-500">Description:</span>
-            <p>{plugin.manifest?.description}</p>
+
+          {/* Detailed Specifications */}
+          <div className="grid gap-6 md:grid-cols-3 pt-2">
+            
+            {/* Industries */}
+            <div className="space-y-2">
+              <span className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Compatible Industries</span>
+              <div className="flex flex-wrap gap-1">
+                {plugin.manifest?.compatible_industries?.map((ind: string) => (
+                  <Badge key={ind} className="bg-indigo-50/60 border-indigo-100/50 hover:bg-indigo-50 text-indigo-700 text-[10px] font-semibold px-2 py-0.5 rounded shadow-none">
+                    {ind}
+                  </Badge>
+                )) ?? <span className="text-xs text-slate-400 font-medium">None</span>}
+              </div>
+            </div>
+
+            {/* System Hooks */}
+            <div className="space-y-2">
+              <span className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Registered Event Hooks</span>
+              <div className="flex flex-wrap gap-1">
+                {plugin.manifest?.hooks?.map((hk: string) => (
+                  <Badge key={hk} className="bg-purple-50/60 border-purple-100/50 hover:bg-purple-50 text-purple-700 text-[10px] font-semibold px-2 py-0.5 rounded font-mono shadow-none">
+                    {hk}
+                  </Badge>
+                )) ?? <span className="text-xs text-slate-400 font-medium">None</span>}
+              </div>
+            </div>
+
+            {/* Extends UI */}
+            <div className="space-y-2">
+              <span className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Extends CRM Layout</span>
+              <div className="flex flex-wrap gap-1">
+                {plugin.manifest?.extends?.map((ext: string) => (
+                  <Badge key={ext} className="bg-sky-50/60 border-sky-100/50 hover:bg-sky-50 text-sky-700 text-[10px] font-semibold px-2 py-0.5 rounded shadow-none">
+                    {ext}
+                  </Badge>
+                )) ?? <span className="text-xs text-slate-400 font-medium">None</span>}
+              </div>
+            </div>
+
           </div>
-          <div>
-            <span className="font-medium text-gray-500">Industries:</span>
-            <p>{plugin.manifest?.compatible_industries?.join(', ')}</p>
-          </div>
-          <div>
-            <span className="font-medium text-gray-500">Hooks:</span>
-            <p>{plugin.manifest?.hooks?.join(', ') ?? 'None'}</p>
-          </div>
-          <div>
-            <span className="font-medium text-gray-500">Extends:</span>
-            <p>{plugin.manifest?.extends?.join(', ') ?? 'None'}</p>
-          </div>
+
         </div>
       </div>
 
+      {/* Emergency Management Controls Drawer */}
       {canManage && plugin.status === 'active' && (
-        <div className="space-y-4">
-          <div className="rounded-lg bg-white p-6 shadow-md">
-            <h3 className="mb-4 text-lg font-semibold">Deprecate Plugin</h3>
-            <p className="mb-3 text-sm text-gray-600">
-              {tenantCount > 0
-                ? `⚠️ ${tenantCount} tenant(s) are currently using this plugin. Deprecating will mark it as deprecated but not remove it.`
-                : 'No tenants are using this plugin.'}
-            </p>
-            {!showDeprecateDialog ? (
-              <button
-                onClick={() => setShowDeprecateDialog(true)}
-                className="rounded bg-yellow-600 px-4 py-2 text-white hover:bg-yellow-700"
-              >
-                Deprecate Plugin
-              </button>
-            ) : (
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  value={confirmName}
-                  onChange={(e) => setConfirmName(e.target.value)}
-                  placeholder={`Type "${plugin.package_name}" to confirm`}
-                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleDeprecate}
-                    disabled={confirmName !== plugin.package_name || deprecateMutation.isPending}
-                    className="rounded bg-yellow-600 px-4 py-2 text-white hover:bg-yellow-700 disabled:opacity-50"
-                  >
-                    {deprecateMutation.isPending ? 'Deprecating...' : 'Confirm Deprecate'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowDeprecateDialog(false);
-                      setConfirmName('');
-                    }}
-                    className="rounded border px-4 py-2 hover:bg-gray-100"
-                  >
-                    Cancel
-                  </button>
+        <div className="grid gap-6 md:grid-cols-2">
+          
+          {/* Deprecate block */}
+          <Card className="bg-white border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            <CardContent className="p-5 space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 flex-shrink-0">
+                  <AlertTriangle size={18} />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-bold text-slate-900 text-sm">Deprecate Plugin package</h3>
+                  <p className="text-xs text-slate-500 leading-normal">
+                    {tenantCount > 0
+                      ? `⚠️ ${tenantCount} tenant workspace(s) actively license this plugin. Deprecation hides it from new plan creations without breaking active systems.`
+                      : 'No active tenants license this module. Safe to deprecate.'}
+                  </p>
                 </div>
               </div>
-            )}
-          </div>
 
-          <div className="rounded-lg bg-white p-6 shadow-md">
-            <h3 className="mb-4 text-lg font-semibold text-red-600">Disable Plugin (Emergency)</h3>
-            <p className="mb-3 text-sm text-gray-600">
-              This will immediately disable the plugin for all tenants. Use only in emergencies.
-            </p>
-            {!showDisableDialog ? (
-              <button
-                onClick={() => setShowDisableDialog(true)}
-                className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
-              >
-                Disable Plugin
-              </button>
-            ) : (
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  value={confirmName}
-                  onChange={(e) => setConfirmName(e.target.value)}
-                  placeholder={`Type "${plugin.package_name}" to confirm`}
-                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleDisable}
-                    disabled={confirmName !== plugin.package_name || disableMutation.isPending}
-                    className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700 disabled:opacity-50"
-                  >
-                    {disableMutation.isPending ? 'Disabling...' : 'Confirm Disable'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowDisableDialog(false);
-                      setConfirmName('');
-                    }}
-                    className="rounded border px-4 py-2 hover:bg-gray-100"
-                  >
-                    Cancel
-                  </button>
+              {!showDeprecateDialog ? (
+                <Button
+                  onClick={() => setShowDeprecateDialog(true)}
+                  className="w-full bg-amber-500 hover:bg-amber-600 text-white rounded-lg h-9 font-medium text-xs shadow-sm transition-colors"
+                >
+                  Initiate Deprecate Cascade
+                </Button>
+              ) : (
+                <div className="space-y-3 pt-2">
+                  <input
+                    type="text"
+                    value={confirmName}
+                    onChange={(e) => setConfirmName(e.target.value)}
+                    placeholder={`Type "${plugin.package_name}" to verify`}
+                    className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 font-mono"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleDeprecate}
+                      disabled={confirmName !== plugin.package_name || deprecateMutation.isPending}
+                      className="flex-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg h-9 font-semibold text-xs disabled:opacity-50"
+                    >
+                      {deprecateMutation.isPending ? 'Processing...' : 'Confirm Deprecate'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowDeprecateDialog(false);
+                        setConfirmName('');
+                      }}
+                      className="h-9 px-4 text-xs border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 bg-white"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Emergency disable */}
+          <Card className="bg-white border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            <CardContent className="p-5 space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 flex-shrink-0 animate-pulse">
+                  <ShieldAlert size={18} />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-bold text-slate-950 text-sm">Emergency System Disablement</h3>
+                  <p className="text-xs text-slate-500 leading-normal">
+                    Immediately strip this plugin from all client instances in the database. Use in cases of security compromise or database failures.
+                  </p>
                 </div>
               </div>
-            )}
-          </div>
+
+              {!showDisableDialog ? (
+                <Button
+                  onClick={() => setShowDisableDialog(true)}
+                  className="w-full bg-rose-600 hover:bg-rose-700 text-white rounded-lg h-9 font-medium text-xs shadow-sm transition-colors"
+                >
+                  Trigger Emergency Disable
+                </Button>
+              ) : (
+                <div className="space-y-3 pt-2">
+                  <input
+                    type="text"
+                    value={confirmName}
+                    onChange={(e) => setConfirmName(e.target.value)}
+                    placeholder={`Type "${plugin.package_name}" to verify`}
+                    className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-rose-500 focus:border-rose-500 font-mono"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleDisable}
+                      disabled={confirmName !== plugin.package_name || disableMutation.isPending}
+                      className="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg h-9 font-semibold text-xs disabled:opacity-50"
+                    >
+                      {disableMutation.isPending ? 'Stripping...' : 'Confirm Emergency Strip'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowDisableDialog(false);
+                        setConfirmName('');
+                      }}
+                      className="h-9 px-4 text-xs border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 bg-white"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
         </div>
       )}
     </div>

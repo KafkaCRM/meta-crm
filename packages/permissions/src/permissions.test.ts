@@ -220,7 +220,25 @@ describe('buildTenantAbility', () => {
       expect(ability.can('assign', 'Case')).toBe(true);
     });
   });
+
+  describe('role normalization', () => {
+    it('normalizes admin role to tenant_admin', () => {
+      const ability = buildTenantAbility([{ role: 'admin' }], []);
+      expect(ability.can('manage', 'Role')).toBe(true);
+      expect(ability.can('manage', 'Integration')).toBe(true);
+      expect(ability.can('manage', 'Party')).toBe(true);
+      expect(ability.can('manage', 'BillingRecord')).toBe(false);
+    });
+
+    it('normalizes owner role to tenant_owner', () => {
+      const ability = buildTenantAbility([{ role: 'owner' }], []);
+      expect(ability.can('manage', 'BillingRecord')).toBe(true);
+      expect(ability.can('manage', 'Role')).toBe(true);
+      expect(ability.can('manage', 'Plugin')).toBe(true);
+    });
+  });
 });
+
 
 describe('buildPlatformAbility', () => {
   describe('PlatformOwner', () => {

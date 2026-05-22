@@ -149,20 +149,20 @@ export function Properties() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#111111]">Property Listings</h1>
-          <p className="text-sm text-[#9c9fa5] mt-0.5">Manage real estate listings, tracking unit availability and details</p>
+          <h1 className="text-2xl font-bold tracking-tight text-[#0f172a]">Property Listings</h1>
+          <p className="text-sm text-[#94a3b8] mt-0.5">Manage real estate listings, tracking unit availability and details</p>
         </div>
 
         <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if(!open) resetForm(); }}>
           <DialogTrigger asChild>
-            <Button className="bg-[#111111] hover:bg-black text-white rounded-lg text-sm font-medium h-9 px-4">
+            <Button className="bg-[#0f172a] hover:bg-[#1e293b] text-white rounded-lg text-sm font-medium h-9 px-4">
               <Plus size={16} className="mr-1.5" />
               Add Listing
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-xl bg-white border border-[#d3cec6] rounded-xl shadow-lg p-6">
+          <DialogContent className="max-w-xl bg-white border border-[#e2e8f0] rounded-xl shadow-lg p-6">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-[#111111]">
+              <DialogTitle className="text-lg font-semibold text-[#0f172a]">
                 {editingProperty ? 'Edit Property Listing' : 'Add Property Listing'}
               </DialogTitle>
             </DialogHeader>
@@ -170,22 +170,22 @@ export function Properties() {
             <div className="space-y-4 py-2">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <Label htmlFor="title" className="text-xs font-semibold text-[#626260]">Property Title *</Label>
+                  <Label htmlFor="title" className="text-xs font-semibold text-[#64748b]">Property Title *</Label>
                   <Input
                     id="title"
                     placeholder="E.g., Sunset Villa Apartment"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="bg-[#f5f1ec] border-[#d3cec6]"
+                    className="bg-[#f8fafc] border-[#e2e8f0]"
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="status" className="text-xs font-semibold text-[#626260]">Status</Label>
+                  <Label htmlFor="status" className="text-xs font-semibold text-[#64748b]">Status</Label>
                   <select
                     id="status"
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-md bg-[#f5f1ec] border border-[#d3cec6] text-[#111111]"
+                    className="w-full px-3 py-2 text-sm rounded-md bg-[#f8fafc] border border-[#e2e8f0] text-[#0f172a]"
                   >
                     <option value="available">Available</option>
                     <option value="pending">Pending Sale</option>
@@ -196,115 +196,115 @@ export function Properties() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <Label htmlFor="address" className="text-xs font-semibold text-[#626260]">Street Address *</Label>
+                  <Label htmlFor="address" className="text-xs font-semibold text-[#64748b]">Street Address *</Label>
                   <Input
                     id="address"
                     placeholder="128 Maple Road"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
-                    className="bg-[#f5f1ec] border-[#d3cec6]"
+                    className="bg-[#f8fafc] border-[#e2e8f0]"
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="city" className="text-xs font-semibold text-[#626260]">City *</Label>
+                  <Label htmlFor="city" className="text-xs font-semibold text-[#64748b]">City *</Label>
                   <Input
                     id="city"
                     placeholder="New York"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
-                    className="bg-[#f5f1ec] border-[#d3cec6]"
+                    className="bg-[#f8fafc] border-[#e2e8f0]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-4 gap-3">
                 <div className="space-y-1 col-span-2">
-                  <Label htmlFor="price" className="text-xs font-semibold text-[#626260]">Listing Price ($) *</Label>
+                  <Label htmlFor="price" className="text-xs font-semibold text-[#64748b]">Listing Price ($) *</Label>
                   <Input
                     id="price"
                     type="number"
                     value={price}
                     onChange={(e) => setPrice(Number(e.target.value))}
-                    className="bg-[#f5f1ec] border-[#d3cec6]"
+                    className="bg-[#f8fafc] border-[#e2e8f0]"
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="bedrooms" className="text-xs font-semibold text-[#626260]">Beds</Label>
+                  <Label htmlFor="bedrooms" className="text-xs font-semibold text-[#64748b]">Beds</Label>
                   <Input
                     id="bedrooms"
                     type="number"
                     value={bedrooms}
                     onChange={(e) => setBedrooms(Number(e.target.value))}
-                    className="bg-[#f5f1ec] border-[#d3cec6] text-center"
+                    className="bg-[#f8fafc] border-[#e2e8f0] text-center"
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="bathrooms" className="text-xs font-semibold text-[#626260]">Baths</Label>
+                  <Label htmlFor="bathrooms" className="text-xs font-semibold text-[#64748b]">Baths</Label>
                   <Input
                     id="bathrooms"
                     type="number"
                     value={bathrooms}
                     onChange={(e) => setBathrooms(Number(e.target.value))}
-                    className="bg-[#f5f1ec] border-[#d3cec6] text-center"
+                    className="bg-[#f8fafc] border-[#e2e8f0] text-center"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1">
-                  <Label htmlFor="sqft" className="text-xs font-semibold text-[#626260]">Square Footage (sqft) *</Label>
+                  <Label htmlFor="sqft" className="text-xs font-semibold text-[#64748b]">Square Footage (sqft) *</Label>
                   <Input
                     id="sqft"
                     type="number"
                     value={squareFootage}
                     onChange={(e) => setSquareFootage(Number(e.target.value))}
-                    className="bg-[#f5f1ec] border-[#d3cec6]"
+                    className="bg-[#f8fafc] border-[#e2e8f0]"
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="lat" className="text-xs font-semibold text-[#626260]">Latitude</Label>
+                  <Label htmlFor="lat" className="text-xs font-semibold text-[#64748b]">Latitude</Label>
                   <Input
                     id="lat"
                     type="number"
                     placeholder="40.7128"
                     value={latitude ?? ''}
                     onChange={(e) => setLatitude(e.target.value ? Number(e.target.value) : undefined)}
-                    className="bg-[#f5f1ec] border-[#d3cec6]"
+                    className="bg-[#f8fafc] border-[#e2e8f0]"
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="lng" className="text-xs font-semibold text-[#626260]">Longitude</Label>
+                  <Label htmlFor="lng" className="text-xs font-semibold text-[#64748b]">Longitude</Label>
                   <Input
                     id="lng"
                     type="number"
                     placeholder="-74.0060"
                     value={longitude ?? ''}
                     onChange={(e) => setLongitude(e.target.value ? Number(e.target.value) : undefined)}
-                    className="bg-[#f5f1ec] border-[#d3cec6]"
+                    className="bg-[#f8fafc] border-[#e2e8f0]"
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="image_url" className="text-xs font-semibold text-[#626260]">Photo URL</Label>
+                <Label htmlFor="image_url" className="text-xs font-semibold text-[#64748b]">Photo URL</Label>
                 <Input
                   id="image_url"
                   placeholder="https://images.unsplash.com/..."
                   value={imageUrl}
                   onChange={(e) => setImageUrl(e.target.value)}
-                  className="bg-[#f5f1ec] border-[#d3cec6]"
+                  className="bg-[#f8fafc] border-[#e2e8f0]"
                 />
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="desc" className="text-xs font-semibold text-[#626260]">Public Description</Label>
+                <Label htmlFor="desc" className="text-xs font-semibold text-[#64748b]">Public Description</Label>
                 <textarea
                   id="desc"
                   rows={2}
                   placeholder="Details about the location, amenities..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-md bg-[#f5f1ec] border border-[#d3cec6] text-[#111111] focus:outline-none focus:ring-1 focus:ring-[#111111]"
+                  className="w-full px-3 py-2 text-sm rounded-md bg-[#f8fafc] border border-[#e2e8f0] text-[#0f172a] focus:outline-none focus:ring-1 focus:ring-[#0f172a]"
                 />
               </div>
             </div>
@@ -313,14 +313,14 @@ export function Properties() {
               <Button
                 variant="outline"
                 onClick={() => setIsOpen(false)}
-                className="border-[#d3cec6] text-[#626260] hover:bg-[#f5f1ec]"
+                className="border-[#e2e8f0] text-[#64748b] hover:bg-[#f8fafc]"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleSave}
                 disabled={saveMutation.isPending}
-                className="bg-[#111111] hover:bg-black text-white"
+                className="bg-[#0f172a] hover:bg-[#1e293b] text-white"
               >
                 {saveMutation.isPending ? 'Saving...' : 'Save'}
               </Button>
@@ -332,32 +332,32 @@ export function Properties() {
       {/* Main layout: Filters + Grid */}
       <div className="grid gap-6 md:grid-cols-4 items-start">
         {/* Sidebar Filters */}
-        <Card className="bg-white border-[#d3cec6] rounded-xl shadow-none">
+        <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold uppercase tracking-wider text-[#9c9fa5] flex items-center gap-1.5">
+            <CardTitle className="text-sm font-semibold uppercase tracking-wider text-[#94a3b8] flex items-center gap-1.5">
               <Sliders size={14} />
               Filter Listings
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1">
-              <Label htmlFor="f-city" className="text-xs text-[#626260]">City</Label>
+              <Label htmlFor="f-city" className="text-xs text-[#64748b]">City</Label>
               <Input
                 id="f-city"
                 placeholder="E.g., Boston"
                 value={filterCity}
                 onChange={(e) => setFilterCity(e.target.value)}
-                className="bg-[#f5f1ec] border-[#d3cec6] h-8 text-xs placeholder:text-[#9c9fa5]"
+                className="bg-[#f8fafc] border-[#e2e8f0] h-8 text-xs placeholder:text-[#94a3b8]"
               />
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="f-status" className="text-xs text-[#626260]">Status</Label>
+              <Label htmlFor="f-status" className="text-xs text-[#64748b]">Status</Label>
               <select
                 id="f-status"
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full px-2 py-1.5 text-xs rounded-md bg-[#f5f1ec] border border-[#d3cec6] text-[#111111]"
+                className="w-full px-2 py-1.5 text-xs rounded-md bg-[#f8fafc] border border-[#e2e8f0] text-[#0f172a]"
               >
                 <option value="">All Listings</option>
                 <option value="available">Available</option>
@@ -368,38 +368,38 @@ export function Properties() {
 
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <Label htmlFor="f-min" className="text-xs text-[#626260]">Min Price ($)</Label>
+                <Label htmlFor="f-min" className="text-xs text-[#64748b]">Min Price ($)</Label>
                 <Input
                   id="f-min"
                   type="number"
                   placeholder="Min"
                   value={filterMinPrice ?? ''}
                   onChange={(e) => setFilterMinPrice(e.target.value ? Number(e.target.value) : undefined)}
-                  className="bg-[#f5f1ec] border-[#d3cec6] h-8 text-xs"
+                  className="bg-[#f8fafc] border-[#e2e8f0] h-8 text-xs"
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="f-max" className="text-xs text-[#626260]">Max Price ($)</Label>
+                <Label htmlFor="f-max" className="text-xs text-[#64748b]">Max Price ($)</Label>
                 <Input
                   id="f-max"
                   type="number"
                   placeholder="Max"
                   value={filterMaxPrice ?? ''}
                   onChange={(e) => setFilterMaxPrice(e.target.value ? Number(e.target.value) : undefined)}
-                  className="bg-[#f5f1ec] border-[#d3cec6] h-8 text-xs"
+                  className="bg-[#f8fafc] border-[#e2e8f0] h-8 text-xs"
                 />
               </div>
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="f-beds" className="text-xs text-[#626260]">Min Bedrooms</Label>
+              <Label htmlFor="f-beds" className="text-xs text-[#64748b]">Min Bedrooms</Label>
               <Input
                 id="f-beds"
                 type="number"
                 placeholder="2"
                 value={filterBedrooms ?? ''}
                 onChange={(e) => setFilterBedrooms(e.target.value ? Number(e.target.value) : undefined)}
-                className="bg-[#f5f1ec] border-[#d3cec6] h-8 text-xs"
+                className="bg-[#f8fafc] border-[#e2e8f0] h-8 text-xs"
               />
             </div>
 
@@ -413,7 +413,7 @@ export function Properties() {
                 setFilterMaxPrice(undefined);
                 setFilterBedrooms(undefined);
               }}
-              className="w-full text-xs border-[#d3cec6] text-[#626260]"
+              className="w-full text-xs border-[#e2e8f0] text-[#64748b]"
             >
               Clear Filters
             </Button>
@@ -423,20 +423,20 @@ export function Properties() {
         {/* Main Grid */}
         <div className="md:col-span-3">
           {loadingProperties ? (
-            <div className="text-center py-12 text-[#9c9fa5]">Loading properties...</div>
+            <div className="text-center py-12 text-[#94a3b8]">Loading properties...</div>
           ) : properties.length === 0 ? (
-            <Card className="bg-white border-[#d3cec6] rounded-xl shadow-none py-12 text-center">
-              <Home className="mx-auto h-8 w-8 text-[#9c9fa5] mb-2" />
-              <p className="text-sm font-medium text-[#111111]">No properties listed</p>
-              <p className="text-xs text-[#9c9fa5] mt-1">Create a property listing to get started.</p>
+            <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none py-12 text-center">
+              <Home className="mx-auto h-8 w-8 text-[#94a3b8] mb-2" />
+              <p className="text-sm font-medium text-[#0f172a]">No properties listed</p>
+              <p className="text-xs text-[#94a3b8] mt-1">Create a property listing to get started.</p>
             </Card>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {properties.map((prop: Property) => (
-                <Card key={prop.id} className="bg-white border-[#d3cec6] rounded-xl shadow-none hover:shadow-md transition-all overflow-hidden flex flex-col justify-between">
+                <Card key={prop.id} className="bg-white border-[#e2e8f0] rounded-xl shadow-none hover:shadow-md transition-all overflow-hidden flex flex-col justify-between">
                   <div>
                     {prop.images?.[0] ? (
-                      <div className="h-40 w-full overflow-hidden bg-[#f5f1ec] relative">
+                      <div className="h-40 w-full overflow-hidden bg-[#f8fafc] relative">
                         <img
                           src={prop.images[0]}
                           alt={prop.title}
@@ -453,8 +453,8 @@ export function Properties() {
                         </span>
                       </div>
                     ) : (
-                      <div className="h-40 w-full bg-[#f5f1ec] flex items-center justify-center relative">
-                        <Home size={32} className="text-[#9c9fa5]" />
+                      <div className="h-40 w-full bg-[#f8fafc] flex items-center justify-center relative">
+                        <Home size={32} className="text-[#94a3b8]" />
                         <span className={`absolute top-2 right-2 inline-flex items-center px-2 py-0.5 rounded-full text-3xs font-semibold uppercase border ${
                           prop.status === 'available'
                             ? 'bg-green-50 text-green-700 border-green-200'
@@ -469,48 +469,48 @@ export function Properties() {
 
                     <CardContent className="p-4 space-y-2">
                       <div>
-                        <h4 className="font-bold text-sm text-[#111111] truncate">{prop.title}</h4>
-                        <p className="text-2xs text-[#9c9fa5] flex items-center gap-0.5 mt-0.5">
+                        <h4 className="font-bold text-sm text-[#0f172a] truncate">{prop.title}</h4>
+                        <p className="text-2xs text-[#94a3b8] flex items-center gap-0.5 mt-0.5">
                           <MapPin size={10} />
                           {prop.address}, {prop.city}
                         </p>
                       </div>
 
-                      <div className="font-mono text-base font-bold text-[#111111]">
+                      <div className="font-mono text-base font-bold text-[#0f172a]">
                         ${prop.price.toLocaleString()}
                       </div>
 
                       {prop.description && (
-                        <p className="text-2xs text-[#626260] line-clamp-2 italic">
+                        <p className="text-2xs text-[#64748b] line-clamp-2 italic">
                           "{prop.description}"
                         </p>
                       )}
 
-                      <Separator className="bg-[#ebe7e1]" />
+                      <Separator className="bg-[#e2e8f0]" />
 
-                      <div className="flex items-center justify-between text-2xs font-semibold text-[#626260]">
+                      <div className="flex items-center justify-between text-2xs font-semibold text-[#64748b]">
                         <span className="flex items-center gap-1">
-                          <BedDouble size={12} className="text-[#9c9fa5]" />
+                          <BedDouble size={12} className="text-[#94a3b8]" />
                           {prop.bedrooms} Bed
                         </span>
                         <span className="flex items-center gap-1">
-                          <Bath size={12} className="text-[#9c9fa5]" />
+                          <Bath size={12} className="text-[#94a3b8]" />
                           {prop.bathrooms} Bath
                         </span>
                         <span className="flex items-center gap-1">
-                          <Maximize2 size={12} className="text-[#9c9fa5]" />
+                          <Maximize2 size={12} className="text-[#94a3b8]" />
                           {prop.square_footage} sqft
                         </span>
                       </div>
                     </CardContent>
                   </div>
 
-                  <CardFooter className="p-3 border-t border-[#ebe7e1] flex justify-end gap-1.5 bg-[#f5f1ec]/20">
+                  <CardFooter className="p-3 border-t border-[#e2e8f0] flex justify-end gap-1.5 bg-[#f8fafc]/20">
                     <Button
                       size="icon"
                       variant="ghost"
                       onClick={() => handleEditClick(prop)}
-                      className="h-7 w-7 text-[#626260] hover:text-[#111111]"
+                      className="h-7 w-7 text-[#64748b] hover:text-[#0f172a]"
                     >
                       <Edit size={13} />
                     </Button>

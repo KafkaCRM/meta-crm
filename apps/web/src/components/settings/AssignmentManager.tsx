@@ -1,10 +1,17 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Loader2, GitBranch, Building2, ChevronRight, Link2 } from 'lucide-react';
 import { settingsApi } from '@/api/settings';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { usePermissions } from '@/hooks/usePermissions';
+import { cn } from '@/lib/utils';
 
 export function AssignmentManager() {
+  const { can } = usePermissions();
+  const canManage = can('manage', 'Branch');
   const queryClient = useQueryClient();
   const [branchId, setBranchId] = useState('');
   const [brandId, setBrandId] = useState('');
@@ -32,7 +39,7 @@ export function AssignmentManager() {
       settingsApi.assignments.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings', 'assignments'] });
-      toast.success('Assignment created');
+      toast.success('Assignment created successfully');
       setBranchId('');
       setBrandId('');
     },
@@ -43,7 +50,7 @@ export function AssignmentManager() {
     mutationFn: (id: string) => settingsApi.assignments.remove(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings', 'assignments'] });
-      toast.success('Assignment removed');
+      toast.success('Assignment removed successfully');
     },
     onError: () => toast.error('Failed to remove assignment'),
   });
@@ -61,82 +68,151 @@ export function AssignmentManager() {
   const getBrandName = (id: string) => brands?.find((b) => b.id === id)?.name ?? id;
 
   if (isLoading) {
-    return <div className="text-muted-foreground">Loading assignments...</div>;
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-[#94a3b8]" />
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-[1000px]">
       <div>
-        <h1 className="text-2xl font-bold">Assignments</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Link branches to brands
+        <h1 className="text-2xl font-semibold tracking-tight text-[#0f172a]">Assignments</h1>
+        <p className="text-sm text-[#64748b] mt-0.5">
+          Map your locations (branches) to specific brand identities
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-3 rounded-lg border bg-card p-4">
-        <h3 className="text-sm font-medium">Add Assignment</h3>
-        <div className="grid gap-3 sm:grid-cols-3">
-          <select
-            value={branchId}
-            onChange={(e) => setBranchId(e.target.value)}
-            className="rounded-md border border-input px-3 py-2 text-sm"
-            required
-          >
-            <option value="">Select branch...</option>
-            {branches?.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
-            ))}
-          </select>
-          <select
-            value={brandId}
-            onChange={(e) => setBrandId(e.target.value)}
-            className="rounded-md border border-input px-3 py-2 text-sm"
-            required
-          >
-            <option value="">Select brand...</option>
-            {brands?.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
-            ))}
-          </select>
-          <button
-            type="submit"
-            disabled={createMutation.isPending}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
-          >
-            {createMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-            <Plus className="h-4 w-4" />
-            Add
-          </button>
-        </div>
-      </form>
+      <div className="grid gap-6 md:grid-cols-3">
+        {/* Assignments list card */}
+        <Card className={cn("bg-white border-[#e2e8f0] rounded-xl shadow-none", canManage ? "md:col-span-2" : "md:col-span-3")}>
+          <CardHeader className="pb-3 border-b border-[#e2e8f0]">
+            <CardTitle className="text-base font-medium text-[#0f172a]">
+              Active Mappings
+            </CardTitle>
+            <CardDescription className="text-xs text-[#94a3b8]">
+              Linked relations directing customer touchpoints
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y divide-[#e2e8f0]">
+              {assignments?.map((assignment) => (
+                <div
+                  key={assignment.id}
+                  className="flex items-center justify-between p-4 hover:bg-[#f8fafc]/60 transition-colors group"
+                >
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="flex items-center gap-2 text-sm font-medium text-[#0f172a]">
+                      <div className="p-2 bg-[#f1f5f9] rounded-lg text-[#64748b] border border-[#e2e8f0] flex items-center justify-center">
+                        <GitBranch size={14} />
+                      </div>
+                      <span className="truncate">{getBranchName(assignment.branch_id)}</span>
+                    </div>
 
-      <div className="rounded-lg border divide-y">
-        {assignments?.map((assignment) => (
-          <div key={assignment.id} className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium">{getBranchName(assignment.branch_id)}</span>
-              <span className="text-muted-foreground">→</span>
-              <span className="text-sm font-medium">{getBrandName(assignment.brand_id)}</span>
-              {assignment.is_primary && (
-                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">Primary</span>
+                    <div className="flex items-center text-[#94a3b8]">
+                      <ChevronRight size={16} strokeWidth={2.5} />
+                    </div>
+
+                    <div className="flex items-center gap-2 text-sm font-medium text-[#0f172a]">
+                      <div className="p-2 bg-[#f1f5f9] rounded-lg text-[#64748b] border border-[#e2e8f0] flex items-center justify-center">
+                        <Building2 size={14} />
+                      </div>
+                      <span className="truncate">{getBrandName(assignment.brand_id)}</span>
+                    </div>
+
+                    {assignment.is_primary && (
+                      <Badge variant="outline" className="bg-indigo-50/50 text-indigo-600 border-indigo-100 text-[10px] font-semibold rounded-md py-0 px-2 h-5 flex items-center justify-center">
+                        Primary
+                      </Badge>
+                    )}
+                  </div>
+                  {canManage && (
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 hover:bg-red-50 transition-all"
+                      onClick={() => {
+                        if (window.confirm('Remove this assignment?')) {
+                          removeMutation.mutate(assignment.id);
+                        }
+                      }}
+                    >
+                      <Trash2 size={14} />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              {assignments?.length === 0 && (
+                <div className="p-8 text-center text-sm text-[#64748b]">
+                  No active mappings found. {canManage && 'Create one using the side panel.'}
+                </div>
               )}
             </div>
-            <button
-              onClick={() => {
-                if (window.confirm('Remove this assignment?')) {
-                  removeMutation.mutate(assignment.id);
-                }
-              }}
-              className="p-1 rounded hover:bg-muted"
-            >
-              <Trash2 className="h-4 w-4 text-red-500" />
-            </button>
-          </div>
-        ))}
-        {assignments?.length === 0 && (
-          <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-            No assignments yet. Link a branch to a brand above.
-          </div>
+          </CardContent>
+        </Card>
+
+        {/* Add Assignment form card */}
+        {canManage && (
+        <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none h-fit">
+          <CardHeader className="pb-3 border-b border-[#e2e8f0]">
+            <CardTitle className="text-base font-medium text-[#0f172a] flex items-center gap-1.5">
+              <Link2 size={16} className="text-[#94a3b8]" />
+              Link Entity
+            </CardTitle>
+            <CardDescription className="text-xs text-[#94a3b8]">
+              Connect a physical location to an identity brand
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-[#64748b]">Select Branch</label>
+                <select
+                  value={branchId}
+                  onChange={(e) => setBranchId(e.target.value)}
+                  className="w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#0f172a] outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-400/50"
+                  required
+                >
+                  <option value="">Select branch...</option>
+                  {branches?.map((b) => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-[#64748b]">Select Brand</label>
+                <select
+                  value={brandId}
+                  onChange={(e) => setBrandId(e.target.value)}
+                  className="w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#0f172a] outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-400/50"
+                  required
+                >
+                  <option value="">Select brand...</option>
+                  {brands?.map((b) => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="pt-2">
+                <Button
+                  type="submit"
+                  disabled={createMutation.isPending}
+                  className="bg-[#0f172a] hover:bg-[#1e293b] text-white w-full h-9 rounded-lg flex items-center justify-center gap-1.5"
+                >
+                  {createMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus size={15} />
+                  )}
+                  Establish Link
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
         )}
       </div>
     </div>

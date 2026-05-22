@@ -27,6 +27,7 @@ interface VirtualTableProps<TData> {
   searchPlaceholder?: string;
   onSearchChange?: (value: string) => void;
   searchValue?: string;
+  showSearch?: boolean;
 }
 
 export function VirtualTable<TData>({
@@ -43,6 +44,7 @@ export function VirtualTable<TData>({
   searchPlaceholder = 'Search...',
   onSearchChange,
   searchValue,
+  showSearch = true,
 }: VirtualTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -141,45 +143,51 @@ export function VirtualTable<TData>({
     );
   }
 
+  const showHeader = showSearch || enableColumnVisibility;
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <input
-          type="text"
-          placeholder={searchPlaceholder}
-          value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          className="rounded-md border border-input px-3 py-2 text-sm"
-        />
-
-        {enableColumnVisibility && (
-          <div className="relative">
-            <button
-              type="button"
+      {showHeader && (
+        <div className="flex items-center gap-2">
+          {showSearch && (
+            <input
+              type="text"
+              placeholder={searchPlaceholder}
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
               className="rounded-md border border-input px-3 py-2 text-sm"
-              onClick={handleColumnMenuToggle}
-            >
-              Columns
-            </button>
-            {columnMenuOpen && (
-              <div className="absolute right-0 top-full z-10 rounded-md border bg-white p-2 shadow-md">
-                {visibleColumns
-                  .filter((col) => col.id !== 'select')
-                  .map((col) => (
-                    <label key={col.id} className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={col.getIsVisible()}
-                        onChange={col.getToggleVisibilityHandler()}
-                      />
-                      {col.columnDef.header as string}
-                    </label>
-                  ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+            />
+          )}
+
+          {enableColumnVisibility && (
+            <div className="relative">
+              <button
+                type="button"
+                className="rounded-md border border-input px-3 py-2 text-sm"
+                onClick={handleColumnMenuToggle}
+              >
+                Columns
+              </button>
+              {columnMenuOpen && (
+                <div className="absolute right-0 top-full z-10 rounded-md border bg-white p-2 shadow-md">
+                  {visibleColumns
+                    .filter((col) => col.id !== 'select')
+                    .map((col) => (
+                      <label key={col.id} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={col.getIsVisible()}
+                          onChange={col.getToggleVisibilityHandler()}
+                        />
+                        {col.columnDef.header as string}
+                      </label>
+                    ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <div ref={tableContainerRef} className="h-[600px] overflow-auto rounded-md border">
         <table className="w-full">

@@ -1,7 +1,7 @@
 export interface LoginRequest {
   email: string;
   password: string;
-  tenant_slug: string;
+  tenant_slug?: string;
 }
 
 export interface LoginResponse {

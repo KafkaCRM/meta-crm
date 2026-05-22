@@ -25,32 +25,32 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f5f1ec]">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50">
       <div className="w-full max-w-sm">
         {/* Logo mark */}
         <div className="text-center mb-8">
-          <div className="inline-flex w-10 h-10 rounded-xl bg-[#111111] items-center justify-center mb-4">
+          <div className="inline-flex w-10 h-10 rounded-xl bg-slate-900 items-center justify-center mb-4 shadow-sm border border-slate-800">
             <Shield size={18} className="text-white" />
           </div>
-          <h1 className="text-2xl font-medium text-[#111111] tracking-tight mb-1">
+          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight mb-1">
             Admin Console
           </h1>
-          <p className="text-sm text-[#9c9fa5]">
+          <p className="text-sm text-slate-400">
             Restricted access · Platform team only
           </p>
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl border border-[#d3cec6] p-8">
+        <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
           {error && (
-            <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+            <div className="mb-4 rounded-lg bg-rose-50 border border-rose-200 p-3 text-xs text-rose-700 font-medium">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <label htmlFor="admin-email" className="text-sm font-medium text-[#111111]">
+              <label htmlFor="admin-email" className="text-xs font-semibold text-slate-600">
                 Email address
               </label>
               <Input
@@ -59,13 +59,13 @@ export function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@company.com"
-                className="bg-[#f5f1ec] border-[#d3cec6] placeholder:text-[#9c9fa5] focus-visible:ring-[#111111] focus-visible:border-[#111111] h-10"
+                className="bg-slate-50 border-slate-200 placeholder:text-slate-400 focus-visible:ring-indigo-600 focus-visible:border-indigo-600 h-10"
                 required
               />
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="admin-password" className="text-sm font-medium text-[#111111]">
+              <label htmlFor="admin-password" className="text-xs font-semibold text-slate-600">
                 Password
               </label>
               <Input
@@ -73,7 +73,7 @@ export function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="bg-[#f5f1ec] border-[#d3cec6] focus-visible:ring-[#111111] focus-visible:border-[#111111] h-10"
+                className="bg-slate-50 border-slate-200 focus-visible:ring-indigo-600 focus-visible:border-indigo-600 h-10"
                 required
               />
             </div>
@@ -81,14 +81,14 @@ export function LoginPage() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-[#111111] hover:bg-black text-white font-medium rounded-lg h-10 mt-2"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg h-10 mt-2 shadow-sm transition-all"
             >
               {isLoading ? 'Signing in…' : 'Sign in'}
             </Button>
           </form>
         </div>
 
-        <p className="text-center text-xs text-[#9c9fa5] mt-4">
+        <p className="text-center text-xs text-slate-400 mt-4 font-medium">
           Meta CRM Admin · Platform access
         </p>
       </div>

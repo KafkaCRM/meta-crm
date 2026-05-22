@@ -3,6 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { invitePlatformUser } from '@/api/platform';
 import { useAuth } from '@/contexts/auth.context';
 import { PlatformRole } from '@meta-crm/types';
+import { Mail, UserPlus, Info, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const ROLE_HIERARCHY: Record<PlatformRole, number> = {
   [PlatformRole.PlatformOwner]: 100,
@@ -33,6 +35,16 @@ const ROLE_LABELS: Record<PlatformRole, string> = {
   [PlatformRole.PlatformOps]: 'Platform Ops',
 };
 
+const ROLE_DESCRIPTIONS: Record<PlatformRole, string> = {
+  [PlatformRole.PlatformOwner]: 'All-Access root privilege',
+  [PlatformRole.PlatformAdmin]: 'Full tenant and plan controls',
+  [PlatformRole.PlatformSupport]: 'Tenant viewing and impersonation',
+  [PlatformRole.PlatformSales]: 'Subscription plan builder and viewer',
+  [PlatformRole.PlatformBilling]: 'Invoice adjustments and payouts ledger',
+  [PlatformRole.PlatformDeveloper]: 'Platform catalog plugins registration',
+  [PlatformRole.PlatformOps]: 'Bull-queues diagnostics controls',
+};
+
 export function InvitePlatformUser() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -52,14 +64,14 @@ export function InvitePlatformUser() {
     mutationFn: () => invitePlatformUser({ name, email, role }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['platform-users'] });
-      setSuccess(`Invitation sent to ${email}`);
+      setSuccess(`Invitation successfully sent to ${email}`);
       setName('');
       setEmail('');
       setRole('');
       setError('');
     },
     onError: (err: any) => {
-      setError(err.message ?? 'Failed to invite user');
+      setError(err.message ?? 'Failed to invite platform operator');
     },
   });
 
@@ -71,67 +83,97 @@ export function InvitePlatformUser() {
   };
 
   return (
-    <div className="mx-auto max-w-lg rounded-lg bg-white p-6 shadow-md">
-      <h2 className="mb-6 text-xl font-bold">Invite Platform User</h2>
+    <div className="space-y-4 animate-in fade-in duration-200">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="inviteName" className="mb-1 block text-sm font-medium">
-            Name
+        {/* Name input */}
+        <div className="space-y-1">
+          <label htmlFor="inviteName" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            Operator Full Name
           </label>
           <input
             id="inviteName"
             type="text"
+            placeholder="e.g. John Doe"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+            className="w-full px-3 py-1.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 placeholder:text-slate-400 text-slate-900"
             required
           />
         </div>
-        <div>
-          <label htmlFor="inviteEmail" className="mb-1 block text-sm font-medium">
-            Email
+
+        {/* Email input */}
+        <div className="space-y-1">
+          <label htmlFor="inviteEmail" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            Operator Email Address
           </label>
-          <input
-            id="inviteEmail"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
-            required
-          />
+          <div className="relative">
+            <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <input
+              id="inviteEmail"
+              type="email"
+              placeholder="e.g. operator@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full pl-9 pr-4 py-1.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 placeholder:text-slate-400 text-slate-900"
+              required
+            />
+          </div>
         </div>
-        <div>
-          <label htmlFor="inviteRole" className="mb-1 block text-sm font-medium">
-            Role
+
+        {/* Role select */}
+        <div className="space-y-1">
+          <label htmlFor="inviteRole" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            Operator Platform Role
           </label>
           <select
             id="inviteRole"
             value={role}
             onChange={(e) => setRole(e.target.value)}
-            className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+            className="w-full px-3 py-1.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900"
             required
           >
-            <option value="">Select role...</option>
+            <option value="">Select platform permission tier...</option>
             {availableRoles.map((r) => (
               <option key={r} value={r}>
-                {ROLE_LABELS[r]}
+                {ROLE_LABELS[r]} — {ROLE_DESCRIPTIONS[r]}
               </option>
             ))}
           </select>
           {availableRoles.length === 0 && (
-            <p className="mt-1 text-xs text-gray-500">No roles available to assign</p>
+            <p className="mt-1.5 text-[10px] text-rose-500 font-medium">No roles available. Your operator hierarchy is too low.</p>
           )}
         </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        {success && <p className="text-sm text-green-600">{success}</p>}
-        <button
+
+        {/* Status Alerts */}
+        {error && (
+          <div className="flex items-start gap-2 bg-rose-50 border border-rose-100 rounded-lg p-3 text-xs text-rose-700 font-medium">
+            <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+        {success && (
+          <div className="flex items-start gap-2 bg-emerald-50 border border-emerald-100 rounded-lg p-3 text-xs text-emerald-700 font-medium">
+            <CheckCircle2 size={14} className="mt-0.5 flex-shrink-0" />
+            <span>{success}</span>
+          </div>
+        )}
+
+        {/* Submit */}
+        <Button
           type="submit"
           disabled={inviteMutation.isPending || availableRoles.length === 0}
-          className="w-full rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg h-9 font-medium text-sm shadow-sm transition-all gap-1.5 mt-2"
         >
-          {inviteMutation.isPending ? 'Sending...' : 'Send Invitation'}
-        </button>
+          <UserPlus size={15} />
+          {inviteMutation.isPending ? 'Sending Invitation...' : 'Send Platform Invitation'}
+        </Button>
       </form>
+
+      {/* Info helper */}
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-start gap-2 mt-4 text-[11px] text-slate-400 leading-normal">
+        <Info size={14} className="mt-0.5 text-indigo-400 flex-shrink-0" />
+        <span>Platform operators receive password-less magic invite links to claim their administrator access tokens instantly.</span>
+      </div>
     </div>
   );
 }

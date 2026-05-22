@@ -148,30 +148,30 @@ export function Onboardings() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#111111]">Customer Onboarding</h1>
-          <p className="text-sm text-[#626260] mt-0.5">Track multi-step customer setup, onboarding workflow milestones, and values</p>
+          <h1 className="text-2xl font-bold tracking-tight text-[#0f172a]">Customer Onboarding</h1>
+          <p className="text-sm text-[#64748b] mt-0.5">Track multi-step customer setup, onboarding workflow milestones, and values</p>
         </div>
 
         <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if(!open) resetCreateForm(); }}>
           <DialogTrigger asChild>
-            <Button className="bg-[#111111] hover:bg-black text-white rounded-lg text-sm font-medium h-9 px-4">
+            <Button className="bg-[#0f172a] hover:bg-[#1e293b] text-white rounded-lg text-sm font-medium h-9 px-4">
               <Plus size={16} className="mr-1.5" />
               Start Onboarding
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md bg-white border border-[#d3cec6] rounded-xl shadow-lg p-6">
+          <DialogContent className="max-w-md bg-white border border-[#e2e8f0] rounded-xl shadow-lg p-6">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-[#111111]">Start New Customer Onboarding</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-[#0f172a]">Start New Customer Onboarding</DialogTitle>
             </DialogHeader>
 
             <div className="space-y-4 py-3">
               <div className="space-y-1">
-                <Label htmlFor="party" className="text-xs font-semibold text-[#626260]">Client / Account *</Label>
+                <Label htmlFor="party" className="text-xs font-semibold text-[#64748b]">Client / Account *</Label>
                 <select
                   id="party"
                   value={partyId}
                   onChange={(e) => setPartyId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-md bg-[#f5f1ec] border border-[#d3cec6] text-[#111111] focus:outline-none focus:ring-1 focus:ring-[#111111]"
+                  className="w-full px-3 py-2 text-sm rounded-md bg-[#f8fafc] border border-[#e2e8f0] text-[#0f172a] focus:outline-none focus:ring-1 focus:ring-[#0f172a]"
                 >
                   <option value="">Select Account</option>
                   {contacts.map((c) => (
@@ -181,18 +181,18 @@ export function Onboardings() {
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="contract_value" className="text-xs font-semibold text-[#626260]">Contract Value ($)</Label>
+                <Label htmlFor="contract_value" className="text-xs font-semibold text-[#64748b]">Contract Value ($)</Label>
                 <Input
                   id="contract_value"
                   type="number"
                   placeholder="0.00"
                   value={contractValue}
                   onChange={(e) => setContractValue(Number(e.target.value))}
-                  className="bg-[#f5f1ec] border-[#d3cec6] focus-visible:ring-[#111111]"
+                  className="bg-[#f8fafc] border-[#e2e8f0] focus-visible:ring-[#0f172a]"
                 />
               </div>
 
-              <p className="text-xs text-[#9c9fa5] bg-[#f5f1ec] p-2.5 rounded-lg border border-[#ebe7e1]">
+              <p className="text-xs text-[#94a3b8] bg-[#f8fafc] p-2.5 rounded-lg border border-[#e2e8f0]">
                 <strong>Notice:</strong> This will create onboarding with the platform's default checklist: Kickoff Call, Account Configuration, User Training, and Go Live.
               </p>
             </div>
@@ -201,14 +201,14 @@ export function Onboardings() {
               <Button
                 variant="outline"
                 onClick={() => setIsCreateOpen(false)}
-                className="border-[#d3cec6] text-[#626260] hover:bg-[#f5f1ec]"
+                className="border-[#e2e8f0] text-[#64748b] hover:bg-[#f8fafc]"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleCreateOnboarding}
                 disabled={createMutation.isPending}
-                className="bg-[#111111] hover:bg-black text-white"
+                className="bg-[#0f172a] hover:bg-[#1e293b] text-white"
               >
                 {createMutation.isPending ? 'Starting...' : 'Start Onboarding'}
               </Button>
@@ -218,14 +218,14 @@ export function Onboardings() {
       </div>
 
       {/* Onboardings List */}
-      <Card className="bg-white border-[#d3cec6] rounded-xl shadow-none">
+      <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none">
         <CardHeader className="pb-3 flex flex-row items-center justify-between gap-4 flex-wrap">
-          <CardTitle className="text-base font-semibold text-[#111111]">Ongoing Checklists</CardTitle>
+          <CardTitle className="text-base font-semibold text-[#0f172a]">Ongoing Checklists</CardTitle>
           <div className="flex items-center gap-2">
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-2 py-1 text-xs rounded-md bg-[#f5f1ec] border border-[#d3cec6] text-[#626260]"
+              className="px-2 py-1 text-xs rounded-md bg-[#f8fafc] border border-[#e2e8f0] text-[#64748b]"
             >
               <option value="">All Checklists</option>
               <option value="active">Active</option>
@@ -236,18 +236,18 @@ export function Onboardings() {
         </CardHeader>
         <CardContent className="p-0">
           {loadingOnboardings ? (
-            <div className="text-center py-8 text-[#9c9fa5]">Loading onboarding files...</div>
+            <div className="text-center py-8 text-[#94a3b8]">Loading onboarding files...</div>
           ) : onboardings.length === 0 ? (
-            <div className="text-center py-12 text-[#9c9fa5]">No customer onboarding records found.</div>
+            <div className="text-center py-12 text-[#94a3b8]">No customer onboarding records found.</div>
           ) : (
             <Table>
-              <TableHeader className="bg-[#f5f1ec]">
-                <TableRow className="hover:bg-transparent border-b border-[#ebe7e1]">
-                  <TableHead className="text-xs font-semibold text-[#626260]">Account Name</TableHead>
-                  <TableHead className="text-xs font-semibold text-[#626260]">Setup Value</TableHead>
-                  <TableHead className="text-xs font-semibold text-[#626260]">Setup Completion</TableHead>
-                  <TableHead className="text-xs font-semibold text-[#626260]">Overall Status</TableHead>
-                  <TableHead className="text-xs font-semibold text-[#626260] text-right">Actions</TableHead>
+              <TableHeader className="bg-[#f8fafc]">
+                <TableRow className="hover:bg-transparent border-b border-[#e2e8f0]">
+                  <TableHead className="text-xs font-semibold text-[#64748b]">Account Name</TableHead>
+                  <TableHead className="text-xs font-semibold text-[#64748b]">Setup Value</TableHead>
+                  <TableHead className="text-xs font-semibold text-[#64748b]">Setup Completion</TableHead>
+                  <TableHead className="text-xs font-semibold text-[#64748b]">Overall Status</TableHead>
+                  <TableHead className="text-xs font-semibold text-[#64748b] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -257,15 +257,15 @@ export function Onboardings() {
                   const completedSteps = onb.steps?.filter((s) => s.completed).length ?? 0;
 
                   return (
-                    <TableRow key={onb.id} className="border-b border-[#ebe7e1] hover:bg-[#f5f1ec]/30">
-                      <TableCell className="font-medium text-[#111111]">{onb.party?.name}</TableCell>
-                      <TableCell className="text-sm font-mono text-[#111111]">
+                    <TableRow key={onb.id} className="border-b border-[#e2e8f0] hover:bg-[#f8fafc]/30">
+                      <TableCell className="font-medium text-[#0f172a]">{onb.party?.name}</TableCell>
+                      <TableCell className="text-sm font-mono text-[#0f172a]">
                         {onb.contract_value ? `$${onb.contract_value.toLocaleString()}` : '—'}
                       </TableCell>
                       <TableCell className="min-w-[150px]">
                         <div className="flex items-center gap-2">
-                          <Progress value={pct} className="h-1.5 w-24 bg-[#ebe7e1]" />
-                          <span className="text-xs text-[#626260] font-mono">
+                          <Progress value={pct} className="h-1.5 w-24 bg-[#e2e8f0]" />
+                          <span className="text-xs text-[#64748b] font-mono">
                             {completedSteps}/{totalSteps} ({pct}%)
                           </span>
                         </div>
@@ -280,7 +280,7 @@ export function Onboardings() {
                           size="sm"
                           variant="ghost"
                           onClick={() => handleOnboardingDetail(onb.id)}
-                          className="h-7 text-xs text-[#111111] hover:bg-[#f5f1ec]"
+                          className="h-7 text-xs text-[#0f172a] hover:bg-[#f8fafc]"
                         >
                           Checklist
                           <ChevronRight size={14} className="ml-1" />
@@ -297,34 +297,34 @@ export function Onboardings() {
 
       {/* Detail Dialog */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="max-w-md bg-white border border-[#d3cec6] rounded-xl shadow-lg p-6">
+        <DialogContent className="max-w-md bg-white border border-[#e2e8f0] rounded-xl shadow-lg p-6">
           <DialogHeader>
-            <DialogTitle className="text-lg font-semibold text-[#111111]">Onboarding Checklist</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-[#0f172a]">Onboarding Checklist</DialogTitle>
           </DialogHeader>
 
           {selectedOnboarding && (
             <div className="space-y-4 py-2">
               <div className="grid grid-cols-2 gap-4 text-xs">
                 <div>
-                  <p className="font-semibold text-[#9c9fa5]">Client:</p>
-                  <p className="font-medium text-[#111111] mt-0.5">{selectedOnboarding.party?.name}</p>
+                  <p className="font-semibold text-[#94a3b8]">Client:</p>
+                  <p className="font-medium text-[#0f172a] mt-0.5">{selectedOnboarding.party?.name}</p>
                 </div>
                 <div>
-                  <p className="font-semibold text-[#9c9fa5] text-right">Contract Value:</p>
-                  <p className="font-medium text-[#111111] mt-0.5 text-right font-mono">
+                  <p className="font-semibold text-[#94a3b8] text-right">Contract Value:</p>
+                  <p className="font-medium text-[#0f172a] mt-0.5 text-right font-mono">
                     {selectedOnboarding.contract_value ? `$${selectedOnboarding.contract_value.toLocaleString()}` : '—'}
                   </p>
                 </div>
               </div>
 
-              <Separator className="bg-[#ebe7e1]" />
+              <Separator className="bg-[#e2e8f0]" />
 
               <div className="space-y-1">
-                <Label className="text-2xs font-semibold text-[#626260] uppercase">Update Workflow Status</Label>
+                <Label className="text-2xs font-semibold text-[#64748b] uppercase">Update Workflow Status</Label>
                 <select
                   value={selectedOnboarding.status}
                   onChange={(e) => handleStatusChange(selectedOnboarding.id, e.target.value)}
-                  className="w-full px-2.5 py-1.5 text-xs rounded-md bg-[#f5f1ec] border border-[#d3cec6] text-[#111111]"
+                  className="w-full px-2.5 py-1.5 text-xs rounded-md bg-[#f8fafc] border border-[#e2e8f0] text-[#0f172a]"
                 >
                   <option value="active">Active</option>
                   <option value="completed">Completed</option>
@@ -332,16 +332,16 @@ export function Onboardings() {
                 </select>
               </div>
 
-              <Separator className="bg-[#ebe7e1]" />
+              <Separator className="bg-[#e2e8f0]" />
 
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-xs font-semibold text-[#626260]">Milestones / Tasks</span>
-                  <span className="text-xs font-mono text-[#111111] font-semibold">
+                  <span className="text-xs font-semibold text-[#64748b]">Milestones / Tasks</span>
+                  <span className="text-xs font-mono text-[#0f172a] font-semibold">
                     {calculateProgress(selectedOnboarding.steps)}% Complete
                   </span>
                 </div>
-                <Progress value={calculateProgress(selectedOnboarding.steps)} className="h-2 mb-4 bg-[#ebe7e1]" />
+                <Progress value={calculateProgress(selectedOnboarding.steps)} className="h-2 mb-4 bg-[#e2e8f0]" />
 
                 <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                   {selectedOnboarding.steps?.map((step) => (
@@ -351,13 +351,13 @@ export function Onboardings() {
                       className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
                         step.completed
                           ? 'bg-emerald-50/40 border-emerald-100 text-emerald-800'
-                          : 'bg-[#f5f1ec]/40 border-[#ebe7e1] text-[#111111] hover:bg-[#f5f1ec]'
+                          : 'bg-[#f8fafc]/40 border-[#e2e8f0] text-[#0f172a] hover:bg-[#f8fafc]'
                       }`}
                     >
                       {step.completed ? (
                         <CheckCircle2 className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
                       ) : (
-                        <Circle className="h-4.5 w-4.5 text-[#9c9fa5] shrink-0" />
+                        <Circle className="h-4.5 w-4.5 text-[#94a3b8] shrink-0" />
                       )}
                       <div className="flex-1 min-w-0">
                         <p className={`text-xs font-medium truncate ${step.completed ? 'line-through text-emerald-600/80' : ''}`}>
@@ -377,7 +377,7 @@ export function Onboardings() {
           )}
 
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setIsDetailOpen(false)} className="border-[#d3cec6] text-[#626260] w-full">
+            <Button variant="outline" onClick={() => setIsDetailOpen(false)} className="border-[#e2e8f0] text-[#64748b] w-full">
               Close Checklist
             </Button>
           </DialogFooter>

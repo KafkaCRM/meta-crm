@@ -20,7 +20,7 @@ vi.mock('bcrypt', () => ({
 function createMockDb() {
   return {
     tenant: { findUnique: vi.fn() },
-    user: { findUnique: vi.fn() },
+    user: { findUnique: vi.fn(), findFirst: vi.fn() },
     platformUser: { findUnique: vi.fn() },
     refreshToken: {
       findFirst: vi.fn(),
@@ -208,6 +208,43 @@ describe('AuthService', () => {
         expect(result.value.user.role).toBe('platform_admin');
         expect(result.value.user.assignment_ids).toEqual([]);
         expect((result.value.user as any).password_hash).toBeUndefined();
+      }
+    });
+  });
+
+  describe('login (no tenant slug provided)', () => {
+    it('successfully logs in a tenant user by auto-resolving the slug from email', async () => {
+      mockCompare.mockResolvedValue(true);
+      (db.platformUser.findUnique as any).mockResolvedValue(null);
+      (db.user.findFirst as any).mockResolvedValue(USER);
+      (db.tenant.findUnique as any).mockResolvedValue(TENANT);
+      (db.user.findUnique as any).mockResolvedValue(USER);
+      (db.refreshToken.create as any).mockResolvedValue({ id: 'rt-new' });
+
+      const result = await authService.login({
+        email: 'john@example.com',
+        password: 'correct-password',
+      });
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.access_token).toBe('mock-access-token');
+        expect(result.value.user.name).toBe('John Doe');
+      }
+    });
+
+    it('returns INVALID_CREDENTIALS if user is not found in either table', async () => {
+      (db.platformUser.findUnique as any).mockResolvedValue(null);
+      (db.user.findFirst as any).mockResolvedValue(null);
+
+      const result = await authService.login({
+        email: 'unknown@example.com',
+        password: 'password',
+      });
+
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.code).toBe('INVALID_CREDENTIALS');
       }
     });
   });

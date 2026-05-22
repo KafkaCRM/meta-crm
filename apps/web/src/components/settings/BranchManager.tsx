@@ -1,14 +1,21 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, MapPin, Building2, ChevronRight, X } from 'lucide-react';
 import { settingsApi, type Branch } from '@/api/settings';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { usePermissions } from '@/hooks/usePermissions';
+import { cn } from '@/lib/utils';
 
 export function BranchManager() {
+  const { can } = usePermissions();
+  const canManage = can('manage', 'Branch');
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: '', address: '', city: '' });
-
+  
   const { data: branches, isLoading } = useQuery({
     queryKey: ['settings', 'branches'],
     queryFn: () => settingsApi.branches.list(),
@@ -20,7 +27,7 @@ export function BranchManager() {
       settingsApi.branches.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings', 'branches'] });
-      toast.success('Branch created');
+      toast.success('Branch created successfully');
       setFormData({ name: '', address: '', city: '' });
     },
     onError: () => toast.error('Failed to create branch'),
@@ -31,8 +38,9 @@ export function BranchManager() {
       settingsApi.branches.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings', 'branches'] });
-      toast.success('Branch updated');
+      toast.success('Branch updated successfully');
       setEditingId(null);
+      setFormData({ name: '', address: '', city: '' });
     },
     onError: () => toast.error('Failed to update branch'),
   });
@@ -74,100 +82,164 @@ export function BranchManager() {
   }, []);
 
   if (isLoading) {
-    return <div className="text-muted-foreground">Loading branches...</div>;
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-[#94a3b8]" />
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-[1000px]">
       <div>
-        <h1 className="text-2xl font-bold">Branches</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Manage your organisation's branches
+        <h1 className="text-2xl font-semibold tracking-tight text-[#0f172a]">Branches</h1>
+        <p className="text-sm text-[#64748b] mt-0.5">
+          Configure and manage your organisation's physical branches and locations
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-3 rounded-lg border bg-card p-4">
-        <h3 className="text-sm font-medium">{editingId ? 'Edit Branch' : 'Add Branch'}</h3>
-        <div className="grid gap-3 sm:grid-cols-3">
-          <input
-            type="text"
-            placeholder="Branch name"
-            value={formData.name}
-            onChange={(e) => setFormData((f) => ({ ...f, name: e.target.value }))}
-            className="rounded-md border border-input px-3 py-2 text-sm"
-            required
-          />
-          <input
-            type="text"
-            placeholder="Address"
-            value={formData.address}
-            onChange={(e) => setFormData((f) => ({ ...f, address: e.target.value }))}
-            className="rounded-md border border-input px-3 py-2 text-sm"
-          />
-          <input
-            type="text"
-            placeholder="City"
-            value={formData.city}
-            onChange={(e) => setFormData((f) => ({ ...f, city: e.target.value }))}
-            className="rounded-md border border-input px-3 py-2 text-sm"
-          />
-        </div>
-        <div className="flex gap-2">
-          <button
-            type="submit"
-            disabled={createMutation.isPending || updateMutation.isPending}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
-          >
-            {(createMutation.isPending || updateMutation.isPending) && (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            )}
-            {editingId ? 'Update' : 'Add'}
-          </button>
-          {editingId && (
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
-            >
-              Cancel
-            </button>
-          )}
-        </div>
-      </form>
-
-      <div className="rounded-lg border divide-y">
-        {branches?.map((branch) => (
-          <div key={branch.id} className="flex items-center justify-between px-4 py-3">
-            <div>
-              <p className="text-sm font-medium">{branch.name}</p>
-              {branch.city && (
-                <p className="text-xs text-muted-foreground">{branch.city}</p>
+      <div className="grid gap-6 md:grid-cols-3">
+        {/* Branch listing card */}
+        <Card className={cn("bg-white border-[#e2e8f0] rounded-xl shadow-none", canManage ? "md:col-span-2" : "md:col-span-3")}>
+          <CardHeader className="pb-3 border-b border-[#e2e8f0]">
+            <CardTitle className="text-base font-medium text-[#0f172a]">
+              Active Locations
+            </CardTitle>
+            <CardDescription className="text-xs text-[#94a3b8]">
+              {branches?.length ?? 0} branches configured in this tenant
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y divide-[#e2e8f0]">
+              {branches?.map((branch) => (
+                <div
+                  key={branch.id}
+                  className="flex items-center justify-between p-4 hover:bg-[#f8fafc]/60 transition-colors group"
+                >
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="mt-0.5 p-2 bg-[#f1f5f9] rounded-lg text-[#64748b] group-hover:bg-white group-hover:text-[#0f172a] border border-transparent group-hover:border-[#e2e8f0] transition-colors">
+                      <Building2 size={16} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-[#0f172a] truncate">{branch.name}</p>
+                      {(branch.address || branch.city) && (
+                        <p className="text-xs text-[#64748b] mt-0.5 flex items-center gap-1">
+                          <MapPin size={12} className="text-[#94a3b8]" />
+                          <span>
+                            {branch.address}
+                            {branch.address && branch.city && ', '}
+                            {branch.city}
+                          </span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  {canManage && (
+                    <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="text-[#64748b] hover:text-[#0f172a] hover:bg-[#e2e8f0]"
+                        onClick={() => handleEdit(branch)}
+                      >
+                        <Pencil size={14} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => {
+                          if (window.confirm(`Deactivate ${branch.name}?`)) {
+                            removeMutation.mutate(branch.id);
+                          }
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {branches?.length === 0 && (
+                <div className="p-8 text-center text-sm text-[#64748b]">
+                  No active branches found. {canManage && 'Add one on the right.'}
+                </div>
               )}
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handleEdit(branch)}
-                className="p-1 rounded hover:bg-muted"
-              >
-                <Pencil className="h-4 w-4 text-muted-foreground" />
-              </button>
-              <button
-                onClick={() => {
-                  if (window.confirm(`Deactivate ${branch.name}?`)) {
-                    removeMutation.mutate(branch.id);
-                  }
-                }}
-                className="p-1 rounded hover:bg-muted"
-              >
-                <Trash2 className="h-4 w-4 text-red-500" />
-              </button>
+          </CardContent>
+        </Card>
+
+        {/* Form panel card */}
+        {canManage && (
+        <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none h-fit">
+          <CardHeader className="pb-3 border-b border-[#e2e8f0]">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base font-medium text-[#0f172a]">
+                {editingId ? 'Edit Location' : 'New Location'}
+              </CardTitle>
+              {editingId && (
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  className="text-[#94a3b8] hover:text-[#0f172a]"
+                  onClick={handleCancel}
+                >
+                  <X size={14} />
+                </Button>
+              )}
             </div>
-          </div>
-        ))}
-        {branches?.length === 0 && (
-          <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-            No branches yet. Add your first branch above.
-          </div>
+            <CardDescription className="text-xs text-[#94a3b8]">
+              {editingId ? 'Modify location details' : 'Deploy a new physical office'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-[#64748b]">Branch Name</label>
+                <Input
+                  type="text"
+                  placeholder="e.g. West Coast HQ"
+                  value={formData.name}
+                  onChange={(e) => setFormData((f) => ({ ...f, name: e.target.value }))}
+                  required
+                  className="h-9 border-[#e2e8f0] bg-white text-[#0f172a] placeholder-[#94a3b8]"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-[#64748b]">Street Address</label>
+                <Input
+                  type="text"
+                  placeholder="e.g. 100 Pine St, Suite 400"
+                  value={formData.address}
+                  onChange={(e) => setFormData((f) => ({ ...f, address: e.target.value }))}
+                  className="h-9 border-[#e2e8f0] bg-white text-[#0f172a] placeholder-[#94a3b8]"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-[#64748b]">City</label>
+                <Input
+                  type="text"
+                  placeholder="e.g. San Francisco"
+                  value={formData.city}
+                  onChange={(e) => setFormData((f) => ({ ...f, city: e.target.value }))}
+                  className="h-9 border-[#e2e8f0] bg-white text-[#0f172a] placeholder-[#94a3b8]"
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Button
+                  type="submit"
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                  className="bg-[#0f172a] hover:bg-[#1e293b] text-white flex-1 h-9 rounded-lg"
+                >
+                  {(createMutation.isPending || updateMutation.isPending) && (
+                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                  )}
+                  {editingId ? 'Save Changes' : 'Create Location'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
         )}
       </div>
     </div>

@@ -37,7 +37,14 @@ export function buildTenantAbility(
   let matchedAny = false;
 
   for (const entry of roles) {
-    const permissions = SYSTEM_ROLE_MAP[entry.role as TenantRole];
+    let roleKey = entry.role;
+    if (roleKey === 'admin') {
+      roleKey = TenantRole.TenantAdmin;
+    } else if (roleKey === 'owner') {
+      roleKey = TenantRole.TenantOwner;
+    }
+
+    const permissions = SYSTEM_ROLE_MAP[roleKey as TenantRole];
     if (!permissions) continue;
 
     matchedAny = true;

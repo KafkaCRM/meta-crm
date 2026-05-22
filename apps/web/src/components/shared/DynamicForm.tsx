@@ -185,7 +185,7 @@ export function DynamicForm<T extends FieldValues>({
             {group.label && (
               <>
                 {gi > 0 && <Separator className="my-4" />}
-                <h3 className="text-sm font-semibold text-[#111111] uppercase tracking-wider">
+                <h3 className="text-sm font-semibold text-[#0f172a] uppercase tracking-wider">
                   {group.label}
                 </h3>
               </>
@@ -220,7 +220,7 @@ export function DynamicForm<T extends FieldValues>({
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="bg-[#111111] hover:bg-black text-white rounded-lg h-9 px-4 text-sm font-medium"
+            className="bg-[#0f172a] hover:bg-[#1e293b] text-white rounded-lg h-9 px-4 text-sm font-medium"
           >
             {isSubmitting && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
             {isSubmitting ? 'Saving...' : submitLabel}
@@ -287,7 +287,7 @@ function FormField<T extends FieldValues>({
   const inputBaseClass = `w-full rounded-lg border px-3 py-2 text-sm transition-colors ${
     error
       ? 'border-[#c41c1c] focus:border-[#c41c1c]'
-      : 'border-[#d3cec6] focus:border-[#111111]'
+      : 'border-[#e2e8f0] focus:border-[#0f172a]'
   } ${isPrefilled ? 'border-l-[3px] border-l-[#3b82f6]' : ''} bg-white`;
 
   const handlePhoneBlur = async () => {
@@ -308,13 +308,13 @@ function FormField<T extends FieldValues>({
   if (!canUpdate) {
     return (
       <div className="space-y-1.5">
-        <Label className="text-sm font-medium text-[#626260]">
+        <Label className="text-sm font-medium text-[#64748b]">
           {label}
           {field.required && <span className="text-[#c41c1c] ml-0.5">*</span>}
         </Label>
-        <div className="flex items-center gap-2 rounded-lg border border-[#d3cec6] bg-[#f5f1ec] px-3 py-2">
-          <Lock className="h-3.5 w-3.5 text-[#9c9fa5] shrink-0" />
-          <span className="text-sm text-[#626260]">
+        <div className="flex items-center gap-2 rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-3 py-2">
+          <Lock className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
+          <span className="text-sm text-[#64748b]">
             {(currentValue as string) ?? '—'}
           </span>
         </div>
@@ -357,7 +357,7 @@ function FormField<T extends FieldValues>({
             />
             {checkingDuplicate && (
               <span className="absolute right-3 top-1/2 -translate-y-1/2">
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-[#9c9fa5]" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-[#94a3b8]" />
               </span>
             )}
           </div>
@@ -432,7 +432,7 @@ function FormField<T extends FieldValues>({
               setValue(fieldName, checked as PathValue<T, typeof fieldName>)
             }
           />
-          <span className="text-sm text-[#626260]">{label}</span>
+          <span className="text-sm text-[#64748b]">{label}</span>
         </div>
       );
       break;
@@ -516,7 +516,7 @@ function FormField<T extends FieldValues>({
           Pre-filled
         </Badge>
       )}
-      <Label className="text-sm font-medium text-[#626260]">
+      <Label className="text-sm font-medium text-[#64748b]">
         {label}
         {field.required && <span className="text-[#c41c1c] ml-0.5">*</span>}
       </Label>

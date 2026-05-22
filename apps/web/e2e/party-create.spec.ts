@@ -3,7 +3,6 @@ import { test, expect } from '@playwright/test';
 test.describe('Party Creation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
-    await page.fill('#tenant', process.env['E2E_TENANT_SLUG'] ?? 'test-tenant');
     await page.fill('#email', process.env['E2E_USER_EMAIL'] ?? 'admin@test.com');
     await page.fill('#password', process.env['E2E_USER_PASSWORD'] ?? 'password123');
     await page.click('button[type="submit"]');

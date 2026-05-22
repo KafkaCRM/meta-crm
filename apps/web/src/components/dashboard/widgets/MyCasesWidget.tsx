@@ -25,7 +25,7 @@ const STAGE_COLORS: Record<string, string> = {
 };
 
 function StageBadge({ stage }: { stage: string }) {
-  const cls = STAGE_COLORS[stage] ?? 'bg-[#9c9fa5]/10 text-[#626260] border-[#9c9fa5]/20';
+  const cls = STAGE_COLORS[stage] ?? 'bg-[#94a3b8]/10 text-[#64748b] border-[#94a3b8]/20';
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border capitalize ${cls}`}>
       {stage}
@@ -48,16 +48,16 @@ export function MyCasesWidget({ className }: MyCasesWidgetProps) {
 
   if (isLoading) {
     return (
-      <Card className={`bg-white border-[#d3cec6] rounded-xl shadow-none ${className ?? ''}`}>
+      <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none ${className ?? ''}`}>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-[#111111]">My Cases Today</CardTitle>
+          <CardTitle className="text-sm font-semibold text-[#0f172a]">My Cases Today</CardTitle>
         </CardHeader>
-        <Separator className="bg-[#ebe7e1]" />
+        <Separator className="bg-[#e2e8f0]" />
         <CardContent className="pt-4 space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="flex items-center gap-3">
-              <Skeleton className="h-4 w-32 bg-[#ebe7e1]" />
-              <Skeleton className="h-4 w-16 bg-[#ebe7e1] ml-auto" />
+              <Skeleton className="h-4 w-32 bg-[#e2e8f0]" />
+              <Skeleton className="h-4 w-16 bg-[#e2e8f0] ml-auto" />
             </div>
           ))}
         </CardContent>
@@ -67,11 +67,11 @@ export function MyCasesWidget({ className }: MyCasesWidgetProps) {
 
   if (error) {
     return (
-      <Card className={`bg-white border-[#d3cec6] rounded-xl shadow-none ${className ?? ''}`}>
+      <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none ${className ?? ''}`}>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-[#111111]">My Cases Today</CardTitle>
+          <CardTitle className="text-sm font-semibold text-[#0f172a]">My Cases Today</CardTitle>
         </CardHeader>
-        <Separator className="bg-[#ebe7e1]" />
+        <Separator className="bg-[#e2e8f0]" />
         <CardContent className="pt-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-[#c41c1c]">Could not load cases. Retry.</p>
@@ -79,7 +79,7 @@ export function MyCasesWidget({ className }: MyCasesWidgetProps) {
               variant="outline"
               size="sm"
               onClick={() => window.location.reload()}
-              className="h-7 text-xs border-[#d3cec6]"
+              className="h-7 text-xs border-[#e2e8f0]"
             >
               Retry
             </Button>
@@ -92,52 +92,52 @@ export function MyCasesWidget({ className }: MyCasesWidgetProps) {
   const cases = data?.cases ?? [];
 
   return (
-    <Card className={`bg-white border-[#d3cec6] rounded-xl shadow-none hover:shadow-md transition-shadow ${className ?? ''}`}>
+    <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none hover:shadow-md transition-shadow ${className ?? ''}`}>
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
-        <CardTitle className="text-sm font-semibold text-[#111111]">My Cases Today</CardTitle>
+        <CardTitle className="text-sm font-semibold text-[#0f172a]">My Cases Today</CardTitle>
         {cases.length > 0 && (
           <Badge variant="secondary" className="bg-[#3b82f6]/10 text-[#2563eb] border-0 text-xs rounded-md">
             {cases.length}
           </Badge>
         )}
       </CardHeader>
-      <Separator className="bg-[#ebe7e1]" />
+      <Separator className="bg-[#e2e8f0]" />
       <CardContent className="pt-4">
         {cases.length === 0 ? (
           <div className="flex flex-col items-center py-8 text-center">
-            <div className="w-10 h-10 rounded-full bg-[#f5f1ec] flex items-center justify-center mb-3">
-              <FileText size={18} className="text-[#9c9fa5]" />
+            <div className="w-10 h-10 rounded-full bg-[#f8fafc] flex items-center justify-center mb-3">
+              <FileText size={18} className="text-[#94a3b8]" />
             </div>
-            <p className="text-sm font-medium text-[#111111]">No cases assigned to you</p>
-            <p className="text-xs text-[#9c9fa5] mt-1">You're all caught up!</p>
+            <p className="text-sm font-medium text-[#0f172a]">No cases assigned to you</p>
+            <p className="text-xs text-[#94a3b8] mt-1">You're all caught up!</p>
           </div>
         ) : (
           <div className="space-y-2">
             {cases.map((c) => (
               <button
                 key={c.id}
-                className="flex w-full items-center justify-between rounded-lg border border-[#ebe7e1] p-3 text-left hover:bg-[#f5f1ec] transition-colors"
+                className="flex w-full items-center justify-between rounded-lg border border-[#e2e8f0] p-3 text-left hover:bg-[#f8fafc] transition-colors"
                 onClick={() => navigate({ to: '/cases/$id', params: { id: c.id } })}
               >
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-[#111111] truncate">{c.party_name}</p>
-                  <p className="text-xs text-[#9c9fa5] mt-0.5 truncate">{c.title}</p>
+                  <p className="text-sm font-medium text-[#0f172a] truncate">{c.party_name}</p>
+                  <p className="text-xs text-[#94a3b8] mt-0.5 truncate">{c.title}</p>
                 </div>
                 <div className="flex items-center gap-2 ml-3 shrink-0">
                   <StageBadge stage={c.stage} />
-                  <ArrowUpRight size={12} className="text-[#9c9fa5]" />
+                  <ArrowUpRight size={12} className="text-[#94a3b8]" />
                 </div>
               </button>
             ))}
           </div>
         )}
 
-        <div className="mt-3 pt-3 border-t border-[#ebe7e1]">
+        <div className="mt-3 pt-3 border-t border-[#e2e8f0]">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate({ to: '/cases', search: { assigned_to_me: 'true' } as any })}
-            className="w-full h-7 text-xs text-[#626260] hover:text-[#111111]"
+            className="w-full h-7 text-xs text-[#64748b] hover:text-[#0f172a]"
           >
             View all cases
             <ArrowUpRight size={12} className="ml-1" />

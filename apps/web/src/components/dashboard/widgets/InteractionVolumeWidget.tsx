@@ -29,16 +29,16 @@ export function InteractionVolumeWidget({ className, hasPermission = true }: Int
 
   if (!hasPermission) {
     return (
-      <Card className={`bg-white border-[#d3cec6] rounded-xl shadow-none relative overflow-hidden ${className ?? ''}`}>
+      <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none relative overflow-hidden ${className ?? ''}`}>
         <CardContent className="pt-5 pb-5">
           <div className="absolute inset-0 backdrop-blur-sm bg-white/60 flex items-center justify-center z-10">
             <div className="text-center">
-              <Lock size={20} className="mx-auto text-[#9c9fa5] mb-2" />
-              <p className="text-xs font-medium text-[#626260]">Upgrade your role to view this report</p>
+              <Lock size={20} className="mx-auto text-[#94a3b8] mb-2" />
+              <p className="text-xs font-medium text-[#64748b]">Upgrade your role to view this report</p>
             </div>
           </div>
-          <p className="text-xs font-medium text-[#9c9fa5] uppercase tracking-wider mb-4">Interaction Volume</p>
-          <Skeleton className="h-40 bg-[#ebe7e1] rounded-xl" />
+          <p className="text-xs font-medium text-[#94a3b8] uppercase tracking-wider mb-4">Interaction Volume</p>
+          <Skeleton className="h-40 bg-[#e2e8f0] rounded-xl" />
         </CardContent>
       </Card>
     );
@@ -46,13 +46,13 @@ export function InteractionVolumeWidget({ className, hasPermission = true }: Int
 
   if (isLoading) {
     return (
-      <Card className={`bg-white border-[#d3cec6] rounded-xl shadow-none ${className ?? ''}`}>
+      <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none ${className ?? ''}`}>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-[#111111]">Interaction Volume</CardTitle>
+          <CardTitle className="text-sm font-semibold text-[#0f172a]">Interaction Volume</CardTitle>
         </CardHeader>
-        <Separator className="bg-[#ebe7e1]" />
+        <Separator className="bg-[#e2e8f0]" />
         <CardContent className="pt-5">
-          <Skeleton className="h-40 bg-[#ebe7e1] rounded-xl" />
+          <Skeleton className="h-40 bg-[#e2e8f0] rounded-xl" />
         </CardContent>
       </Card>
     );
@@ -60,18 +60,18 @@ export function InteractionVolumeWidget({ className, hasPermission = true }: Int
 
   if (error) {
     return (
-      <Card className={`bg-white border-[#d3cec6] rounded-xl shadow-none ${className ?? ''}`}>
+      <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none ${className ?? ''}`}>
         <CardContent className="pt-5 pb-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-[#9c9fa5] uppercase tracking-wider mb-1">Interaction Volume</p>
+              <p className="text-xs font-medium text-[#94a3b8] uppercase tracking-wider mb-1">Interaction Volume</p>
               <p className="text-sm text-[#c41c1c]">Could not load data. Retry.</p>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={() => window.location.reload()}
-              className="h-7 text-xs border-[#d3cec6]"
+              className="h-7 text-xs border-[#e2e8f0]"
             >
               <RefreshCw size={12} className="mr-1" />
               Retry
@@ -89,18 +89,18 @@ export function InteractionVolumeWidget({ className, hasPermission = true }: Int
   })) ?? [];
 
   return (
-    <Card className={`bg-white border-[#d3cec6] rounded-xl shadow-none hover:shadow-md transition-shadow ${className ?? ''}`}>
+    <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none hover:shadow-md transition-shadow ${className ?? ''}`}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-semibold text-[#111111]">Interaction Volume</CardTitle>
+        <CardTitle className="text-sm font-semibold text-[#0f172a]">Interaction Volume</CardTitle>
       </CardHeader>
-      <Separator className="bg-[#ebe7e1]" />
+      <Separator className="bg-[#e2e8f0]" />
       <CardContent className="pt-5">
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={chartData} barSize={8} barGap={1}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#ebe7e1" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
             <XAxis
               dataKey="date"
-              tick={{ fontSize: 10, fill: '#9c9fa5' }}
+              tick={{ fontSize: 10, fill: '#94a3b8' }}
               axisLine={false}
               tickLine={false}
               tickFormatter={(v) => {
@@ -109,7 +109,7 @@ export function InteractionVolumeWidget({ className, hasPermission = true }: Int
               }}
             />
             <YAxis
-              tick={{ fontSize: 10, fill: '#9c9fa5' }}
+              tick={{ fontSize: 10, fill: '#94a3b8' }}
               axisLine={false}
               tickLine={false}
               width={24}
@@ -117,10 +117,10 @@ export function InteractionVolumeWidget({ className, hasPermission = true }: Int
             <Tooltip
               contentStyle={{
                 background: '#ffffff',
-                border: '1px solid #d3cec6',
+                border: '1px solid #e2e8f0',
                 borderRadius: '8px',
                 fontSize: '12px',
-                color: '#111111',
+                color: '#0f172a',
                 boxShadow: 'none',
               }}
               formatter={(value: any, name: any) => [value, name === 'inbound' ? 'Inbound' : 'Outbound']}

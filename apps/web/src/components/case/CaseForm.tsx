@@ -154,7 +154,7 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
   if (!can('create', 'Case')) {
     return (
       <div className="flex items-center justify-center py-12">
-        <p className="text-[#9c9fa5]">You do not have permission to create cases.</p>
+        <p className="text-[#94a3b8]">You do not have permission to create cases.</p>
       </div>
     );
   }
@@ -174,26 +174,26 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
               navigate({ to: '/cases' });
             }
           }}
-          className="text-[#9c9fa5] hover:text-[#111111] h-8"
+          className="text-[#94a3b8] hover:text-[#0f172a] h-8"
         >
           <ArrowLeft size={14} className="mr-1" />
           Back
         </Button>
         <div>
-          <h1 className="text-2xl font-medium text-[#111111] tracking-tight">
+          <h1 className="text-2xl font-medium text-[#0f172a] tracking-tight">
             New Case
           </h1>
-          <p className="text-sm text-[#9c9fa5] mt-0.5">
+          <p className="text-sm text-[#94a3b8] mt-0.5">
             Initialize a new case on default pipeline definition
           </p>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-[#d3cec6] p-8 shadow-none">
+      <div className="bg-white rounded-2xl border border-[#e2e8f0] p-8 shadow-none">
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Title */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[#111111]">
+            <label className="text-sm font-medium text-[#0f172a]">
               Case Title
             </label>
             <Input
@@ -201,7 +201,7 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
               placeholder="e.g., Admission Inquiry - Rahul Sharma"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="bg-[#f5f1ec] border-[#d3cec6] placeholder:text-[#9c9fa5] focus-visible:ring-[#111111]"
+              className="bg-[#f8fafc] border-[#e2e8f0] placeholder:text-[#94a3b8] focus-visible:ring-[#0f172a]"
             />
             {errors.title && (
               <p className="text-xs text-red-600 mt-1">{errors.title}</p>
@@ -211,13 +211,13 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
           {/* Type & Workflow */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[#111111]">
+              <label className="text-sm font-medium text-[#0f172a]">
                 Case Type
               </label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value)}
-                className="w-full h-9 rounded-lg border border-[#d3cec6] bg-[#f5f1ec] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#111111] transition-colors"
+                className="w-full h-9 rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
               >
                 <option value="enrollment">Enrollment</option>
                 <option value="appointment">Appointment</option>
@@ -226,12 +226,12 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[#111111]">
+              <label className="text-sm font-medium text-[#0f172a]">
                 Pipeline Workflow
               </label>
               <select
                 disabled
-                className="w-full h-9 rounded-lg border border-[#d3cec6]/60 bg-[#f5f1ec]/60 px-3 text-sm text-[#9c9fa5] cursor-not-allowed"
+                className="w-full h-9 rounded-lg border border-[#e2e8f0]/60 bg-[#f8fafc]/60 px-3 text-sm text-[#94a3b8] cursor-not-allowed"
               >
                 <option value="wf_default_001">Default Admissions Workflow</option>
               </select>
@@ -240,22 +240,22 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
 
           {/* Contact (Party) */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[#111111]">
+            <label className="text-sm font-medium text-[#0f172a]">
               Select Contact (Party)
             </label>
             {searchPartyId && prefilledParty ? (
-              <div className="flex items-center justify-between rounded-lg border border-[#d3cec6]/60 bg-[#f5f1ec]/50 px-3 py-2 text-sm text-[#111111]">
+              <div className="flex items-center justify-between rounded-lg border border-[#e2e8f0]/60 bg-[#f8fafc]/50 px-3 py-2 text-sm text-[#0f172a]">
                 <div>
                   <p className="font-medium">{prefilledParty.name}</p>
-                  <p className="text-xs text-[#9c9fa5]">{prefilledParty.phone_raw} · {prefilledParty.email}</p>
+                  <p className="text-xs text-[#94a3b8]">{prefilledParty.phone_raw} · {prefilledParty.email}</p>
                 </div>
-                <span className="text-xs bg-[#111111]/10 px-2 py-0.5 rounded text-[#111111] font-semibold">Prefilled</span>
+                <span className="text-xs bg-[#0f172a]/10 px-2 py-0.5 rounded text-[#0f172a] font-semibold">Prefilled</span>
               </div>
             ) : (
               <select
                 value={partyId}
                 onChange={(e) => setPartyId(e.target.value)}
-                className="w-full h-9 rounded-lg border border-[#d3cec6] bg-[#f5f1ec] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#111111] transition-colors"
+                className="w-full h-9 rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
               >
                 <option value="">-- Choose Contact --</option>
                 {partiesData?.data.map((party) => (
@@ -272,13 +272,13 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
 
           {/* Assignment Group */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[#111111]">
+            <label className="text-sm font-medium text-[#0f172a]">
               Branch & Brand Assignment
             </label>
             <select
               value={assignmentId}
               onChange={(e) => setAssignmentId(e.target.value)}
-              className="w-full h-9 rounded-lg border border-[#d3cec6] bg-[#f5f1ec] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#111111] transition-colors"
+              className="w-full h-9 rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
             >
               <option value="">-- Choose Branch Assignment --</option>
               {assignmentOptions.map((opt) => (
@@ -294,13 +294,13 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
 
           {/* Assigned To (User) */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[#111111]">
+            <label className="text-sm font-medium text-[#0f172a]">
               Assigned Agent (Optional)
             </label>
             <select
               value={assignedToId}
               onChange={(e) => setAssignedToId(e.target.value)}
-              className="w-full h-9 rounded-lg border border-[#d3cec6] bg-[#f5f1ec] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#111111] transition-colors"
+              className="w-full h-9 rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
             >
               <option value="">-- Unassigned --</option>
               {users.map((user) => (
@@ -314,7 +314,7 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
           <Button
             type="submit"
             disabled={createMutation.isPending || isPageLoading}
-            className="w-full bg-[#111111] hover:bg-black text-white font-medium rounded-lg h-10 mt-2"
+            className="w-full bg-[#0f172a] hover:bg-[#1e293b] text-white font-medium rounded-lg h-10 mt-2"
           >
             {createMutation.isPending ? (
               <>

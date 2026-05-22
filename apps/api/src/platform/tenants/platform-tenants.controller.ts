@@ -70,6 +70,12 @@ class UpdateEntitlementsBody {
   plugin_ids!: string[];
 }
 
+class UpdateCapabilitiesBody {
+  @IsArray()
+  @IsString({ each: true })
+  capabilities!: string[];
+}
+
 @Controller('platform/tenants')
 @UseGuards(JwtAuthGuard, PlatformPermissionsGuard)
 export class PlatformTenantsController {
@@ -170,6 +176,37 @@ export class PlatformTenantsController {
     @Body() body: UpdateEntitlementsBody,
   ) {
     const result = await this.service.updateEntitlements(id, body.plugin_ids);
+    if (result.isErr()) {
+      if (result.error.code === 'TENANT_NOT_FOUND') {
+        throw new NotFoundException(result.error);
+      }
+      throw new InternalServerErrorException(result.error);
+    }
+    return result.value;
+  }
+
+  @Patch(':id/capabilities')
+  @HttpCode(HttpStatus.OK)
+  @CheckPlatformPermissions('update', 'PlatformTenant')
+  async updateCapabilities(
+    @Param('id') id: string,
+    @Body() body: UpdateCapabilitiesBody,
+  ) {
+    const result = await this.service.updateCapabilities(id, body.capabilities);
+    if (result.isErr()) {
+      if (result.error.code === 'TENANT_NOT_FOUND') {
+        throw new NotFoundException(result.error);
+      }
+      throw new InternalServerErrorException(result.error);
+    }
+    return result.value;
+  }
+
+  @Patch(':id/reset-owner-password')
+  @HttpCode(HttpStatus.OK)
+  @CheckPlatformPermissions('update', 'PlatformTenant')
+  async resetOwnerPassword(@Param('id') id: string) {
+    const result = await this.service.resetOwnerPassword(id);
     if (result.isErr()) {
       if (result.error.code === 'TENANT_NOT_FOUND') {
         throw new NotFoundException(result.error);

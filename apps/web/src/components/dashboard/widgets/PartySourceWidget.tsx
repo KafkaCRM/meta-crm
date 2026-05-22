@@ -19,7 +19,7 @@ const SOURCE_COLORS: Record<string, string> = {
   [PartySource.WhatsApp]: '#0bdf50',
   [PartySource.JustDial]: '#ff8c00',
   [PartySource.Facebook]: '#1877f2',
-  [PartySource.Manual]: '#9c9fa5',
+  [PartySource.Manual]: '#94a3b8',
   [PartySource.WebForm]: '#8b5cf6',
   [PartySource.Api]: '#ff5600',
 };
@@ -49,16 +49,16 @@ export function PartySourceWidget({ className, hasPermission = true }: PartySour
 
   if (!hasPermission) {
     return (
-      <Card className={`bg-white border-[#d3cec6] rounded-xl shadow-none relative overflow-hidden ${className ?? ''}`}>
+      <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none relative overflow-hidden ${className ?? ''}`}>
         <CardContent className="pt-5 pb-5">
           <div className="absolute inset-0 backdrop-blur-sm bg-white/60 flex items-center justify-center z-10">
             <div className="text-center">
-              <Lock size={20} className="mx-auto text-[#9c9fa5] mb-2" />
-              <p className="text-xs font-medium text-[#626260]">Upgrade your role to view this report</p>
+              <Lock size={20} className="mx-auto text-[#94a3b8] mb-2" />
+              <p className="text-xs font-medium text-[#64748b]">Upgrade your role to view this report</p>
             </div>
           </div>
-          <p className="text-xs font-medium text-[#9c9fa5] uppercase tracking-wider mb-3">Contact Sources</p>
-          <Skeleton className="h-36 bg-[#ebe7e1] rounded-xl" />
+          <p className="text-xs font-medium text-[#94a3b8] uppercase tracking-wider mb-3">Contact Sources</p>
+          <Skeleton className="h-36 bg-[#e2e8f0] rounded-xl" />
         </CardContent>
       </Card>
     );
@@ -66,13 +66,13 @@ export function PartySourceWidget({ className, hasPermission = true }: PartySour
 
   if (isLoading) {
     return (
-      <Card className={`bg-white border-[#d3cec6] rounded-xl shadow-none ${className ?? ''}`}>
+      <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none ${className ?? ''}`}>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-[#111111]">Contact Sources</CardTitle>
+          <CardTitle className="text-sm font-semibold text-[#0f172a]">Contact Sources</CardTitle>
         </CardHeader>
-        <Separator className="bg-[#ebe7e1]" />
+        <Separator className="bg-[#e2e8f0]" />
         <CardContent className="pt-5">
-          <Skeleton className="h-36 bg-[#ebe7e1] rounded-xl" />
+          <Skeleton className="h-36 bg-[#e2e8f0] rounded-xl" />
         </CardContent>
       </Card>
     );
@@ -80,18 +80,18 @@ export function PartySourceWidget({ className, hasPermission = true }: PartySour
 
   if (error) {
     return (
-      <Card className={`bg-white border-[#d3cec6] rounded-xl shadow-none ${className ?? ''}`}>
+      <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none ${className ?? ''}`}>
         <CardContent className="pt-5 pb-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-[#9c9fa5] uppercase tracking-wider mb-1">Contact Sources</p>
+              <p className="text-xs font-medium text-[#94a3b8] uppercase tracking-wider mb-1">Contact Sources</p>
               <p className="text-sm text-[#c41c1c]">Could not load data. Retry.</p>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={() => window.location.reload()}
-              className="h-7 text-xs border-[#d3cec6]"
+              className="h-7 text-xs border-[#e2e8f0]"
             >
               <RefreshCw size={12} className="mr-1" />
               Retry
@@ -107,15 +107,15 @@ export function PartySourceWidget({ className, hasPermission = true }: PartySour
   const chartData = data?.sources.map((s) => ({
     name: s.source,
     value: s.count,
-    fill: SOURCE_COLORS[s.source] ?? '#9c9fa5',
+    fill: SOURCE_COLORS[s.source] ?? '#94a3b8',
   })) ?? [];
 
   return (
-    <Card className={`bg-white border-[#d3cec6] rounded-xl shadow-none hover:shadow-md transition-shadow ${className ?? ''}`}>
+    <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none hover:shadow-md transition-shadow ${className ?? ''}`}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-semibold text-[#111111]">Contact Sources</CardTitle>
+        <CardTitle className="text-sm font-semibold text-[#0f172a]">Contact Sources</CardTitle>
       </CardHeader>
-      <Separator className="bg-[#ebe7e1]" />
+      <Separator className="bg-[#e2e8f0]" />
       <CardContent className="pt-5">
         <ResponsiveContainer width="100%" height={160}>
           <PieChart>
@@ -135,10 +135,10 @@ export function PartySourceWidget({ className, hasPermission = true }: PartySour
             <Tooltip
               contentStyle={{
                 background: '#ffffff',
-                border: '1px solid #d3cec6',
+                border: '1px solid #e2e8f0',
                 borderRadius: '8px',
                 fontSize: '12px',
-                color: '#111111',
+                color: '#0f172a',
               }}
               formatter={(value: any, name: any) => [value, SOURCE_LABELS[name as string] ?? name]}
             />
@@ -146,29 +146,29 @@ export function PartySourceWidget({ className, hasPermission = true }: PartySour
         </ResponsiveContainer>
 
         <div className="text-center -mt-8 mb-3">
-          <p className="text-xs text-[#9c9fa5]">Total</p>
-          <p className="text-lg font-bold text-[#111111]">{total}</p>
+          <p className="text-xs text-[#94a3b8]">Total</p>
+          <p className="text-lg font-bold text-[#0f172a]">{total}</p>
         </div>
 
         <div className="mt-3 space-y-1.5">
           {data?.sources.map((source) => (
             <button
               key={source.source}
-              className="w-full flex items-center justify-between text-left hover:bg-[#f5f1ec] rounded-lg px-2 py-1.5 transition-colors"
+              className="w-full flex items-center justify-between text-left hover:bg-[#f8fafc] rounded-lg px-2 py-1.5 transition-colors"
               onClick={() => navigate({ to: '/parties', search: { source: source.source } as any })}
             >
               <div className="flex items-center gap-2">
                 <div
                   className="h-2 w-2 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: SOURCE_COLORS[source.source] ?? '#9c9fa5' }}
+                  style={{ backgroundColor: SOURCE_COLORS[source.source] ?? '#94a3b8' }}
                 />
-                <span className="text-sm text-[#111111]">
+                <span className="text-sm text-[#0f172a]">
                   {SOURCE_LABELS[source.source] ?? source.source}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-[#111111]">{source.count}</span>
-                <span className="text-xs text-[#9c9fa5]">
+                <span className="text-sm font-medium text-[#0f172a]">{source.count}</span>
+                <span className="text-xs text-[#94a3b8]">
                   {total > 0 ? Math.round((source.count / total) * 100) : 0}%
                 </span>
               </div>

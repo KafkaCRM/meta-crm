@@ -68,12 +68,12 @@ export function BulkActionBar<TData>({
         animation: 'slideUp 0.3s ease-out',
       }}
     >
-      <div className="pointer-events-auto mx-auto mb-4 flex items-center gap-3 rounded-xl border border-[#d3cec6] bg-white px-4 py-3 shadow-lg shadow-black/5">
-        <span className="text-sm font-semibold text-[#111111] min-w-[80px]">
+      <div className="pointer-events-auto mx-auto mb-4 flex items-center gap-3 rounded-xl border border-[#e2e8f0] bg-white px-4 py-3 shadow-lg shadow-black/5">
+        <span className="text-sm font-semibold text-[#0f172a] min-w-[80px]">
           {selectedRows.length} selected
         </span>
 
-        <Separator orientation="vertical" className="h-5 bg-[#d3cec6]" />
+        <Separator orientation="vertical" className="h-5 bg-[#e2e8f0]" />
 
         <div className="flex items-center gap-1.5">
           {actions.map((action) => (
@@ -81,7 +81,7 @@ export function BulkActionBar<TData>({
               key={action.id}
               variant="outline"
               size="sm"
-              className="h-8 text-xs border-[#d3cec6] hover:bg-[#f5f1ec] hover:text-[#111111]"
+              className="h-8 text-xs border-[#e2e8f0] hover:bg-[#f8fafc] hover:text-[#0f172a]"
               onClick={() => handleAction(action)}
               disabled={executing !== null}
             >
@@ -95,10 +95,10 @@ export function BulkActionBar<TData>({
           ))}
         </div>
 
-        <Separator orientation="vertical" className="h-5 bg-[#d3cec6]" />
+        <Separator orientation="vertical" className="h-5 bg-[#e2e8f0]" />
 
         <button
-          className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-[#f5f1ec] transition-colors text-[#9c9fa5] hover:text-[#111111]"
+          className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-[#f8fafc] transition-colors text-[#94a3b8] hover:text-[#0f172a]"
           onClick={onClearSelection}
           disabled={executing !== null}
           aria-label="Clear selection"

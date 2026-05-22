@@ -60,7 +60,25 @@ export class AuthService {
     if (input.tenant_slug) {
       return this.loginTenantUser(input.email, input.password, input.tenant_slug);
     }
-    return this.loginPlatformUser(input.email, input.password);
+
+    // Try platform user first
+    const platformUser = await this.db.platformUser.findUnique({
+      where: { email: input.email },
+    });
+    if (platformUser) {
+      return this.loginPlatformUser(input.email, input.password);
+    }
+
+    // Fallback: auto-resolve tenant workspace from email
+    const tenantUser = await this.db.user.findFirst({
+      where: { email: input.email },
+      include: { tenant: true },
+    });
+    if (tenantUser) {
+      return this.loginTenantUser(input.email, input.password, tenantUser.tenant.slug);
+    }
+
+    return err({ code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' });
   }
 
   private async loginTenantUser(

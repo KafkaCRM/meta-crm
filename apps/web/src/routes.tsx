@@ -18,7 +18,11 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -37,6 +41,7 @@ import {
   Settings,
   LogOut,
   ChevronDown,
+  ChevronRight,
   Building2,
   Workflow,
   GitBranch,
@@ -62,7 +67,7 @@ import { useCapabilities } from '@/hooks/useCapabilities';
 /* ------------------------------------------------------------------ */
 
 function AppSidebar() {
-  const { user, logout } = useAuth();
+  const { user, ability, logout } = useAuth();
   const location = useLocation();
   const { isEnabled } = useCapabilities();
 
@@ -70,116 +75,167 @@ function AppSidebar() {
     ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : 'U';
 
-  const dynamicNavItems = [
-    {
-      group: 'Main',
-      items: [
-        { label: 'Dashboard', path: '/', icon: LayoutDashboard },
-        { label: 'Contacts', path: '/parties', icon: Users },
-        { label: 'Cases', path: '/cases', icon: Workflow },
-        ...(isEnabled('capability/appointment')
-          ? [{ label: 'Appointments', path: '/appointments', icon: Calendar }]
-          : []),
-        ...(isEnabled('capability/billing')
-          ? [{ label: 'Invoices', path: '/invoices', icon: Receipt }]
-          : []),
-        ...(isEnabled('capability/property-listing')
-          ? [{ label: 'Properties', path: '/properties', icon: Home }]
-          : []),
-        ...(isEnabled('capability/order-management')
-          ? [{ label: 'Orders', path: '/orders', icon: ShoppingCart }]
-          : []),
-        ...(isEnabled('capability/customer-onboarding')
-          ? [{ label: 'Onboardings', path: '/onboardings', icon: ClipboardList }]
-          : []),
-      ],
-    },
-    {
-      group: 'Settings',
-      items: [
-        { label: 'Users', path: '/settings/users', icon: UserCog },
-        { label: 'Roles', path: '/settings/roles', icon: Shield },
-        { label: 'Branches', path: '/settings/branches', icon: GitBranch },
-        { label: 'Brands', path: '/settings/brands', icon: Building2 },
-        { label: 'Workflows', path: '/settings/workflows', icon: Workflow },
-        { label: 'Fields', path: '/settings/fields', icon: Sliders },
-        { label: 'Labels', path: '/settings/labels', icon: Tags },
-        { label: 'Capabilities', path: '/settings/capabilities', icon: Layers },
-        { label: 'Plugins', path: '/settings/plugins', icon: Puzzle },
-        { label: 'Integrations', path: '/settings/integrations', icon: Link2 },
-      ],
-    },
+  const mainItems = [
+    { label: 'Dashboard', path: '/', icon: LayoutDashboard },
+    { label: 'Contacts', path: '/parties', icon: Users },
+    { label: 'Cases', path: '/cases', icon: Workflow },
+    ...(isEnabled('capability/appointment')
+      ? [{ label: 'Appointments', path: '/appointments', icon: Calendar }]
+      : []),
+    ...(isEnabled('capability/billing')
+      ? [{ label: 'Invoices', path: '/invoices', icon: Receipt }]
+      : []),
+    ...(isEnabled('capability/property-listing')
+      ? [{ label: 'Properties', path: '/properties', icon: Home }]
+      : []),
+    ...(isEnabled('capability/order-management')
+      ? [{ label: 'Orders', path: '/orders', icon: ShoppingCart }]
+      : []),
+    ...(isEnabled('capability/customer-onboarding')
+      ? [{ label: 'Onboardings', path: '/onboardings', icon: ClipboardList }]
+      : []),
   ];
 
+  const settingsPermissions: Record<string, [string, string]> = {
+    '/settings/users': ['manage', 'User'],
+    '/settings/roles': ['manage', 'Role'],
+    '/settings/branches': ['manage', 'Branch'],
+    '/settings/brands': ['manage', 'Brand'],
+    '/settings/assignments': ['manage', 'Branch'],
+    '/settings/workflows': ['manage', 'Workflow'],
+    '/settings/fields': ['manage', 'FieldDefinition'],
+    '/settings/labels': ['manage', 'LabelOverride'],
+    '/settings/capabilities': ['manage', 'Plugin'],
+    '/settings/plugins': ['manage', 'Plugin'],
+    '/settings/integrations': ['manage', 'Integration'],
+  };
+
+  const settingsItems = [
+    { label: 'Users', path: '/settings/users', icon: Users },
+    { label: 'Roles', path: '/settings/roles', icon: Shield },
+    { label: 'Branches', path: '/settings/branches', icon: GitBranch },
+    { label: 'Brands', path: '/settings/brands', icon: Building2 },
+    { label: 'Assignments', path: '/settings/assignments', icon: UserCog },
+    { label: 'Workflows', path: '/settings/workflows', icon: Workflow },
+    { label: 'Fields', path: '/settings/fields', icon: Sliders },
+    { label: 'Labels', path: '/settings/labels', icon: Tags },
+    { label: 'Capabilities', path: '/settings/capabilities', icon: Layers },
+    { label: 'Plugins', path: '/settings/plugins', icon: Puzzle },
+    { label: 'Integrations', path: '/settings/integrations', icon: Link2 },
+  ];
+
+  const visibleSettingsItems = settingsItems.filter((item) => {
+    const perm = settingsPermissions[item.path];
+    return (
+      !perm ||
+      (ability
+        ? ability.can(perm[0] as any, perm[1] as any) || ability.can('read' as any, perm[1] as any)
+        : false)
+    );
+  });
+
+  const isSettingsActive = location.pathname.startsWith('/settings');
+
   return (
-    <Sidebar className="border-r border-[#d3cec6] bg-[#ebe7e1]">
-      <SidebarHeader className="px-4 py-4 border-b border-[#d3cec6]">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-md bg-[#111111] flex items-center justify-center">
-            <span className="text-white text-xs font-semibold">M</span>
+    <Sidebar className="border-r border-slate-800 bg-[#0b0f19]">
+      <SidebarHeader className="px-4 py-4 border-b border-slate-800 bg-[#0b0f19]">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-md bg-[#4f46e5] flex items-center justify-center flex-shrink-0 shadow-sm shadow-indigo-500/20 animate-pulse">
+            <span className="text-white text-xs font-bold font-mono">M</span>
           </div>
-          <span className="font-semibold text-[#111111] text-sm tracking-tight">Meta CRM</span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-white leading-none tracking-tight">Meta CRM</p>
+            <p className="text-[10px] text-slate-400 mt-0.5 font-medium">Workspace Console</p>
+          </div>
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-2 py-3">
-        {dynamicNavItems.map((group) => (
-          <SidebarGroup key={group.group}>
-            <SidebarGroupLabel className="text-[#9c9fa5] text-xs font-medium px-2 mb-1 uppercase tracking-wider">
-              {group.group}
+      <SidebarContent className="px-2 py-3 bg-[#0b0f19]">
+        {/* Main Section */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-slate-500 text-[10px] font-bold uppercase tracking-wider px-2 mb-1">
+            Main
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {mainItems.map((item) => {
+                const isActive = location.pathname === item.path ||
+                  (item.path !== '/' && location.pathname.startsWith(item.path));
+                return (
+                  <SidebarMenuItem key={item.path}>
+                    <SidebarMenuButton asChild isActive={isActive}>
+                      <Link
+                        to={item.path}
+                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-all duration-150 ${
+                          isActive
+                            ? 'bg-slate-800/80 text-white font-medium shadow-sm border border-slate-700/50'
+                            : 'text-slate-300 hover:bg-slate-800/40 hover:text-white'
+                        }`}
+                      >
+                        <item.icon size={15} strokeWidth={isActive ? 2 : 1.75} className={isActive ? 'text-indigo-400' : 'text-slate-400'} />
+                        <span className="flex-1">{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <Separator className="my-2 bg-slate-800/50" />
+
+        {/* Settings/Configuration Section */}
+        {visibleSettingsItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-slate-500 text-[10px] font-bold uppercase tracking-wider px-2 mb-1">
+              Configuration
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {group.items.map((item) => {
-                  const isActive = location.pathname === item.path ||
-                    (item.path !== '/' && location.pathname.startsWith(item.path));
-                  return (
-                    <SidebarMenuItem key={item.path}>
-                      <SidebarMenuButton asChild isActive={isActive}>
-                        <Link
-                          to={item.path}
-                          className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-colors ${
-                            isActive
-                              ? 'bg-[#ffffff] text-[#111111] font-medium shadow-sm'
-                              : 'text-[#626260] hover:bg-[#f5f1ec] hover:text-[#111111]'
-                          }`}
-                        >
-                          <item.icon size={15} strokeWidth={isActive ? 2 : 1.75} />
-                          <span>{item.label}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isSettingsActive}>
+                    <Link
+                      to="/settings"
+                      className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm w-full transition-all duration-150 ${
+                        isSettingsActive
+                          ? 'bg-slate-800/80 text-white font-medium shadow-sm border border-slate-700/50'
+                          : 'text-slate-300 hover:bg-slate-800/40 hover:text-white'
+                      }`}
+                    >
+                      <Settings size={15} strokeWidth={isSettingsActive ? 2 : 1.75} className={isSettingsActive ? 'text-indigo-400' : 'text-slate-400'} />
+                      <span className="flex-1">Settings</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
-            <Separator className="my-2 bg-[#d3cec6]/60" />
           </SidebarGroup>
-        ))}
+        )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-[#d3cec6] p-3">
+      <SidebarFooter className="border-t border-slate-800 p-3 bg-[#0b0f19]">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2.5 w-full px-2 py-2 rounded-lg hover:bg-[#f5f1ec] transition-colors text-left">
-              <Avatar className="w-7 h-7">
-                <AvatarFallback className="bg-[#111111] text-white text-xs font-medium">
+            <button className="flex items-center gap-2.5 w-full px-2 py-2 rounded-lg hover:bg-slate-800/40 transition-colors text-left text-slate-300">
+              <Avatar className="w-7 h-7 flex-shrink-0">
+                <AvatarFallback className="bg-[#4f46e5] text-white text-xs font-semibold shadow-sm">
                   {initials}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-[#111111] truncate">{user?.name ?? 'User'}</p>
-                <p className="text-xs text-[#9c9fa5] truncate">{user?.email ?? ''}</p>
+                <p className="text-xs font-medium text-white truncate leading-tight">{user?.name ?? 'User'}</p>
+                <p className="text-[10px] text-slate-400 truncate mt-0.5">{user?.email ?? ''}</p>
               </div>
-              <ChevronDown size={13} className="text-[#9c9fa5]" />
+              <ChevronDown size={13} className="text-slate-400" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel className="text-xs text-[#9c9fa5]">My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
+          <DropdownMenuContent align="end" className="w-48 bg-[#0b0f19] border-slate-850 text-slate-100 shadow-md">
+            <DropdownMenuLabel className="text-[10px] uppercase font-bold tracking-wider text-slate-500">My Account</DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-slate-800" />
             <DropdownMenuItem
               onClick={logout}
-              className="text-sm text-[#c41c1c] focus:text-[#c41c1c] cursor-pointer"
+              className="text-sm text-rose-400 focus:text-rose-400 focus:bg-slate-800/50 cursor-pointer"
             >
               <LogOut size={14} className="mr-2" />
               Sign out
@@ -215,9 +271,9 @@ function RootLayout() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f5f1ec]">
-        <div className="flex items-center gap-2 text-sm text-[#9c9fa5]">
-          <div className="w-4 h-4 border-2 border-[#d3cec6] border-t-[#111111] rounded-full animate-spin" />
+      <div className="flex min-h-screen items-center justify-center bg-[#f8fafc]">
+        <div className="flex items-center gap-2 text-sm text-[#94a3b8]">
+          <div className="w-4 h-4 border-2 border-[#e2e8f0] border-t-[#0f172a] rounded-full animate-spin" />
           Loading…
         </div>
       </div>
@@ -232,17 +288,17 @@ function RootLayout() {
     <AbilityProvider ability={ability}>
       <LabelsProvider>
         <SidebarProvider>
-          <div className="flex min-h-screen w-full bg-[#f5f1ec]">
+          <div className="flex min-h-screen w-full bg-[#f8fafc]">
             <AppSidebar />
             <div className="flex-1 flex flex-col min-w-0">
               {/* Top bar */}
-              <header className="h-14 bg-[#f5f1ec] border-b border-[#d3cec6]/60 flex items-center gap-3 px-4 sticky top-0 z-10">
-                <SidebarTrigger className="text-[#626260] hover:text-[#111111]" />
+              <header className="h-14 bg-[#f8fafc] border-b border-[#e2e8f0]/60 flex items-center gap-3 px-4 sticky top-0 z-10">
+                <SidebarTrigger className="text-[#64748b] hover:text-[#0f172a]" />
                 <div className="relative flex-1 max-w-sm">
-                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9c9fa5]" />
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
                   <Input
                     placeholder="Search contacts, companies…"
-                    className="pl-8 h-8 bg-white border-[#d3cec6] text-sm placeholder:text-[#9c9fa5] focus-visible:ring-[#d3cec6]"
+                    className="pl-8 h-8 bg-white border-[#e2e8f0] text-sm placeholder:text-[#94a3b8] focus-visible:ring-[#e2e8f0]"
                   />
                 </div>
               </header>
@@ -271,7 +327,6 @@ function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [tenantSlug, setTenantSlug] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -285,7 +340,7 @@ function LoginPage() {
     setError('');
     setIsLoading(true);
     try {
-      await login(email, password, tenantSlug);
+      await login(email, password);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
@@ -294,21 +349,21 @@ function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f5f1ec]">
+    <div className="flex min-h-screen items-center justify-center bg-[#f8fafc]">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex w-10 h-10 rounded-xl bg-[#111111] items-center justify-center mb-4">
+          <div className="inline-flex w-10 h-10 rounded-xl bg-[#0f172a] items-center justify-center mb-4">
             <span className="text-white font-semibold">M</span>
           </div>
-          <h1 className="text-2xl font-medium text-[#111111] tracking-tight mb-1">
+          <h1 className="text-2xl font-medium text-[#0f172a] tracking-tight mb-1">
             Welcome back
           </h1>
-          <p className="text-sm text-[#626260]">Sign in to your workspace</p>
+          <p className="text-sm text-[#64748b]">Sign in to your account</p>
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl border border-[#d3cec6] p-8 shadow-none">
+        <div className="bg-white rounded-2xl border border-[#e2e8f0] p-8 shadow-none">
           {error && (
             <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
               {error}
@@ -317,22 +372,7 @@ function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <label htmlFor="tenant" className="text-sm font-medium text-[#111111]">
-                Workspace
-              </label>
-              <Input
-                id="tenant"
-                type="text"
-                value={tenantSlug}
-                onChange={(e) => setTenantSlug(e.target.value)}
-                placeholder="your-company"
-                className="bg-[#f5f1ec] border-[#d3cec6] placeholder:text-[#9c9fa5] focus-visible:ring-[#111111] focus-visible:border-[#111111]"
-                required
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label htmlFor="email" className="text-sm font-medium text-[#111111]">
+              <label htmlFor="email" className="text-sm font-medium text-[#0f172a]">
                 Email
               </label>
               <Input
@@ -341,13 +381,13 @@ function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="bg-[#f5f1ec] border-[#d3cec6] placeholder:text-[#9c9fa5] focus-visible:ring-[#111111] focus-visible:border-[#111111]"
+                className="bg-[#f8fafc] border-[#e2e8f0] placeholder:text-[#94a3b8] focus-visible:ring-[#0f172a] focus-visible:border-[#0f172a]"
                 required
               />
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="password" className="text-sm font-medium text-[#111111]">
+              <label htmlFor="password" className="text-sm font-medium text-[#0f172a]">
                 Password
               </label>
               <Input
@@ -355,7 +395,7 @@ function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="bg-[#f5f1ec] border-[#d3cec6] focus-visible:ring-[#111111] focus-visible:border-[#111111]"
+                className="bg-[#f8fafc] border-[#e2e8f0] focus-visible:ring-[#0f172a] focus-visible:border-[#0f172a]"
                 required
               />
             </div>
@@ -363,14 +403,14 @@ function LoginPage() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-[#111111] hover:bg-[#000000] text-white font-medium rounded-lg h-10 mt-2"
+              className="w-full bg-[#0f172a] hover:bg-[#000000] text-white font-medium rounded-lg h-10 mt-2"
             >
               {isLoading ? 'Signing in…' : 'Sign in'}
             </Button>
           </form>
         </div>
 
-        <p className="text-center text-xs text-[#9c9fa5] mt-4">
+        <p className="text-center text-xs text-[#94a3b8] mt-4">
           Meta CRM · All rights reserved
         </p>
       </div>

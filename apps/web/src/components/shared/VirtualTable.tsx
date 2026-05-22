@@ -278,12 +278,12 @@ export function VirtualTable<TData>({
     return (
       <div className="w-full overflow-x-auto">
         <table className="w-full">
-          <thead className="sticky top-0 z-10 bg-[#f5f1ec]">
+          <thead className="sticky top-0 z-10 bg-[#f8fafc]">
             <tr>
               {visibleColumns.map((col) => (
                 <th
                   key={col.id}
-                  className="px-4 py-2.5 text-left text-xs font-medium text-[#9c9fa5] uppercase tracking-wider border-b border-[#d3cec6]"
+                  className="px-4 py-2.5 text-left text-xs font-medium text-[#94a3b8] uppercase tracking-wider border-b border-[#e2e8f0]"
                   style={{ width: col.getSize() }}
                 >
                   <Skeleton className="h-3 w-16" />
@@ -293,7 +293,7 @@ export function VirtualTable<TData>({
           </thead>
           <tbody>
             {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
-              <tr key={i} className="border-b border-[#d3cec6]/40">
+              <tr key={i} className="border-b border-[#e2e8f0]/40">
                 {visibleColumns.map((col) => (
                   <td key={col.id} className="px-4 py-3">
                     <Skeleton className="h-4 w-full" />
@@ -311,16 +311,16 @@ export function VirtualTable<TData>({
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         {emptyIcon ?? (
-          <div className="w-12 h-12 rounded-full bg-[#f5f1ec] flex items-center justify-center mb-4">
-            <Search size={20} className="text-[#9c9fa5]" />
+          <div className="w-12 h-12 rounded-full bg-[#f8fafc] flex items-center justify-center mb-4">
+            <Search size={20} className="text-[#94a3b8]" />
           </div>
         )}
-        <h3 className="text-base font-medium text-[#111111] mb-1">{emptyTitle}</h3>
-        <p className="text-sm text-[#9c9fa5] mb-4">{emptyDescription}</p>
+        <h3 className="text-base font-medium text-[#0f172a] mb-1">{emptyTitle}</h3>
+        <p className="text-sm text-[#94a3b8] mb-4">{emptyDescription}</p>
         {emptyCta && (
           <Button
             onClick={emptyCta.onClick}
-            className="bg-[#111111] hover:bg-black text-white rounded-lg h-8 px-4 text-sm font-medium"
+            className="bg-[#0f172a] hover:bg-[#1e293b] text-white rounded-lg h-8 px-4 text-sm font-medium"
           >
             {emptyCta.label}
           </Button>
@@ -335,7 +335,7 @@ export function VirtualTable<TData>({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {selectedCount > 0 && (
-              <span className="text-sm font-medium text-[#111111]">
+              <span className="text-sm font-medium text-[#0f172a]">
                 {selectedCount} {selectedCount === 1 ? 'row' : 'rows'} selected
               </span>
             )}
@@ -345,7 +345,7 @@ export function VirtualTable<TData>({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 text-xs border-[#d3cec6] text-[#626260] hover:text-[#111111]"
+                className="h-7 text-xs border-[#e2e8f0] text-[#64748b] hover:text-[#0f172a]"
               >
                 <Eye size={13} className="mr-1.5" />
                 Columns
@@ -373,17 +373,17 @@ export function VirtualTable<TData>({
 
       <div
         ref={tableContainerRef}
-        className="overflow-auto rounded-lg border border-[#d3cec6] max-h-[600px]"
+        className="overflow-auto rounded-lg border border-[#e2e8f0] max-h-[600px]"
         style={{ width: '100%' }}
       >
         <table className="w-full" style={{ minWidth: table.getCenterTotalSize() }}>
-          <thead className="sticky top-0 z-10 bg-[#f5f1ec]">
+          <thead className="sticky top-0 z-10 bg-[#f8fafc]">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="relative px-4 py-2.5 text-left text-xs font-medium text-[#9c9fa5] uppercase tracking-wider border-b border-[#d3cec6] select-none"
+                    className="relative px-4 py-2.5 text-left text-xs font-medium text-[#94a3b8] uppercase tracking-wider border-b border-[#e2e8f0] select-none"
                     style={{ width: header.getSize() }}
                   >
                     <div
@@ -392,7 +392,7 @@ export function VirtualTable<TData>({
                     >
                       {flexRender(header.column.columnDef.header, header.getContext())}
                       {header.column.getCanSort() && (
-                        <span className="text-[#9c9fa5]">
+                        <span className="text-[#94a3b8]">
                           {header.column.getIsSorted() === 'asc' ? (
                             <ChevronUp size={13} />
                           ) : header.column.getIsSorted() === 'desc' ? (
@@ -407,7 +407,7 @@ export function VirtualTable<TData>({
                       <div
                         onMouseDown={header.getResizeHandler()}
                         onTouchStart={header.getResizeHandler()}
-                        className="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-[#d3cec6] transition-colors"
+                        className="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-[#e2e8f0] transition-colors"
                       />
                     )}
                   </th>
@@ -431,18 +431,18 @@ export function VirtualTable<TData>({
               return (
                 <tr
                   key={row.id}
-                  className={`border-b border-[#d3cec6]/40 transition-colors ${
+                  className={`border-b border-[#e2e8f0]/40 transition-colors ${
                     row.getIsSelected()
                       ? 'bg-[#3b82f6]/5'
                       : isEven
                         ? 'bg-white'
                         : 'bg-[#faf9f7]'
-                  } ${onRowClick ? 'cursor-pointer hover:bg-[#f5f1ec]' : ''}`}
+                  } ${onRowClick ? 'cursor-pointer hover:bg-[#f8fafc]' : ''}`}
                   onClick={() => onRowClick?.(row.original)}
                   style={{ height: `${ROW_HEIGHT}px` }}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-4 py-2.5 text-sm text-[#626260]">
+                    <td key={cell.id} className="px-4 py-2.5 text-sm text-[#64748b]">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
@@ -461,7 +461,7 @@ export function VirtualTable<TData>({
         </table>
       </div>
 
-      <div className="flex items-center justify-between text-sm text-[#9c9fa5]">
+      <div className="flex items-center justify-between text-sm text-[#94a3b8]">
         <span>
           {table.getFilteredRowModel().rows.length} of {rowCount} rows
         </span>
@@ -471,7 +471,7 @@ export function VirtualTable<TData>({
             size="sm"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
-            className="h-7 text-xs border-[#d3cec6]"
+            className="h-7 text-xs border-[#e2e8f0]"
           >
             Previous
           </Button>
@@ -483,7 +483,7 @@ export function VirtualTable<TData>({
             size="sm"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
-            className="h-7 text-xs border-[#d3cec6]"
+            className="h-7 text-xs border-[#e2e8f0]"
           >
             Next
           </Button>

@@ -35,13 +35,13 @@ const SOURCE_COLORS: Record<string, string> = {
   [PartySource.WhatsApp]: 'bg-[#0bdf50]/10 text-[#0a7f2e] border-[#0bdf50]/20',
   [PartySource.JustDial]: 'bg-[#ff8c00]/10 text-[#cc7000] border-[#ff8c00]/20',
   [PartySource.Facebook]: 'bg-[#1877f2]/10 text-[#1565c0] border-[#1877f2]/20',
-  [PartySource.Manual]: 'bg-[#9c9fa5]/10 text-[#626260] border-[#9c9fa5]/20',
+  [PartySource.Manual]: 'bg-[#94a3b8]/10 text-[#64748b] border-[#94a3b8]/20',
   [PartySource.WebForm]: 'bg-[#8b5cf6]/10 text-[#7c3aed] border-[#8b5cf6]/20',
   [PartySource.Api]: 'bg-[#ff5600]/10 text-[#cc4400] border-[#ff5600]/20',
 };
 
 function SourceBadge({ source }: { source: string }) {
-  const cls = SOURCE_COLORS[source] ?? 'bg-[#9c9fa5]/10 text-[#626260] border-[#9c9fa5]/20';
+  const cls = SOURCE_COLORS[source] ?? 'bg-[#94a3b8]/10 text-[#64748b] border-[#94a3b8]/20';
   const label = source === PartySource.WhatsApp ? 'WhatsApp' : source === PartySource.JustDial ? 'JustDial' : source === PartySource.Facebook ? 'Facebook' : source === PartySource.WebForm ? 'Web Form' : source === PartySource.Manual ? 'Manual' : source;
   return (
     <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${cls}`}>
@@ -62,7 +62,7 @@ const STAGE_COLORS: Record<string, string> = {
 };
 
 function StageBadge({ stage }: { stage: string }) {
-  const cls = STAGE_COLORS[stage] ?? 'bg-[#9c9fa5]/10 text-[#626260] border-[#9c9fa5]/20';
+  const cls = STAGE_COLORS[stage] ?? 'bg-[#94a3b8]/10 text-[#64748b] border-[#94a3b8]/20';
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border capitalize ${cls}`}>
       {stage}
@@ -74,7 +74,7 @@ const CHANNEL_ICONS: Record<string, { icon: React.ReactNode; color: string }> = 
   [Channel.WhatsApp]: { icon: <MessageSquare size={13} />, color: 'text-[#0bdf50]' },
   [Channel.Email]: { icon: <Mail size={13} />, color: 'text-[#3b82f6]' },
   [Channel.Call]: { icon: <Phone size={13} />, color: 'text-[#8b5cf6]' },
-  [Channel.Note]: { icon: <FileText size={13} />, color: 'text-[#9c9fa5]' },
+  [Channel.Note]: { icon: <FileText size={13} />, color: 'text-[#94a3b8]' },
   [Channel.Sms]: { icon: <MessageSquare size={13} />, color: 'text-[#65b5ff]' },
 };
 
@@ -263,13 +263,13 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
   if (isLoading) {
     return (
       <div className="space-y-5 max-w-[1280px]">
-        <Skeleton className="h-8 w-64 bg-[#ebe7e1]" />
+        <Skeleton className="h-8 w-64 bg-[#e2e8f0]" />
         <div className="grid gap-4 lg:grid-cols-5">
           <div className="lg:col-span-3 space-y-4">
-            <Skeleton className="h-64 w-full bg-[#ebe7e1] rounded-xl" />
+            <Skeleton className="h-64 w-full bg-[#e2e8f0] rounded-xl" />
           </div>
           <div className="lg:col-span-2 space-y-4">
-            <Skeleton className="h-40 bg-[#ebe7e1] rounded-xl" />
+            <Skeleton className="h-40 bg-[#e2e8f0] rounded-xl" />
           </div>
         </div>
       </div>
@@ -279,7 +279,7 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
   if (!party) {
     return (
       <div className="flex items-center justify-center py-16">
-        <p className="text-[#9c9fa5]">Contact not found</p>
+        <p className="text-[#94a3b8]">Contact not found</p>
       </div>
     );
   }
@@ -291,20 +291,20 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
         <div>
           <button
             onClick={() => navigate({ to: '/parties' })}
-            className="flex items-center gap-1.5 text-sm text-[#9c9fa5] hover:text-[#111111] transition-colors mb-2"
+            className="flex items-center gap-1.5 text-sm text-[#94a3b8] hover:text-[#0f172a] transition-colors mb-2"
           >
             <ArrowLeft size={14} />
             All {t('party.plural')?.toLowerCase() ?? 'contacts'}
           </button>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#111111] flex items-center justify-center text-white font-medium text-sm">
+            <div className="w-10 h-10 rounded-full bg-[#0f172a] flex items-center justify-center text-white font-medium text-sm">
               {party.name.charAt(0).toUpperCase()}
             </div>
             <div>
-              <h1 className="text-2xl font-medium text-[#111111] tracking-tight">{party.name}</h1>
+              <h1 className="text-2xl font-medium text-[#0f172a] tracking-tight">{party.name}</h1>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-sm text-[#9c9fa5] capitalize">{party.type}</span>
-                <span className="text-[#d3cec6]">·</span>
+                <span className="text-sm text-[#94a3b8] capitalize">{party.type}</span>
+                <span className="text-[#e2e8f0]">·</span>
                 <SourceBadge source={party.source} />
                 {party.merge_status === MergeStatus.Merged && (
                   <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-[#c41c1c]/10 text-[#c41c1c] border border-[#c41c1c]/20">
@@ -322,7 +322,7 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
               variant="outline"
               size="sm"
               onClick={() => setShowMergeWizard(true)}
-              className="border-[#d3cec6] text-[#626260] hover:bg-[#ebe7e1] hover:text-[#111111] rounded-lg h-8"
+              className="border-[#e2e8f0] text-[#64748b] hover:bg-[#e2e8f0] hover:text-[#0f172a] rounded-lg h-8"
             >
               <GitMerge size={14} className="mr-1.5" />
               Merge
@@ -332,7 +332,7 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
             <Button
               size="sm"
               onClick={() => navigate({ to: '/parties/$id/edit', params: { id: party.id } })}
-              className="bg-[#111111] hover:bg-black text-white rounded-lg h-8"
+              className="bg-[#0f172a] hover:bg-[#1e293b] text-white rounded-lg h-8"
             >
               <Edit size={14} className="mr-1.5" />
               Edit
@@ -345,21 +345,21 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
       <div className="grid gap-4 lg:grid-cols-5">
         {/* Left column (60%): Timeline + ComposeBar */}
         <div className="lg:col-span-3 space-y-0">
-          <Card className="bg-white border-[#d3cec6] rounded-xl shadow-none overflow-hidden">
+          <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none overflow-hidden">
             <CardHeader className="pb-2 px-4 pt-3">
-              <CardTitle className="text-sm font-semibold text-[#111111]">
+              <CardTitle className="text-sm font-semibold text-[#0f172a]">
                 Timeline
               </CardTitle>
             </CardHeader>
-            <Separator className="bg-[#ebe7e1]" />
+            <Separator className="bg-[#e2e8f0]" />
             <div className="max-h-[500px] overflow-auto">
               {timelineItems.length === 0 ? (
                 <div className="flex flex-col items-center py-12 text-center">
-                  <MessageSquare size={24} className="text-[#9c9fa5] mb-2" />
-                  <p className="text-sm text-[#9c9fa5]">No interactions yet</p>
+                  <MessageSquare size={24} className="text-[#94a3b8] mb-2" />
+                  <p className="text-sm text-[#94a3b8]">No interactions yet</p>
                 </div>
               ) : (
-                <div className="divide-y divide-[#ebe7e1]">
+                <div className="divide-y divide-[#e2e8f0]">
                   {timelineItems.map((item) => (
                     <TimelineItemRenderer
                       key={item.id}
@@ -374,10 +374,10 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
             </div>
 
             {/* ComposeBar */}
-            <div className="border-t border-[#d3cec6] p-3 bg-[#faf9f7]">
+            <div className="border-t border-[#e2e8f0] p-3 bg-[#faf9f7]">
               <div className="flex items-end gap-2">
                 <Select value={composeChannel} onValueChange={setComposeChannel}>
-                  <SelectTrigger className="h-8 w-[100px] bg-white border-[#d3cec6] text-xs shrink-0">
+                  <SelectTrigger className="h-8 w-[100px] bg-white border-[#e2e8f0] text-xs shrink-0">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -392,7 +392,7 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
                     value={composeMessage}
                     onChange={(e) => setComposeMessage(e.target.value)}
                     placeholder="Type a message…"
-                    className="pr-10 min-h-[36px] max-h-[120px] resize-none bg-white border-[#d3cec6] text-sm"
+                    className="pr-10 min-h-[36px] max-h-[120px] resize-none bg-white border-[#e2e8f0] text-sm"
                     rows={1}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -406,7 +406,7 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
                   size="sm"
                   onClick={handleSend}
                   disabled={!composeMessage.trim() || sendingMessage}
-                  className="h-8 w-8 p-0 bg-[#111111] hover:bg-black shrink-0"
+                  className="h-8 w-8 p-0 bg-[#0f172a] hover:bg-[#1e293b] shrink-0"
                 >
                   {sendingMessage ? (
                     <Loader2 size={14} className="animate-spin" />
@@ -422,13 +422,13 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
         {/* Right column (40%): Party info + Cases + Related */}
         <div className="lg:col-span-2 space-y-4">
           {/* Party info panel */}
-          <Card className="bg-white border-[#d3cec6] rounded-xl shadow-none">
+          <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold text-[#111111]">
+              <CardTitle className="text-sm font-semibold text-[#0f172a]">
                 {t('party.details') ?? 'Contact Information'}
               </CardTitle>
             </CardHeader>
-            <Separator className="bg-[#ebe7e1]" />
+            <Separator className="bg-[#e2e8f0]" />
             <CardContent className="pt-4 space-y-3">
               <EditableDetailField
                 label="Full Name"
@@ -441,7 +441,7 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
                 onCancel={() => setEditingField(null)}
                 onEditValueChange={setEditValue}
                 canUpdate={can('update', 'Party')}
-                icon={<Building2 size={13} className="text-[#9c9fa5]" />}
+                icon={<Building2 size={13} className="text-[#94a3b8]" />}
               />
               <EditableDetailField
                 label="Phone"
@@ -454,7 +454,7 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
                 onCancel={() => setEditingField(null)}
                 onEditValueChange={setEditValue}
                 canUpdate={can('update', 'Party')}
-                icon={<Phone size={13} className="text-[#9c9fa5]" />}
+                icon={<Phone size={13} className="text-[#94a3b8]" />}
               />
               <EditableDetailField
                 label="Email"
@@ -467,13 +467,13 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
                 onCancel={() => setEditingField(null)}
                 onEditValueChange={setEditValue}
                 canUpdate={can('update', 'Party')}
-                icon={<Mail size={13} className="text-[#9c9fa5]" />}
+                icon={<Mail size={13} className="text-[#94a3b8]" />}
               />
               <div className="flex items-center gap-3 pt-1">
-                <Calendar size={13} className="text-[#9c9fa5] shrink-0" />
+                <Calendar size={13} className="text-[#94a3b8] shrink-0" />
                 <div>
-                  <p className="text-xs text-[#9c9fa5]">Created</p>
-                  <p className="text-sm text-[#111111]">
+                  <p className="text-xs text-[#94a3b8]">Created</p>
+                  <p className="text-sm text-[#0f172a]">
                     {new Date(party.created_at).toLocaleDateString('en-US', {
                       year: 'numeric', month: 'long', day: 'numeric',
                     })}
@@ -484,9 +484,9 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
           </Card>
 
           {/* Cases list */}
-          <Card className="bg-white border-[#d3cec6] rounded-xl shadow-none">
+          <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none">
             <CardHeader className="pb-3 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-[#111111]">
+              <CardTitle className="text-sm font-semibold text-[#0f172a]">
                 {t('case.plural') ?? 'Cases'} ({cases.length})
               </CardTitle>
               <Button
@@ -499,24 +499,24 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
                 New Case
               </Button>
             </CardHeader>
-            <Separator className="bg-[#ebe7e1]" />
+            <Separator className="bg-[#e2e8f0]" />
             <CardContent className="pt-4">
               {cases.length === 0 ? (
                 <div className="flex flex-col items-center py-6 text-center">
-                  <FileText size={18} className="text-[#9c9fa5] mb-2" />
-                  <p className="text-sm text-[#9c9fa5]">No cases linked</p>
+                  <FileText size={18} className="text-[#94a3b8] mb-2" />
+                  <p className="text-sm text-[#94a3b8]">No cases linked</p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {cases.map((c: CaseResponse) => (
                     <button
                       key={c.id}
-                      className="flex w-full items-center justify-between rounded-lg border border-[#ebe7e1] p-3 text-left hover:bg-[#f5f1ec] transition-colors"
+                      className="flex w-full items-center justify-between rounded-lg border border-[#e2e8f0] p-3 text-left hover:bg-[#f8fafc] transition-colors"
                       onClick={() => navigate({ to: '/cases/$id', params: { id: c.id } })}
                     >
                       <div>
-                        <p className="text-sm font-medium text-[#111111]">{c.title}</p>
-                        <p className="text-xs text-[#9c9fa5] mt-0.5 capitalize">{(c as any).type}</p>
+                        <p className="text-sm font-medium text-[#0f172a]">{c.title}</p>
+                        <p className="text-xs text-[#94a3b8] mt-0.5 capitalize">{(c as any).type}</p>
                       </div>
                       <StageBadge stage={(c as any).stage} />
                     </button>
@@ -527,34 +527,34 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
           </Card>
 
           {/* Related parties */}
-          <Card className="bg-white border-[#d3cec6] rounded-xl shadow-none">
+          <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold text-[#111111]">
+              <CardTitle className="text-sm font-semibold text-[#0f172a]">
                 Related Parties
               </CardTitle>
             </CardHeader>
-            <Separator className="bg-[#ebe7e1]" />
+            <Separator className="bg-[#e2e8f0]" />
             <CardContent className="pt-4">
               {((party as any).relationships ?? []).length === 0 ? (
-                <p className="text-sm text-[#9c9fa5] text-center py-4">No related parties</p>
+                <p className="text-sm text-[#94a3b8] text-center py-4">No related parties</p>
               ) : (
                 <div className="space-y-2">
                   {((party as any).relationships ?? []).map((rel: any) => (
                     <button
                       key={rel.related_party_id}
-                      className="flex w-full items-center justify-between rounded-lg border border-[#ebe7e1] p-3 text-left hover:bg-[#f5f1ec] transition-colors"
+                      className="flex w-full items-center justify-between rounded-lg border border-[#e2e8f0] p-3 text-left hover:bg-[#f8fafc] transition-colors"
                       onClick={() => navigate({ to: '/parties/$id', params: { id: rel.related_party_id } })}
                     >
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-[#111111] flex items-center justify-center text-white text-xs font-medium">
+                        <div className="w-7 h-7 rounded-full bg-[#0f172a] flex items-center justify-center text-white text-xs font-medium">
                           {rel.related_party_name?.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-[#111111]">{rel.related_party_name}</p>
-                          <p className="text-xs text-[#9c9fa5] capitalize">{rel.relationship_type}</p>
+                          <p className="text-sm font-medium text-[#0f172a]">{rel.related_party_name}</p>
+                          <p className="text-xs text-[#94a3b8] capitalize">{rel.relationship_type}</p>
                         </div>
                       </div>
-                      <ArrowUpRight size={13} className="text-[#9c9fa5]" />
+                      <ArrowUpRight size={13} className="text-[#94a3b8]" />
                     </button>
                   ))}
                 </div>
@@ -598,13 +598,13 @@ function TimelineItemRenderer({ item, expandedThreads, setExpandedThreads, canPi
     return (
       <div className="px-4 py-2.5 bg-[#faf9f7]">
         <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-[#9c9fa5]" />
-          <p className="text-xs text-[#9c9fa5]">
+          <div className="w-1.5 h-1.5 rounded-full bg-[#94a3b8]" />
+          <p className="text-xs text-[#94a3b8]">
             {item.event_type === EventType.StageChanged
               ? `Stage changed: ${item.from_stage ?? '?'} → ${item.to_stage ?? '?'}`
               : item.event_type}
           </p>
-          <span className="text-[10px] text-[#9c9fa5] ml-auto">
+          <span className="text-[10px] text-[#94a3b8] ml-auto">
             {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
         </div>
@@ -612,7 +612,7 @@ function TimelineItemRenderer({ item, expandedThreads, setExpandedThreads, canPi
     );
   }
 
-  const channelInfo = CHANNEL_ICONS[item.channel ?? ''] ?? { icon: <MessageSquare size={13} />, color: 'text-[#9c9fa5]' };
+  const channelInfo = CHANNEL_ICONS[item.channel ?? ''] ?? { icon: <MessageSquare size={13} />, color: 'text-[#94a3b8]' };
   const isInbound = item.direction === Direction.Inbound;
 
   return (
@@ -624,10 +624,10 @@ function TimelineItemRenderer({ item, expandedThreads, setExpandedThreads, canPi
         <div className={`flex-1 min-w-0 ${isInbound ? '' : 'text-right'}`}>
           <div className="flex items-center gap-1.5 mb-1">
             {item.pinned && <Pin size={10} className="text-amber-500" />}
-            <span className="text-xs text-[#9c9fa5] capitalize">
+            <span className="text-xs text-[#94a3b8] capitalize">
               {item.channel === Channel.WhatsApp ? 'WhatsApp' : item.channel}
             </span>
-            <span className="text-[10px] text-[#9c9fa5]">
+            <span className="text-[10px] text-[#94a3b8]">
               {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
@@ -635,7 +635,7 @@ function TimelineItemRenderer({ item, expandedThreads, setExpandedThreads, canPi
           {isThread ? (
             <div>
               <button
-                className="flex items-center gap-1.5 text-sm text-[#111111] hover:text-[#3b82f6] transition-colors"
+                className="flex items-center gap-1.5 text-sm text-[#0f172a] hover:text-[#3b82f6] transition-colors"
                 onClick={() => {
                   setExpandedThreads((prev) => {
                     const next = new Set(prev);
@@ -650,14 +650,14 @@ function TimelineItemRenderer({ item, expandedThreads, setExpandedThreads, canPi
                 <span className="truncate max-w-[300px]">
                   {item.content?.slice(0, 80)}
                 </span>
-                <span className="text-xs text-[#9c9fa5]">
+                <span className="text-xs text-[#94a3b8]">
                   {item.threadCount} messages
                 </span>
               </button>
               {isExpanded && item.threadMessages && (
-                <div className="mt-2 space-y-1.5 pl-4 border-l-2 border-[#d3cec6]">
+                <div className="mt-2 space-y-1.5 pl-4 border-l-2 border-[#e2e8f0]">
                   {item.threadMessages.map((msg) => (
-                    <p key={msg.id} className="text-sm text-[#626260]">
+                    <p key={msg.id} className="text-sm text-[#64748b]">
                       {msg.content}
                     </p>
                   ))}
@@ -667,8 +667,8 @@ function TimelineItemRenderer({ item, expandedThreads, setExpandedThreads, canPi
           ) : (
             <div className={`inline-block max-w-[80%] rounded-lg px-3 py-2 text-sm ${
               isInbound
-                ? 'bg-[#f5f1ec] text-[#111111] rounded-tl-sm'
-                : 'bg-[#111111] text-white rounded-tr-sm'
+                ? 'bg-[#f8fafc] text-[#0f172a] rounded-tl-sm'
+                : 'bg-[#0f172a] text-white rounded-tr-sm'
             }`}>
               {item.content}
               {item.id.startsWith('opt_') && (
@@ -713,7 +713,7 @@ function EditableDetailField({
             type="text"
             value={editValue}
             onChange={(e) => onEditValueChange(e.target.value)}
-            className="h-8 text-sm bg-[#f5f1ec] border-[#d3cec6] focus-visible:ring-[#111111]/30"
+            className="h-8 text-sm bg-[#f8fafc] border-[#e2e8f0] focus-visible:ring-[#0f172a]/30"
             autoFocus
             onBlur={onSave}
             onKeyDown={(e) => {
@@ -724,7 +724,7 @@ function EditableDetailField({
           <button onClick={onSave} className="text-[#0bdf50] hover:opacity-70">
             <Check size={14} />
           </button>
-          <button onClick={onCancel} className="text-[#9c9fa5] hover:opacity-70">
+          <button onClick={onCancel} className="text-[#94a3b8] hover:opacity-70">
             <X size={14} />
           </button>
         </div>
@@ -736,13 +736,13 @@ function EditableDetailField({
     <div className="flex items-center gap-3 group">
       {icon && <span className="flex-shrink-0">{icon}</span>}
       <div className="flex-1 min-w-0">
-        <p className="text-xs text-[#9c9fa5]">{label}</p>
+        <p className="text-xs text-[#94a3b8]">{label}</p>
         <div className="flex items-center gap-1.5">
-          <p className="text-sm text-[#111111]">{value}</p>
+          <p className="text-sm text-[#0f172a]">{value}</p>
           {canUpdate && (
             <button
               onClick={onEdit}
-              className="opacity-0 group-hover:opacity-100 transition-opacity text-[#9c9fa5] hover:text-[#111111]"
+              className="opacity-0 group-hover:opacity-100 transition-opacity text-[#94a3b8] hover:text-[#0f172a]"
             >
               <Pencil size={11} />
             </button>

@@ -1,9 +1,15 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Plus, Trash2, Loader2, Shield } from 'lucide-react';
+import { Plus, Trash2, Loader2, Shield, Info, Lock, ChevronDown, ChevronUp } from 'lucide-react';
 import { settingsApi, type Role } from '@/api/settings';
 import { usePermissions } from '@/hooks/usePermissions';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 
 const RESOURCES = [
   'Party', 'Case', 'Interaction', 'Report', 'Workflow',
@@ -15,6 +21,7 @@ const ACTIONS = ['create', 'read', 'update', 'delete', 'export', 'assign', 'mana
 
 export function RoleMatrix() {
   const { can } = usePermissions();
+  const canManage = can('manage', 'Role');
   const queryClient = useQueryClient();
   const [newRole, setNewRole] = useState({ name: '', slug: '', description: '' });
 
@@ -29,7 +36,7 @@ export function RoleMatrix() {
       settingsApi.roles.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings', 'roles'] });
-      toast.success('Role created');
+      toast.success('Custom role created successfully');
       setNewRole({ name: '', slug: '', description: '' });
     },
     onError: () => toast.error('Failed to create role'),
@@ -40,7 +47,7 @@ export function RoleMatrix() {
       settingsApi.roles.update(id, { permissions }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings', 'roles'] });
-      toast.success('Role permissions updated');
+      toast.success('Permissions saved');
     },
     onError: () => toast.error('Failed to update permissions'),
   });
@@ -49,7 +56,7 @@ export function RoleMatrix() {
     mutationFn: (id: string) => settingsApi.roles.remove(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings', 'roles'] });
-      toast.success('Role deleted');
+      toast.success('Role deleted successfully');
     },
     onError: () => toast.error('Failed to delete role'),
   });
@@ -77,69 +84,107 @@ export function RoleMatrix() {
   );
 
   if (isLoading) {
-    return <div className="text-muted-foreground">Loading roles...</div>;
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-[#94a3b8]" />
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-[1200px]">
       <div>
-        <h1 className="text-2xl font-bold">Roles</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Manage roles and permissions
+        <h1 className="text-2xl font-semibold tracking-tight text-[#0f172a]">Roles & Permissions</h1>
+        <p className="text-sm text-[#64748b] mt-0.5">
+          Design custom security policies, configure permission matrices, and enforce access control
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-3 rounded-lg border bg-card p-4">
-        <h3 className="text-sm font-medium">Create Custom Role</h3>
-        <div className="grid gap-3 sm:grid-cols-3">
-          <input
-            type="text"
-            placeholder="Role name"
-            value={newRole.name}
-            onChange={(e) => setNewRole((f) => ({ ...f, name: e.target.value }))}
-            className="rounded-md border border-input px-3 py-2 text-sm"
-            required
-          />
-          <input
-            type="text"
-            placeholder="Slug (e.g. senior_counsellor)"
-            value={newRole.slug}
-            onChange={(e) => setNewRole((f) => ({ ...f, slug: e.target.value }))}
-            className="rounded-md border border-input px-3 py-2 text-sm"
-            required
-          />
-          <input
-            type="text"
-            placeholder="Description (optional)"
-            value={newRole.description}
-            onChange={(e) => setNewRole((f) => ({ ...f, description: e.target.value }))}
-            className="rounded-md border border-input px-3 py-2 text-sm"
-          />
+      <div className="grid gap-6 lg:grid-cols-3 items-start">
+        {/* Permission matrices list */}
+        <div className={cn("space-y-4", canManage ? "lg:col-span-2" : "lg:col-span-3")}>
+          {roles?.map((role) => (
+            <RolePermissionGrid
+              key={role.id}
+              role={role}
+              onToggle={handleTogglePermission}
+              onDelete={() => {
+                if (window.confirm(`Are you sure you want to permanently delete role "${role.name}"?`)) {
+                  removeMutation.mutate(role.id);
+                }
+              }}
+              isSaving={updateMutation.isPending && updateMutation.variables?.id === role.id}
+              canManage={canManage}
+            />
+          ))}
         </div>
-        <button
-          type="submit"
-          disabled={createMutation.isPending}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
-        >
-          {createMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-          <Plus className="h-4 w-4" />
-          Create Role
-        </button>
-      </form>
 
-      <div className="space-y-4">
-        {roles?.map((role) => (
-          <RolePermissionGrid
-            key={role.id}
-            role={role}
-            onToggle={handleTogglePermission}
-            onDelete={() => {
-              if (window.confirm(`Delete role "${role.name}"?`)) {
-                removeMutation.mutate(role.id);
-              }
-            }}
-          />
-        ))}
+        {/* Create custom role card */}
+        {canManage && (
+        <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none h-fit">
+          <CardHeader className="pb-3 border-b border-[#e2e8f0]">
+            <CardTitle className="text-base font-medium text-[#0f172a] flex items-center gap-1.5">
+              <Shield size={16} className="text-[#94a3b8]" />
+              Custom Role
+            </CardTitle>
+            <CardDescription className="text-xs text-[#94a3b8]">
+              Create a custom permission profile for your team
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-[#64748b]">Role Title</label>
+                <Input
+                  type="text"
+                  placeholder="e.g. Finance Analyst"
+                  value={newRole.name}
+                  onChange={(e) => setNewRole((f) => ({ ...f, name: e.target.value }))}
+                  required
+                  className="h-9 border-[#e2e8f0] bg-white text-[#0f172a] placeholder-[#94a3b8]"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-[#64748b]">Unique Identifier (Slug)</label>
+                <Input
+                  type="text"
+                  placeholder="e.g. finance_analyst"
+                  value={newRole.slug}
+                  onChange={(e) => setNewRole((f) => ({ ...f, slug: e.target.value.toLowerCase().replace(/\s+/g, '_') }))}
+                  required
+                  className="h-9 border-[#e2e8f0] bg-white text-[#0f172a] placeholder-[#94a3b8] font-mono text-xs"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-[#64748b]">Description</label>
+                <textarea
+                  placeholder="Summarise access parameters..."
+                  value={newRole.description}
+                  onChange={(e) => setNewRole((f) => ({ ...f, description: e.target.value }))}
+                  className="min-h-[70px] w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#0f172a] placeholder-[#94a3b8] outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-400/50"
+                />
+              </div>
+
+              <div className="pt-2">
+                <Button
+                  type="submit"
+                  disabled={createMutation.isPending}
+                  className="bg-[#0f172a] hover:bg-[#1e293b] text-white w-full h-9 rounded-lg flex items-center justify-center gap-1.5"
+                >
+                  {createMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus size={15} />
+                  )}
+                  Deploy Custom Role
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+        )}
       </div>
     </div>
   );
@@ -149,9 +194,11 @@ interface RolePermissionGridProps {
   role: Role;
   onToggle: (roleId: string, resource: string, action: string, permissions: { resource: string; action: string }[]) => void;
   onDelete: () => void;
+  isSaving: boolean;
+  canManage: boolean;
 }
 
-function RolePermissionGrid({ role, onToggle, onDelete }: RolePermissionGridProps) {
+function RolePermissionGrid({ role, onToggle, onDelete, isSaving, canManage }: RolePermissionGridProps) {
   const [expanded, setExpanded] = useState(false);
 
   const permissionSet = useMemo(
@@ -160,55 +207,72 @@ function RolePermissionGrid({ role, onToggle, onDelete }: RolePermissionGridProp
   );
 
   return (
-    <div className="rounded-lg border bg-card">
-      <button
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50"
-        onClick={() => setExpanded((e) => !e)}
+    <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none overflow-hidden hover:border-slate-300 transition-all">
+      <div
+        className="flex items-center justify-between px-4 py-3.5 hover:bg-[#f8fafc]/50 transition-colors cursor-pointer select-none"
+        onClick={() => setExpanded(!expanded)}
       >
-        <div className="flex items-center gap-3">
-          <Shield className="h-5 w-5 text-muted-foreground" />
-          <div className="text-left">
-            <p className="text-sm font-medium">{role.name}</p>
-            <p className="text-xs text-muted-foreground">
-              {role.permissions.length} permissions{role.is_system_role ? ' · System role' : ''}
-            </p>
+        <div className="flex items-center gap-3.5 min-w-0">
+          <div className="p-2 bg-[#f1f5f9] text-[#64748b] border border-[#e2e8f0] rounded-lg">
+            <Shield size={16} />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-medium text-[#0f172a]">{role.name}</span>
+              {role.is_system_role ? (
+                <Badge variant="outline" className="bg-[#f8fafc] text-[#64748b] border-[#e2e8f0] text-[9px] rounded-md font-semibold py-0 px-1.5 flex items-center gap-1">
+                  <Lock size={9} />
+                  System Role
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="bg-indigo-50/50 text-indigo-600 border-indigo-100 text-[9px] rounded-md font-semibold py-0 px-1.5">
+                  Custom
+                </Badge>
+              )}
+            </div>
+            {role.description ? (
+              <p className="text-xs text-[#64748b] mt-0.5 truncate max-w-sm lg:max-w-md">{role.description}</p>
+            ) : (
+              <p className="text-[10px] font-mono text-[#94a3b8] mt-0.5 truncate">{role.slug}</p>
+            )}
           </div>
         </div>
-        <svg
-          className={`h-4 w-4 transition-transform ${expanded ? 'rotate-90' : ''}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
+
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-[#94a3b8] font-mono bg-[#f8fafc] px-2 py-0.5 border border-[#e2e8f0] rounded">
+            {role.permissions.length} nodes
+          </span>
+          {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin text-[#64748b]" />}
+          {expanded ? <ChevronUp size={16} className="text-[#94a3b8]" /> : <ChevronDown size={16} className="text-[#94a3b8]" />}
+        </div>
+      </div>
 
       {expanded && (
-        <div className="border-t overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="border-t border-[#e2e8f0] overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-muted/50">
-                <th className="text-left px-4 py-2 font-medium">Resource</th>
+              <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+                <th className="px-4 py-2 font-medium text-[#475569] w-32">Resource Node</th>
                 {ACTIONS.map((action) => (
-                  <th key={action} className="px-2 py-2 text-center font-medium capitalize">
+                  <th key={action} className="px-2 py-2 text-center font-medium text-[#475569] capitalize">
                     {action}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-[#e2e8f0]">
               {RESOURCES.map((resource) => (
-                <tr key={resource} className="border-t">
-                  <td className="px-4 py-1.5 font-medium">{resource}</td>
+                <tr key={resource} className="hover:bg-[#f8fafc]/30">
+                  <td className="px-4 py-2 font-medium text-[#0f172a]">{resource}</td>
                   {ACTIONS.map((action) => {
                     const key = `${resource}:${action}`;
                     const checked = permissionSet.has(key);
                     return (
-                      <td key={action} className="px-2 py-1.5 text-center">
+                      <td key={action} className="px-2 py-2 text-center">
                         <input
                           type="checkbox"
                           checked={checked}
+                          disabled={role.is_system_role || !canManage}
                           onChange={() =>
                             onToggle(
                               role.id,
@@ -217,7 +281,7 @@ function RolePermissionGrid({ role, onToggle, onDelete }: RolePermissionGridProp
                               role.permissions as { resource: string; action: string }[],
                             )
                           }
-                          className="h-4 w-4 rounded border-input cursor-pointer"
+                          className="h-3.5 w-3.5 rounded border-[#cbd5e1] text-[#0f172a] focus:ring-slate-400 cursor-pointer disabled:cursor-not-allowed transition-all"
                         />
                       </td>
                     );
@@ -226,19 +290,33 @@ function RolePermissionGrid({ role, onToggle, onDelete }: RolePermissionGridProp
               ))}
             </tbody>
           </table>
-          {!role.is_system_role && (
-            <div className="px-4 py-2 border-t">
-              <button
+
+          {role.is_system_role ? (
+            <div className="px-4 py-2.5 bg-[#f8fafc] border-t border-[#e2e8f0] flex items-center gap-1.5 text-[10px] text-[#64748b]">
+              <Info size={12} className="text-[#94a3b8]" />
+              <span>System roles are managed by platform specifications and cannot be modified.</span>
+            </div>
+          ) : !canManage ? (
+            <div className="px-4 py-2.5 bg-[#f8fafc] border-t border-[#e2e8f0] flex items-center gap-1.5 text-[10px] text-[#64748b]">
+              <Lock size={12} className="text-[#94a3b8]" />
+              <span>You do not have permission to modify custom roles.</span>
+            </div>
+          ) : (
+            <div className="px-4 py-2.5 border-t border-[#e2e8f0] flex items-center justify-between">
+              <span className="text-[10px] text-[#94a3b8]">Changes save automatically</span>
+              <Button
+                variant="ghost"
+                size="xs"
                 onClick={onDelete}
-                className="text-xs text-red-600 hover:text-red-700 flex items-center gap-1"
+                className="text-red-500 hover:text-red-700 hover:bg-red-50 text-[11px] font-medium h-7 rounded-md"
               >
-                <Trash2 className="h-3 w-3" />
-                Delete role
-              </button>
+                <Trash2 size={12} className="mr-1" />
+                Delete Custom Role
+              </Button>
             </div>
           )}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
