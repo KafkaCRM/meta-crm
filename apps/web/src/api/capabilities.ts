@@ -264,6 +264,11 @@ export interface UpdateOnboardingInput {
   contract_value?: number;
 }
 
+export interface ListOnboardingsParams {
+  party_id?: string;
+  status?: string;
+}
+
 // --- API DEFINITION ---
 export const capabilitiesApi = {
   appointments: {

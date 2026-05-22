@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useInfiniteQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { PartySource, MergeStatus, Channel, Direction, EventType } from '@meta-crm/types';
@@ -8,6 +8,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useLabels } from '@/hooks/useLabels';
 import { useRealtime } from '@/hooks/useRealtime';
 import { partiesApi } from '@/api/parties';
+import { interactionsApi } from '@/api/interactions';
 import { queryClient } from '@/lib/query-client';
 import { MergeWizard } from './MergeWizard';
 import { Button } from '@/components/ui/button';
@@ -110,6 +111,7 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
   const [composeMessage, setComposeMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const [optimisticMessages, setOptimisticMessages] = useState<TimelineItem[]>([]);
+  const [realtimeItems, setRealtimeItems] = useState<TimelineItem[]>([]);
 
   const { data: party, isLoading } = useQuery<PartyResponse>({
     queryKey: ['parties', partyId],
@@ -152,6 +154,26 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
     [party, editValue, updateMutation],
   );
 
+  const {
+    data: timelinePages,
+    isLoading: timelineLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['interactions', 'party', partyId],
+    queryFn: ({ pageParam }) =>
+      interactionsApi.list({
+        party_id: partyId,
+        cursor: pageParam ?? undefined,
+        limit: 20,
+      }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.next_cursor,
+    enabled: !!partyId,
+    staleTime: 10_000,
+  });
+
   const handleSend = useCallback(async () => {
     if (!composeMessage.trim() || !party) return;
     setSendingMessage(true);
@@ -169,25 +191,42 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
     setComposeMessage('');
 
     try {
-      // TODO: replace with actual interaction API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await interactionsApi.create({
+        party_id: party.id,
+        channel: composeChannel as Channel,
+        direction: Direction.Outbound,
+        content: optimisticItem.content!,
+      });
+      setOptimisticMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+      queryClient.invalidateQueries({ queryKey: ['interactions', 'party', partyId] });
+      toast.success('Message sent');
     } catch {
       setOptimisticMessages((prev) => prev.filter((m) => m.id !== optimisticId));
       toast.error('Failed to send message');
     } finally {
       setSendingMessage(false);
     }
-  }, [composeMessage, composeChannel, party]);
+  }, [composeMessage, composeChannel, party, partyId]);
 
   // Real-time: append incoming interactions to timeline
   useRealtime<any>('interaction:received', (payload) => {
     if (payload.party_id === partyId) {
-      queryClient.setQueryData<PartyResponse>(['parties', partyId], (old) => {
-        if (!old) return old;
-        return old;
-      });
+      const newItem: TimelineItem = {
+        id: `temp_${Date.now()}`,
+        type: 'interaction',
+        channel: payload.channel,
+        direction: Direction.Inbound,
+        content: payload.content,
+        timestamp: new Date().toISOString(),
+      };
+      setRealtimeItems((prev) => [newItem, ...prev]);
     }
   });
+
+  useEffect(() => {
+    setRealtimeItems([]);
+    setOptimisticMessages([]);
+  }, [partyId]);
 
   const cases = useMemo(() => (party as any)?.cases ?? [], [party]);
 
@@ -209,31 +248,59 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
       }
     }
 
-    // Add interactions (mock for now — replace with actual API)
-    const interactions = (party as any).interactions ?? [];
-    for (const interaction of interactions) {
-      items.push({
-        id: interaction.id,
-        type: 'interaction',
-        channel: interaction.channel,
-        direction: interaction.direction,
-        content: interaction.content,
-        timestamp: interaction.created_at,
-        pinned: interaction.pinned,
-        thread_id: interaction.thread_id,
-      });
+    // Add queried interactions
+    const dbItems = timelinePages?.pages.flatMap((page) => page.items) ?? [];
+    for (const dbItem of dbItems) {
+      if (dbItem.kind === 'interaction') {
+        const i = dbItem.data as any;
+        items.push({
+          id: i.id,
+          type: 'interaction',
+          channel: i.channel,
+          direction: i.direction,
+          content: i.content,
+          timestamp: i.created_at,
+          pinned: i.is_pinned,
+          thread_id: i.thread_id || undefined,
+        });
+      } else if (dbItem.kind === 'thread') {
+        const thread = dbItem.data as any;
+        for (const i of thread.messages) {
+          items.push({
+            id: i.id,
+            type: 'interaction',
+            channel: i.channel,
+            direction: i.direction,
+            content: i.content,
+            timestamp: i.created_at,
+            pinned: i.is_pinned,
+            thread_id: thread.thread_id,
+          });
+        }
+      }
     }
 
     // Add optimistic messages
     items.push(...optimisticMessages);
 
+    // Add real-time messages
+    items.push(...realtimeItems);
+
+    // Deduplicate by ID
+    const seen = new Set<string>();
+    const uniqueItems = items.filter((item) => {
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
+
     // Sort by timestamp DESC
-    items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    uniqueItems.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
     // Group by thread_id
     const threaded: TimelineItem[] = [];
     const threadMap = new Map<string, TimelineItem[]>();
-    for (const item of items) {
+    for (const item of uniqueItems) {
       if (item.thread_id) {
         if (!threadMap.has(item.thread_id)) threadMap.set(item.thread_id, []);
         threadMap.get(item.thread_id)!.push(item);
@@ -258,7 +325,7 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
     const pinned = threaded.filter((i) => i.pinned);
     const unpinned = threaded.filter((i) => !i.pinned);
     return [...pinned, ...unpinned];
-  }, [cases, party, optimisticMessages]);
+  }, [cases, timelinePages, optimisticMessages, realtimeItems]);
 
   if (isLoading) {
     return (
@@ -359,17 +426,39 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
                   <p className="text-sm text-[#94a3b8]">No interactions yet</p>
                 </div>
               ) : (
-                <div className="divide-y divide-[#e2e8f0]">
-                  {timelineItems.map((item) => (
-                    <TimelineItemRenderer
-                      key={item.id}
-                      item={item}
-                      expandedThreads={expandedThreads}
-                      setExpandedThreads={setExpandedThreads}
-                      canPin={can('manage', 'Case')}
-                    />
-                  ))}
-                </div>
+                <>
+                  <div className="divide-y divide-[#e2e8f0]">
+                    {timelineItems.map((item) => (
+                      <TimelineItemRenderer
+                        key={item.id}
+                        item={item}
+                        expandedThreads={expandedThreads}
+                        setExpandedThreads={setExpandedThreads}
+                        canPin={can('manage', 'Case')}
+                      />
+                    ))}
+                  </div>
+                  {hasNextPage && (
+                    <div className="p-3 text-center border-t border-[#e2e8f0]">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fetchNextPage()}
+                        disabled={isFetchingNextPage}
+                        className="w-full border-[#e2e8f0] text-[#64748b] hover:bg-[#e2e8f0] hover:text-[#0f172a] rounded-lg h-8"
+                      >
+                        {isFetchingNextPage ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          'Load More Activity'
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 

@@ -43,6 +43,7 @@ export const ThreadResponseSchema = z.object({
 export const TimelineItemSchema = z.union([
   z.object({ kind: z.literal('interaction'), data: InteractionResponseSchema }),
   z.object({ kind: z.literal('system_event'), data: z.record(z.string(), z.unknown()) }),
+  z.object({ kind: z.literal('thread'), data: ThreadResponseSchema }),
 ]);
 
 export const InteractionListResponseSchema = z.object({

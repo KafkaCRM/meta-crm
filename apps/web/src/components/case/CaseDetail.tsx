@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMemo, useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { ArrowLeft, User } from 'lucide-react';
 import type { CaseDto, WorkflowStageDto, TimelineItem } from '@meta-crm/types';
@@ -38,8 +38,7 @@ export function CaseDetail({
   const queryClient = useQueryClient();
   const { can } = usePermissions();
 
-  const [timelineCursor, setTimelineCursor] = useState<string | null>(null);
-  const [timelineItems, setTimelineItems] = useState<TimelineItem[]>([]);
+  const [realtimeItems, setRealtimeItems] = useState<TimelineItem[]>([]);
 
   const { data: caseData, isLoading: caseLoading } = useQuery<CaseDto>({
     queryKey: ['cases', caseId],
@@ -54,20 +53,39 @@ export function CaseDetail({
     staleTime: 60_000,
   });
 
-  const timelineQuery = useQuery({
-    queryKey: ['interactions', 'case', caseId, timelineCursor],
-    queryFn: () =>
+  const {
+    data: timelinePages,
+    isLoading: timelineLoading,
+    fetchNextPage,
+    hasNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['interactions', 'case', caseId],
+    queryFn: ({ pageParam }) =>
       interactionsApi.list({
         case_id: caseId,
-        ...(timelineCursor ? { cursor: timelineCursor } : {}),
+        cursor: pageParam ?? undefined,
         limit: 20,
       }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.next_cursor,
     enabled: !!caseId,
     staleTime: 10_000,
   });
 
-  const { isLoading: timelineLoading } = timelineQuery;
-  const hasNextPage = timelineQuery.data?.next_cursor != null;
+  const combinedItems = useMemo(() => {
+    const historical = timelinePages?.pages.flatMap((page) => page.items) ?? [];
+    const all = [...realtimeItems, ...historical];
+    const seen = new Set<string>();
+    return all.filter((item) => {
+      if (seen.has(item.data.id)) return false;
+      seen.add(item.data.id);
+      return true;
+    });
+  }, [realtimeItems, timelinePages]);
+
+  useEffect(() => {
+    setRealtimeItems([]);
+  }, [caseId]);
 
   useRealtime('interaction:received', (payload: { case_id?: string; party_id?: string; channel: string; content: string }) => {
     if (payload.case_id === caseId) {
@@ -88,7 +106,7 @@ export function CaseDetail({
           created_at: new Date().toISOString(),
         },
       };
-      setTimelineItems((prev) => [newItem, ...prev]);
+      setRealtimeItems((prev) => [newItem, ...prev]);
     }
   });
 
@@ -125,12 +143,6 @@ export function CaseDetail({
       .filter((s) => s.order > currentOrder)
       .map((s) => s.id);
   }, [caseData, stages]);
-
-  const fetchNextPage = () => {
-    if (timelineCursor) {
-      setTimelineCursor(timelineCursor);
-    }
-  };
 
   if (caseLoading || stagesLoading) {
     return (
@@ -235,7 +247,7 @@ export function CaseDetail({
             <TabsContent value="timeline" className="flex-1 flex flex-col overflow-hidden data-[state=inactive]:hidden m-0">
               <div className="flex-1 overflow-hidden flex flex-col">
                 <Timeline
-                  items={timelineItems}
+                  items={combinedItems}
                   isLoading={timelineLoading}
                   hasNextPage={hasNextPage ?? false}
                   fetchNextPage={fetchNextPage}

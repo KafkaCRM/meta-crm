@@ -67,13 +67,19 @@ function buildDisplayItems(items: TimelineItem[]): DisplayItem[] {
       }
     } else if (item.kind === 'system_event') {
       systemEvents.push(item.data as CaseEventDto);
+    } else if (item.kind === 'thread') {
+      const thread = item.data as any;
+      const existing = threaded.get(thread.thread_id) ?? [];
+      existing.push(...thread.messages);
+      threaded.set(thread.thread_id, existing);
     }
   }
 
   const displayItems: DisplayItem[] = [...pinned];
 
   for (const [threadId, messages] of threaded) {
-    const sorted = [...messages].sort((a, b) =>
+    const uniqueMessages = Array.from(new Map(messages.map((m) => [m.id, m])).values());
+    const sorted = uniqueMessages.sort((a, b) =>
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     );
     displayItems.push({
