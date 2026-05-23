@@ -21,6 +21,8 @@ import { BillingModule } from './capabilities/billing/billing.module';
 import { PropertyModule } from './capabilities/property/property.module';
 import { OrderManagementModule } from './capabilities/order-management/order-management.module';
 import { CustomerOnboardingModule } from './capabilities/customer-onboarding/customer-onboarding.module';
+import { UserModule } from './core/user/user.module';
+import { BranchModule } from './core/branch/branch.module';
 
 const CAPABILITY_MODULES = [
   EnrollmentModule,
@@ -56,6 +58,8 @@ const CAPABILITY_MODULES = [
     GenericWebhookModule,
     WhatsAppModule,
     CapabilityModule,
+    UserModule,
+    BranchModule,
     ...CAPABILITY_MODULES,
   ],
 })

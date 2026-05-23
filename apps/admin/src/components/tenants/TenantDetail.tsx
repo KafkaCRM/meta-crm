@@ -10,6 +10,8 @@ import {
   updateTenantEntitlements,
   updateTenantCapabilities,
   resetTenantOwnerPassword,
+  updateTenantOverrides,
+  type TenantDetail as TenantDetailInfo,
 } from '@/api/platform';
 import { useAuth } from '@/contexts/auth.context';
 import { useForm } from 'react-hook-form';
@@ -484,6 +486,195 @@ function AdminCapabilityManager({
 }
 
 /* ------------------------------------------------------------------ */
+/*  Tenant custom limits overrides panel                              */
+/* ------------------------------------------------------------------ */
+interface AdminOverridesManagerProps {
+  tenantId: string;
+  tenantData: TenantDetailInfo;
+  canUpdate: boolean;
+}
+
+function AdminOverridesManager({ tenantId, tenantData, canUpdate }: AdminOverridesManagerProps) {
+  const queryClient = useQueryClient();
+  const plan = tenantData.plan;
+  const customLimits = tenantData.custom_limits ?? {};
+
+  // Form states
+  const [maxUsers, setMaxUsers] = useState<string>(
+    customLimits.max_users !== undefined ? String(customLimits.max_users) : ''
+  );
+  const [maxBranches, setMaxBranches] = useState<string>(
+    customLimits.max_branches !== undefined ? String(customLimits.max_branches) : ''
+  );
+
+  const [overrideUsers, setOverrideUsers] = useState<boolean>(customLimits.max_users !== undefined);
+  const [overrideBranches, setOverrideBranches] = useState<boolean>(customLimits.max_branches !== undefined);
+
+  const updateMutation = useMutation({
+    mutationFn: (data: Record<string, any>) => updateTenantOverrides(tenantId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tenant', tenantId] });
+      toast.success('Custom limits overrides updated successfully');
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Failed to update custom limits');
+    },
+  });
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const payload: Record<string, any> = {};
+
+    if (overrideUsers && maxUsers.trim() !== '') {
+      payload.max_users = parseInt(maxUsers, 10);
+    } else {
+      payload.max_users = null; // Clear override
+    }
+
+    if (overrideBranches && maxBranches.trim() !== '') {
+      payload.max_branches = parseInt(maxBranches, 10);
+    } else {
+      payload.max_branches = null; // Clear override
+    }
+
+    updateMutation.mutate(payload);
+  };
+
+  const resolvedMaxUsers = overrideUsers && maxUsers !== '' ? maxUsers : (plan?.max_users ?? '5');
+  const resolvedMaxBranches = overrideBranches && maxBranches !== '' ? maxBranches : (plan?.max_branches ?? '1');
+
+  return (
+    <form onSubmit={handleSave} className="space-y-4">
+      {/* Seat Limits */}
+      <div className="space-y-2.5">
+        <div className="flex items-center justify-between">
+          <label className="text-[11px] font-semibold text-slate-700 flex items-center gap-1.5">
+            <Users size={12} className="text-slate-500" />
+            Seat Limit Override
+          </label>
+          <div className="flex items-center gap-1.5 select-none">
+            <input
+              type="checkbox"
+              id="overrideUsers"
+              checked={overrideUsers}
+              disabled={!canUpdate}
+              onChange={(e) => setOverrideUsers(e.target.checked)}
+              className="rounded border-slate-200 text-indigo-600 focus:ring-indigo-600 h-3.5 w-3.5 cursor-pointer"
+            />
+            <label htmlFor="overrideUsers" className="text-[10px] text-slate-400 font-medium cursor-pointer">
+              Custom Seat Limit
+            </label>
+          </div>
+        </div>
+
+        {overrideUsers ? (
+          <div className="space-y-1.5 animate-in slide-in-from-top-1 duration-150">
+            <input
+              type="number"
+              min="1"
+              max="10000"
+              value={maxUsers}
+              disabled={!canUpdate}
+              onChange={(e) => setMaxUsers(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all"
+              placeholder="Enter custom maximum seats..."
+            />
+            <p className="text-[9px] text-indigo-600 font-medium leading-none">
+              Overriding default plan limit of {plan?.max_users ?? '5'} seats.
+            </p>
+          </div>
+        ) : (
+          <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-lg text-[10px] text-slate-500 flex justify-between select-none">
+            <span>Inheriting plan default:</span>
+            <span className="font-semibold text-slate-800">{plan?.max_users ?? '5'} Seats</span>
+          </div>
+        )}
+      </div>
+
+      {/* Branch Limits */}
+      <div className="space-y-2.5">
+        <div className="flex items-center justify-between">
+          <label className="text-[11px] font-semibold text-slate-700 flex items-center gap-1.5">
+            <Building size={12} className="text-slate-500" />
+            Branch Limit Override
+          </label>
+          <div className="flex items-center gap-1.5 select-none">
+            <input
+              type="checkbox"
+              id="overrideBranches"
+              checked={overrideBranches}
+              disabled={!canUpdate}
+              onChange={(e) => setOverrideBranches(e.target.checked)}
+              className="rounded border-slate-200 text-indigo-600 focus:ring-indigo-600 h-3.5 w-3.5 cursor-pointer"
+            />
+            <label htmlFor="overrideBranches" className="text-[10px] text-slate-400 font-medium cursor-pointer">
+              Custom Branch Limit
+            </label>
+          </div>
+        </div>
+
+        {overrideBranches ? (
+          <div className="space-y-1.5 animate-in slide-in-from-top-1 duration-150">
+            <input
+              type="number"
+              min="1"
+              max="1000"
+              value={maxBranches}
+              disabled={!canUpdate}
+              onChange={(e) => setMaxBranches(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all"
+              placeholder="Enter custom maximum branches..."
+            />
+            <p className="text-[9px] text-indigo-600 font-medium leading-none">
+              Overriding default plan limit of {plan?.max_branches ?? '1'} branches.
+            </p>
+          </div>
+        ) : (
+          <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-lg text-[10px] text-slate-500 flex justify-between select-none">
+            <span>Inheriting plan default:</span>
+            <span className="font-semibold text-slate-800">{plan?.max_branches ?? '1'} Branch</span>
+          </div>
+        )}
+      </div>
+
+      {/* Resolved ceilings summary info */}
+      <div className="p-2.5 bg-slate-50/50 border border-slate-200/50 rounded-lg space-y-1">
+        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Resolved Active Ceilings</span>
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-slate-500 font-medium">Max User Capacity</span>
+          <span className="font-bold text-slate-900 font-mono">{resolvedMaxUsers} Seats</span>
+        </div>
+        <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100 mt-1">
+          <span className="text-slate-500 font-medium">Max Branch Capacity</span>
+          <span className="font-bold text-slate-900 font-mono">{resolvedMaxBranches} Branches</span>
+        </div>
+      </div>
+
+      {canUpdate && (
+        <button
+          type="submit"
+          disabled={updateMutation.isPending}
+          className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+        >
+          {updateMutation.isPending ? (
+            <>
+              <RefreshCw size={13} className="animate-spin" />
+              Saving Overrides...
+            </>
+          ) : (
+            <>
+              <Sparkles size={13} />
+              Save Limits Overrides
+            </>
+          )}
+        </button>
+      )}
+    </form>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Main Component                                                    */
 /* ------------------------------------------------------------------ */
 interface TenantDetailProps {
@@ -503,7 +694,7 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
   const [resetCopied, setResetCopied] = useState(false);
 
   const { data: tenant, isLoading } = useQuery({
-    key: ['tenant', tenantId],
+    queryKey: ['tenant', tenantId],
     queryFn: () => getTenant(tenantId),
   });
 
@@ -862,6 +1053,23 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
             {assignError && <p className="text-[10px] text-rose-600 text-center font-medium mt-1">{assignError}</p>}
           </div>
         )}
+
+        {/* Custom Overrides & Capacity Limits */}
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3.5">
+          <div>
+            <h3 className="text-xs font-semibold text-slate-900 flex items-center gap-1.5 uppercase tracking-wider">
+              <Zap size={14} className="text-slate-500" />
+              Custom Overrides & Limits
+            </h3>
+            <p className="text-[10px] text-slate-400 mt-0.5">Override standard tier ceilings for user seats and workspace branch allocations.</p>
+          </div>
+
+          <AdminOverridesManager
+            tenantId={tenantId}
+            tenantData={tenant}
+            canUpdate={canSuspend}
+          />
+        </div>
 
         {/* Danger Zone / Suspend */}
         {canSuspend && (

@@ -215,4 +215,21 @@ export class PlatformTenantsController {
     }
     return result.value;
   }
+
+  @Patch(':id/overrides')
+  @HttpCode(HttpStatus.OK)
+  @CheckPlatformPermissions('update', 'PlatformTenant')
+  async updateOverrides(
+    @Param('id') id: string,
+    @Body() body: Record<string, any>,
+  ) {
+    const result = await this.service.updateOverrides(id, body);
+    if (result.isErr()) {
+      if (result.error.code === 'TENANT_NOT_FOUND') {
+        throw new NotFoundException(result.error);
+      }
+      throw new InternalServerErrorException(result.error);
+    }
+    return result.value;
+  }
 }

@@ -3,7 +3,7 @@ import { buildPlatformAbility } from '@meta-crm/permissions';
 import type { PlatformAbility } from '@meta-crm/permissions';
 import { PlatformRole } from '@meta-crm/types';
 import { platformLogin as apiLogin, refreshToken as apiRefresh, logout as apiLogout } from '@/api/auth';
-import { initAuthHelpers } from '@/lib/api';
+import { initAuthHelpers, setAuthTokens } from '@/lib/api';
 import { queryClient } from '@/lib/query-client';
 
 const RT_KEY = 'meta_crm_admin_rt';
@@ -94,6 +94,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      // Sync set token cache
+      setAuthTokens(result.access_token, result.refresh_token);
+
       const platformRole = payload.platform_role as PlatformRole;
       const ability = buildPlatformAbility(platformRole);
 
@@ -124,12 +127,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    if (state.accessToken) {
-      await apiLogout(state.accessToken).catch(() => {});
+    if (state.accessToken && state.refreshToken) {
+      await apiLogout(state.accessToken, state.refreshToken).catch(() => {});
     }
     // Clear persisted session.
     localStorage.removeItem(RT_KEY);
     localStorage.removeItem(USER_KEY);
+    // Clear synchronous token cache
+    setAuthTokens(null, null);
     setState({
       user: null,
       accessToken: null,
@@ -140,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isUnauthorized: false,
     });
     queryClient.clear();
-  }, [state.accessToken]);
+  }, [state.accessToken, state.refreshToken]);
 
   const refresh = useCallback(async (): Promise<string | null> => {
     if (!state.refreshToken) return null;
@@ -166,6 +171,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((result) => {
         if (!storedUser) throw new Error('no_user');
 
+        // Sync set token cache
+        setAuthTokens(result.access_token, storedToken);
+
         const ability = buildPlatformAbility(storedUser.platform_role);
 
         setState({
@@ -182,6 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Stored token is stale / invalid — clear and go to login.
         localStorage.removeItem(RT_KEY);
         localStorage.removeItem(USER_KEY);
+        setAuthTokens(null, null);
         setState({
           user: null,
           accessToken: null,
@@ -199,14 +208,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     initAuthHelpers({
-      getAccessToken: () => state.accessToken,
-      setTokens: (access, refresh) => {
-        setState((s) => ({ ...s, accessToken: access, refreshToken: refresh }));
-      },
-      doRefresh: refresh,
       doLogout: logout,
+      onTokenRefreshed: (access) => {
+        setState((s) => ({ ...s, accessToken: access }));
+      },
     });
-  }, [state.accessToken, refresh, logout]);
+  }, [logout]);
 
   return (
     <AuthContext.Provider value={{ ...state, login, logout }}>

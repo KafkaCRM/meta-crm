@@ -49,12 +49,14 @@ export async function refreshToken(token: string): Promise<RefreshResponse> {
   return response.json() as Promise<RefreshResponse>;
 }
 
-export async function logout(token: string): Promise<void> {
+export async function logout(accessToken: string, refreshToken: string): Promise<void> {
   await fetch('/api/v1/auth/logout', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${accessToken}`,
     },
+    body: JSON.stringify({ refresh_token: refreshToken }),
   });
 }
+

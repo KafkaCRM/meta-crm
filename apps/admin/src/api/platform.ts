@@ -29,6 +29,14 @@ export interface TenantDetail {
   plugin_list: string[];
   plugin_ids: string[];
   enabled_capabilities: string[];
+  custom_limits?: Record<string, any>;
+  plan?: {
+    id: string;
+    name: string;
+    max_branches: number;
+    max_users: number;
+    max_plugins: number;
+  } | null;
 }
 
 export interface CreateTenantRequest {
@@ -339,5 +347,12 @@ export async function updateTenantCapabilities(id: string, capabilities: string[
 export async function resetTenantOwnerPassword(id: string): Promise<{ email: string; temporary_password: string }> {
   return apiCall<{ email: string; temporary_password: string }>(`/platform/tenants/${id}/reset-owner-password`, {
     method: 'PATCH',
+  });
+}
+
+export async function updateTenantOverrides(id: string, overrides: Record<string, any>): Promise<TenantDetail> {
+  return apiCall<TenantDetail>(`/platform/tenants/${id}/overrides`, {
+    method: 'PATCH',
+    body: JSON.stringify(overrides),
   });
 }

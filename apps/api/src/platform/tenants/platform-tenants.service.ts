@@ -314,6 +314,14 @@ export interface TenantDetail {
   plugin_list: string[];
   plugin_ids: string[];
   enabled_capabilities: string[];
+  custom_limits?: Record<string, any>;
+  plan?: {
+    id: string;
+    name: string;
+    max_branches: number;
+    max_users: number;
+    max_plugins: number;
+  } | null;
 }
 
 @Injectable()
@@ -362,7 +370,16 @@ export class PlatformTenantsService {
   }
 
   async findOne(id: string): Promise<Result<TenantDetail, PlatformTenantError>> {
-    const tenant = await this.db.client.tenant.findUnique({ where: { id } });
+    const tenant = await this.db.client.tenant.findUnique({
+      where: { id },
+      include: {
+        tenantPlans: {
+          include: {
+            plan: true,
+          },
+        },
+      },
+    });
     if (!tenant) {
       return err({ code: 'TENANT_NOT_FOUND', message: 'Tenant not found' });
     }
@@ -380,6 +397,18 @@ export class PlatformTenantsService {
     const enabled_capabilities = Array.isArray(config.enabled_capabilities)
       ? (config.enabled_capabilities as string[])
       : [];
+    const custom_limits = config.custom_limits ?? {};
+
+    const activeTenantPlan = tenant.tenantPlans?.[0];
+    const plan = activeTenantPlan?.plan
+      ? {
+          id: activeTenantPlan.plan.id,
+          name: activeTenantPlan.plan.name,
+          max_branches: activeTenantPlan.plan.max_branches,
+          max_users: activeTenantPlan.plan.max_users,
+          max_plugins: activeTenantPlan.plan.max_plugins,
+        }
+      : null;
 
     return ok({
       id: tenant.id,
@@ -393,6 +422,8 @@ export class PlatformTenantsService {
       plugin_list: plugins.map((p: any) => p.pluginRegistry.package_name),
       plugin_ids: plugins.map((p: any) => p.pluginRegistry.id),
       enabled_capabilities,
+      custom_limits,
+      plan,
     });
   }
 
@@ -781,6 +812,38 @@ export class PlatformTenantsService {
       return err({
         code: 'TRANSACTION_FAILED',
         message: e?.message ?? 'Template application failed',
+      });
+    }
+  }
+
+  async updateOverrides(
+    id: string,
+    overrides: Record<string, any>,
+  ): Promise<Result<TenantDetail, PlatformTenantError>> {
+    const tenant = await this.db.client.tenant.findUnique({ where: { id } });
+    if (!tenant) {
+      return err({ code: 'TENANT_NOT_FOUND', message: 'Tenant not found' });
+    }
+
+    try {
+      const config = { ...((tenant.config_json ?? {}) as Record<string, any>) };
+      config.custom_limits = {
+        ...(config.custom_limits ?? {}),
+        ...overrides,
+      };
+
+      await this.db.client.tenant.update({
+        where: { id },
+        data: {
+          config_json: config,
+        },
+      });
+
+      return this.findOne(id);
+    } catch (e: any) {
+      return err({
+        code: 'TRANSACTION_FAILED',
+        message: e?.message ?? 'Failed to update overrides',
       });
     }
   }

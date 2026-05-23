@@ -1,20 +1,23 @@
-let getAccessToken: (() => string | null) | null = null;
-let setTokens: ((access: string, refresh: string) => void) | null = null;
-let doRefresh: (() => Promise<string | null>) | null = null;
+import { refreshToken as apiRefresh } from '@/api/auth';
+
+let activeAccessToken: string | null = null;
+let activeRefreshToken: string | null = null;
 let doLogout: (() => void) | null = null;
+let onTokenRefreshed: ((token: string) => void) | null = null;
+
+export function setAuthTokens(access: string | null, refresh: string | null) {
+  activeAccessToken = access;
+  activeRefreshToken = refresh;
+}
 
 export function initAuthHelpers(
   helpers: {
-    getAccessToken: () => string | null;
-    setTokens: (access: string, refresh: string) => void;
-    doRefresh: () => Promise<string | null>;
     doLogout: () => void;
+    onTokenRefreshed?: (token: string) => void;
   },
 ) {
-  getAccessToken = helpers.getAccessToken;
-  setTokens = helpers.setTokens;
-  doRefresh = helpers.doRefresh;
   doLogout = helpers.doLogout;
+  onTokenRefreshed = helpers.onTokenRefreshed || null;
 }
 
 let isRefreshing = false;
@@ -35,12 +38,10 @@ function rejectPendingRequests(err: unknown) {
 }
 
 async function getValidToken(): Promise<string | null> {
-  if (!getAccessToken) return null;
+  if (activeAccessToken) return activeAccessToken;
 
-  const token = getAccessToken();
-  if (token) return token;
-
-  if (!doRefresh) return null;
+  const storedRT = activeRefreshToken || localStorage.getItem('meta_crm_admin_rt');
+  if (!storedRT) return null;
 
   if (isRefreshing) {
     return new Promise((resolve, reject) => {
@@ -50,7 +51,15 @@ async function getValidToken(): Promise<string | null> {
 
   isRefreshing = true;
   try {
-    refreshPromise = doRefresh();
+    refreshPromise = apiRefresh(storedRT)
+      .then((res) => {
+        const token = res.access_token;
+        activeAccessToken = token;
+        onTokenRefreshed?.(token);
+        return token;
+      })
+      .catch(() => null);
+
     const newToken = await refreshPromise;
 
     if (newToken) {
@@ -65,6 +74,7 @@ async function getValidToken(): Promise<string | null> {
     refreshPromise = null;
   }
 }
+
 
 export async function apiCall<T>(
   path: string,
@@ -89,6 +99,7 @@ export async function apiCall<T>(
   });
 
   if (response.status === 401) {
+    activeAccessToken = null;
     const refreshed = await getValidToken();
     if (!refreshed) {
       doLogout?.();
