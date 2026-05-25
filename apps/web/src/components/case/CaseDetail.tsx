@@ -42,7 +42,7 @@ export function CaseDetail({
 
   const { data: caseData, isLoading: caseLoading } = useQuery<CaseDto>({
     queryKey: ['cases', caseId],
-    queryFn: () => casesApi.get(caseId),
+    queryFn: () => casesApi.get(caseId, { include: 'campaign' }),
     staleTime: 30_000,
   });
 
@@ -191,8 +191,18 @@ export function CaseDetail({
             )}
             <div>
               <h1 className="text-lg font-semibold">{caseData.title}</h1>
-              <p className="text-sm text-muted-foreground">
-                {caseData.type} · {currentStage?.name ?? 'Unknown stage'}
+              <p className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
+                <span>{caseData.type}</span>
+                <span>·</span>
+                <span>{currentStage?.name ?? 'Unknown stage'}</span>
+                {(caseData as any).campaign && (
+                  <>
+                    <span>·</span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-600 border border-indigo-500/20">
+                      Campaign: {(caseData as any).campaign.name} ({(caseData as any).campaign.channel})
+                    </span>
+                  </>
+                )}
               </p>
             </div>
           </div>

@@ -10,6 +10,7 @@ import { useLabels } from '@/hooks/useLabels';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Loader2 } from 'lucide-react';
+import { campaignsApi } from '@/api/campaigns';
 
 interface CaseFormProps {
   partyId?: string;
@@ -37,6 +38,7 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
   const [partyId, setPartyId] = useState(searchPartyId);
   const [assignmentId, setAssignmentId] = useState('');
   const [assignedToId, setAssignedToId] = useState('');
+  const [campaignId, setCampaignId] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // 1. Fetch parties (to select one if not prefilled)
@@ -81,6 +83,13 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
     staleTime: 60_000,
   });
 
+  // 6. Fetch campaigns list
+  const { data: campaigns = [], isLoading: campaignsLoading } = useQuery({
+    queryKey: ['campaigns', 'list-active'],
+    queryFn: () => campaignsApi.list({ status: 'active' }),
+    staleTime: 60_000,
+  });
+
   // Build resolved assignments options
   const assignmentOptions = useMemo(() => {
     return assignments.map((asg) => {
@@ -110,6 +119,7 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
       workflow_definition_id: string;
       branch_brand_assignment_id: string;
       assigned_to_id?: string;
+      campaign_id?: string;
     }) => casesApi.create(data),
     onSuccess: (newCase) => {
       queryClient.invalidateQueries({ queryKey: ['cases'] });
@@ -146,9 +156,10 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
         workflow_definition_id: 'wf_default_001',
         branch_brand_assignment_id: assignmentId,
         ...(assignedToId ? { assigned_to_id: assignedToId } : {}),
+        ...(campaignId ? { campaign_id: campaignId } : {}),
       });
     },
-    [title, type, partyId, assignmentId, assignedToId, createMutation],
+    [title, type, partyId, assignmentId, assignedToId, campaignId, createMutation],
   );
 
   if (!can('create', 'Case')) {
@@ -159,7 +170,7 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
     );
   }
 
-  const isPageLoading = partiesLoading || assignmentsLoading || usersLoading;
+  const isPageLoading = partiesLoading || assignmentsLoading || usersLoading || campaignsLoading;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -309,6 +320,28 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Campaign (Optional) */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-[#0f172a]">
+              Campaign (Optional)
+            </label>
+            <select
+              value={campaignId}
+              onChange={(e) => setCampaignId(e.target.value)}
+              className="w-full h-9 rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
+            >
+              <option value="">-- No Campaign (Auto-Tag) --</option>
+              {campaigns.map((camp) => (
+                <option key={camp.id} value={camp.id}>
+                  {camp.name} ({camp.channel})
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-[#94a3b8]">
+              Attribute this case manually to an active campaign, or leave empty to trigger auto-tagging rules.
+            </p>
           </div>
 
           <Button

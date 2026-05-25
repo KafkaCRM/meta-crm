@@ -57,6 +57,7 @@ import {
   Home,
   ShoppingCart,
   ClipboardList,
+  Megaphone,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
@@ -79,6 +80,7 @@ function AppSidebar() {
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
     { label: 'Contacts', path: '/parties', icon: Users },
     { label: 'Cases', path: '/cases', icon: Workflow },
+    { label: 'Campaigns', path: '/campaigns', icon: Megaphone },
     ...(isEnabled('capability/appointment')
       ? [{ label: 'Appointments', path: '/appointments', icon: Calendar }]
       : []),
@@ -471,6 +473,7 @@ import { billingRoute } from './routes/billing';
 import { propertiesRoute } from './routes/properties';
 import { ordersRoute } from './routes/orders';
 import { onboardingsRoute } from './routes/onboardings';
+import { campaignsRoute } from './routes/campaigns';
 
 /* ------------------------------------------------------------------ */
 /*  Route tree + router                                                */
@@ -491,6 +494,7 @@ export const routeTree = rootRoute.addChildren([
   propertiesRoute,
   ordersRoute,
   onboardingsRoute,
+  campaignsRoute,
   settingsRoute,
   settingsBranchesRoute,
   settingsBrandsRoute,
