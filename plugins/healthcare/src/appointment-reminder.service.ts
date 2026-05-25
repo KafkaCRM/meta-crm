@@ -12,6 +12,7 @@ export interface CaseStageChangedPayload {
   actor_id?: string;
   case_attributes?: Record<string, unknown>;
   party_phone?: string;
+  active_plugins?: string[];
 }
 
 @Injectable()
@@ -26,8 +27,45 @@ export class AppointmentReminderService implements OnModuleInit {
     this.logger.log('Healthcare appointment reminder plugin loaded');
   }
 
+  @OnEvent('case:before_stage_change')
+  async handleBeforeStageChange(payload: any): Promise<{ blocked: boolean; reason?: string }> {
+    if (!payload.active_plugins?.includes('plugin-healthcare')) {
+      return { blocked: false };
+    }
+
+    if (payload.to_stage_name === 'appointment_scheduled') {
+      const attrs = payload.case_attributes ?? {};
+      const appointmentDate = attrs['appointment_date'] as string | undefined;
+
+      if (!appointmentDate) {
+        return {
+          blocked: true,
+          reason: 'Appointment Date is required to schedule an appointment',
+        };
+      }
+
+      const dateVal = new Date(appointmentDate).getTime();
+      if (isNaN(dateVal)) {
+        return {
+          blocked: true,
+          reason: 'Appointment Date must be a valid date format',
+        };
+      }
+
+      if (dateVal <= Date.now()) {
+        return {
+          blocked: true,
+          reason: 'Appointment Date must be scheduled in the future',
+        };
+      }
+    }
+
+    return { blocked: false };
+  }
+
   @OnEvent('case:stage_changed')
   async handleStageChanged(payload: CaseStageChangedPayload): Promise<void> {
+    if (!payload.active_plugins?.includes('plugin-healthcare')) return;
     if (payload.to_stage_name !== 'appointment_scheduled') return;
 
     const attrs = payload.case_attributes ?? {};

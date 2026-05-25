@@ -58,7 +58,10 @@ function buildMocks() {
   const db = { getClient: vi.fn().mockReturnValue(client) } as unknown as TenantScopedPrismaService;
   const cls = { get: vi.fn().mockReturnValue(scope) } as unknown as ClsService;
   const criteriaEvaluator = new CriteriaEvaluatorService();
-  const hooks = { emit: vi.fn() } as unknown as HooksService;
+  const hooks = {
+    emit: vi.fn(),
+    emitSynchronous: vi.fn().mockResolvedValue([]),
+  } as unknown as HooksService;
   const roomManager = { broadcastToTenant: vi.fn() } as unknown as RoomManagerService;
   const triggerQueue = { add: mockQueueAdd } as unknown as Queue;
 
@@ -340,5 +343,49 @@ describe('StageTransitionService', () => {
     expect(client.case.update).not.toHaveBeenCalled();
     expect(client.caseEvent.create).not.toHaveBeenCalled();
     expect(client.$transaction).not.toHaveBeenCalled();
+  });
+
+  /* ------------------------------------------------------------------ */
+  /*  Step 3.5 — Synchronous plugin pre-transition validation           */
+  /* ------------------------------------------------------------------ */
+  it('blocks transition and returns CRITERIA_UNMET when a plugin validation blocks', async () => {
+    (client.case.findUnique as any).mockResolvedValue(EXISTING_CASE);
+    (client.workflowStage.findUnique as any).mockResolvedValue(TARGET_STAGE);
+    // Mock the synchronous hooks to return a blockage
+    (hooks.emitSynchronous as any).mockResolvedValue([
+      { blocked: true, reason: 'Consent document is missing' }
+    ]);
+
+    const result = await svc.transitionStage('case-1', 'stage-2', 'user-1');
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error.code).toBe('CRITERIA_UNMET');
+      expect(result.error.unmet).toContain('Consent document is missing');
+    }
+    expect(client.case.update).not.toHaveBeenCalled();
+    expect(client.caseEvent.create).not.toHaveBeenCalled();
+    expect(client.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('succeeds transition when all plugins return blocked: false or empty', async () => {
+    (client.case.findUnique as any).mockResolvedValue(EXISTING_CASE);
+    (client.workflowStage.findUnique as any).mockResolvedValue(TARGET_STAGE);
+    (client.workflowTransition.findFirst as any).mockResolvedValue(EXISTING_TRANSITION);
+    (client.$transaction as any).mockImplementation(async (ops: any[]) => {
+      for (const op of ops) await op;
+    });
+    (client.case.update as any).mockResolvedValue({ ...EXISTING_CASE, stage: 'stage-2' });
+    (client.caseEvent.create as any).mockResolvedValue({ id: 'evt-1' });
+    
+    // Mock the synchronous hooks to return no blockage
+    (hooks.emitSynchronous as any).mockResolvedValue([
+      { blocked: false }
+    ]);
+
+    const result = await svc.transitionStage('case-1', 'stage-2', 'user-1');
+
+    expect(result.isOk()).toBe(true);
+    expect(client.$transaction).toHaveBeenCalled();
   });
 });

@@ -75,6 +75,7 @@ describe('Healthcare Plugin', () => {
         actor_id: 'user-1',
         case_attributes: { appointment_date: appointmentDate },
         party_phone: '+1234567890',
+        active_plugins: ['plugin-healthcare'],
       };
 
       await service.handleStageChanged(payload);
@@ -100,6 +101,7 @@ describe('Healthcare Plugin', () => {
         tenant_id: 'tenant-1',
         actor_id: 'user-1',
         case_attributes: {},
+        active_plugins: ['plugin-healthcare'],
       };
 
       await service.handleStageChanged(payload);
@@ -116,6 +118,7 @@ describe('Healthcare Plugin', () => {
         tenant_id: 'tenant-1',
         actor_id: 'user-1',
         case_attributes: { other_field: 'value' },
+        active_plugins: ['plugin-healthcare'],
       };
 
       await service.handleStageChanged(payload);
@@ -135,6 +138,7 @@ describe('Healthcare Plugin', () => {
         actor_id: 'user-1',
         case_attributes: { appointment_date: appointmentDate },
         party_phone: '+1234567890',
+        active_plugins: ['plugin-healthcare'],
       };
 
       await service.handleStageChanged(payload);
@@ -144,6 +148,55 @@ describe('Healthcare Plugin', () => {
 
       const expectedDelay = new Date(appointmentDate).getTime() - 24 * 60 * 60 * 1000 - Date.now();
       expect(delay).toBeCloseTo(expectedDelay, -2);
+    });
+
+    /* ------------------------------------------------------------------ */
+    /*  Synchronous Hook Validation (case:before_stage_change)           */
+    /* ------------------------------------------------------------------ */
+    describe('handleBeforeStageChange (gating)', () => {
+      it('returns blocked: false when healthcare plugin is not enabled', async () => {
+        const payload = {
+          to_stage_name: 'appointment_scheduled',
+          case_attributes: {},
+          active_plugins: ['plugin-other'],
+        };
+        const result = await service.handleBeforeStageChange(payload);
+        expect(result.blocked).toBe(false);
+      });
+
+      it('returns blocked: true when appointment_date is missing', async () => {
+        const payload = {
+          to_stage_name: 'appointment_scheduled',
+          case_attributes: {},
+          active_plugins: ['plugin-healthcare'],
+        };
+        const result = await service.handleBeforeStageChange(payload);
+        expect(result.blocked).toBe(true);
+        expect(result.reason).toBe('Appointment Date is required to schedule an appointment');
+      });
+
+      it('returns blocked: true when appointment_date is in the past', async () => {
+        const pastDate = new Date(Date.now() - 5000).toISOString();
+        const payload = {
+          to_stage_name: 'appointment_scheduled',
+          case_attributes: { appointment_date: pastDate },
+          active_plugins: ['plugin-healthcare'],
+        };
+        const result = await service.handleBeforeStageChange(payload);
+        expect(result.blocked).toBe(true);
+        expect(result.reason).toBe('Appointment Date must be scheduled in the future');
+      });
+
+      it('returns blocked: false when appointment_date is a valid future date', async () => {
+        const futureDate = new Date(Date.now() + 50000).toISOString();
+        const payload = {
+          to_stage_name: 'appointment_scheduled',
+          case_attributes: { appointment_date: futureDate },
+          active_plugins: ['plugin-healthcare'],
+        };
+        const result = await service.handleBeforeStageChange(payload);
+        expect(result.blocked).toBe(false);
+      });
     });
   });
 });

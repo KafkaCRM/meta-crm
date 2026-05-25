@@ -69,6 +69,28 @@ export class StageTransitionService {
       } as TransitionError);
     }
 
+    const fromStage = caseRecord.stage;
+
+    // 3.5. Synchronous plugin pre-transition validation hooks
+    const pluginResponses = await this.hooks.emitSynchronous('case:before_stage_change', {
+      case_id: caseId,
+      from_stage: fromStage,
+      to_stage: toStageId,
+      to_stage_name: targetStage.name,
+      tenant_id: scope?.tenant_id,
+      actor_id: actorId,
+      case_attributes: caseRecord.attributes,
+    });
+
+    const blockage = pluginResponses.find((r) => r && r.blocked === true);
+    if (blockage) {
+      return err({
+        code: 'CRITERIA_UNMET',
+        message: blockage.reason || 'Transition blocked by plugin validation',
+        unmet: [blockage.reason || 'Blocked by plugin'],
+      } as TransitionError);
+    }
+
     // 4. Verify transition exists in workflow_transitions
     const existingTransition = await this.db.getClient().workflowTransition.findFirst({
       where: {
@@ -83,8 +105,6 @@ export class StageTransitionService {
         message: `No transition from "${caseRecord.stage}" to "${toStageId}"`,
       } as TransitionError);
     }
-
-    const fromStage = caseRecord.stage;
 
     // 5. Prisma transaction — both writes atomically
     try {
