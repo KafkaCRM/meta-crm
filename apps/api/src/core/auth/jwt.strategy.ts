@@ -24,7 +24,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private readonly platformDb: PlatformPrismaService,
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        (req: any) => {
+          if (req && req.cookies) {
+            return req.cookies['access_token'] || null;
+          }
+          return null;
+        },
+      ]),
       ignoreExpiration: false,
       secretOrKey: process.env['JWT_SECRET'] || 'dev-secret-change-in-production',
     });

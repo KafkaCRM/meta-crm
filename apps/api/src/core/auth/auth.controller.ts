@@ -8,8 +8,11 @@ import {
   ForbiddenException,
   InternalServerErrorException,
   UseGuards,
+  Req,
+  Res,
 } from '@nestjs/common';
 import { IsString, IsOptional, IsEmail } from 'class-validator';
+import type { FastifyRequest, FastifyReply } from 'fastify';
 import { AuthService } from './auth.service';
 import type { LoginResponse, RefreshResponse, AuthError } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -29,13 +32,15 @@ export class LoginDto {
 }
 
 export class RefreshDto {
+  @IsOptional()
   @IsString()
-  refresh_token!: string;
+  refresh_token?: string;
 }
 
 export class LogoutDto {
+  @IsOptional()
   @IsString()
-  refresh_token!: string;
+  refresh_token?: string;
 }
 
 function mapError(error: AuthError): never {
@@ -59,21 +64,63 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() dto: LoginDto): Promise<LoginResponse> {
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<LoginResponse> {
     const result = await this.authService.login(dto);
     if (result.isErr()) {
       mapError(result.error);
     }
+
+    const { access_token, refresh_token } = result.value;
+
+    reply.setCookie('access_token', access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+    });
+
+    reply.setCookie('refresh_token', refresh_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+    });
+
     return result.value;
   }
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  async refresh(@Body() dto: RefreshDto): Promise<RefreshResponse> {
-    const result = await this.authService.refreshToken(dto.refresh_token);
+  async refresh(
+    @Req() req: FastifyRequest,
+    @Body() dto: RefreshDto,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<RefreshResponse> {
+    const token = req.cookies['refresh_token'] || dto.refresh_token;
+    if (!token) {
+      throw new UnauthorizedException({
+        code: 'REFRESH_TOKEN_INVALID',
+        message: 'No refresh token provided',
+      });
+    }
+
+    const result = await this.authService.refreshToken(token);
     if (result.isErr()) {
       mapError(result.error);
     }
+
+    const { access_token } = result.value;
+
+    reply.setCookie('access_token', access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+    });
+
     return result.value;
   }
 
@@ -81,13 +128,23 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
   async logout(
+    @Req() req: FastifyRequest,
     @Body() dto: LogoutDto,
+    @Res({ passthrough: true }) reply: FastifyReply,
     @CurrentUser() _user: RequestScope,
   ): Promise<{ message: string }> {
-    const result = await this.authService.revokeToken(dto.refresh_token);
-    if (result.isErr()) {
-      mapError(result.error);
+    const token = req.cookies['refresh_token'] || dto.refresh_token;
+    if (token) {
+      const result = await this.authService.revokeToken(token);
+      if (result.isErr()) {
+        mapError(result.error);
+      }
     }
+
+    reply.clearCookie('access_token', { path: '/' });
+    reply.clearCookie('refresh_token', { path: '/' });
+
     return { message: 'Logged out successfully' };
   }
 }
+

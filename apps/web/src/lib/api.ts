@@ -1,12 +1,12 @@
 let getAccessToken: (() => string | null) | null = null;
-let setTokens: ((access: string, refresh: string) => void) | null = null;
+let setTokens: ((access: string, refresh?: string) => void) | null = null;
 let doRefresh: (() => Promise<string | null>) | null = null;
 let doLogout: (() => void) | null = null;
 
 export function initAuthHelpers(
   helpers: {
     getAccessToken: () => string | null;
-    setTokens: (access: string, refresh: string) => void;
+    setTokens: (access: string, refresh?: string) => void;
     doRefresh: () => Promise<string | null>;
     doLogout: () => void;
   },
@@ -86,6 +86,7 @@ export async function apiCall<T>(
   const response = await fetch(`/api/v1${path}`, {
     ...init,
     headers,
+    credentials: 'include',
   });
 
   if (response.status === 401) {
@@ -99,6 +100,7 @@ export async function apiCall<T>(
     const retryResponse = await fetch(`/api/v1${path}`, {
       ...init,
       headers,
+      credentials: 'include',
     });
 
     return handleResponse<T>(retryResponse);

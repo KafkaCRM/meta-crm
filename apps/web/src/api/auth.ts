@@ -29,6 +29,7 @@ export async function login(data: LoginRequest): Promise<LoginResponse> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
+    credentials: 'include',
   });
 
   if (!response.ok) {
@@ -41,11 +42,12 @@ export async function login(data: LoginRequest): Promise<LoginResponse> {
   return response.json() as Promise<LoginResponse>;
 }
 
-export async function refreshToken(token: string): Promise<RefreshResponse> {
+export async function refreshToken(token?: string): Promise<RefreshResponse> {
   const response = await fetch('/api/v1/auth/refresh', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refresh_token: token }),
+    body: JSON.stringify(token ? { refresh_token: token } : {}),
+    credentials: 'include',
   });
 
   if (!response.ok) {
@@ -55,12 +57,14 @@ export async function refreshToken(token: string): Promise<RefreshResponse> {
   return response.json() as Promise<RefreshResponse>;
 }
 
-export async function logout(token: string): Promise<void> {
-  const response = await fetch('/api/v1/auth/logout', {
+export async function logout(token?: string): Promise<void> {
+  await fetch('/api/v1/auth/logout', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
+    body: JSON.stringify(token ? { refresh_token: token } : {}),
+    credentials: 'include',
   });
 }

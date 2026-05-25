@@ -7,7 +7,7 @@ import { initAuthHelpers, apiCall } from '@/lib/api';
 import { initSocket, disconnectSocket, onReconnecting, onDisconnect } from '@/lib/socket';
 import { queryClient } from '@/lib/query-client';
 
-const RT_KEY = 'meta_crm_rt';
+const LOGGED_IN_KEY = 'meta_crm_logged_in';
 const USER_KEY = 'meta_crm_user';
 
 interface AuthUser {
@@ -21,7 +21,6 @@ interface AuthUser {
 interface AuthState {
   user: AuthUser | null;
   accessToken: string | null;
-  refreshToken: string | null;
   ability: TenantAbility | null;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -50,16 +49,15 @@ function readStoredUser(): AuthUser | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const storedRT = localStorage.getItem(RT_KEY);
+  const isPreviouslyLoggedIn = localStorage.getItem(LOGGED_IN_KEY) === 'true';
 
   const [state, setState] = useState<AuthState>({
     user: null,
     accessToken: null,
-    refreshToken: storedRT,
     ability: null,
     isAuthenticated: false,
     // Show a loading screen while we attempt a silent token refresh on boot.
-    isLoading: !!storedRT,
+    isLoading: isPreviouslyLoggedIn,
   });
 
   const login = useCallback(async (email: string, password: string, tenantSlug?: string) => {
@@ -70,14 +68,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const roles: TenantRoleEntry[] = [{ role: result.user.role as TenantRoleEntry['role'] }];
       const ability = buildTenantAbility(roles, result.user.assignment_ids);
 
-      // Persist session so it survives page refreshes.
-      localStorage.setItem(RT_KEY, result.refresh_token);
+      // Persist session indicator so it survives page refreshes.
+      localStorage.setItem(LOGGED_IN_KEY, 'true');
       localStorage.setItem(USER_KEY, JSON.stringify(result.user));
 
       setState({
         user: result.user,
         accessToken: result.access_token,
-        refreshToken: result.refresh_token,
         ability,
         isAuthenticated: true,
         isLoading: false,
@@ -91,16 +88,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    if (state.accessToken) {
-      await apiLogout(state.accessToken).catch(() => {});
-    }
-    localStorage.removeItem(RT_KEY);
+    try {
+      await apiLogout(state.accessToken || undefined);
+    } catch {}
+    localStorage.removeItem(LOGGED_IN_KEY);
     localStorage.removeItem(USER_KEY);
     disconnectSocket();
     setState({
       user: null,
       accessToken: null,
-      refreshToken: null,
       ability: null,
       isAuthenticated: false,
       isLoading: false,
@@ -109,27 +105,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [state.accessToken]);
 
   const refresh = useCallback(async (): Promise<string | null> => {
-    if (!state.refreshToken) return null;
+    if (localStorage.getItem(LOGGED_IN_KEY) !== 'true') return null;
     try {
-      const result = await apiRefresh(state.refreshToken);
+      const result = await apiRefresh();
       setState((s) => ({ ...s, accessToken: result.access_token }));
       return result.access_token;
     } catch {
       await logout();
       return null;
     }
-  }, [state.refreshToken, logout]);
+  }, [logout]);
 
   // Boot-time silent restore: if a refresh token is stored, exchange it for
   // a new access token and rehydrate auth state — all before the router
   // renders a protected route.
   useEffect(() => {
-    const storedToken = localStorage.getItem(RT_KEY);
-    if (!storedToken) return;
+    const isLogged = localStorage.getItem(LOGGED_IN_KEY) === 'true';
+    if (!isLogged) return;
 
     const storedUser = readStoredUser();
 
-    apiRefresh(storedToken)
+    apiRefresh()
       .then((result) => {
         if (!storedUser) {
           // No cached user — can't restore fully, force re-login.
@@ -142,7 +138,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setState({
           user: storedUser,
           accessToken: result.access_token,
-          refreshToken: storedToken,
           ability,
           isAuthenticated: true,
           isLoading: false,
@@ -152,12 +147,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => {
         // Stored token is stale / invalid — clear everything and send to login.
-        localStorage.removeItem(RT_KEY);
+        localStorage.removeItem(LOGGED_IN_KEY);
         localStorage.removeItem(USER_KEY);
         setState({
           user: null,
           accessToken: null,
-          refreshToken: null,
           ability: null,
           isAuthenticated: false,
           isLoading: false,
@@ -171,8 +165,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     initAuthHelpers({
       getAccessToken: () => state.accessToken,
-      setTokens: (access, refresh) => {
-        setState((s) => ({ ...s, accessToken: access, refreshToken: refresh }));
+      setTokens: (access) => {
+        setState((s) => ({ ...s, accessToken: access }));
       },
       doRefresh: refresh,
       doLogout: logout,
