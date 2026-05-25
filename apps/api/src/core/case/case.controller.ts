@@ -108,6 +108,19 @@ export class CaseController {
     return result.value;
   }
 
+  @Get('by-stage')
+  @CheckPermissions('read', 'Case')
+  async findByStage(@Query('workflow_definition_id') workflowDefinitionId: string) {
+    if (!workflowDefinitionId) {
+      throw new BadRequestException('workflow_definition_id is required');
+    }
+    const result = await this.caseService.findByStage(workflowDefinitionId);
+    if (result.isErr()) {
+      throw new InternalServerErrorException(result.error);
+    }
+    return result.value;
+  }
+
   @Get(':id')
   @CheckPermissions('read', 'Case')
   async findOne(@Param('id') id: string, @Query('include') include?: string) {

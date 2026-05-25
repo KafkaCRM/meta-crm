@@ -27,6 +27,16 @@ export interface Assignment {
   created_at: string;
 }
 
+export interface Vertical {
+  id: string;
+  tenant_id: string;
+  branch_id: string;
+  name: string;
+  description?: string | null;
+  status: string;
+  created_at: string;
+}
+
 export interface User {
   id: string;
   tenant_id: string;
@@ -113,6 +123,16 @@ export const settingsApi = {
       apiCall<{ message: string }>(`/assignments/${id}`, { method: 'DELETE' }),
   },
 
+  verticals: {
+    list: (params?: { brand_id?: string; status?: string }) => {
+      const qs = new URLSearchParams();
+      if (params?.brand_id) qs.set('brand_id', params.brand_id);
+      if (params?.status) qs.set('status', params.status);
+      const query = qs.toString();
+      return apiCall<Vertical[]>(`/verticals${query ? `?${query}` : ''}`);
+    },
+  },
+
   users: {
     list: () => apiCall<User[]>('/users'),
     invite: (data: { name: string; email: string; role_ids: string[]; assignment_ids?: string[] }) =>
@@ -169,5 +189,11 @@ export const settingsApi = {
       apiCall<IntegrationConfig>(`/integrations/${provider}/configure`, { method: 'POST', body: JSON.stringify(data) }),
     disconnect: (provider: string) =>
       apiCall<{ message: string }>(`/integrations/${provider}`, { method: 'DELETE' }),
+  },
+
+  workflows: {
+    getDefault: () => apiCall<any>('/workflows/default'),
+    update: (id: string, data: { name: string; stages: any[]; transitions: any[] }) =>
+      apiCall<any>(`/workflows/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   },
 };

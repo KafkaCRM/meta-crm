@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { usePermissions } from '@/hooks/usePermissions';
+import { settingsApi } from '@/api/settings';
 
 interface Stage {
   id: string;
@@ -29,26 +30,31 @@ export function WorkflowBuilder() {
   const { can } = usePermissions();
   const canManage = can('manage', 'Workflow');
   const queryClient = useQueryClient();
+  const [workflowId, setWorkflowId] = useState<string | null>(null);
   const [stages, setStages] = useState<Stage[]>([]);
   const [transitions, setTransitions] = useState<Transition[]>([]);
   const [newStage, setNewStage] = useState({ name: '', sla_hours: '' });
 
   const { data, isLoading } = useQuery({
     queryKey: ['settings', 'workflows'],
-    queryFn: () => Promise.resolve({ stages: [] as Stage[], transitions: [] as Transition[] }),
+    queryFn: () => settingsApi.workflows.getDefault(),
     staleTime: 30_000,
   });
 
   useEffect(() => {
     if (data) {
-      setStages(data.stages);
-      setTransitions(data.transitions);
+      setWorkflowId(data.id);
+      setStages(data.stages || []);
+      setTransitions(data.transitions || []);
     }
   }, [data]);
 
   const saveMutation = useMutation({
-    mutationFn: () =>
-      Promise.resolve({ stages, transitions }),
+    mutationFn: () => {
+      if (!workflowId) return Promise.reject(new Error('No workflow loaded'));
+      const name = data?.name || 'Patient Care Pipeline';
+      return settingsApi.workflows.update(workflowId, { name, stages, transitions });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings', 'workflows'] });
       toast.success('Workflow saved successfully');

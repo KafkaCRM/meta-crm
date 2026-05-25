@@ -25,9 +25,7 @@ export interface CasesByStage {
   cases: Record<string, CaseDto[]>;
 }
 
-const USE_MOCK = typeof import.meta !== 'undefined' && 'env' in import.meta
-  ? (import.meta as any).env?.VITE_USE_MOCK_CASES === 'true'
-  : false;
+const USE_MOCK = false;
 
 function generateMockCases(count: number, stageId: string): CaseDto[] {
   const now = new Date();
@@ -130,7 +128,10 @@ export const casesApi = {
     return apiCall<CasesByStage>(`/cases/by-stage?workflow_definition_id=${workflowDefinitionId}`);
   },
 
-  get: (id: string) => apiCall<CaseDto>(`/cases/${id}`),
+  get: (id: string, params?: { include?: string }) => {
+    const query = params?.include ? `?include=${params.include}` : '';
+    return apiCall<CaseDto>(`/cases/${id}${query}`);
+  },
 
   update: (id: string, data: { attributes?: Record<string, unknown>; assigned_to_id?: string | null }) =>
     apiCall<CaseDto>(`/cases/${id}`, {

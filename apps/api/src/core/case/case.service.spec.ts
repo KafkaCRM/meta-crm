@@ -38,6 +38,10 @@ function mockDb() {
     },
     workflowDefinition: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
+    },
+    workflowStage: {
+      findMany: vi.fn().mockResolvedValue([]),
     },
     campaign: {
       findMany: vi.fn().mockResolvedValue([]),
@@ -103,6 +107,7 @@ describe('CaseService Campaigns & Verticals Integration', () => {
       const client = db.getClient();
       (client.party.findUnique as any).mockResolvedValue(PARTY);
       (client.workflowDefinition.findUnique as any).mockResolvedValue(WORKFLOW);
+      (client.workflowDefinition.findFirst as any).mockResolvedValue(WORKFLOW);
       (client.case.create as any).mockResolvedValue({ ...CASE, vertical_id: 'vertical-1' });
 
       const result = await caseService.create({
@@ -134,6 +139,7 @@ describe('CaseService Campaigns & Verticals Integration', () => {
       const client = db.getClient();
       (client.party.findUnique as any).mockResolvedValue(PARTY);
       (client.workflowDefinition.findUnique as any).mockResolvedValue(WORKFLOW);
+      (client.workflowDefinition.findFirst as any).mockResolvedValue(WORKFLOW);
       (client.case.create as any).mockResolvedValue({ ...CASE, vertical_id: 'vertical-1' });
 
       const result = await caseService.create({
@@ -164,6 +170,7 @@ describe('CaseService Campaigns & Verticals Integration', () => {
       const client = db.getClient();
       (client.party.findUnique as any).mockResolvedValue(PARTY);
       (client.workflowDefinition.findUnique as any).mockResolvedValue(WORKFLOW);
+      (client.workflowDefinition.findFirst as any).mockResolvedValue(WORKFLOW);
       (client.case.create as any).mockResolvedValue({
         ...CASE,
         vertical_id: 'vertical-1',
@@ -192,6 +199,7 @@ describe('CaseService Campaigns & Verticals Integration', () => {
       const client = db.getClient();
       (client.party.findUnique as any).mockResolvedValue(PARTY);
       (client.workflowDefinition.findUnique as any).mockResolvedValue(WORKFLOW);
+      (client.workflowDefinition.findFirst as any).mockResolvedValue(WORKFLOW);
       (client.case.create as any).mockResolvedValue(CASE);
 
       const result = await caseService.create({

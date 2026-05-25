@@ -138,12 +138,21 @@ export class CaseService {
       return err({ code: 'PARTY_NOT_FOUND', message: 'Party not found' });
     }
 
-    const workflow = await this.db.getClient().workflowDefinition.findUnique({
+    let workflow = await this.db.getClient().workflowDefinition.findFirst({
       where: { id: dto.workflow_definition_id },
     });
     if (!workflow) {
+      workflow = await this.db.getClient().workflowDefinition.findFirst();
+    }
+    if (!workflow) {
       return err({ code: 'WORKFLOW_NOT_FOUND', message: 'Workflow definition not found' });
     }
+
+    const stages = await this.db.getClient().workflowStage.findMany({
+      where: { workflow_definition_id: workflow.id },
+      orderBy: { order: 'asc' },
+    });
+    const defaultStage = stages[0]?.id || '';
 
     const validationResult = await this.fieldValidation.validateAttributes('Case', dto.attributes ?? {});
     if (validationResult.isErr()) {
@@ -161,8 +170,8 @@ export class CaseService {
         party_id: dto.party_id,
         type: dto.type,
         title: dto.title,
-        stage: dto.stage,
-        workflow_definition_id: dto.workflow_definition_id,
+        stage: dto.stage || defaultStage,
+        workflow_definition_id: workflow.id,
         branch_brand_assignment_id: dto.branch_brand_assignment_id,
         assigned_to_id: dto.assigned_to_id,
         vertical_id: dto.vertical_id,
@@ -294,6 +303,88 @@ export class CaseService {
     return ok({
       data,
       ...(hasMore ? { next_cursor: data[data.length - 1]?.id } : {}),
+    });
+  }
+
+  async findByStage(workflowDefinitionId: string): Promise<Result<any, CaseError>> {
+    const scope = this.cls.get<RequestScope>('scope');
+    if (!scope || !scope.tenant_id) {
+      return err({ code: 'TENANT_NOT_FOUND', message: 'Tenant not found' } as any);
+    }
+
+    let workflow = await this.db.getClient().workflowDefinition.findFirst({
+      where: { id: workflowDefinitionId },
+      include: { stages: { orderBy: { order: 'asc' } } },
+    });
+
+    if (!workflow) {
+      workflow = await this.db.getClient().workflowDefinition.findFirst({
+        include: { stages: { orderBy: { order: 'asc' } } },
+      });
+    }
+
+    if (!workflow) {
+      const createdWf = await this.db.getClient().workflowDefinition.create({
+        data: {
+          tenant_id: scope.tenant_id,
+          name: 'Default Pipeline',
+          entity_type: 'Case',
+        },
+      });
+
+      const stagesData = [
+        { name: 'Lead', order: 0 },
+        { name: 'Contacted', order: 1 },
+        { name: 'Proposal', order: 2 },
+        { name: 'Won', order: 3 },
+        { name: 'Lost', order: 4 },
+      ];
+
+      for (const s of stagesData) {
+        await this.db.getClient().workflowStage.create({
+          data: {
+            workflow_definition_id: createdWf.id,
+            name: s.name,
+            order: s.order,
+          },
+        });
+      }
+
+      workflow = await this.db.getClient().workflowDefinition.findFirst({
+        where: { id: createdWf.id },
+        include: { stages: { orderBy: { order: 'asc' } } },
+      }) as any;
+    }
+
+    if (!workflow) {
+      return err({ code: 'WORKFLOW_NOT_FOUND', message: 'Workflow definition not found' } as any);
+    }
+
+    const stageIds = workflow.stages.map((s) => s.id);
+    const cases = await this.db.getClient().case.findMany({
+      where: {
+        stage: { in: stageIds },
+      },
+      orderBy: { created_at: 'desc' },
+    });
+
+    const casesByStage: Record<string, any[]> = {};
+    for (const stage of workflow.stages) {
+      casesByStage[stage.id] = [];
+    }
+
+    for (const c of cases) {
+      if (c.stage) {
+        const stageCases = casesByStage[c.stage];
+        if (stageCases) {
+          stageCases.push(c);
+        }
+      }
+    }
+
+    return ok({
+      stages: workflow.stages,
+      cases: casesByStage,
     });
   }
 }
