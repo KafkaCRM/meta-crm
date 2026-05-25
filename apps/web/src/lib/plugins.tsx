@@ -1,7 +1,8 @@
-import React, { Component, lazy, Suspense, type ErrorInfo, type ReactNode } from 'react';
+import React, { Component, Suspense, type ErrorInfo, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { settingsApi } from '@/api/settings';
 import type { SlotContextData } from '@meta-crm/types';
+import { pluginUIRegistry } from './plugins-registry';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -44,29 +45,6 @@ export function PluginSlotSkeleton() {
   );
 }
 
-const PLUGIN_COMPONENTS: Record<string, Record<string, React.ComponentType<any>>> = {
-  healthcare: {
-    CaseSidePanel: lazy(() => import('@/components/plugins/healthcare/CaseSidePanel')),
-    CaseMainTabs: lazy(() => import('@/components/plugins/healthcare/CaseMainTabs')),
-  },
-  marketing: {
-    CaseSidePanel: lazy(() => import('@/components/plugins/marketing/CaseSidePanel')),
-    CaseMainTabs: lazy(() => import('@/components/plugins/marketing/CaseMainTabs')),
-  },
-};
-
-function getPluginKey(plugin: { id: string; name: string }) {
-  const idLower = plugin.id.toLowerCase();
-  const nameLower = plugin.name.toLowerCase();
-  if (idLower.includes('healthcare') || nameLower.includes('healthcare')) {
-    return 'healthcare';
-  }
-  if (idLower.includes('marketing') || nameLower.includes('marketing')) {
-    return 'marketing';
-  }
-  return null;
-}
-
 export function PluginSlot({
   anchor,
   context,
@@ -100,17 +78,15 @@ export function PluginSlot({
 
   const matchedComponents = resolvedActivePlugins
     .map((plugin) => {
-      const key = getPluginKey(plugin);
-      if (!key) return null;
-      const component = PLUGIN_COMPONENTS[key]?.[anchor];
+      // Check registry by plugin.id, then by plugin.name
+      const component = pluginUIRegistry.getComponent(plugin.id, anchor) || pluginUIRegistry.getComponent(plugin.name, anchor);
       if (!component) return null;
       return {
         pluginId: plugin.id,
-        key,
         Component: component,
       };
     })
-    .filter((c): c is { pluginId: string; key: string; Component: React.ComponentType<any> } => c !== null);
+    .filter((c): c is { pluginId: string; Component: React.ComponentType<any> } => c !== null);
 
   if (matchedComponents.length === 0) {
     return null;
@@ -143,10 +119,9 @@ export function usePluginTabs(context: SlotContextData, activePlugins?: string[]
 
   const tabs = resolvedActivePlugins
     .map((plugin) => {
-      const key = getPluginKey(plugin);
-      if (!key) return null;
-      const Component = PLUGIN_COMPONENTS[key]?.['CaseMainTabs'];
+      const Component = pluginUIRegistry.getComponent(plugin.id, 'CaseMainTabs') || pluginUIRegistry.getComponent(plugin.name, 'CaseMainTabs');
       if (!Component) return null;
+      const key = plugin.id.replace('@meta-crm/plugin-', '').toLowerCase();
       return {
         id: key,
         label: plugin.name.includes('@meta-crm/plugin-')
@@ -159,4 +134,5 @@ export function usePluginTabs(context: SlotContextData, activePlugins?: string[]
 
   return { tabs, isLoading: !activePlugins && isLoading };
 }
+
 
