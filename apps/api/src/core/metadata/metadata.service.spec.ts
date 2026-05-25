@@ -5,6 +5,7 @@ import { TenantScopedPrismaService } from '../tenant/tenant-scoped-prisma.servic
 import { FieldDefinitionService } from './field-definition.service';
 import { LabelService, HARDCODED_DEFAULTS, INDUSTRY_DEFAULTS } from './label.service';
 import { TemplateService } from './template.service';
+import { FieldValidationService } from './field-validation.service';
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                             */
@@ -274,4 +275,65 @@ describe('visibility_rules compatibility', () => {
     const hidden = evaluateVisibilityRules(rules as any, { stage: 'Enrolled', score: 75 });
     expect(hidden).toBe(false);
   });
+});
+
+/* ------------------------------------------------------------------ */
+/*  FieldValidationService                                            */
+/* ------------------------------------------------------------------ */
+describe('FieldValidationService', () => {
+  it('passes validation when attributes meet all constraints', async () => {
+    const { svc, client }: any = buildValidation();
+    (client.fieldDefinition.findMany as any).mockResolvedValue([
+      { name: 'score', label: 'Score', field_type: 'number', required: true },
+      { name: 'verified', label: 'Verified', field_type: 'boolean', required: false },
+    ]);
+
+    const result = await svc.validateAttributes('Case', { score: 95, verified: true });
+    expect(result.isOk()).toBe(true);
+  });
+
+  it('fails validation when required fields are missing', async () => {
+    const { svc, client }: any = buildValidation();
+    (client.fieldDefinition.findMany as any).mockResolvedValue([
+      { name: 'score', label: 'Score', field_type: 'number', required: true },
+    ]);
+
+    const result = await svc.validateAttributes('Case', {});
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error).toContain('Field "Score" (score) is required');
+    }
+  });
+
+  it('fails validation on invalid number types', async () => {
+    const { svc, client }: any = buildValidation();
+    (client.fieldDefinition.findMany as any).mockResolvedValue([
+      { name: 'score', label: 'Score', field_type: 'number', required: false },
+    ]);
+
+    const result = await svc.validateAttributes('Case', { score: 'not-a-number' });
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error).toContain('Field "Score" must be a valid number');
+    }
+  });
+
+  it('fails validation on invalid select options', async () => {
+    const { svc, client }: any = buildValidation();
+    (client.fieldDefinition.findMany as any).mockResolvedValue([
+      { name: 'course', label: 'Course', field_type: 'select', required: false, options: ['B.Tech', 'MBA'] },
+    ]);
+
+    const result = await svc.validateAttributes('Case', { course: 'Medical' });
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error).toContain('Field "Course" must be one of the specified options: [B.Tech, MBA]');
+    }
+  });
+
+  function buildValidation() {
+    const db = mockDb();
+    const svc = new FieldValidationService(db);
+    return { db, svc, client: db.client };
+  }
 });

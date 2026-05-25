@@ -7,12 +7,14 @@ import { CaseEventService } from './events/case-event.service';
 import type { CreateCaseDto } from './dto/create-case.dto';
 import type { RequestScope } from '../tenant/request-scope.interface';
 import { CampaignAutoTagService } from '../campaign/campaign-auto-tag.service';
+import { FieldValidationService } from '../metadata/field-validation.service';
 
-export type CaseErrorCode = 'NOT_FOUND' | 'PARTY_NOT_FOUND' | 'WORKFLOW_NOT_FOUND';
+export type CaseErrorCode = 'NOT_FOUND' | 'PARTY_NOT_FOUND' | 'WORKFLOW_NOT_FOUND' | 'VALIDATION_FAILED';
 
 export interface CaseError {
   code: CaseErrorCode;
   message?: string;
+  errors?: string[];
 }
 
 @Injectable()
@@ -22,6 +24,7 @@ export class CaseService {
     private readonly cls: ClsService,
     private readonly caseEvent: CaseEventService,
     private readonly campaignAutoTagService: CampaignAutoTagService,
+    private readonly fieldValidation: FieldValidationService,
   ) {}
 
   async findMany(params: {
@@ -142,6 +145,15 @@ export class CaseService {
       return err({ code: 'WORKFLOW_NOT_FOUND', message: 'Workflow definition not found' });
     }
 
+    const validationResult = await this.fieldValidation.validateAttributes('Case', dto.attributes ?? {});
+    if (validationResult.isErr()) {
+      return err({
+        code: 'VALIDATION_FAILED',
+        message: 'Attributes validation failed',
+        errors: validationResult.error,
+      } as CaseError);
+    }
+
     let campaignId = dto.campaign_id;
 
     const caseRecord = await this.db.getClient().case.create({
@@ -197,7 +209,17 @@ export class CaseService {
 
     const updateData: Record<string, unknown> = {};
     if (data.title !== undefined) updateData.title = data.title;
-    if (data.attributes !== undefined) updateData.attributes = data.attributes;
+    if (data.attributes !== undefined) {
+      const validationResult = await this.fieldValidation.validateAttributes('Case', data.attributes);
+      if (validationResult.isErr()) {
+        return err({
+          code: 'VALIDATION_FAILED',
+          message: 'Attributes validation failed',
+          errors: validationResult.error,
+        } as CaseError);
+      }
+      updateData.attributes = data.attributes;
+    }
     if (data.assigned_to_id !== undefined) {
       updateData.assigned_to_id = data.assigned_to_id;
       await this.caseEvent.write({

@@ -8,12 +8,14 @@ import { CaseEventService } from './events/case-event.service';
 import { HooksModule } from '../hooks/hooks.module';
 import { RealtimeModule } from '../realtime/realtime.module';
 import { CampaignModule } from '../campaign/campaign.module';
+import { MetadataModule } from '../metadata/metadata.module';
 
 @Module({
   imports: [
     HooksModule,
     RealtimeModule,
     CampaignModule,
+    MetadataModule,
     BullModule.registerQueue({ name: 'case-triggers' }),
   ],
   controllers: [CaseController],

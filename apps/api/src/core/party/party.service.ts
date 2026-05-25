@@ -6,12 +6,14 @@ import { TenantScopedPrismaService } from '../tenant/tenant-scoped-prisma.servic
 import type { RequestScope } from '../tenant/request-scope.interface';
 import type { CreatePartyDto } from './dto/create-party.dto';
 import type { UpdatePartyDto } from './dto/update-party.dto';
+import { FieldValidationService } from '../metadata/field-validation.service';
 
-export type PartyErrorCode = 'NOT_FOUND' | 'INVALID_PHONE';
+export type PartyErrorCode = 'NOT_FOUND' | 'INVALID_PHONE' | 'VALIDATION_FAILED';
 
 export interface PartyError {
   code: PartyErrorCode;
   message: string;
+  errors?: string[];
 }
 
 @Injectable()
@@ -19,6 +21,7 @@ export class PartyService {
   constructor(
     private readonly db: TenantScopedPrismaService,
     private readonly cls: ClsService,
+    private readonly fieldValidation: FieldValidationService,
   ) {}
 
   async findMany(params: {
@@ -73,6 +76,15 @@ export class PartyService {
   }
 
   async create(dto: CreatePartyDto): Promise<Result<any, PartyError>> {
+    const validationResult = await this.fieldValidation.validateAttributes('Party', dto.attributes ?? {});
+    if (validationResult.isErr()) {
+      return err({
+        code: 'VALIDATION_FAILED',
+        message: 'Attributes validation failed',
+        errors: validationResult.error,
+      } as PartyError);
+    }
+
     const party = await this.db.getClient().party.create({
       data: {
         type: dto.type,
@@ -105,7 +117,17 @@ export class PartyService {
     }
     if (dto.branch_brand_assignment_id !== undefined) updateData.branch_brand_assignment_id = dto.branch_brand_assignment_id;
     if (dto.source !== undefined) updateData.source = dto.source;
-    if (dto.attributes !== undefined) updateData.attributes = dto.attributes as any;
+    if (dto.attributes !== undefined) {
+      const validationResult = await this.fieldValidation.validateAttributes('Party', dto.attributes);
+      if (validationResult.isErr()) {
+        return err({
+          code: 'VALIDATION_FAILED',
+          message: 'Attributes validation failed',
+          errors: validationResult.error,
+        } as PartyError);
+      }
+      updateData.attributes = dto.attributes as any;
+    }
 
     const updated = await this.db.getClient().party.update({
       where: { id },

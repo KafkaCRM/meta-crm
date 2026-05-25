@@ -128,6 +128,7 @@ export class CaseController {
       switch (result.error.code) {
         case 'PARTY_NOT_FOUND':
         case 'WORKFLOW_NOT_FOUND':
+        case 'VALIDATION_FAILED':
           throw new BadRequestException(result.error);
         default:
           throw new InternalServerErrorException(result.error);
@@ -142,6 +143,7 @@ export class CaseController {
     const result = await this.caseService.update(id, body);
     if (result.isErr()) {
       if (result.error.code === 'NOT_FOUND') throw new NotFoundException(result.error);
+      if (result.error.code === 'VALIDATION_FAILED') throw new BadRequestException(result.error);
       throw new InternalServerErrorException(result.error);
     }
     return result.value;

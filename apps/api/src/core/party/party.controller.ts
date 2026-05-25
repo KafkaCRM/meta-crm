@@ -142,6 +142,9 @@ export class PartyController {
   async create(@Body() dto: CreatePartyDto) {
     const result = await this.partyService.create(dto);
     if (result.isErr()) {
+      if (result.error.code === 'VALIDATION_FAILED') {
+        throw new BadRequestException(result.error);
+      }
       throw new InternalServerErrorException(result.error);
     }
     return result.value;
@@ -154,6 +157,9 @@ export class PartyController {
     if (result.isErr()) {
       if (result.error.code === 'NOT_FOUND') {
         throw new NotFoundException(result.error);
+      }
+      if (result.error.code === 'VALIDATION_FAILED') {
+        throw new BadRequestException(result.error);
       }
       throw new InternalServerErrorException(result.error);
     }

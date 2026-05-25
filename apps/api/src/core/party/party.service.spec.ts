@@ -3,9 +3,17 @@ import { ClsService } from 'nestjs-cls';
 import { TenantScopedPrismaService } from '../tenant/tenant-scoped-prisma.service';
 import { PartyService } from './party.service';
 import type { RequestScope } from '../tenant/request-scope.interface';
+import { FieldValidationService } from '../metadata/field-validation.service';
+import { ok } from 'neverthrow';
 
 function mockCls(scope: RequestScope): ClsService {
   return { get: vi.fn().mockReturnValue(scope) } as unknown as ClsService;
+}
+
+function mockFieldValidation(): FieldValidationService {
+  return {
+    validateAttributes: vi.fn().mockResolvedValue(ok(undefined)),
+  } as unknown as FieldValidationService;
 }
 
 function mockDb() {
@@ -45,12 +53,14 @@ const PARTY = {
 describe('PartyService', () => {
   let db: TenantScopedPrismaService;
   let cls: ClsService;
+  let fieldValidation: FieldValidationService;
   let svc: PartyService;
 
   beforeEach(() => {
     db = mockDb();
     cls = mockCls(scope);
-    svc = new PartyService(db, cls);
+    fieldValidation = mockFieldValidation();
+    svc = new PartyService(db, cls, fieldValidation);
   });
 
   describe('findMany', () => {
