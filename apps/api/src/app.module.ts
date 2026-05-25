@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { AuthModule } from './core/auth/auth.module';
 import { TenantModule } from './core/tenant/tenant.module';
 import { PartyModule } from './core/party/party.module';
@@ -25,6 +27,7 @@ import { UserModule } from './core/user/user.module';
 import { BranchModule } from './core/branch/branch.module';
 import { VerticalModule } from './core/vertical/vertical.module';
 import { CampaignModule } from './core/campaign/campaign.module';
+import { WorkflowModule } from './core/workflow/workflow.module';
 
 const CAPABILITY_MODULES = [
   EnrollmentModule,
@@ -44,8 +47,13 @@ const CAPABILITY_MODULES = [
     BullModule.forRoot({
       connection: {
         url: process.env['REDIS_URL'] || 'redis://localhost:6379',
+        maxRetriesPerRequest: null,
       },
     }),
+    ThrottlerModule.forRoot([{
+      ttl: 60000,
+      limit: 100,
+    }]),
     TenantModule,
     AuthModule,
     PartyModule,
@@ -64,7 +72,16 @@ const CAPABILITY_MODULES = [
     BranchModule,
     VerticalModule,
     CampaignModule,
+    WorkflowModule,
     ...CAPABILITY_MODULES,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}
+
+

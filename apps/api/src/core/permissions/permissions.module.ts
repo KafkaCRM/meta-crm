@@ -10,11 +10,16 @@ import { PermissionsGuard, PlatformPermissionsGuard } from './permissions.guard'
   providers: [
     {
       provide: REDIS_CLIENT,
-      useFactory: () =>
-        new Redis(process.env['REDIS_URL'] || 'redis://localhost:6379', {
+      useFactory: () => {
+        const client = new Redis(process.env['REDIS_URL'] || 'redis://localhost:6379', {
           maxRetriesPerRequest: null,
           lazyConnect: true,
-        }),
+        });
+        client.on('error', (err) => {
+          console.error('Redis PermissionsModule client error:', err);
+        });
+        return client;
+      },
     },
     PermissionCacheService,
     PermissionsService,
