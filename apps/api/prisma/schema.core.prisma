@@ -26,6 +26,7 @@ model Party {
 
   @@index([tenant_id, phone_normalized])
   @@index([tenant_id, created_at])
+  @@index([attributes], type: Gin)
 }
 
 model Case {
@@ -55,6 +56,7 @@ model Case {
   @@index([tenant_id, created_at])
   @@index([tenant_id, vertical_id])
   @@index([tenant_id, campaign_id])
+  @@index([attributes], type: Gin)
 }
 
 model CaseEvent {
