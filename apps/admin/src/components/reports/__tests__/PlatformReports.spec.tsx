@@ -16,7 +16,7 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 describe('PlatformReports', () => {
   it('renders without crashing', () => {
     render(<PlatformReports />, { wrapper });
-    expect(screen.getByText('Tenant Count by Industry')).toBeTruthy();
+    expect(screen.getByText('Tenant Segment Allocation')).toBeTruthy();
   });
 
   it('does not render any PII fields (name, email, phone)', () => {
