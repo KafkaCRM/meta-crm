@@ -6,12 +6,18 @@ import {
   reactivateTenant,
   listPlans,
   assignPlan,
-  listPlugins,
-  updateTenantEntitlements,
-  updateTenantCapabilities,
   resetTenantOwnerPassword,
   updateTenantOverrides,
+  getTenantCapabilities,
+  enableTenantCapability,
+  disableTenantCapability,
+  getTenantPlugins,
+  installTenantPlugin,
+  uninstallTenantPlugin,
+  getTenantHierarchy,
   type TenantDetail as TenantDetailInfo,
+  type PlatformTenantPlugin,
+  type PlatformTenantCapability,
 } from '@/api/platform';
 import { useAuth } from '@/contexts/auth.context';
 import { useForm } from 'react-hook-form';
@@ -45,7 +51,12 @@ import {
   Laptop,
   Mail,
   UserCheck,
-  CreditCard
+  CreditCard,
+  FolderTree,
+  GitFork,
+  ChevronDown,
+  ChevronUp,
+  ChevronRight
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -73,46 +84,86 @@ const getIndustryIcon = (industry: string) => {
 /* ------------------------------------------------------------------ */
 /*  Plugin Registry (Extensions) Manager                              */
 /* ------------------------------------------------------------------ */
+/* ------------------------------------------------------------------ */
+/*  Plugin Registry (Extensions) Manager                              */
+/* ------------------------------------------------------------------ */
 interface AdminLicenseManagerProps {
   tenantId: string;
   tenantIndustry: string;
-  initialPluginIds: string[];
   canUpdate: boolean;
+  maxPlugins: number;
 }
 
-interface FormValues {
-  pluginIds: string[];
-}
+const CATEGORY_COLORS: Record<string, string> = {
+  Communication: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  Integrations: 'bg-amber-50 text-amber-700 border-amber-100',
+  Analytics: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+  Productivity: 'bg-purple-50 text-purple-700 border-purple-100',
+  Healthcare: 'bg-rose-50 text-rose-700 border-rose-100',
+  Retail: 'bg-sky-50 text-sky-700 border-sky-100',
+  Finance: 'bg-blue-50 text-blue-700 border-blue-100',
+};
+
+const CATEGORY_ICONS: Record<string, string> = {
+  Communication: '📧',
+  Integrations: '⚡',
+  Analytics: '📊',
+  Productivity: '📚',
+  Healthcare: '🏥',
+  Retail: '🛍️',
+  Finance: '🧾',
+};
 
 function AdminLicenseManager({
   tenantId,
   tenantIndustry,
-  initialPluginIds,
   canUpdate,
+  maxPlugins,
 }: AdminLicenseManagerProps) {
   const queryClient = useQueryClient();
 
-  const { data: allPlugins = [], isLoading: loadingPlugins } = useQuery({
-    queryKey: ['platform-plugins'],
-    queryFn: listPlugins,
+  const { data: tenantPlugins = [], isLoading: loadingPlugins } = useQuery({
+    queryKey: ['tenant-plugins', tenantId],
+    queryFn: () => getTenantPlugins(tenantId),
   });
 
-  const { handleSubmit, setValue, watch } = useForm<FormValues>({
-    values: {
-      pluginIds: initialPluginIds,
+  const installMutation = useMutation({
+    mutationFn: (pluginId: string) => installTenantPlugin(tenantId, pluginId),
+    onMutate: async (pluginId) => {
+      await queryClient.cancelQueries({ queryKey: ['tenant-plugins', tenantId] });
+      const previous = queryClient.getQueryData<PlatformTenantPlugin[]>(['tenant-plugins', tenantId]);
+      queryClient.setQueryData<PlatformTenantPlugin[]>(['tenant-plugins', tenantId], (old) =>
+        old?.map((p) => (p.id === pluginId ? { ...p, installed: true } : p))
+      );
+      return { previous };
     },
-  });
-
-  const selectedPluginIds = watch('pluginIds') || [];
-
-  const updateMutation = useMutation({
-    mutationFn: (data: FormValues) => updateTenantEntitlements(tenantId, data.pluginIds),
-    onSuccess: () => {
+    onError: (err: any, pluginId, context) => {
+      queryClient.setQueryData(['tenant-plugins', tenantId], context?.previous);
+      toast.error(err.message || 'Failed to install plugin');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['tenant-plugins', tenantId] });
       queryClient.invalidateQueries({ queryKey: ['tenant', tenantId] });
-      toast.success('Workspace extensions saved successfully');
     },
-    onError: (err: any) => {
-      toast.error(err.message || 'Failed to save extensions');
+  });
+
+  const uninstallMutation = useMutation({
+    mutationFn: (pluginId: string) => uninstallTenantPlugin(tenantId, pluginId),
+    onMutate: async (pluginId) => {
+      await queryClient.cancelQueries({ queryKey: ['tenant-plugins', tenantId] });
+      const previous = queryClient.getQueryData<PlatformTenantPlugin[]>(['tenant-plugins', tenantId]);
+      queryClient.setQueryData<PlatformTenantPlugin[]>(['tenant-plugins', tenantId], (old) =>
+        old?.map((p) => (p.id === pluginId ? { ...p, installed: false } : p))
+      );
+      return { previous };
+    },
+    onError: (err: any, pluginId, context) => {
+      queryClient.setQueryData(['tenant-plugins', tenantId], context?.previous);
+      toast.error(err.message || 'Failed to uninstall plugin');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['tenant-plugins', tenantId] });
+      queryClient.invalidateQueries({ queryKey: ['tenant', tenantId] });
     },
   });
 
@@ -125,8 +176,7 @@ function AdminLicenseManager({
     );
   }
 
-  const activePlugins = allPlugins.filter((p) => p.status === 'active');
-  const compatiblePlugins = activePlugins.filter((plugin) => {
+  const compatiblePlugins = tenantPlugins.filter((plugin) => {
     const manifest = plugin.manifest;
     return (
       manifest.compatible_industries.includes('*') ||
@@ -136,61 +186,70 @@ function AdminLicenseManager({
     );
   });
 
-  const onSubmit = (data: FormValues) => {
-    updateMutation.mutate(data);
-  };
+  const installedCount = tenantPlugins.filter((p) => p.installed).length;
+  const limitReached = installedCount >= maxPlugins;
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+    <div className="space-y-5">
+      <div className="flex items-center justify-between text-xs text-slate-400 font-semibold border-b border-slate-100 pb-2 mb-2">
+        <span>Installed Count</span>
+        <span className={limitReached ? 'text-rose-600 font-bold' : 'text-indigo-600 font-bold'}>
+          {installedCount} / {maxPlugins} Plugins Used
+        </span>
+      </div>
+
       {compatiblePlugins.length === 0 ? (
         <div className="text-center py-10 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
           <Puzzle size={22} className="mx-auto text-slate-400 mb-2.5" />
           <p className="text-xs font-semibold text-slate-900">No extensions available</p>
-          <p className="text-[10px] text-slate-400 mt-0.5">There are no plugins compatible with the {tenantIndustry} scope yet.</p>
+          <p className="text-[10px] text-slate-400 mt-0.5">
+            There are no plugins compatible with the {tenantIndustry} scope yet.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {compatiblePlugins.map((plugin) => {
             const manifest = plugin.manifest;
-            const isLicensed = selectedPluginIds.includes(plugin.id);
+            const isInstalled = plugin.installed;
+            const cat = manifest.category ?? 'Utility';
+            const catColor = CATEGORY_COLORS[cat] ?? 'bg-slate-50 text-slate-700 border-slate-200';
+            const catIcon = CATEGORY_ICONS[cat] ?? '⚙️';
 
             return (
               <div
                 key={plugin.id}
-                onClick={() => {
-                  if (!canUpdate) return;
-                  if (isLicensed) {
-                    setValue('pluginIds', selectedPluginIds.filter((id) => id !== plugin.id));
-                  } else {
-                    setValue('pluginIds', [...selectedPluginIds, plugin.id]);
-                  }
-                }}
-                className={`group relative flex flex-col justify-between p-4 rounded-xl border transition-all select-none min-h-[110px] ${
-                  isLicensed
+                className={`group relative flex flex-col justify-between p-4 rounded-xl border transition-all select-none min-h-[120px] ${
+                  isInstalled
                     ? 'bg-indigo-50/40 border-indigo-600 ring-[0.5px] ring-indigo-600'
                     : 'bg-white border-slate-200 hover:border-slate-300'
-                } ${canUpdate ? 'cursor-pointer' : 'cursor-default'}`}
+                }`}
               >
                 <div>
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-xs font-semibold text-slate-900 tracking-tight">{manifest.name}</span>
+                        <span className="text-xs font-semibold text-slate-900 tracking-tight">
+                          {catIcon} {manifest.name}
+                        </span>
                         <span className="text-[9px] bg-slate-100 text-slate-600 px-1 py-0.5 rounded font-mono font-medium">
                           v{plugin.version}
                         </span>
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded border ${catColor}`}>
+                          {cat}
+                        </span>
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-1.5 leading-normal">{manifest.description}</p>
+                      <p className="text-[11px] text-slate-400 mt-1.5 leading-normal">
+                        {manifest.description}
+                      </p>
                     </div>
-                    
-                    {/* Custom Checkbox */}
+
                     <div className="flex-shrink-0 mt-0.5">
-                      {isLicensed ? (
+                      {isInstalled ? (
                         <div className="w-4 h-4 rounded bg-indigo-600 text-white flex items-center justify-center animate-in zoom-in-50 duration-150">
                           <Check size={10} strokeWidth={3} />
                         </div>
                       ) : (
-                        <div className="w-4 h-4 rounded border border-slate-200 bg-white group-hover:border-slate-400 transition-colors" />
+                        <div className="w-4 h-4 rounded border border-slate-200 bg-white" />
                       )}
                     </div>
                   </div>
@@ -198,9 +257,44 @@ function AdminLicenseManager({
 
                 <div className="mt-3 flex items-center justify-between text-[9px] text-slate-400 border-t border-slate-100 pt-2 font-mono">
                   <span>{plugin.package_name}</span>
-                  {!canUpdate && (
-                    <span className={isLicensed ? 'text-emerald-700 font-semibold' : 'text-slate-400'}>
-                      {isLicensed ? 'Licensed' : 'Disabled'}
+                  {canUpdate ? (
+                    isInstalled ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          uninstallMutation.mutate(plugin.id);
+                        }}
+                        disabled={uninstallMutation.isPending}
+                        className="px-2.5 py-1 text-[10px] font-bold text-red-600 hover:bg-red-50 border border-red-200 rounded-md cursor-pointer transition-colors"
+                      >
+                        {uninstallMutation.isPending ? 'Uninstalling…' : 'Uninstall'}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          installMutation.mutate(plugin.id);
+                        }}
+                        disabled={limitReached || installMutation.isPending}
+                        title={
+                          limitReached
+                            ? `Plugin limit reached: ${installedCount} of ${maxPlugins} installed`
+                            : undefined
+                        }
+                        className={`px-2.5 py-1 text-[10px] font-bold border rounded-md cursor-pointer transition-colors ${
+                          limitReached
+                            ? 'text-slate-400 bg-slate-50 border-slate-200 cursor-not-allowed'
+                            : 'text-indigo-600 hover:bg-indigo-50 border-indigo-200'
+                        }`}
+                      >
+                        {installMutation.isPending ? 'Installing…' : 'Install'}
+                      </button>
+                    )
+                  ) : (
+                    <span className={isInstalled ? 'text-emerald-700 font-semibold' : 'text-slate-400'}>
+                      {isInstalled ? 'Installed' : 'Not Installed'}
                     </span>
                   )}
                 </div>
@@ -209,74 +303,13 @@ function AdminLicenseManager({
           })}
         </div>
       )}
-
-      {canUpdate && compatiblePlugins.length > 0 && (
-        <div className="flex justify-end pt-2 border-t border-slate-200">
-          <button
-            type="submit"
-            disabled={updateMutation.isPending}
-            className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
-          >
-            {updateMutation.isPending ? (
-              <>
-                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Saving Extensions...
-              </>
-            ) : (
-              <>
-                <Sparkles size={13} />
-                Save Extensions
-              </>
-            )}
-          </button>
-        </div>
-      )}
-    </form>
+    </div>
   );
 }
 
 /* ------------------------------------------------------------------ */
 /*  Capabilities Grid                                                 */
 /* ------------------------------------------------------------------ */
-const ALL_CAPABILITIES = [
-  {
-    id: 'capability/enrollment',
-    name: 'Enrollment & Admissions',
-    description: 'Enables academic courses, cohort tracking, and enrollment workflow stages.',
-    industry: 'education',
-  },
-  {
-    id: 'capability/appointment',
-    name: 'Appointments & Scheduling',
-    description: 'Adds appointments, slots, availability schedules, and calendar view.',
-    industry: 'healthcare',
-  },
-  {
-    id: 'capability/billing',
-    name: 'Invoicing & Financial Ledger',
-    description: 'Adds invoice documents, line items, payments, and billing ledger.',
-    industry: 'finance',
-  },
-  {
-    id: 'capability/property-listing',
-    name: 'Property Listings',
-    description: 'Adds property coordinates, bedrooms, floor plans, and listing status.',
-    industry: 'real-estate',
-  },
-  {
-    id: 'capability/order-management',
-    name: 'Order Management',
-    description: 'Adds order creation, product line items, payment status, and order tracking.',
-    industry: 'retail',
-  },
-  {
-    id: 'capability/customer-onboarding',
-    name: 'Customer Onboarding',
-    description: 'Adds multi-step customer onboarding workflows, tracking setup steps and contract values.',
-    industry: 'technology',
-  },
-];
-
 const CAPABILITY_ICONS: Record<string, any> = {
   'capability/enrollment': GraduationCap,
   'capability/appointment': Calendar,
@@ -298,54 +331,79 @@ const CAPABILITY_INDUSTRY_THEME: Record<string, { bg: string; text: string; dot:
 interface AdminCapabilityManagerProps {
   tenantId: string;
   tenantIndustry: string;
-  initialCapabilities: string[];
   canUpdate: boolean;
-}
-
-interface CapabilityFormValues {
-  capabilities: string[];
 }
 
 function AdminCapabilityManager({
   tenantId,
   tenantIndustry,
-  initialCapabilities,
   canUpdate,
 }: AdminCapabilityManagerProps) {
   const queryClient = useQueryClient();
 
-  const { handleSubmit, setValue, watch } = useForm<CapabilityFormValues>({
-    values: {
-      capabilities: initialCapabilities,
-    },
+  const { data: capabilities = [], isLoading } = useQuery({
+    queryKey: ['tenant-capabilities', tenantId],
+    queryFn: () => getTenantCapabilities(tenantId),
   });
 
-  const selectedCapabilities = watch('capabilities') || [];
-
-  const updateMutation = useMutation({
-    mutationFn: (data: CapabilityFormValues) => updateTenantCapabilities(tenantId, data.capabilities),
-    onSuccess: () => {
+  const enableMutation = useMutation({
+    mutationFn: (capId: string) => enableTenantCapability(tenantId, capId),
+    onMutate: async (capId) => {
+      await queryClient.cancelQueries({ queryKey: ['tenant-capabilities', tenantId] });
+      const previous = queryClient.getQueryData<PlatformTenantCapability[]>(['tenant-capabilities', tenantId]);
+      queryClient.setQueryData<PlatformTenantCapability[]>(['tenant-capabilities', tenantId], (old) =>
+        old?.map((c) => (c.id === capId ? { ...c, enabled: true } : c))
+      );
+      return { previous };
+    },
+    onError: (err: any, capId, context) => {
+      queryClient.setQueryData(['tenant-capabilities', tenantId], context?.previous);
+      toast.error(err.message || 'Failed to enable capability');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['tenant-capabilities', tenantId] });
       queryClient.invalidateQueries({ queryKey: ['tenant', tenantId] });
-      toast.success('Workspace capabilities saved successfully');
-    },
-    onError: (err: any) => {
-      toast.error(err.message || 'Failed to save capabilities');
     },
   });
 
-  const onSubmit = (data: CapabilityFormValues) => {
-    updateMutation.mutate(data);
-  };
+  const disableMutation = useMutation({
+    mutationFn: (capId: string) => disableTenantCapability(tenantId, capId),
+    onMutate: async (capId) => {
+      await queryClient.cancelQueries({ queryKey: ['tenant-capabilities', tenantId] });
+      const previous = queryClient.getQueryData<PlatformTenantCapability[]>(['tenant-capabilities', tenantId]);
+      queryClient.setQueryData<PlatformTenantCapability[]>(['tenant-capabilities', tenantId], (old) =>
+        old?.map((c) => (c.id === capId ? { ...c, enabled: false } : c))
+      );
+      return { previous };
+    },
+    onError: (err: any, capId, context) => {
+      queryClient.setQueryData(['tenant-capabilities', tenantId], context?.previous);
+      toast.error(err.message || 'Failed to disable capability');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['tenant-capabilities', tenantId] });
+      queryClient.invalidateQueries({ queryKey: ['tenant', tenantId] });
+    },
+  });
 
-  const recommendedCaps = ALL_CAPABILITIES.filter(
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 py-6 text-xs text-slate-400">
+        <RefreshCw size={13} className="animate-spin text-slate-400" />
+        Syncing capabilities…
+      </div>
+    );
+  }
+
+  const recommendedCaps = capabilities.filter(
     (cap) => cap.industry.toLowerCase() === tenantIndustry?.toLowerCase()
   );
-  const otherCaps = ALL_CAPABILITIES.filter(
+  const otherCaps = capabilities.filter(
     (cap) => cap.industry.toLowerCase() !== tenantIndustry?.toLowerCase()
   );
 
-  const renderCard = (cap: typeof ALL_CAPABILITIES[0], isRecommended: boolean) => {
-    const isEnabled = selectedCapabilities.includes(cap.id);
+  const renderCard = (cap: PlatformTenantCapability, isRecommended: boolean) => {
+    const isEnabled = cap.enabled;
     const CapIcon = CAPABILITY_ICONS[cap.id] || Zap;
     const theme = CAPABILITY_INDUSTRY_THEME[cap.industry] || {
       bg: 'bg-gray-50/50 border-gray-100',
@@ -359,9 +417,9 @@ function AdminCapabilityManager({
         onClick={() => {
           if (!canUpdate) return;
           if (isEnabled) {
-            setValue('capabilities', selectedCapabilities.filter((id) => id !== cap.id));
+            disableMutation.mutate(cap.id);
           } else {
-            setValue('capabilities', [...selectedCapabilities, cap.id]);
+            enableMutation.mutate(cap.id);
           }
         }}
         className={`group relative flex flex-col justify-between p-4 rounded-xl border transition-all select-none min-h-[135px] ${
@@ -385,19 +443,36 @@ function AdminCapabilityManager({
               <CapIcon size={16} />
             </div>
 
-            {/* Right: Checkbox and Details */}
+            {/* Right: Toggle switch and Details */}
             <div className="flex-1">
               <div className="flex items-start justify-between gap-2">
                 <span className="text-xs font-semibold text-slate-900 tracking-tight">{cap.name}</span>
                 <div className="flex-shrink-0">
-                  {isEnabled ? (
-                    <div className="w-4 h-4 rounded text-white flex items-center justify-center animate-in zoom-in-50 duration-150 bg-indigo-600">
+                  {canUpdate ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isEnabled) {
+                          disableMutation.mutate(cap.id);
+                        } else {
+                          enableMutation.mutate(cap.id);
+                        }
+                      }}
+                      className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        isEnabled ? 'bg-indigo-600' : 'bg-slate-200'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                          isEnabled ? 'translate-x-4' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  ) : (
+                    <div className="w-4 h-4 rounded text-white flex items-center justify-center bg-indigo-600">
                       <Check size={10} strokeWidth={3} />
                     </div>
-                  ) : (
-                    <div className={`w-4 h-4 rounded border bg-white transition-colors ${
-                      isRecommended ? 'border-indigo-300 group-hover:border-indigo-400' : 'border-slate-200 group-hover:border-slate-400'
-                    }`} />
                   )}
                 </div>
               </div>
@@ -433,7 +508,7 @@ function AdminCapabilityManager({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <div className="space-y-6">
       {/* Recommended Core Industry Scope */}
       {recommendedCaps.length > 0 && (
         <div className="space-y-3.5">
@@ -459,29 +534,7 @@ function AdminCapabilityManager({
           </div>
         </div>
       )}
-
-      {canUpdate && (
-        <div className="flex justify-end pt-2 border-t border-slate-200">
-          <button
-            type="submit"
-            disabled={updateMutation.isPending}
-            className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
-          >
-            {updateMutation.isPending ? (
-              <>
-                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Saving Capabilities...
-              </>
-            ) : (
-              <>
-                <Sparkles size={13} />
-                Save Capabilities
-              </>
-            )}
-          </button>
-        </div>
-      )}
-    </form>
+    </div>
   );
 }
 
@@ -671,6 +724,158 @@ function AdminOverridesManager({ tenantId, tenantData, canUpdate }: AdminOverrid
         </button>
       )}
     </form>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Hierarchy Tree Component                                          */
+/* ------------------------------------------------------------------ */
+interface AdminHierarchyManagerProps {
+  tenantId: string;
+}
+
+function AdminHierarchyManager({ tenantId }: AdminHierarchyManagerProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [expandedBranches, setExpandedBranches] = useState<Record<string, boolean>>({});
+
+  const { data: hierarchy, isLoading } = useQuery({
+    queryKey: ['tenant-hierarchy', tenantId],
+    queryFn: () => getTenantHierarchy(tenantId),
+    enabled: isExpanded,
+  });
+
+  const toggleBranch = (branchId: string) => {
+    setExpandedBranches((prev) => ({
+      ...prev,
+      [branchId]: !prev[branchId],
+    }));
+  };
+
+  const getConversionBadgeColor = (rate: number) => {
+    if (rate >= 25) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    if (rate >= 15) return 'bg-amber-50 text-amber-700 border-amber-200';
+    return 'bg-slate-50 text-slate-600 border-slate-200';
+  };
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+      <div 
+        className="flex items-center justify-between cursor-pointer select-none"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center gap-2">
+          <FolderTree size={16} className="text-slate-500" />
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">Tenant Organisation Hierarchy</h3>
+            <p className="text-xs text-slate-400 mt-0.5">Explore the branches, active brands, and course business verticals configured under this tenant.</p>
+          </div>
+        </div>
+        <div className="text-slate-400">
+          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="mt-6 border-t border-slate-100 pt-5 animate-in fade-in duration-200">
+          {isLoading ? (
+            <div className="flex items-center gap-2 py-4 text-xs text-slate-400">
+              <RefreshCw size={13} className="animate-spin text-slate-400" />
+              Loading organization hierarchy…
+            </div>
+          ) : !hierarchy || hierarchy.branches.length === 0 ? (
+            <div className="text-center py-6 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+              <Building size={20} className="mx-auto text-slate-400 mb-2" />
+              <p className="text-xs font-semibold text-slate-900">No branches configured yet</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">This tenant has not provisioned any branches in their portal.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {hierarchy.branches.map((branch) => {
+                const isBranchExpanded = expandedBranches[branch.id] ?? false;
+
+                return (
+                  <div key={branch.id} className="border border-slate-100 rounded-xl bg-slate-50/20 overflow-hidden">
+                    {/* Branch Row */}
+                    <div 
+                      className="flex items-center justify-between p-3.5 bg-slate-50/50 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition-all select-none"
+                      onClick={() => toggleBranch(branch.id)}
+                    >
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {isBranchExpanded ? (
+                          <ChevronDown size={14} className="text-slate-400" />
+                        ) : (
+                          <ChevronRight size={14} className="text-slate-400" />
+                        )}
+                        <Building size={14} className="text-slate-600" />
+                        <span className="text-xs font-bold text-slate-800">{branch.name}</span>
+                        {branch.city && (
+                          <span className="text-[10px] text-slate-400 font-medium">({branch.city})</span>
+                        )}
+                        
+                        {/* Brands assigned under this branch */}
+                        <div className="flex items-center gap-1.5 ml-2">
+                          {branch.brands.map((brand) => (
+                            <span 
+                              key={brand.id} 
+                              className={`text-[9px] px-1.5 py-0.25 rounded font-medium border uppercase tracking-wider ${
+                                brand.is_primary 
+                                  ? 'bg-indigo-50 text-indigo-700 border-indigo-200 font-bold' 
+                                  : 'bg-slate-100 text-slate-600 border-slate-200'
+                              }`}
+                            >
+                              {brand.name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        {branch.verticals.length} verticals
+                      </span>
+                    </div>
+
+                    {/* Verticals under this Branch */}
+                    {isBranchExpanded && (
+                      <div className="p-3 pl-8 bg-white space-y-2.5 animate-in slide-in-from-top-1 duration-150 border-t border-slate-100">
+                        {branch.verticals.length === 0 ? (
+                          <div className="text-[10px] italic text-slate-400 py-1 pl-4 flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+                            No verticals configured yet for this branch.
+                          </div>
+                        ) : (
+                          branch.verticals.map((vertical) => (
+                            <div key={vertical.id} className="flex items-center justify-between gap-4 py-0.5">
+                              <div className="flex items-center gap-2">
+                                <GitFork size={12} className="text-slate-400 -rotate-90" />
+                                <span className={`text-xs font-semibold ${vertical.status === 'inactive' ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
+                                  {vertical.name}
+                                </span>
+                                {vertical.status === 'inactive' && (
+                                  <span className="text-[8px] bg-slate-100 text-slate-500 border border-slate-200 px-1 rounded uppercase tracking-wider font-mono">
+                                    Inactive
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <span className="text-[11px] text-slate-400 font-medium">
+                                  {vertical.stats.total_leads} leads
+                                </span>
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${getConversionBadgeColor(vertical.stats.conversion_rate)}`}>
+                                  {vertical.stats.conversion_rate}% conversion
+                                </span>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -873,6 +1078,9 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
           </div>
         </div>
 
+        {/* Tenant Hierarchy Section */}
+        <AdminHierarchyManager tenantId={tenantId} />
+
         {/* Extensions Panel */}
         <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
           <div className="mb-4">
@@ -885,8 +1093,8 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
           <AdminLicenseManager
             tenantId={tenantId}
             tenantIndustry={tenant.industry}
-            initialPluginIds={tenant.plugin_ids ?? []}
             canUpdate={canUpdateBilling}
+            maxPlugins={tenant.plan?.max_plugins ?? 5}
           />
         </div>
 
@@ -902,7 +1110,6 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
           <AdminCapabilityManager
             tenantId={tenantId}
             tenantIndustry={tenant.industry}
-            initialCapabilities={tenant.enabled_capabilities ?? []}
             canUpdate={canSuspend}
           />
         </div>

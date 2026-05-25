@@ -1,6 +1,7 @@
 {
   "extends": "@meta-crm/config-ts/react",
   "compilerOptions": {
+    "exactOptionalPropertyTypes": false,
     "paths": {
       "@/*": ["./src/*"],
       "@meta-crm/types": ["../../packages/types/src/index.ts"],

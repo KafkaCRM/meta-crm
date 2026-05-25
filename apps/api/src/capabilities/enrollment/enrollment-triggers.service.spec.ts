@@ -35,6 +35,9 @@ describe('EnrollmentTriggersService', () => {
         tenantPlugin: {
           findFirst: vi.fn(),
         },
+        tenant: {
+          findFirst: vi.fn(),
+        },
       }),
     };
 
@@ -50,7 +53,7 @@ describe('EnrollmentTriggersService', () => {
       providers: [
         EnrollmentTriggersService,
         { provide: TenantScopedPrismaService, useValue: mockDb },
-        { provide: 'MessagingAdapter', useValue: mockMessagingAdapter },
+        { provide: 'MESSAGING_ADAPTER', useValue: mockMessagingAdapter },
         { provide: ClsService, useValue: mockCls },
         EventEmitter2,
       ],
@@ -58,6 +61,11 @@ describe('EnrollmentTriggersService', () => {
 
     service = module.get(EnrollmentTriggersService);
     eventEmitter = module.get(EventEmitter2);
+
+    mockDb.getClient().tenant.findFirst.mockResolvedValue({
+      id: 'tenant-1',
+      config_json: { enabled_capabilities: ['capability/enrollment'] },
+    });
   });
 
   it('fires confirmation message when case moves to Fee Paid stage', async () => {
@@ -132,6 +140,10 @@ describe('EnrollmentTriggersService', () => {
       actor_id: 'user-1',
     };
 
+    mockDb.getClient().tenant.findFirst.mockResolvedValue({
+      id: 'tenant-no-cap',
+      config_json: { enabled_capabilities: [] },
+    });
     mockDb.getClient().tenantPlugin.findFirst.mockResolvedValue(null);
     mockDb.getClient().case.findUnique.mockResolvedValue({
       id: 'case-3',

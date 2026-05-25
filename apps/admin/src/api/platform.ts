@@ -161,6 +161,9 @@ export interface PluginRegistry {
     compatible_industries: string[];
     hooks: string[];
     extends: string[];
+    category?: string;
+    icon?: string;
+    requires_plan?: string;
   };
   status: string;
   created_at: string;
@@ -355,4 +358,90 @@ export async function updateTenantOverrides(id: string, overrides: Record<string
     method: 'PATCH',
     body: JSON.stringify(overrides),
   });
+}
+
+export interface PlatformTenantCapability {
+  id: string;
+  name: string;
+  description: string;
+  industry: string;
+  enabled: boolean;
+}
+
+export interface PlatformTenantPlugin {
+  id: string;
+  package_name: string;
+  version: string;
+  manifest: {
+    id: string;
+    name: string;
+    description: string;
+    compatible_industries: string[];
+    hooks: string[];
+    extends: string[];
+    category?: string;
+    icon?: string;
+    requires_plan?: string;
+  };
+  status: string;
+  created_at: string;
+  installed: boolean;
+}
+
+export async function getTenantCapabilities(tenantId: string): Promise<PlatformTenantCapability[]> {
+  return apiCall<PlatformTenantCapability[]>(`/platform/tenants/${tenantId}/capabilities`);
+}
+
+export async function enableTenantCapability(tenantId: string, capabilityId: string): Promise<{ id: string; enabled: boolean }> {
+  return apiCall<{ id: string; enabled: boolean }>(`/platform/tenants/${tenantId}/capabilities/${capabilityId}/enable`, {
+    method: 'POST',
+  });
+}
+
+export async function disableTenantCapability(tenantId: string, capabilityId: string): Promise<{ id: string; enabled: boolean }> {
+  return apiCall<{ id: string; enabled: boolean }>(`/platform/tenants/${tenantId}/capabilities/${capabilityId}/disable`, {
+    method: 'POST',
+  });
+}
+
+export async function getTenantPlugins(tenantId: string): Promise<PlatformTenantPlugin[]> {
+  return apiCall<PlatformTenantPlugin[]>(`/platform/tenants/${tenantId}/plugins`);
+}
+
+export async function installTenantPlugin(tenantId: string, pluginId: string): Promise<{ id: string; installed: boolean }> {
+  return apiCall<{ id: string; installed: boolean }>(`/platform/tenants/${tenantId}/plugins/${pluginId}/install`, {
+    method: 'POST',
+  });
+}
+
+export async function uninstallTenantPlugin(tenantId: string, pluginId: string): Promise<{ id: string; installed: boolean }> {
+  return apiCall<{ id: string; installed: boolean }>(`/platform/tenants/${tenantId}/plugins/${pluginId}/uninstall`, {
+    method: 'POST',
+  });
+}
+
+export interface TenantHierarchy {
+  branches: {
+    id: string;
+    name: string;
+    city: string | null;
+    brands: {
+      id: string;
+      name: string;
+      is_primary: boolean;
+    }[];
+    verticals: {
+      id: string;
+      name: string;
+      status: string;
+      stats: {
+        total_leads: number;
+        conversion_rate: number;
+      };
+    }[];
+  }[];
+}
+
+export async function getTenantHierarchy(tenantId: string): Promise<TenantHierarchy> {
+  return apiCall<TenantHierarchy>(`/platform/tenants/${tenantId}/hierarchy`);
 }

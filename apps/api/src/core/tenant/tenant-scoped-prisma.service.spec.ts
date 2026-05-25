@@ -14,6 +14,7 @@ const tenantAScope: RequestScope = {
   tenant_id: 'tenant-a',
   assignment_ids: ['assign-1'],
   role: TenantRole.BranchUser,
+  vertical_ids: [],
 };
 
 const tenantBScope: RequestScope = {
@@ -21,6 +22,7 @@ const tenantBScope: RequestScope = {
   tenant_id: 'tenant-b',
   assignment_ids: ['assign-2'],
   role: TenantRole.BranchUser,
+  vertical_ids: [],
 };
 
 async function exec(opts: {
@@ -200,6 +202,81 @@ describe('applyTenantScope', () => {
       expect(TENANT_SCOPED_MODELS).not.toContain('PluginRegistry');
       expect(TENANT_SCOPED_MODELS).not.toContain('SubscriptionPlan');
       expect(TENANT_SCOPED_MODELS).not.toContain('IndustryTemplate');
+    });
+  });
+
+  describe('vertical awareness scoping', () => {
+    it("User with vertical_ids: ['v1', 'v2'] cannot see cases where vertical_id = 'v3'", async () => {
+      const scope: RequestScope = {
+        user_id: 'user-a',
+        tenant_id: 'tenant-a',
+        assignment_ids: ['assign-1'],
+        role: TenantRole.BranchUser,
+        vertical_ids: ['v1', 'v2'],
+      };
+
+      const query = await exec({
+        model: 'Case',
+        operation: 'findMany',
+        args: { where: { stage: 'open' } },
+        scope,
+      });
+
+      expect(query).toHaveBeenCalledWith({
+        where: {
+          stage: 'open',
+          tenant_id: 'tenant-a',
+          vertical_id: { in: ['v1', 'v2'] },
+        },
+      });
+    });
+
+    it('User with empty vertical_ids: can see all cases in tenant', async () => {
+      const scope: RequestScope = {
+        user_id: 'user-a',
+        tenant_id: 'tenant-a',
+        assignment_ids: ['assign-1'],
+        role: TenantRole.BranchManager,
+        vertical_ids: [],
+      };
+
+      const query = await exec({
+        model: 'Case',
+        operation: 'findMany',
+        args: { where: { stage: 'open' } },
+        scope,
+      });
+
+      expect(query).toHaveBeenCalledWith({
+        where: {
+          stage: 'open',
+          tenant_id: 'tenant-a',
+        },
+      });
+    });
+
+    it("Vertical filter compounds with tenant filter: cannot see other tenant's cases even with matching vertical_id", async () => {
+      const scope: RequestScope = {
+        user_id: 'user-a',
+        tenant_id: 'tenant-a',
+        assignment_ids: ['assign-1'],
+        role: TenantRole.BranchUser,
+        vertical_ids: ['v1'],
+      };
+
+      const query = await exec({
+        model: 'Case',
+        operation: 'findMany',
+        args: { where: { vertical_id: 'v1' } },
+        scope,
+      });
+
+      expect(query).toHaveBeenCalledWith({
+        where: {
+          vertical_id: { in: ['v1'] },
+          tenant_id: 'tenant-a',
+        },
+      });
     });
   });
 });

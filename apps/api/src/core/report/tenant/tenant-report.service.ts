@@ -4,8 +4,9 @@ import { ok, err } from 'neverthrow';
 import type { Result } from 'neverthrow';
 import { TenantScopedPrismaService } from '../../tenant/tenant-scoped-prisma.service';
 import type { RequestScope } from '../../tenant/request-scope.interface';
+import { CampaignService } from '../../campaign/campaign.service';
 
-export type ReportErrorCode = 'INVALID_PARAMS';
+export type ReportErrorCode = 'INVALID_PARAMS' | 'INTERNAL_ERROR';
 
 export interface ReportError {
   code: ReportErrorCode;
@@ -68,6 +69,7 @@ export interface ReportParams {
   date_to?: string;
   assignment_id?: string;
   workflow_id?: string;
+  campaign_id?: string;
 }
 
 @Injectable()
@@ -75,6 +77,7 @@ export class TenantReportService {
   constructor(
     private readonly db: TenantScopedPrismaService,
     private readonly cls: ClsService,
+    private readonly campaignService: CampaignService,
   ) {}
 
   private get scope(): RequestScope {
@@ -89,6 +92,7 @@ export class TenantReportService {
     if (Object.keys(createdAt).length > 0) filter.created_at = createdAt;
     if (params.assignment_id) filter.branch_brand_assignment_id = params.assignment_id;
     if (params.workflow_id) filter.workflow_definition_id = params.workflow_id;
+    if (params.campaign_id) filter.campaign_id = params.campaign_id;
     return filter;
   }
 
@@ -275,5 +279,271 @@ export class TenantReportService {
   async requestExport(params: ReportParams): Promise<Result<ExportResponse, ReportError>> {
     const jobId = crypto.randomUUID();
     return ok({ job_id: jobId });
+  }
+
+  async campaigns(params: {
+    vertical_id?: string;
+    channel?: string;
+    date_from?: string;
+    date_to?: string;
+    cursor?: string;
+    limit?: number;
+  }): Promise<Result<any[], ReportError>> {
+    try {
+      const limit = params.limit ? Math.min(params.limit, 100) : 50;
+      const campaigns = await this.db.getClient().campaign.findMany({
+        where: {
+          status: { not: 'deleted' },
+          ...(params.vertical_id ? { vertical_id: params.vertical_id } : {}),
+          ...(params.channel ? { channel: params.channel } : {}),
+        },
+        take: limit + 1,
+        ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
+        orderBy: { id: 'asc' },
+      });
+
+      const hasMore = campaigns.length > limit;
+      const campaignsToProcess = hasMore ? campaigns.slice(0, limit) : campaigns;
+      const campaignIds = campaignsToProcess.map((c) => c.id);
+
+      const caseWhere: Record<string, any> = {
+        campaign_id: { in: campaignIds },
+      };
+      if (params.date_from || params.date_to) {
+        const createdAt: Record<string, Date> = {};
+        if (params.date_from) createdAt.gte = new Date(params.date_from);
+        if (params.date_to) createdAt.lte = new Date(params.date_to);
+        caseWhere.created_at = createdAt;
+      }
+
+      const caseGroups = await this.db.getClient().case.groupBy({
+        by: ['campaign_id', 'stage'],
+        where: caseWhere,
+        _count: { id: true },
+      });
+
+      const pipelineIds = Array.from(new Set(campaignsToProcess.map((c) => c.pipeline_id)));
+      const stages = await this.db.getClient().workflowStage.findMany({
+        where: { workflow_definition_id: { in: pipelineIds } },
+        orderBy: { order: 'asc' },
+      });
+
+      const pipelineStagesMap = new Map<string, typeof stages>();
+      for (const stage of stages) {
+        const existing = pipelineStagesMap.get(stage.workflow_definition_id) ?? [];
+        existing.push(stage);
+        pipelineStagesMap.set(stage.workflow_definition_id, existing);
+      }
+
+      const pipelineFinalPositiveStageIdsMap = new Map<string, Set<string>>();
+      for (const [pipelineId, pipelineStages] of pipelineStagesMap.entries()) {
+        if (pipelineStages.length === 0) continue;
+        const maxOrder = Math.max(...pipelineStages.map((s) => s.order));
+        const finalStages = pipelineStages.filter((s) => s.order === maxOrder);
+        const positiveIds = new Set<string>();
+        for (const fs of finalStages) {
+          const nameLower = fs.name.toLowerCase();
+          const isLost =
+            nameLower.includes('lost') ||
+            nameLower.includes('drop') ||
+            nameLower.includes('fail') ||
+            nameLower.includes('reject') ||
+            nameLower.includes('abandon');
+          if (!isLost) {
+            positiveIds.add(fs.id);
+          }
+        }
+        pipelineFinalPositiveStageIdsMap.set(pipelineId, positiveIds);
+      }
+
+      const campaignStatsMap = new Map<string, { total_leads: number; converted: number }>();
+      for (const cId of campaignIds) {
+        campaignStatsMap.set(cId, { total_leads: 0, converted: 0 });
+      }
+
+      for (const group of caseGroups) {
+        const cId = group.campaign_id;
+        if (!cId) continue;
+        const count = group._count.id;
+        const campaign = campaignsToProcess.find((c) => c.id === cId);
+        if (!campaign) continue;
+
+        const stats = campaignStatsMap.get(cId) || { total_leads: 0, converted: 0 };
+        stats.total_leads += count;
+
+        const finalPositiveIds = pipelineFinalPositiveStageIdsMap.get(campaign.pipeline_id);
+        if (finalPositiveIds && finalPositiveIds.has(group.stage)) {
+          stats.converted += count;
+        }
+        campaignStatsMap.set(cId, stats);
+      }
+
+      const result = campaignsToProcess.map((c) => {
+        const stats = campaignStatsMap.get(c.id) || { total_leads: 0, converted: 0 };
+        const conversion_rate =
+          stats.total_leads > 0 ? Math.round((stats.converted / stats.total_leads) * 10000) / 100 : 0;
+        return {
+          id: c.id,
+          name: c.name,
+          channel: c.channel,
+          total_leads: stats.total_leads,
+          converted: stats.converted,
+          conversion_rate,
+        };
+      });
+
+      return ok(result);
+    } catch (e: any) {
+      return err({
+        code: 'INTERNAL_ERROR',
+        message: e?.message ?? 'Failed to compute campaign reports',
+      });
+    }
+  }
+
+  async campaignComparison(campaignIds: string[]): Promise<Result<any[], ReportError>> {
+    try {
+      if (!campaignIds || campaignIds.length === 0) {
+        return err({ code: 'INVALID_PARAMS', message: 'campaign_ids query param is required' });
+      }
+      if (campaignIds.length > 5) {
+        return err({ code: 'INVALID_PARAMS', message: 'Cannot compare more than 5 campaigns' });
+      }
+
+      const results: any[] = [];
+      for (const id of campaignIds) {
+        const campRes = await this.campaignService.findOne(id);
+        if (campRes.isOk()) {
+          results.push(campRes.value);
+        } else {
+          return err({ code: 'INVALID_PARAMS', message: `Campaign not found or inaccessible: ${id}` });
+        }
+      }
+      return ok(results);
+    } catch (e: any) {
+      return err({
+        code: 'INTERNAL_ERROR',
+        message: e?.message ?? 'Failed to compare campaigns',
+      });
+    }
+  }
+
+  async channelPerformance(params: {
+    vertical_id?: string;
+    date_from?: string;
+    date_to?: string;
+  }): Promise<Result<any[], ReportError>> {
+    try {
+      const campaigns = await this.db.getClient().campaign.findMany({
+        where: {
+          status: { not: 'deleted' },
+          ...(params.vertical_id ? { vertical_id: params.vertical_id } : {}),
+        },
+      });
+
+      const campaignIds = campaigns.map((c) => c.id);
+      const campaignMap = new Map<string, typeof campaigns[0]>();
+      for (const c of campaigns) {
+        campaignMap.set(c.id, c);
+      }
+
+      const caseWhere: Record<string, any> = {
+        campaign_id: { in: campaignIds },
+      };
+      if (params.date_from || params.date_to) {
+        const createdAt: Record<string, Date> = {};
+        if (params.date_from) createdAt.gte = new Date(params.date_from);
+        if (params.date_to) createdAt.lte = new Date(params.date_to);
+        caseWhere.created_at = createdAt;
+      }
+
+      const caseGroups = await this.db.getClient().case.groupBy({
+        by: ['campaign_id', 'stage'],
+        where: caseWhere,
+        _count: { id: true },
+      });
+
+      const pipelineIds = Array.from(new Set(campaigns.map((c) => c.pipeline_id)));
+      const stages = await this.db.getClient().workflowStage.findMany({
+        where: { workflow_definition_id: { in: pipelineIds } },
+        orderBy: { order: 'asc' },
+      });
+
+      const pipelineStagesMap = new Map<string, typeof stages>();
+      for (const stage of stages) {
+        const existing = pipelineStagesMap.get(stage.workflow_definition_id) ?? [];
+        existing.push(stage);
+        pipelineStagesMap.set(stage.workflow_definition_id, existing);
+      }
+
+      const pipelineFinalPositiveStageIdsMap = new Map<string, Set<string>>();
+      for (const [pipelineId, pipelineStages] of pipelineStagesMap.entries()) {
+        if (pipelineStages.length === 0) continue;
+        const maxOrder = Math.max(...pipelineStages.map((s) => s.order));
+        const finalStages = pipelineStages.filter((s) => s.order === maxOrder);
+        const positiveIds = new Set<string>();
+        for (const fs of finalStages) {
+          const nameLower = fs.name.toLowerCase();
+          const isLost =
+            nameLower.includes('lost') ||
+            nameLower.includes('drop') ||
+            nameLower.includes('fail') ||
+            nameLower.includes('reject') ||
+            nameLower.includes('abandon');
+          if (!isLost) {
+            positiveIds.add(fs.id);
+          }
+        }
+        pipelineFinalPositiveStageIdsMap.set(pipelineId, positiveIds);
+      }
+
+      const channelStatsMap = new Map<string, { total_leads: number; converted: number }>();
+
+      for (const group of caseGroups) {
+        const cId = group.campaign_id;
+        if (!cId) continue;
+        const campaign = campaignMap.get(cId);
+        if (!campaign) continue;
+
+        const channel = campaign.channel;
+        const count = group._count.id;
+
+        const stats = channelStatsMap.get(channel) || { total_leads: 0, converted: 0 };
+        stats.total_leads += count;
+
+        const finalPositiveIds = pipelineFinalPositiveStageIdsMap.get(campaign.pipeline_id);
+        if (finalPositiveIds && finalPositiveIds.has(group.stage)) {
+          stats.converted += count;
+        }
+        channelStatsMap.set(channel, stats);
+      }
+
+      const activeChannels = Array.from(new Set(campaigns.map((c) => c.channel)));
+      for (const channel of activeChannels) {
+        if (!channelStatsMap.has(channel)) {
+          channelStatsMap.set(channel, { total_leads: 0, converted: 0 });
+        }
+      }
+
+      const result = Array.from(channelStatsMap.entries()).map(([channel, stats]) => {
+        const conversion_rate =
+          stats.total_leads > 0 ? Math.round((stats.converted / stats.total_leads) * 10000) / 100 : 0;
+        return {
+          channel,
+          total_leads: stats.total_leads,
+          converted: stats.converted,
+          conversion_rate,
+        };
+      });
+
+      result.sort((a, b) => b.conversion_rate - a.conversion_rate);
+
+      return ok(result);
+    } catch (e: any) {
+      return err({
+        code: 'INTERNAL_ERROR',
+        message: e?.message ?? 'Failed to compute channel performance',
+      });
+    }
   }
 }

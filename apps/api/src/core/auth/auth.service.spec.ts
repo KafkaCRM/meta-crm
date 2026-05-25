@@ -27,6 +27,8 @@ function createMockDb() {
       create: vi.fn(),
       update: vi.fn(),
     },
+    branchBrandAssignment: { findMany: vi.fn().mockResolvedValue([]) },
+    vertical: { findMany: vi.fn().mockResolvedValue([]) },
   } as unknown as PrismaService;
 }
 

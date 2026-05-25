@@ -17,6 +17,8 @@ export const SYSTEM_ROLE_MAP: Record<TenantRole, PermissionDefinition[]> = {
     { action: 'update', resource: 'Case', conditions: { own_assignment_only: true } },
     { action: 'create', resource: 'Interaction' },
     { action: 'read', resource: 'Interaction' },
+    { action: 'read', resource: 'Vertical' },
+    { action: 'read', resource: 'Campaign' },
   ],
 
   [TenantRole.BranchSupervisor]: [
@@ -29,6 +31,8 @@ export const SYSTEM_ROLE_MAP: Record<TenantRole, PermissionDefinition[]> = {
     { action: 'create', resource: 'Interaction' },
     { action: 'read', resource: 'Interaction' },
     { action: 'read', resource: 'User' },
+    { action: 'read', resource: 'Vertical' },
+    { action: 'read', resource: 'Campaign' },
   ],
 
   [TenantRole.BranchManager]: [
@@ -43,6 +47,8 @@ export const SYSTEM_ROLE_MAP: Record<TenantRole, PermissionDefinition[]> = {
     { action: 'read', resource: 'Interaction' },
     { action: 'read', resource: 'User' },
     { action: 'read', resource: 'Report' },
+    { action: 'read', resource: 'Vertical' },
+    { action: 'read', resource: 'Campaign' },
   ],
 
   [TenantRole.BrandManager]: [
@@ -59,6 +65,8 @@ export const SYSTEM_ROLE_MAP: Record<TenantRole, PermissionDefinition[]> = {
     { action: 'read', resource: 'Report' },
     { action: 'export', resource: 'Report' },
     { action: 'read', resource: 'Workflow' },
+    { action: 'read', resource: 'Vertical' },
+    { action: 'read', resource: 'Campaign' },
   ],
 
   [TenantRole.TenantAdmin]: [
@@ -75,6 +83,8 @@ export const SYSTEM_ROLE_MAP: Record<TenantRole, PermissionDefinition[]> = {
     { action: 'manage', resource: 'Role' },
     { action: 'manage', resource: 'Branch' },
     { action: 'manage', resource: 'Brand' },
+    { action: 'manage', resource: 'Vertical' },
+    { action: 'manage', resource: 'Campaign' },
     { action: 'manage', resource: 'Plugin' },
   ],
 
@@ -92,6 +102,8 @@ export const SYSTEM_ROLE_MAP: Record<TenantRole, PermissionDefinition[]> = {
     { action: 'manage', resource: 'Role' },
     { action: 'manage', resource: 'Branch' },
     { action: 'manage', resource: 'Brand' },
+    { action: 'manage', resource: 'Vertical' },
+    { action: 'manage', resource: 'Campaign' },
     { action: 'manage', resource: 'Plugin' },
     { action: 'manage', resource: 'BillingRecord' },
   ],

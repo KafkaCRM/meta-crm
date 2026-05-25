@@ -58,7 +58,10 @@ describe('PartyMergeService', () => {
 
   it('returns SAME_PARTY error when both ids are equal', async () => {
     const result = await svc.mergeParties({ canonical_id: 'same-id', duplicate_id: 'same-id' }, scope);
-    expect(result.error.code).toBe('SAME_PARTY');
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error.code).toBe('SAME_PARTY');
+    }
   });
 
   it('returns PARTY_NOT_FOUND when canonical does not exist', async () => {
@@ -66,7 +69,10 @@ describe('PartyMergeService', () => {
     (client.party.findUnique as any).mockResolvedValue(null);
 
     const result = await svc.mergeParties({ canonical_id: 'nonexistent', duplicate_id: 'party-b' }, scope);
-    expect(result.error.code).toBe('PARTY_NOT_FOUND');
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error.code).toBe('PARTY_NOT_FOUND');
+    }
   });
 
   it('returns PARTY_NOT_FOUND when duplicate already merged', async () => {
@@ -77,6 +83,9 @@ describe('PartyMergeService', () => {
     });
 
     const result = await svc.mergeParties({ canonical_id: 'party-a', duplicate_id: 'party-b' }, scope);
-    expect(result.error.code).toBe('PARTY_NOT_FOUND');
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error.code).toBe('PARTY_NOT_FOUND');
+    }
   });
 });

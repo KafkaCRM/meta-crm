@@ -5,7 +5,8 @@ import { createHash } from 'node:crypto';
 import { createId } from '@paralleldrive/cuid2';
 import { ok, err } from 'neverthrow';
 import type { Result } from 'neverthrow';
-import type { TenantRole, PlatformRole } from '@meta-crm/types';
+import { TenantRole } from '@meta-crm/types';
+import type { PlatformRole } from '@meta-crm/types';
 import { PrismaService } from './prisma.service';
 
 const BCRYPT_COST = 12;
@@ -122,11 +123,14 @@ export class AuthService {
       .map((r) => r.assignment_id)
       .filter((id): id is string => id !== null);
 
+    const verticalIds = await this.resolveVerticalIds(tenant.id, roleSlug, assignmentIds);
+
     const accessToken = this.jwtService.sign({
       sub: user.id,
       tenant_id: tenant.id,
       assignment_ids: assignmentIds,
       role: roleSlug,
+      vertical_ids: verticalIds,
     });
 
     const refreshTokenValue = await this.createRefreshToken(user.id, 'tenant');
@@ -236,11 +240,14 @@ export class AuthService {
         .map((r) => r.assignment_id)
         .filter((id): id is string => id !== null);
 
+      const verticalIds = await this.resolveVerticalIds(user.tenant_id, roleSlug, assignmentIds);
+
       payload = {
         sub: user.id,
         tenant_id: user.tenant_id,
         assignment_ids: assignmentIds,
         role: roleSlug,
+        vertical_ids: verticalIds,
       };
     } else {
       const platformUser = await this.db.platformUser.findUnique({
@@ -306,5 +313,46 @@ export class AuthService {
     } catch {
       return err({ code: 'INTERNAL_ERROR', message: 'Failed to create refresh token' });
     }
+  }
+
+  private async resolveVerticalIds(
+    tenantId: string,
+    role: string,
+    assignmentIds: string[],
+  ): Promise<string[]> {
+    if (
+      role === TenantRole.BranchManager ||
+      role === TenantRole.BrandManager ||
+      role === TenantRole.TenantAdmin ||
+      role === TenantRole.TenantOwner ||
+      !tenantId ||
+      assignmentIds.length === 0
+    ) {
+      return [];
+    }
+
+    const assignments = await this.db.branchBrandAssignment.findMany({
+      where: {
+        id: { in: assignmentIds },
+        tenant_id: tenantId,
+      },
+      select: { branch_id: true },
+    });
+
+    const branchIds = assignments.map((a) => a.branch_id);
+    if (branchIds.length === 0) {
+      return [];
+    }
+
+    const verticals = await this.db.vertical.findMany({
+      where: {
+        branch_id: { in: branchIds },
+        tenant_id: tenantId,
+        status: 'active',
+      },
+      select: { id: true },
+    });
+
+    return verticals.map((v) => v.id);
   }
 }

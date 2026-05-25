@@ -6,6 +6,7 @@ import { TenantScopedPrismaService } from '../tenant/tenant-scoped-prisma.servic
 import { CaseEventService } from './events/case-event.service';
 import type { CreateCaseDto } from './dto/create-case.dto';
 import type { RequestScope } from '../tenant/request-scope.interface';
+import { CampaignAutoTagService } from '../campaign/campaign-auto-tag.service';
 
 export type CaseErrorCode = 'NOT_FOUND' | 'PARTY_NOT_FOUND' | 'WORKFLOW_NOT_FOUND';
 
@@ -20,6 +21,7 @@ export class CaseService {
     private readonly db: TenantScopedPrismaService,
     private readonly cls: ClsService,
     private readonly caseEvent: CaseEventService,
+    private readonly campaignAutoTagService: CampaignAutoTagService,
   ) {}
 
   async findMany(params: {
@@ -29,14 +31,29 @@ export class CaseService {
     assigned_to_id?: string;
     party_id?: string;
     type?: string;
+    vertical_id?: string;
+    campaign_id?: string;
+    channel?: string;
+    include?: string;
   }): Promise<Result<{ data: any[]; next_cursor?: string }, CaseError>> {
     const limit = Math.min(params.limit ?? 50, 100);
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, any> = {};
     if (params.stage) where.stage = params.stage;
     if (params.assigned_to_id) where.assigned_to_id = params.assigned_to_id;
     if (params.party_id) where.party_id = params.party_id;
     if (params.type) where.type = params.type;
+    if (params.vertical_id) where.vertical_id = params.vertical_id;
+    if (params.campaign_id) where.campaign_id = params.campaign_id;
+
+    if (params.channel) {
+      const campaigns = await this.db.getClient().campaign.findMany({
+        where: { channel: params.channel },
+        select: { id: true },
+      });
+      const campaignIds = campaigns.map((c) => c.id);
+      where.campaign_id = { in: campaignIds };
+    }
 
     const cases = await this.db.getClient().case.findMany({
       where,
@@ -49,13 +66,34 @@ export class CaseService {
     const hasMore = cases.length > limit;
     const data = hasMore ? cases.slice(0, limit) : cases;
 
+    const includeCampaign = params.include === 'campaign' || params.include?.includes('campaign');
+
+    const formattedData = await Promise.all(
+      data.map(async (c: any) => {
+        let campaign: any = undefined;
+        if (includeCampaign && c.campaign_id) {
+          const camp = await this.db.getClient().campaign.findUnique({
+            where: { id: c.campaign_id },
+            select: { id: true, name: true, channel: true },
+          });
+          if (camp) {
+            campaign = camp;
+          }
+        }
+        return {
+          ...c,
+          campaign,
+        };
+      }),
+    );
+
     return ok({
-      data,
+      data: formattedData,
       ...(hasMore ? { next_cursor: data[data.length - 1]?.id } : {}),
     });
   }
 
-  async findOne(id: string): Promise<Result<any, CaseError>> {
+  async findOne(id: string, include?: string): Promise<Result<any, CaseError>> {
     const caseRecord = await this.db.getClient().case.findUnique({
       where: { id },
       include: {
@@ -69,7 +107,22 @@ export class CaseService {
       return err({ code: 'NOT_FOUND', message: 'Case not found' });
     }
 
-    return ok(caseRecord);
+    let campaign: any = undefined;
+    const includeCampaign = include === 'campaign' || include?.includes('campaign');
+    if (includeCampaign && caseRecord.campaign_id) {
+      const camp = await this.db.getClient().campaign.findUnique({
+        where: { id: caseRecord.campaign_id },
+        select: { id: true, name: true, channel: true },
+      });
+      if (camp) {
+        campaign = camp;
+      }
+    }
+
+    return ok({
+      ...(caseRecord as any),
+      campaign,
+    });
   }
 
   async create(dto: CreateCaseDto): Promise<Result<any, CaseError>> {
@@ -89,6 +142,8 @@ export class CaseService {
       return err({ code: 'WORKFLOW_NOT_FOUND', message: 'Workflow definition not found' });
     }
 
+    let campaignId = dto.campaign_id;
+
     const caseRecord = await this.db.getClient().case.create({
       data: {
         party_id: dto.party_id,
@@ -98,9 +153,25 @@ export class CaseService {
         workflow_definition_id: dto.workflow_definition_id,
         branch_brand_assignment_id: dto.branch_brand_assignment_id,
         assigned_to_id: dto.assigned_to_id,
+        vertical_id: dto.vertical_id,
+        campaign_id: campaignId,
         attributes: (dto.attributes ?? {}) as any,
       } as any,
     });
+
+    if (!campaignId && dto.vertical_id) {
+      const autoTagResult = await this.campaignAutoTagService.autoTagCampaign({
+        caseId: caseRecord.id,
+        channel: ((dto as any).source || party.source),
+        utmCampaign: dto.utm_campaign ?? null,
+        verticalId: dto.vertical_id,
+        scope: scope!,
+      });
+      if (autoTagResult.isOk() && autoTagResult.value) {
+        campaignId = autoTagResult.value;
+        caseRecord.campaign_id = campaignId;
+      }
+    }
 
     await this.caseEvent.write({
       case_id: caseRecord.id,

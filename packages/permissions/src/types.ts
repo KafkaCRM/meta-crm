@@ -16,6 +16,8 @@ export type TenantSubject =
   | 'Role'
   | 'Branch'
   | 'Brand'
+  | 'Vertical'
+  | 'Campaign'
   | 'Plugin'
   | 'BillingRecord'
   | 'all';

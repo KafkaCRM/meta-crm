@@ -80,7 +80,10 @@ describe('PartyService', () => {
       (client.party.findUnique as any).mockResolvedValue(null);
 
       const result = await svc.findOne('nonexistent');
-      expect(result.error.code).toBe('NOT_FOUND');
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.code).toBe('NOT_FOUND');
+      }
     });
   });
 
@@ -120,7 +123,10 @@ describe('PartyService', () => {
       (client.party.findUnique as any).mockResolvedValue(null);
 
       const result = await svc.update('nonexistent', { name: 'Jane' });
-      expect(result.error.code).toBe('NOT_FOUND');
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.code).toBe('NOT_FOUND');
+      }
     });
   });
 
@@ -145,7 +151,10 @@ describe('PartyService', () => {
       (client.party.findUnique as any).mockResolvedValue(null);
 
       const result = await svc.softDelete('nonexistent');
-      expect(result.error.code).toBe('NOT_FOUND');
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.code).toBe('NOT_FOUND');
+      }
     });
   });
 });

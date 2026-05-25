@@ -20,6 +20,8 @@ import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { PlatformPermissionsGuard } from '../../core/permissions/permissions.guard';
 import { CheckPlatformPermissions } from '../../core/permissions/permissions.decorator';
 import { PlatformTenantsService } from './platform-tenants.service';
+import { CurrentUser } from '../../core/auth/decorators/current-user.decorator';
+import type { RequestScope } from '../../core/tenant/request-scope.interface';
 
 class OwnerDto {
   @IsString()
@@ -224,6 +226,158 @@ export class PlatformTenantsController {
     @Body() body: Record<string, any>,
   ) {
     const result = await this.service.updateOverrides(id, body);
+    if (result.isErr()) {
+      if (result.error.code === 'TENANT_NOT_FOUND') {
+        throw new NotFoundException(result.error);
+      }
+      throw new InternalServerErrorException(result.error);
+    }
+    return result.value;
+  }
+
+  @Get(':id/capabilities')
+  @CheckPlatformPermissions('read', 'PlatformTenant')
+  async getCapabilities(@Param('id') id: string) {
+    const result = await this.service.getCapabilities(id);
+    if (result.isErr()) {
+      if (result.error.code === 'TENANT_NOT_FOUND') {
+        throw new NotFoundException(result.error);
+      }
+      throw new InternalServerErrorException(result.error);
+    }
+    return result.value;
+  }
+
+  @Post(':id/capabilities/:capabilityId/enable')
+  @HttpCode(HttpStatus.OK)
+  @CheckPlatformPermissions('update', 'PlatformTenant')
+  async enableCapabilitySimple(
+    @Param('id') id: string,
+    @Param('capabilityId') capabilityId: string,
+    @CurrentUser() scope: RequestScope,
+  ) {
+    const result = await this.service.enableCapability(id, capabilityId, scope.user_id);
+    if (result.isErr()) {
+      if (result.error.code === 'TENANT_NOT_FOUND') {
+        throw new NotFoundException(result.error);
+      }
+      throw new BadRequestException(result.error);
+    }
+    return result.value;
+  }
+
+  @Post(':id/capabilities/:type/:name/enable')
+  @HttpCode(HttpStatus.OK)
+  @CheckPlatformPermissions('update', 'PlatformTenant')
+  async enableCapabilityMultipart(
+    @Param('id') id: string,
+    @Param('type') type: string,
+    @Param('name') name: string,
+    @CurrentUser() scope: RequestScope,
+  ) {
+    const capabilityId = `${type}/${name}`;
+    const result = await this.service.enableCapability(id, capabilityId, scope.user_id);
+    if (result.isErr()) {
+      if (result.error.code === 'TENANT_NOT_FOUND') {
+        throw new NotFoundException(result.error);
+      }
+      throw new BadRequestException(result.error);
+    }
+    return result.value;
+  }
+
+  @Post(':id/capabilities/:capabilityId/disable')
+  @HttpCode(HttpStatus.OK)
+  @CheckPlatformPermissions('manage', 'PlatformTenant')
+  async disableCapabilitySimple(
+    @Param('id') id: string,
+    @Param('capabilityId') capabilityId: string,
+    @CurrentUser() scope: RequestScope,
+  ) {
+    const result = await this.service.disableCapability(id, capabilityId, scope.user_id);
+    if (result.isErr()) {
+      if (result.error.code === 'TENANT_NOT_FOUND') {
+        throw new NotFoundException(result.error);
+      }
+      throw new BadRequestException(result.error);
+    }
+    return result.value;
+  }
+
+  @Post(':id/capabilities/:type/:name/disable')
+  @HttpCode(HttpStatus.OK)
+  @CheckPlatformPermissions('manage', 'PlatformTenant')
+  async disableCapabilityMultipart(
+    @Param('id') id: string,
+    @Param('type') type: string,
+    @Param('name') name: string,
+    @CurrentUser() scope: RequestScope,
+  ) {
+    const capabilityId = `${type}/${name}`;
+    const result = await this.service.disableCapability(id, capabilityId, scope.user_id);
+    if (result.isErr()) {
+      if (result.error.code === 'TENANT_NOT_FOUND') {
+        throw new NotFoundException(result.error);
+      }
+      throw new BadRequestException(result.error);
+    }
+    return result.value;
+  }
+
+  @Get(':id/plugins')
+  @CheckPlatformPermissions('read', 'PlatformTenant')
+  async getPlugins(@Param('id') id: string) {
+    const result = await this.service.getPlugins(id);
+    if (result.isErr()) {
+      if (result.error.code === 'TENANT_NOT_FOUND') {
+        throw new NotFoundException(result.error);
+      }
+      throw new InternalServerErrorException(result.error);
+    }
+    return result.value;
+  }
+
+  @Post(':id/plugins/:pluginId/install')
+  @HttpCode(HttpStatus.OK)
+  @CheckPlatformPermissions('update', 'PlatformTenant')
+  async installPlugin(
+    @Param('id') id: string,
+    @Param('pluginId') pluginId: string,
+  ) {
+    const result = await this.service.installPlugin(id, pluginId);
+    if (result.isErr()) {
+      if (result.error.code === 'TENANT_NOT_FOUND') {
+        throw new NotFoundException(result.error);
+      }
+      if (result.error.code === 'PLAN_LIMIT_EXCEEDED') {
+        throw new BadRequestException(result.error);
+      }
+      throw new InternalServerErrorException(result.error);
+    }
+    return result.value;
+  }
+
+  @Post(':id/plugins/:pluginId/uninstall')
+  @HttpCode(HttpStatus.OK)
+  @CheckPlatformPermissions('manage', 'PlatformTenant')
+  async uninstallPlugin(
+    @Param('id') id: string,
+    @Param('pluginId') pluginId: string,
+  ) {
+    const result = await this.service.uninstallPlugin(id, pluginId);
+    if (result.isErr()) {
+      if (result.error.code === 'TENANT_NOT_FOUND') {
+        throw new NotFoundException(result.error);
+      }
+      throw new InternalServerErrorException(result.error);
+    }
+    return result.value;
+  }
+
+  @Get(':id/hierarchy')
+  @CheckPlatformPermissions('read', 'PlatformTenant')
+  async getHierarchy(@Param('id') id: string) {
+    const result = await this.service.getHierarchy(id);
     if (result.isErr()) {
       if (result.error.code === 'TENANT_NOT_FOUND') {
         throw new NotFoundException(result.error);

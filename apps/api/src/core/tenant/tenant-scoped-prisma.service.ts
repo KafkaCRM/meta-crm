@@ -24,6 +24,8 @@ export const TENANT_SCOPED_MODELS: readonly string[] = [
   'WebhookSubscription',
   'TenantPlugin',
   'TenantPlan',
+  'Vertical',
+  'Campaign',
 ];
 
 export async function applyTenantScope<T>(
@@ -58,17 +60,22 @@ export async function applyTenantScope<T>(
     });
   }
 
+  const verticalFilter =
+    scope.vertical_ids && scope.vertical_ids.length > 0 && model === 'Case'
+      ? { vertical_id: { in: scope.vertical_ids } }
+      : {};
+
   if (operation === 'upsert') {
     return query({
       ...args,
-      where: { ...args.where, tenant_id: scope.tenant_id },
+      where: { ...args.where, tenant_id: scope.tenant_id, ...verticalFilter },
       create: { ...args.create, tenant_id: scope.tenant_id },
     });
   }
 
   return query({
     ...args,
-    where: { ...args.where, tenant_id: scope.tenant_id },
+    where: { ...args.where, tenant_id: scope.tenant_id, ...verticalFilter },
   });
 }
 

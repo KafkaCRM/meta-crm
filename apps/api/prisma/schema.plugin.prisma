@@ -20,3 +20,15 @@ model TenantPlugin {
   tenant         Tenant         @relation(fields: [tenant_id], references: [id])
   pluginRegistry PluginRegistry @relation(fields: [plugin_registry_id], references: [id])
 }
+
+model TenantCapability {
+  id            String   @id @default(cuid())
+  tenant_id     String
+  capability_id String
+  enabled       Boolean  @default(true)
+  enabled_at    DateTime @default(now())
+  enabled_by    String
+
+  @@unique([tenant_id, capability_id])
+}
+

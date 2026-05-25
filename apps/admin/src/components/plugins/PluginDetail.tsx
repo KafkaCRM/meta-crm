@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/auth.context';
 import { ShieldAlert, AlertTriangle, Play, Database, Layers, Radio, HelpCircle, CheckCircle2, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Link } from '@tanstack/react-router';
 
@@ -55,6 +56,14 @@ export function PluginDetail({ pluginId }: PluginDetailProps) {
       toast.error(err.message ?? 'Emergency disable failed');
     },
   });
+
+  const handleDeprecate = () => {
+    deprecateMutation.mutate();
+  };
+
+  const handleDisable = () => {
+    disableMutation.mutate();
+  };
 
   const canManage = ability?.can('manage', 'PlatformPlugin') ?? false;
 

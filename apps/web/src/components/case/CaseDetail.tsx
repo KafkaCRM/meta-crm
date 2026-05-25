@@ -77,8 +77,16 @@ export function CaseDetail({
     const all = [...realtimeItems, ...historical];
     const seen = new Set<string>();
     return all.filter((item) => {
-      if (seen.has(item.data.id)) return false;
-      seen.add(item.data.id);
+      let id: string;
+      if (item.kind === 'thread') {
+        id = `thread_${item.data.thread_id}`;
+      } else if (item.kind === 'interaction') {
+        id = `interaction_${item.data.id}`;
+      } else {
+        id = `event_${(item.data as any).id ?? Math.random().toString()}`;
+      }
+      if (seen.has(id)) return false;
+      seen.add(id);
       return true;
     });
   }, [realtimeItems, timelinePages]);

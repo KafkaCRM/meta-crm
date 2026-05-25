@@ -7,11 +7,13 @@ import { CriteriaEvaluatorService } from './criteria-evaluator.service';
 import { CaseEventService } from './events/case-event.service';
 import { HooksModule } from '../hooks/hooks.module';
 import { RealtimeModule } from '../realtime/realtime.module';
+import { CampaignModule } from '../campaign/campaign.module';
 
 @Module({
   imports: [
     HooksModule,
     RealtimeModule,
+    CampaignModule,
     BullModule.registerQueue({ name: 'case-triggers' }),
   ],
   controllers: [CaseController],

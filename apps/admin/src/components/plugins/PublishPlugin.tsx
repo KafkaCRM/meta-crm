@@ -321,6 +321,9 @@ const PluginManifestSchema = z.object({
   compatible_industries: z.array(z.string()).min(1, 'At least one compatible industry required'),
   hooks: z.array(z.string()).optional().default([]),
   extends: z.array(z.string()).optional().default([]),
+  category: z.string().optional(),
+  icon: z.string().optional(),
+  requires_plan: z.string().optional(),
 });
 
 const defaultManifest = `{
@@ -383,7 +386,11 @@ export function PublishPlugin() {
       createPlugin({
         package_name: entry.package_name,
         version: entry.version,
-        manifest: entry.manifest as Record<string, unknown>,
+        manifest: {
+          ...entry.manifest,
+          category: entry.category,
+          icon: entry.icon,
+        } as Record<string, unknown>,
       }),
     onSuccess: (_, entry) => {
       queryClient.invalidateQueries({ queryKey: ['plugins'] });

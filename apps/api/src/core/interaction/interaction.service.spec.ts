@@ -288,7 +288,9 @@ describe('InteractionService', () => {
       });
 
       expect(result.isErr()).toBe(true);
-      expect(result.error.code).toBe('PARTY_NOT_FOUND');
+      if (result.isErr()) {
+        expect(result.error.code).toBe('PARTY_NOT_FOUND');
+      }
     });
   });
 
@@ -333,7 +335,10 @@ describe('InteractionService', () => {
       (client.interaction.findUnique as any).mockResolvedValue(null);
 
       const result = await svc.pin('nonexistent', 'user-1');
-      expect(result.error.code).toBe('NOT_FOUND');
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.code).toBe('NOT_FOUND');
+      }
     });
 
     it('returns NOT_FOUND when unpinning nonexistent interaction', async () => {
@@ -341,7 +346,10 @@ describe('InteractionService', () => {
       (client.interaction.findUnique as any).mockResolvedValue(null);
 
       const result = await svc.unpin('nonexistent');
-      expect(result.error.code).toBe('NOT_FOUND');
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.code).toBe('NOT_FOUND');
+      }
     });
   });
 });

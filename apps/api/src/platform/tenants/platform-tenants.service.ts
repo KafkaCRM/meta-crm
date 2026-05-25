@@ -3,6 +3,7 @@ import * as bcrypt from 'bcrypt';
 import { ok, err } from 'neverthrow';
 import type { Result } from 'neverthrow';
 import { PlatformPrismaService } from '../../core/tenant/platform-prisma.service';
+import { AVAILABLE_CAPABILITIES } from '../../core/capability/capability.service';
 
 const BCRYPT_COST = 12;
 
@@ -15,246 +16,7 @@ const CAPABILITY_MAPPINGS: Record<string, string> = {
   technology: 'capability/customer-onboarding',
 };
 
-interface CatalogueEntry {
-  package_name: string;
-  version: string;
-  manifest: {
-    id: string;
-    name: string;
-    description: string;
-    compatible_industries: string[];
-    hooks: string[];
-    extends: string[];
-    requires_plan?: string;
-  };
-}
-
-const PLUGIN_CATALOGUE: CatalogueEntry[] = [
-  {
-    package_name: '@meta-crm/plugin-email-campaigns',
-    version: '1.0.0',
-    manifest: {
-      id: 'email-campaigns',
-      name: 'Email Campaigns',
-      description: 'Send bulk email campaigns to contacts, track opens and clicks, and manage unsubscribes.',
-      compatible_industries: ['*'],
-      hooks: ['contact:created', 'case:closed'],
-      extends: ['Contact', 'Dashboard'],
-    },
-  },
-  {
-    package_name: '@meta-crm/plugin-sms-notifications',
-    version: '1.0.0',
-    manifest: {
-      id: 'sms-notifications',
-      name: 'SMS Notifications',
-      description: 'Send automated SMS alerts for case updates, appointment reminders, and custom triggers.',
-      compatible_industries: ['*'],
-      hooks: ['case:stage_changed', 'case:created', 'case:assigned'],
-      extends: ['Case'],
-    },
-  },
-  {
-    package_name: '@meta-crm/plugin-whatsapp',
-    version: '1.0.0',
-    manifest: {
-      id: 'whatsapp-integration',
-      name: 'WhatsApp Integration',
-      description: 'Two-way WhatsApp messaging from within cases. Auto-route inbound messages to open cases.',
-      compatible_industries: ['*'],
-      requires_plan: 'Growth',
-      hooks: ['case:created', 'case:stage_changed', 'case:closed'],
-      extends: ['Case', 'Contact'],
-    },
-  },
-  {
-    package_name: '@meta-crm/plugin-zapier',
-    version: '1.0.0',
-    manifest: {
-      id: 'zapier-integration',
-      name: 'Zapier Integration',
-      description: 'Connect Meta CRM events to 5000+ apps via Zapier triggers and actions.',
-      compatible_industries: ['*'],
-      requires_plan: 'Growth',
-      hooks: ['case:created', 'case:closed', 'contact:created'],
-      extends: ['Settings'],
-    },
-  },
-  {
-    package_name: '@meta-crm/plugin-analytics-dashboard',
-    version: '1.0.0',
-    manifest: {
-      id: 'analytics-dashboard',
-      name: 'Advanced Analytics',
-      description: 'Rich charts and KPI dashboards for cases, contacts, SLA performance, and team productivity.',
-      compatible_industries: ['*'],
-      requires_plan: 'Growth',
-      hooks: [],
-      extends: ['Dashboard'],
-    },
-  },
-  {
-    package_name: '@meta-crm/plugin-knowledge-base',
-    version: '1.0.0',
-    manifest: {
-      id: 'knowledge-base',
-      name: 'Knowledge Base',
-      description: 'Internal wiki for agents — articles, FAQs, and resolution playbooks linked to case categories.',
-      compatible_industries: ['*'],
-      hooks: ['case:created'],
-      extends: ['Case', 'Dashboard'],
-    },
-  },
-  {
-    package_name: '@meta-crm/plugin-appointment-scheduler',
-    version: '1.0.0',
-    manifest: {
-      id: 'appointment-scheduler',
-      name: 'Appointment Scheduler',
-      description: 'Calendar-based appointment booking for patients. Sends reminders 24h before via SMS or WhatsApp.',
-      compatible_industries: ['healthcare'],
-      hooks: ['case:created', 'case:stage_changed'],
-      extends: ['Case', 'Contact', 'Dashboard'],
-    },
-  },
-  {
-    package_name: '@meta-crm/plugin-prescription-tracker',
-    version: '1.0.0',
-    manifest: {
-      id: 'prescription-tracker',
-      name: 'Prescription Tracker',
-      description: 'Track medication prescriptions linked to patient cases with refill reminders.',
-      compatible_industries: ['healthcare'],
-      requires_plan: 'Growth',
-      hooks: ['case:closed'],
-      extends: ['Case'],
-    },
-  },
-  {
-    package_name: '@meta-crm/plugin-product-catalog',
-    version: '1.0.0',
-    manifest: {
-      id: 'product-catalog',
-      name: 'Product Catalog',
-      description: 'Link SKUs and products to cases. Agents can browse and attach products to support tickets.',
-      compatible_industries: ['retail'],
-      hooks: ['case:created'],
-      extends: ['Case'],
-    },
-  },
-  {
-    package_name: '@meta-crm/plugin-returns-management',
-    version: '1.0.0',
-    manifest: {
-      id: 'returns-management',
-      name: 'Returns Management',
-      description: 'Structured return and refund workflow with approval stages and auto-notifications to customers.',
-      compatible_industries: ['retail'],
-      requires_plan: 'Growth',
-      hooks: ['case:stage_changed', 'case:closed'],
-      extends: ['Case'],
-    },
-  },
-  {
-    package_name: '@meta-crm/plugin-invoice-generator',
-    version: '1.0.0',
-    manifest: {
-      id: 'invoice-generator',
-      name: 'Invoice Generator',
-      description: 'Generate and send PDF invoices from cases. Track payment status and send reminders.',
-      compatible_industries: ['finance'],
-      requires_plan: 'Growth',
-      hooks: ['case:closed'],
-      extends: ['Case', 'Contact'],
-    },
-  },
-  {
-    package_name: '@meta-crm/plugin-compliance-audit',
-    version: '1.0.0',
-    manifest: {
-      id: 'compliance-audit',
-      name: 'Compliance Audit Log',
-      description: 'Immutable audit trail for all case actions — required for financial regulatory compliance.',
-      compatible_industries: ['finance'],
-      requires_plan: 'Enterprise',
-      hooks: ['case:created', 'case:stage_changed', 'case:closed', 'case:assigned'],
-      extends: ['Case', 'Settings'],
-    },
-  },
-  {
-    package_name: '@meta-crm/plugin-property-listings',
-    version: '1.0.0',
-    manifest: {
-      id: 'property-listings',
-      name: 'Property Listings',
-      description: 'Attach property listings to contacts and cases. Track viewing history and offers.',
-      compatible_industries: ['real-estate', 'real_estate'],
-      hooks: ['case:created', 'contact:created'],
-      extends: ['Case', 'Contact'],
-    },
-  },
-  {
-    package_name: '@meta-crm/plugin-document-signing',
-    version: '1.0.0',
-    manifest: {
-      id: 'document-signing',
-      name: 'Document E-Signing',
-      description: 'Send lease agreements and contracts for e-signature directly from cases.',
-      compatible_industries: ['real-estate', 'real_estate'],
-      requires_plan: 'Growth',
-      hooks: ['case:stage_changed'],
-      extends: ['Case'],
-    },
-  },
-  {
-    package_name: '@meta-crm/plugin-enrollment-manager',
-    version: '1.0.0',
-    manifest: {
-      id: 'enrollment-manager',
-      name: 'Enrollment Manager',
-      description: 'Track student enrollment inquiries, applications, and acceptance workflows as cases.',
-      compatible_industries: ['education'],
-      hooks: ['case:created', 'case:stage_changed', 'case:closed'],
-      extends: ['Case', 'Contact', 'Dashboard'],
-    },
-  },
-  {
-    package_name: '@meta-crm/plugin-course-catalog',
-    version: '1.0.0',
-    manifest: {
-      id: 'course-catalog',
-      name: 'Course Catalog',
-      description: 'Link courses and programmes to cases and contacts. Track interest and conversion.',
-      compatible_industries: ['education'],
-      hooks: ['contact:created'],
-      extends: ['Case', 'Contact'],
-    },
-  },
-  {
-    package_name: '@meta-crm/plugin-reservation-manager',
-    version: '1.0.0',
-    manifest: {
-      id: 'reservation-manager',
-      name: 'Reservation Manager',
-      description: 'Manage hotel or venue reservations linked to guest profiles. Handle modifications and cancellations.',
-      compatible_industries: ['hospitality'],
-      hooks: ['case:created', 'case:stage_changed', 'case:closed'],
-      extends: ['Case', 'Contact'],
-    },
-  },
-  {
-    package_name: '@meta-crm/plugin-guest-feedback',
-    version: '1.0.0',
-    manifest: {
-      id: 'guest-feedback',
-      name: 'Guest Feedback & Reviews',
-      description: 'Collect post-stay reviews, track NPS scores, and auto-escalate negative feedback as cases.',
-      compatible_industries: ['hospitality'],
-      hooks: ['case:closed'],
-      extends: ['Case', 'Dashboard'],
-    },
-  },
-];
+import { PLUGIN_CATALOGUE } from '../../plugins/registry/plugin-catalogue';
 
 function generateTempPassword(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
@@ -270,6 +32,7 @@ export type PlatformTenantErrorCode =
   | 'SLUG_TAKEN'
   | 'PLAN_NOT_FOUND'
   | 'INDUSTRY_NOT_FOUND'
+  | 'PLAN_LIMIT_EXCEEDED'
   | 'TRANSACTION_FAILED';
 
 export interface PlatformTenantError {
@@ -609,7 +372,6 @@ export class PlatformTenantsService {
         });
       }
 
-      // 2. Dynamic Seeding of Registry Catalog & Auto-Licensing of compatible/universal plugins
       for (const entry of PLUGIN_CATALOGUE) {
         let registryEntry = await this.db.client.pluginRegistry.findFirst({
           where: { package_name: entry.package_name },
@@ -620,7 +382,11 @@ export class PlatformTenantsService {
             data: {
               package_name: entry.package_name,
               version: entry.version,
-              manifest: entry.manifest as any,
+              manifest: {
+                ...entry.manifest,
+                category: entry.category,
+                icon: entry.icon,
+              } as any,
               status: 'active',
             },
           });
@@ -844,6 +610,373 @@ export class PlatformTenantsService {
       return err({
         code: 'TRANSACTION_FAILED',
         message: e?.message ?? 'Failed to update overrides',
+      });
+    }
+  }
+
+  async getCapabilities(id: string): Promise<Result<any[], PlatformTenantError>> {
+    const tenant = await this.db.client.tenant.findUnique({ where: { id } });
+    if (!tenant) {
+      return err({ code: 'TENANT_NOT_FOUND', message: 'Tenant not found' });
+    }
+
+    const dbCaps = await this.db.client.tenantCapability.findMany({
+      where: { tenant_id: id },
+    });
+
+    const dbEnabledMap = new Map<string, boolean>();
+    for (const c of dbCaps) {
+      dbEnabledMap.set(c.capability_id, c.enabled);
+    }
+
+    const config = (tenant.config_json ?? {}) as Record<string, any>;
+    const configEnabled = Array.isArray(config.enabled_capabilities) ? config.enabled_capabilities : [];
+
+    const caps = AVAILABLE_CAPABILITIES.map((cap) => {
+      let enabled = false;
+      if (dbEnabledMap.has(cap.id)) {
+        enabled = dbEnabledMap.get(cap.id)!;
+      } else {
+        enabled = configEnabled.includes(cap.id);
+      }
+      return {
+        ...cap,
+        enabled,
+      };
+    });
+
+    return ok(caps);
+  }
+
+  async enableCapability(
+    tenantId: string,
+    capabilityId: string,
+    userId: string,
+  ): Promise<Result<{ id: string; enabled: boolean }, PlatformTenantError>> {
+    const tenant = await this.db.client.tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) {
+      return err({ code: 'TENANT_NOT_FOUND', message: 'Tenant not found' });
+    }
+
+    const exists = AVAILABLE_CAPABILITIES.some(c => c.id === capabilityId);
+    if (!exists) {
+      return err({ code: 'INDUSTRY_NOT_FOUND', message: `Capability ${capabilityId} not found` });
+    }
+
+    await this.db.client.tenantCapability.upsert({
+      where: {
+        tenant_id_capability_id: {
+          tenant_id: tenantId,
+          capability_id: capabilityId,
+        },
+      },
+      update: {
+        enabled: true,
+        enabled_by: userId,
+        enabled_at: new Date(),
+      },
+      create: {
+        tenant_id: tenantId,
+        capability_id: capabilityId,
+        enabled: true,
+        enabled_by: userId,
+      },
+    });
+
+    const config = { ...((tenant.config_json ?? {}) as Record<string, any>) };
+    const enabledSet = new Set<string>(
+      Array.isArray(config.enabled_capabilities) ? config.enabled_capabilities : []
+    );
+    enabledSet.add(capabilityId);
+    config.enabled_capabilities = Array.from(enabledSet);
+
+    await this.db.client.tenant.update({
+      where: { id: tenantId },
+      data: { config_json: config },
+    });
+
+    return ok({ id: capabilityId, enabled: true });
+  }
+
+  async disableCapability(
+    tenantId: string,
+    capabilityId: string,
+    userId: string,
+  ): Promise<Result<{ id: string; enabled: boolean }, PlatformTenantError>> {
+    const tenant = await this.db.client.tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) {
+      return err({ code: 'TENANT_NOT_FOUND', message: 'Tenant not found' });
+    }
+
+    const exists = AVAILABLE_CAPABILITIES.some(c => c.id === capabilityId);
+    if (!exists) {
+      return err({ code: 'INDUSTRY_NOT_FOUND', message: `Capability ${capabilityId} not found` });
+    }
+
+    await this.db.client.tenantCapability.upsert({
+      where: {
+        tenant_id_capability_id: {
+          tenant_id: tenantId,
+          capability_id: capabilityId,
+        },
+      },
+      update: {
+        enabled: false,
+        enabled_by: userId,
+        enabled_at: new Date(),
+      },
+      create: {
+        tenant_id: tenantId,
+        capability_id: capabilityId,
+        enabled: false,
+        enabled_by: userId,
+      },
+    });
+
+    const config = { ...((tenant.config_json ?? {}) as Record<string, any>) };
+    const enabledSet = new Set<string>(
+      Array.isArray(config.enabled_capabilities) ? config.enabled_capabilities : []
+    );
+    enabledSet.delete(capabilityId);
+    config.enabled_capabilities = Array.from(enabledSet);
+
+    await this.db.client.tenant.update({
+      where: { id: tenantId },
+      data: { config_json: config },
+    });
+
+    return ok({ id: capabilityId, enabled: false });
+  }
+
+  async getPlugins(id: string): Promise<Result<any[], PlatformTenantError>> {
+    const tenant = await this.db.client.tenant.findUnique({ where: { id } });
+    if (!tenant) {
+      return err({ code: 'TENANT_NOT_FOUND', message: 'Tenant not found' });
+    }
+
+    const allRegistryPlugins = await this.db.client.pluginRegistry.findMany({
+      where: { status: 'active' },
+    });
+
+    const tenantPlugins = await this.db.client.tenantPlugin.findMany({
+      where: { tenant_id: id },
+    });
+
+    const installedMap = new Map<string, boolean>();
+    for (const tp of tenantPlugins) {
+      installedMap.set(tp.plugin_registry_id, tp.enabled);
+    }
+
+    const plugins = allRegistryPlugins.map((p: any) => ({
+      id: p.id,
+      package_name: p.package_name,
+      version: p.version,
+      manifest: p.manifest,
+      status: p.status,
+      created_at: p.created_at,
+      installed: installedMap.get(p.id) ?? false,
+    }));
+
+    return ok(plugins);
+  }
+
+  async installPlugin(
+    tenantId: string,
+    pluginId: string,
+  ): Promise<Result<{ id: string; installed: boolean }, PlatformTenantError>> {
+    const tenant = await this.db.client.tenant.findUnique({
+      where: { id: tenantId },
+      include: {
+        tenantPlans: {
+          include: { plan: true },
+        },
+      },
+    });
+    if (!tenant) {
+      return err({ code: 'TENANT_NOT_FOUND', message: 'Tenant not found' });
+    }
+
+    const plan = tenant.tenantPlans?.[0]?.plan;
+    const maxPlugins = plan ? plan.max_plugins : 5;
+
+    const installedCount = await this.db.client.tenantPlugin.count({
+      where: { tenant_id: tenantId, enabled: true },
+    });
+
+    const existing = await this.db.client.tenantPlugin.findFirst({
+      where: { tenant_id: tenantId, plugin_registry_id: pluginId },
+    });
+
+    if (existing?.enabled) {
+      return ok({ id: pluginId, installed: true });
+    }
+
+    if (installedCount >= maxPlugins) {
+      return err({
+        code: 'PLAN_LIMIT_EXCEEDED',
+        message: `Plan plugin limit of ${maxPlugins} exceeded (currently using ${installedCount})`,
+      });
+    }
+
+    if (existing) {
+      await this.db.client.tenantPlugin.update({
+        where: { id: existing.id },
+        data: { enabled: true, installed_at: new Date() },
+      });
+    } else {
+      await this.db.client.tenantPlugin.create({
+        data: {
+          tenant_id: tenantId,
+          plugin_registry_id: pluginId,
+          enabled: true,
+        },
+      });
+    }
+
+    return ok({ id: pluginId, installed: true });
+  }
+
+  async uninstallPlugin(
+    tenantId: string,
+    pluginId: string,
+  ): Promise<Result<{ id: string; installed: boolean }, PlatformTenantError>> {
+    const tenant = await this.db.client.tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) {
+      return err({ code: 'TENANT_NOT_FOUND', message: 'Tenant not found' });
+    }
+
+    const existing = await this.db.client.tenantPlugin.findFirst({
+      where: { tenant_id: tenantId, plugin_registry_id: pluginId },
+    });
+
+    if (existing) {
+      await this.db.client.tenantPlugin.update({
+        where: { id: existing.id },
+        data: { enabled: false },
+      });
+    } else {
+      await this.db.client.tenantPlugin.create({
+        data: {
+          tenant_id: tenantId,
+          plugin_registry_id: pluginId,
+          enabled: false,
+        },
+      });
+    }
+
+    return ok({ id: pluginId, installed: false });
+  }
+
+  async getHierarchy(tenantId: string): Promise<Result<{ branches: any[] }, PlatformTenantError>> {
+    try {
+      const tenant = await this.db.client.tenant.findUnique({
+        where: { id: tenantId },
+      });
+      if (!tenant) {
+        return err({ code: 'TENANT_NOT_FOUND', message: 'Tenant not found' });
+      }
+
+      const branches = await this.db.client.branch.findMany({
+        where: { tenant_id: tenantId },
+        orderBy: { name: 'asc' },
+      });
+
+      const branchesWithHierarchy = await Promise.all(
+        branches.map(async (b: any) => {
+          const assignments = await this.db.client.branchBrandAssignment.findMany({
+            where: { tenant_id: tenantId, branch_id: b.id },
+            include: { brand: true },
+          });
+
+          const brands = assignments
+            .filter((a: any) => a.brand)
+            .map((a: any) => ({
+              id: a.brand.id,
+              name: a.brand.name,
+              is_primary: a.is_primary,
+            }));
+
+          const verticals = await this.db.client.vertical.findMany({
+            where: { tenant_id: tenantId, branch_id: b.id },
+            orderBy: { name: 'asc' },
+          });
+
+          const verticalsWithStats = await Promise.all(
+            verticals.map(async (v: any) => {
+              const total_leads = await this.db.client.case.count({
+                where: { tenant_id: tenantId, vertical_id: v.id },
+              });
+
+              let conversion_rate = 0;
+              if (total_leads > 0) {
+                const wfs = await this.db.client.workflowDefinition.findMany({
+                  where: { tenant_id: tenantId, vertical_id: v.id },
+                  select: { id: true },
+                });
+
+                let converted = 0;
+                if (wfs.length > 0) {
+                  const wfIds = wfs.map((w: any) => w.id);
+                  const wfGroups = await this.db.client.workflowStage.groupBy({
+                    by: ['workflow_definition_id'],
+                    where: { workflow_definition_id: { in: wfIds } },
+                    _max: { order: true },
+                  });
+
+                  const finalStageIds: string[] = [];
+                  for (const group of wfGroups) {
+                    const maxOrder = group._max?.order;
+                    if (maxOrder === undefined || maxOrder === null) continue;
+                    const stages = await this.db.client.workflowStage.findMany({
+                      where: {
+                        workflow_definition_id: group.workflow_definition_id,
+                        order: maxOrder,
+                      },
+                      select: { id: true },
+                    });
+                    finalStageIds.push(...stages.map((s: any) => s.id));
+                  }
+
+                  if (finalStageIds.length > 0) {
+                    converted = await this.db.client.case.count({
+                      where: {
+                        tenant_id: tenantId,
+                        vertical_id: v.id,
+                        stage: { in: finalStageIds },
+                      },
+                    });
+                  }
+                }
+                conversion_rate = Math.round((converted / total_leads) * 10000) / 100;
+              }
+
+              return {
+                id: v.id,
+                name: v.name,
+                status: v.status,
+                stats: {
+                  total_leads,
+                  conversion_rate,
+                },
+              };
+            }),
+          );
+
+          return {
+            id: b.id,
+            name: b.name,
+            city: b.city,
+            brands,
+            verticals: verticalsWithStats,
+          };
+        }),
+      );
+
+      return ok({ branches: branchesWithHierarchy });
+    } catch (e: any) {
+      return err({
+        code: 'TRANSACTION_FAILED',
+        message: e?.message ?? 'Failed to retrieve tenant hierarchy',
       });
     }
   }

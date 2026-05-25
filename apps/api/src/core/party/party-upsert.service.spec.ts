@@ -46,13 +46,18 @@ describe('PartyUpsertService', () => {
   describe('normalizePhone', () => {
     it('normalizes valid IN number with country code', async () => {
       const result = await svc.upsertByPhone('+919876543210', { branch_brand_assignment_id: 'assign-1' }, PartySource.Manual, scope);
-      expect(result.isErr() ? result.error.code : result.value.action).toBe('created');
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.action).toBe('created');
+      }
     });
 
     it('returns INVALID_PHONE for invalid number', async () => {
       const result = await svc.upsertByPhone('not-a-phone', { branch_brand_assignment_id: 'assign-1' }, PartySource.Manual, scope);
       expect(result.isErr()).toBe(true);
-      expect(result.error.code).toBe('INVALID_PHONE');
+      if (result.isErr()) {
+        expect(result.error.code).toBe('INVALID_PHONE');
+      }
     });
   });
 
@@ -62,8 +67,11 @@ describe('PartyUpsertService', () => {
       (client.party.findFirst as any).mockResolvedValue({ id: 'party-1', phone_normalized: '+919876543210', name: 'Existing' });
 
       const result = await svc.upsertByPhone('+919876543210', { branch_brand_assignment_id: 'assign-1' }, PartySource.Manual, scope);
-      expect(result.value.action).toBe('found');
-      expect(result.value.party.name).toBe('Existing');
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.action).toBe('found');
+        expect(result.value.party.name).toBe('Existing');
+      }
     });
   });
 
@@ -77,8 +85,11 @@ describe('PartyUpsertService', () => {
       (client.partyMergeQueue.create as any).mockResolvedValue({ id: 'mq-1' });
 
       const result = await svc.upsertByPhone('+919876543210', { name: 'Same Name', branch_brand_assignment_id: 'assign-1' }, PartySource.Manual, scope);
-      expect(result.value.action).toBe('queued_for_review');
-      expect(result.value.merge_queue_id).toBe('mq-1');
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.action).toBe('queued_for_review');
+        expect(result.value.merge_queue_id).toBe('mq-1');
+      }
     });
 
     it('creates party and merge queue entry when confidence >= 0.5', async () => {

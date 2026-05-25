@@ -26,4 +26,16 @@ export class CreateCaseDto {
   @IsOptional()
   @IsObject()
   attributes?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsString()
+  vertical_id?: string;
+
+  @IsOptional()
+  @IsString()
+  campaign_id?: string;
+
+  @IsOptional()
+  @IsString()
+  utm_campaign?: string;
 }

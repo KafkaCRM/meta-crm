@@ -13,6 +13,9 @@ const PluginManifestSchema = z.object({
     .min(1, 'At least one compatible industry required'),
   hooks: z.array(z.string()).optional().default([]),
   extends: z.array(z.string()).optional().default([]),
+  category: z.string().optional(),
+  icon: z.string().optional(),
+  requires_plan: z.string().optional(),
 });
 
 export type PluginManifest = z.infer<typeof PluginManifestSchema>;

@@ -24,11 +24,14 @@ model Tenant {
 }
 
 model Brand {
-  id         String   @id @default(cuid())
-  tenant_id  String
-  name       String
-  logo_url   String?
-  created_at DateTime @default(now())
+  id              String   @id @default(cuid())
+  tenant_id       String
+  name            String
+  logo_url        String?
+  primary_color   String?
+  whatsapp_number String?
+  email_from      String?
+  created_at      DateTime @default(now())
 
   tenant                   Tenant                   @relation(fields: [tenant_id], references: [id])
   branchBrandAssignments   BranchBrandAssignment[]
@@ -113,3 +116,18 @@ model RefreshToken {
   @@index([token_hash])
   @@index([user_id])
 }
+
+model Vertical {
+  id          String   @id @default(cuid())
+  tenant_id   String
+  branch_id   String
+  name        String
+  description String?
+  status      String   @default("active")
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@index([tenant_id, branch_id])
+  @@index([tenant_id, status])
+}
+

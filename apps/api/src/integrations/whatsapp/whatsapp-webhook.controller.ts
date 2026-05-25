@@ -42,6 +42,7 @@ export class WhatsAppWebhookController {
           user_id: '',
           assignment_ids: [],
           role: 'branch_user',
+          vertical_ids: [],
         } as RequestScope;
         this.cls.set('scope', syntheticScope);
         await this.whatsappService.processIncoming(parsed, syntheticScope);

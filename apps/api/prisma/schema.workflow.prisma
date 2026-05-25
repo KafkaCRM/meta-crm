@@ -3,6 +3,7 @@ model WorkflowDefinition {
   tenant_id   String
   name        String
   entity_type String
+  vertical_id String?
 
   tenant     Tenant              @relation(fields: [tenant_id], references: [id])
   stages     WorkflowStage[]

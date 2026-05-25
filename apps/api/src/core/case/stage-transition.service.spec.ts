@@ -95,7 +95,9 @@ describe('StageTransitionService', () => {
 
     const result = await svc.transitionStage('nonexistent', 'stage-2', 'user-1');
     expect(result.isErr()).toBe(true);
-    expect(result.error.code).toBe('CASE_NOT_FOUND');
+    if (result.isErr()) {
+      expect(result.error.code).toBe('CASE_NOT_FOUND');
+    }
   });
 
   /* ------------------------------------------------------------------ */
@@ -113,9 +115,11 @@ describe('StageTransitionService', () => {
 
     const result = await svc.transitionStage('case-1', 'stage-2', 'user-1');
     expect(result.isErr()).toBe(true);
-    expect(result.error.code).toBe('CRITERIA_UNMET');
-    expect(result.error.unmet).toBeDefined();
-    expect(result.error.unmet!.length).toBe(2);
+    if (result.isErr()) {
+      expect(result.error.code).toBe('CRITERIA_UNMET');
+      expect(result.error.unmet).toBeDefined();
+      expect(result.error.unmet!.length).toBe(2);
+    }
   });
 
   it('returns CRITERIA_UNMET with empty unmet when criteria is []', async () => {
@@ -143,7 +147,9 @@ describe('StageTransitionService', () => {
 
     const result = await svc.transitionStage('case-1', 'stage-2', 'user-1');
     expect(result.isErr()).toBe(true);
-    expect(result.error.code).toBe('INVALID_TRANSITION');
+    if (result.isErr()) {
+      expect(result.error.code).toBe('INVALID_TRANSITION');
+    }
   });
 
   /* ------------------------------------------------------------------ */
@@ -222,7 +228,7 @@ describe('StageTransitionService', () => {
       // Reading the case after Rollback returns the OLD stage
       (client.case.findUnique as any).mockResolvedValue({ ...EXISTING_CASE, stage: 'stage-1' });
       const freshCase = await svc['db'].getClient().case.findUnique({ where: { id: 'case-1' } });
-      expect(freshCase.stage).toBe('stage-1');
+      expect(freshCase?.stage).toBe('stage-1');
     });
   });
 
@@ -269,8 +275,11 @@ describe('StageTransitionService', () => {
       case_id: 'case-1',
       from_stage: 'stage-1',
       to_stage: 'stage-2',
+      to_stage_name: 'Review',
       tenant_id: 'tenant-a',
       actor_id: 'user-1',
+      case_attributes: { score: 85 },
+      party_phone: undefined,
     });
   });
 
@@ -309,7 +318,9 @@ describe('StageTransitionService', () => {
     const result = await svc.transitionStage('case-1', 'stage-2', 'user-1');
 
     expect(result.isErr()).toBe(true);
-    expect(result.error.code).toBe('CRITERIA_UNMET');
+    if (result.isErr()) {
+      expect(result.error.code).toBe('CRITERIA_UNMET');
+    }
     expect(client.case.update).not.toHaveBeenCalled();
     expect(client.caseEvent.create).not.toHaveBeenCalled();
     expect(client.$transaction).not.toHaveBeenCalled();
@@ -323,7 +334,9 @@ describe('StageTransitionService', () => {
     const result = await svc.transitionStage('case-1', 'stage-2', 'user-1');
 
     expect(result.isErr()).toBe(true);
-    expect(result.error.code).toBe('INVALID_TRANSITION');
+    if (result.isErr()) {
+      expect(result.error.code).toBe('INVALID_TRANSITION');
+    }
     expect(client.case.update).not.toHaveBeenCalled();
     expect(client.caseEvent.create).not.toHaveBeenCalled();
     expect(client.$transaction).not.toHaveBeenCalled();

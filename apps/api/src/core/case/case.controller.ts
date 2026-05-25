@@ -50,6 +50,22 @@ class CursorQuery {
   @IsOptional()
   @IsString()
   type?: string;
+
+  @IsOptional()
+  @IsString()
+  vertical_id?: string;
+
+  @IsOptional()
+  @IsString()
+  campaign_id?: string;
+
+  @IsOptional()
+  @IsString()
+  channel?: string;
+
+  @IsOptional()
+  @IsString()
+  include?: string;
 }
 
 class UpdateCaseBody {
@@ -94,8 +110,8 @@ export class CaseController {
 
   @Get(':id')
   @CheckPermissions('read', 'Case')
-  async findOne(@Param('id') id: string) {
-    const result = await this.caseService.findOne(id);
+  async findOne(@Param('id') id: string, @Query('include') include?: string) {
+    const result = await this.caseService.findOne(id, include);
     if (result.isErr()) {
       if (result.error.code === 'NOT_FOUND') throw new NotFoundException(result.error);
       throw new InternalServerErrorException(result.error);

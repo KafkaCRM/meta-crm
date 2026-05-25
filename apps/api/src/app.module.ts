@@ -23,6 +23,8 @@ import { OrderManagementModule } from './capabilities/order-management/order-man
 import { CustomerOnboardingModule } from './capabilities/customer-onboarding/customer-onboarding.module';
 import { UserModule } from './core/user/user.module';
 import { BranchModule } from './core/branch/branch.module';
+import { VerticalModule } from './core/vertical/vertical.module';
+import { CampaignModule } from './core/campaign/campaign.module';
 
 const CAPABILITY_MODULES = [
   EnrollmentModule,
@@ -60,6 +62,8 @@ const CAPABILITY_MODULES = [
     CapabilityModule,
     UserModule,
     BranchModule,
+    VerticalModule,
+    CampaignModule,
     ...CAPABILITY_MODULES,
   ],
 })

@@ -8,6 +8,7 @@ import { PlatformPermissionsGuard } from '../core/permissions/permissions.guard'
 import { PermissionsService } from '../core/permissions/permissions.service';
 import { PlatformPluginsService } from './plugins/platform-plugins.service';
 import { PlatformTeamService } from './team/platform-team.service';
+import { PlatformTenantsService } from './tenants/platform-tenants.service';
 import type { RequestScope } from '../core/tenant/request-scope.interface';
 import type { PlatformPrismaService } from '../core/tenant/platform-prisma.service';
 
@@ -264,6 +265,76 @@ describe('PlatformTeamService — role escalation prevention', () => {
     expect(result.isErr()).toBe(true);
     if (result.isErr()) {
       expect(result.error.code).toBe('ROLE_ESCALATION');
+    }
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/*  PlatformTenantsService — getHierarchy                             */
+/* ------------------------------------------------------------------ */
+describe('PlatformTenantsService — getHierarchy', () => {
+  let svc: PlatformTenantsService;
+  let mockDb: any;
+
+  beforeEach(() => {
+    mockDb = {
+      client: {
+        tenant: { findUnique: vi.fn() },
+        branch: { findMany: vi.fn() },
+        branchBrandAssignment: { findMany: vi.fn() },
+        vertical: { findMany: vi.fn() },
+        case: { count: vi.fn() },
+        workflowDefinition: { findMany: vi.fn() },
+        workflowStage: { groupBy: vi.fn(), findMany: vi.fn() },
+      },
+    };
+    svc = new PlatformTenantsService(mockDb as unknown as PlatformPrismaService);
+  });
+
+  it('returns TENANT_NOT_FOUND when tenant does not exist', async () => {
+    (mockDb.client.tenant.findUnique as any).mockResolvedValue(null);
+
+    const result = await svc.getHierarchy('invalid-id');
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error.code).toBe('TENANT_NOT_FOUND');
+    }
+  });
+
+  it('returns hierarchy with branches, brands, and verticals with stats', async () => {
+    (mockDb.client.tenant.findUnique as any).mockResolvedValue({ id: 'tenant-1', name: 'Apex' });
+    (mockDb.client.branch.findMany as any).mockResolvedValue([
+      { id: 'branch-1', name: 'Kothrud', city: 'Pune' },
+    ]);
+    (mockDb.client.branchBrandAssignment.findMany as any).mockResolvedValue([
+      { id: 'assignment-1', is_primary: true, brand: { id: 'brand-1', name: 'Apex Institute' } },
+    ]);
+    (mockDb.client.vertical.findMany as any).mockResolvedValue([
+      { id: 'vertical-1', name: 'NEET', status: 'active' },
+    ]);
+    (mockDb.client.case.count as any).mockResolvedValue(10);
+    (mockDb.client.workflowDefinition.findMany as any).mockResolvedValue([
+      { id: 'wf-1' },
+    ]);
+    (mockDb.client.workflowStage.groupBy as any).mockResolvedValue([
+      { workflow_definition_id: 'wf-1', _max: { order: 3 } },
+    ]);
+    (mockDb.client.workflowStage.findMany as any).mockResolvedValue([
+      { id: 'stage-final' },
+    ]);
+
+    const result = await svc.getHierarchy('tenant-1');
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value.branches).toHaveLength(1);
+      const b = result.value.branches[0];
+      expect(b.name).toBe('Kothrud');
+      expect(b.brands).toHaveLength(1);
+      expect(b.brands[0].name).toBe('Apex Institute');
+      expect(b.verticals).toHaveLength(1);
+      expect(b.verticals[0].name).toBe('NEET');
+      expect(b.verticals[0].stats.total_leads).toBe(10);
+      expect(b.verticals[0].stats.conversion_rate).toBe(100);
     }
   });
 });

@@ -6,4 +6,5 @@ export interface RequestScope {
   assignment_ids: string[];
   role: TenantRole;
   platform_role?: PlatformRole | undefined;
+  vertical_ids?: string[];
 }

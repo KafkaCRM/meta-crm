@@ -100,12 +100,12 @@ export function Billing() {
     setItems(items.filter((_, idx) => idx !== index));
   };
 
-  const handleItemChange = (index: number, key: string, val: any) => {
+  const handleItemChange = (index: number, key: 'description' | 'quantity' | 'unit_price', val: any) => {
     const updated = [...items];
     updated[index] = {
       ...updated[index],
       [key]: key === 'description' ? val : Number(val),
-    };
+    } as typeof items[number];
     setItems(updated);
   };
 

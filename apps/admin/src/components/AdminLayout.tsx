@@ -46,7 +46,7 @@ import {
 interface NavItem {
   label: string;
   path: string;
-  icon: React.ComponentType<{ size?: number; strokeWidth?: number }>;
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
   requiredPermission?: [string, string];
   badge?: string;
 }

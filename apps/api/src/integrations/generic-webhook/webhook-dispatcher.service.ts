@@ -40,6 +40,7 @@ export class WebhookDispatcherService implements OnModuleInit {
             user_id: '',
             assignment_ids: [],
             role: 'branch_user',
+            vertical_ids: [],
           } as RequestScope);
 
           await this.handleEvent(eventName, payload as Record<string, unknown>);

@@ -19,36 +19,42 @@ export interface CapabilityError {
   message?: string;
 }
 
-const AVAILABLE_CAPABILITIES = [
+export const AVAILABLE_CAPABILITIES = [
   {
     id: 'capability/enrollment',
     name: 'Enrollment',
     description: 'Enables academic courses, cohort tracking, and enrollment workflow stages.',
+    industry: 'education',
   },
   {
     id: 'capability/appointment',
     name: 'Appointments & Scheduling',
     description: 'Adds appointments, slots, availability schedules, and calendar view.',
+    industry: 'healthcare',
   },
   {
     id: 'capability/billing',
     name: 'Invoicing & Billing',
     description: 'Adds invoice documents, line items, payments, and billing ledger.',
+    industry: 'finance',
   },
   {
     id: 'capability/property-listing',
     name: 'Property Listings',
     description: 'Adds property coordinates, bedrooms, floor plans, and listing status.',
+    industry: 'real-estate',
   },
   {
     id: 'capability/order-management',
     name: 'Order Management',
     description: 'Adds order creation, product line items, payment status, and order tracking.',
+    industry: 'retail',
   },
   {
     id: 'capability/customer-onboarding',
     name: 'Customer Onboarding',
     description: 'Adds multi-step customer onboarding workflows, tracking setup steps and contract values.',
+    industry: 'technology',
   },
 ];
 

@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ClsService } from 'nestjs-cls';
+import { ok } from 'neverthrow';
 import { TenantScopedPrismaService } from '../../tenant/tenant-scoped-prisma.service';
 import { TenantReportService } from './tenant-report.service';
 import type { RequestScope } from '../../tenant/request-scope.interface';
+import { CampaignService } from '../../campaign/campaign.service';
 
 const scope: RequestScope = {
   user_id: 'user-1',
@@ -18,21 +20,25 @@ function buildMocks() {
     interaction: { groupBy: vi.fn() },
     party: { groupBy: vi.fn() },
     workflowStage: { groupBy: vi.fn(), findMany: vi.fn() },
+    campaign: { findMany: vi.fn(), findFirst: vi.fn() },
   };
   const db = { getClient: vi.fn().mockReturnValue(client) } as unknown as TenantScopedPrismaService;
   const cls = { get: vi.fn().mockReturnValue(scope) } as unknown as ClsService;
-  return { client, db, cls };
+  const campaignService = { findOne: vi.fn() } as unknown as CampaignService;
+  return { client, db, cls, campaignService };
 }
 
 describe('TenantReportService', () => {
   let svc: TenantReportService;
   let client: ReturnType<typeof buildMocks>['client'];
+  let campaignServiceMock: ReturnType<typeof buildMocks>['campaignService'];
 
   beforeEach(() => {
     vi.restoreAllMocks();
     const mocks = buildMocks();
     client = mocks.client;
-    svc = new TenantReportService(mocks.db, mocks.cls);
+    campaignServiceMock = mocks.campaignService;
+    svc = new TenantReportService(mocks.db, mocks.cls, mocks.campaignService);
   });
 
   /* ------------------------------------------------------------------ */
@@ -87,6 +93,18 @@ describe('TenantReportService', () => {
       expect(callArgs.where.created_at).toBeDefined();
       expect(callArgs.where.created_at.gte).toEqual(new Date('2025-01-01'));
       expect(callArgs.where.created_at.lte).toEqual(new Date('2025-12-31'));
+    });
+
+    it('filters by campaign_id', async () => {
+      (client.case.groupBy as any).mockResolvedValue([]);
+
+      await svc.pipelineFunnel({ campaign_id: 'camp-123' });
+
+      expect(client.case.groupBy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ campaign_id: 'camp-123' }),
+        }),
+      );
     });
   });
 
@@ -196,6 +214,108 @@ describe('TenantReportService', () => {
       if (result.isOk()) {
         expect(result.value.job_id).toBeDefined();
         expect(typeof result.value.job_id).toBe('string');
+      }
+    });
+  });
+
+  /* ------------------------------------------------------------------ */
+  /*  campaigns                                                          */
+  /* ------------------------------------------------------------------ */
+  describe('campaigns', () => {
+    it('returns campaigns with stats', async () => {
+      (client.campaign.findMany as any).mockResolvedValue([
+        { id: 'camp-1', name: 'Facebook Ad', channel: 'facebook', pipeline_id: 'pipe-1' },
+      ]);
+      (client.case.groupBy as any).mockResolvedValue([
+        { campaign_id: 'camp-1', stage: 'stage-final', _count: { id: 5 } },
+        { campaign_id: 'camp-1', stage: 'Enquiry', _count: { id: 5 } },
+      ]);
+      (client.workflowStage.findMany as any).mockResolvedValue([
+        { id: 'Enquiry', name: 'Enquiry', order: 1, workflow_definition_id: 'pipe-1' },
+        { id: 'stage-final', name: 'Won', order: 2, workflow_definition_id: 'pipe-1' },
+      ]);
+
+      const result = await svc.campaigns({});
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value).toHaveLength(1);
+        expect(result.value[0]).toEqual({
+          id: 'camp-1',
+          name: 'Facebook Ad',
+          channel: 'facebook',
+          total_leads: 10,
+          converted: 5,
+          conversion_rate: 50,
+        });
+      }
+      expect(client.campaign.findMany).toHaveBeenCalled();
+    });
+  });
+
+  /* ------------------------------------------------------------------ */
+  /*  campaignComparison                                                */
+  /* ------------------------------------------------------------------ */
+  describe('campaignComparison', () => {
+    it('compares up to 5 campaigns', async () => {
+      campaignServiceMock.findOne = vi.fn().mockResolvedValue(ok({ id: 'camp-1', name: 'Camp 1', stats: {} }));
+
+      const result = await svc.campaignComparison(['camp-1']);
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value).toHaveLength(1);
+        expect(result.value[0].id).toBe('camp-1');
+      }
+    });
+
+    it('returns error if more than 5 campaigns requested', async () => {
+      const result = await svc.campaignComparison(['1', '2', '3', '4', '5', '6']);
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.code).toBe('INVALID_PARAMS');
+      }
+    });
+  });
+
+  /* ------------------------------------------------------------------ */
+  /*  channelPerformance                                                */
+  /* ------------------------------------------------------------------ */
+  describe('channelPerformance', () => {
+    it('aggregates performance by channel and sorts by conversion_rate DESC', async () => {
+      (client.campaign.findMany as any).mockResolvedValue([
+        { id: 'camp-fb', name: 'Facebook Ad', channel: 'facebook', pipeline_id: 'pipe-1' },
+        { id: 'camp-google', name: 'Google Search', channel: 'google', pipeline_id: 'pipe-1' },
+      ]);
+      (client.case.groupBy as any).mockResolvedValue([
+        // Facebook: 10 leads, 2 converted -> 20%
+        { campaign_id: 'camp-fb', stage: 'stage-final', _count: { id: 2 } },
+        { campaign_id: 'camp-fb', stage: 'Enquiry', _count: { id: 8 } },
+        // Google: 10 leads, 5 converted -> 50%
+        { campaign_id: 'camp-google', stage: 'stage-final', _count: { id: 5 } },
+        { campaign_id: 'camp-google', stage: 'Enquiry', _count: { id: 5 } },
+      ]);
+      (client.workflowStage.findMany as any).mockResolvedValue([
+        { id: 'Enquiry', name: 'Enquiry', order: 1, workflow_definition_id: 'pipe-1' },
+        { id: 'stage-final', name: 'Won', order: 2, workflow_definition_id: 'pipe-1' },
+      ]);
+
+      const result = await svc.channelPerformance({});
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value).toHaveLength(2);
+        // Google should be first (50% conversion rate)
+        expect(result.value[0]).toEqual({
+          channel: 'google',
+          total_leads: 10,
+          converted: 5,
+          conversion_rate: 50,
+        });
+        // Facebook should be second (20% conversion rate)
+        expect(result.value[1]).toEqual({
+          channel: 'facebook',
+          total_leads: 10,
+          converted: 2,
+          conversion_rate: 20,
+        });
       }
     });
   });

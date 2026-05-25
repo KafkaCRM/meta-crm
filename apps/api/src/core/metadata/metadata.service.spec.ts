@@ -268,10 +268,10 @@ describe('visibility_rules compatibility', () => {
       { field: 'score', operator: 'gt', value: 50 },
     ];
 
-    const visible = evaluateVisibilityRules(rules, { stage: 'Enquiry', score: 75 });
+    const visible = evaluateVisibilityRules(rules as any, { stage: 'Enquiry', score: 75 });
     expect(visible).toBe(true);
 
-    const hidden = evaluateVisibilityRules(rules, { stage: 'Enrolled', score: 75 });
+    const hidden = evaluateVisibilityRules(rules as any, { stage: 'Enrolled', score: 75 });
     expect(hidden).toBe(false);
   });
 });

@@ -38,6 +38,8 @@ model Case {
   stage                     String
   workflow_definition_id    String
   assigned_to_id            String?
+  vertical_id               String?
+  campaign_id               String?
   attributes                Json     @default("{}")
   created_at                DateTime @default(now())
   updated_at                DateTime @updatedAt
@@ -51,6 +53,8 @@ model Case {
   @@index([tenant_id, party_id])
   @@index([tenant_id, assigned_to_id])
   @@index([tenant_id, created_at])
+  @@index([tenant_id, vertical_id])
+  @@index([tenant_id, campaign_id])
 }
 
 model CaseEvent {
