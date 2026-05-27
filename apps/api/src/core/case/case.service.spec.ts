@@ -7,6 +7,7 @@ import { CaseService } from './case.service';
 import type { RequestScope } from '../tenant/request-scope.interface';
 import { ok } from 'neverthrow';
 import { FieldValidationService } from '../metadata/field-validation.service';
+import { HooksService } from '../hooks/hooks.service';
 
 function mockCls(scope: RequestScope): ClsService {
   return { get: vi.fn().mockReturnValue(scope) } as unknown as ClsService;
@@ -24,6 +25,12 @@ function mockFieldValidation(): FieldValidationService {
   return {
     validateAttributes: vi.fn().mockResolvedValue(ok(undefined)),
   } as unknown as FieldValidationService;
+}
+
+function mockHooks(): HooksService {
+  return {
+    emit: vi.fn(),
+  } as unknown as HooksService;
 }
 
 function mockDb() {
@@ -91,6 +98,7 @@ describe('CaseService Campaigns & Verticals Integration', () => {
   let caseEvent: CaseEventService;
   let autoTagService: CampaignAutoTagService;
   let fieldValidation: FieldValidationService;
+  let hooks: HooksService;
   let caseService: CaseService;
 
   beforeEach(() => {
@@ -99,7 +107,8 @@ describe('CaseService Campaigns & Verticals Integration', () => {
     caseEvent = mockCaseEvent();
     autoTagService = mockAutoTag();
     fieldValidation = mockFieldValidation();
-    caseService = new CaseService(db, cls, caseEvent, autoTagService, fieldValidation);
+    hooks = mockHooks();
+    caseService = new CaseService(db, cls, caseEvent, autoTagService, fieldValidation, hooks);
   });
 
   describe('create case auto-tagging', () => {
