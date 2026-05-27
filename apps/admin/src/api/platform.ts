@@ -48,6 +48,7 @@ export interface CreateTenantRequest {
     name: string;
     email: string;
   };
+  capabilities?: string[];
 }
 
 export interface CreateTenantResponse {
