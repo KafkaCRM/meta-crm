@@ -4,6 +4,7 @@ import { TenantScopedPrismaService } from '../tenant/tenant-scoped-prisma.servic
 import { PartyService } from './party.service';
 import type { RequestScope } from '../tenant/request-scope.interface';
 import { FieldValidationService } from '../metadata/field-validation.service';
+import { HooksService } from '../hooks/hooks.service';
 import { ok } from 'neverthrow';
 
 function mockCls(scope: RequestScope): ClsService {
@@ -14,6 +15,12 @@ function mockFieldValidation(): FieldValidationService {
   return {
     validateAttributes: vi.fn().mockResolvedValue(ok(undefined)),
   } as unknown as FieldValidationService;
+}
+
+function mockHooks(): HooksService {
+  return {
+    emit: vi.fn(),
+  } as unknown as HooksService;
 }
 
 function mockDb() {
@@ -54,13 +61,15 @@ describe('PartyService', () => {
   let db: TenantScopedPrismaService;
   let cls: ClsService;
   let fieldValidation: FieldValidationService;
+  let hooks: HooksService;
   let svc: PartyService;
 
   beforeEach(() => {
     db = mockDb();
     cls = mockCls(scope);
     fieldValidation = mockFieldValidation();
-    svc = new PartyService(db, cls, fieldValidation);
+    hooks = mockHooks();
+    svc = new PartyService(db, cls, fieldValidation, hooks);
   });
 
   describe('findMany', () => {
