@@ -46,6 +46,7 @@ export interface CreateTenantInput {
   industry: string;
   plan_id: string;
   owner: { name: string; email: string };
+  capabilities?: string[];
 }
 
 export interface CreateTenantResponse {
@@ -322,13 +323,20 @@ export class PlatformTenantsService {
 
     try {
       const defaultCap = CAPABILITY_MAPPINGS[input.industry.toLowerCase()];
+      const requestedCaps = input.capabilities || [];
+      const enabledCapabilities = Array.from(
+        new Set([
+          ...(defaultCap ? [defaultCap] : []),
+          ...requestedCaps,
+        ])
+      );
       const tenant = await this.db.client.$transaction(async (tx: any) => {
         const t = await tx.tenant.create({
           data: {
             name: input.name,
             slug: input.slug,
             industry: input.industry,
-            config_json: defaultCap ? { enabled_capabilities: [defaultCap] } : {},
+            config_json: enabledCapabilities.length > 0 ? { enabled_capabilities: enabledCapabilities } : {},
           },
         });
 
