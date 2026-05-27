@@ -7,6 +7,7 @@ import type { RequestScope } from '../tenant/request-scope.interface';
 import type { CreatePartyDto } from './dto/create-party.dto';
 import type { UpdatePartyDto } from './dto/update-party.dto';
 import { FieldValidationService } from '../metadata/field-validation.service';
+import { HooksService } from '../hooks/hooks.service';
 
 export type PartyErrorCode = 'NOT_FOUND' | 'INVALID_PHONE' | 'VALIDATION_FAILED';
 
@@ -22,6 +23,7 @@ export class PartyService {
     private readonly db: TenantScopedPrismaService,
     private readonly cls: ClsService,
     private readonly fieldValidation: FieldValidationService,
+    private readonly hooks: HooksService,
   ) {}
 
   async findMany(params: {
@@ -98,6 +100,17 @@ export class PartyService {
       },
     });
 
+    const scope = this.cls.get<RequestScope>('scope');
+    const tenantId = scope?.tenant_id || '';
+
+    // Trigger process builder flow in background
+    this.hooks.emit('record.event', {
+      tenantId,
+      objectType: 'Party',
+      event: 'create',
+      record: party,
+    });
+
     return ok(party);
   }
 
@@ -132,6 +145,17 @@ export class PartyService {
     const updated = await this.db.getClient().party.update({
       where: { id },
       data: updateData,
+    });
+
+    const scope = this.cls.get<RequestScope>('scope');
+    const tenantId = scope?.tenant_id || '';
+
+    // Trigger process builder flow in background
+    this.hooks.emit('record.event', {
+      tenantId,
+      objectType: 'Party',
+      event: 'update',
+      record: updated,
     });
 
     return ok(updated);
