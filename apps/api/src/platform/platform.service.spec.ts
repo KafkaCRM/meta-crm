@@ -340,6 +340,72 @@ describe('PlatformTenantsService — getHierarchy', () => {
 });
 
 /* ------------------------------------------------------------------ */
+/*  PlatformTenantsService — create capabilities                       */
+/* ------------------------------------------------------------------ */
+describe('PlatformTenantsService — create', () => {
+  let svc: PlatformTenantsService;
+  let mockDb: any;
+
+  beforeEach(() => {
+    mockDb = {
+      client: {
+        tenant: { findUnique: vi.fn() },
+        subscriptionPlan: { findUnique: vi.fn() },
+        $transaction: vi.fn(),
+        pluginRegistry: { findFirst: vi.fn(), create: vi.fn() },
+        tenantPlugin: { create: vi.fn() },
+      },
+    };
+    svc = new PlatformTenantsService(mockDb as unknown as PlatformPrismaService);
+    // Mock applyTemplate to return ok
+    vi.spyOn(svc, 'applyTemplate').mockResolvedValue({ isErr: () => false, isOk: () => true } as any);
+  });
+
+  it('creates tenant and enables core and requested capabilities', async () => {
+    (mockDb.client.tenant.findUnique as any).mockResolvedValue(null);
+    (mockDb.client.subscriptionPlan.findUnique as any).mockResolvedValue({ id: 'plan-1' });
+    (mockDb.client.pluginRegistry.findFirst as any).mockResolvedValue({ id: 'plugin-reg-1' });
+    (mockDb.client.pluginRegistry.create as any).mockResolvedValue({ id: 'plugin-reg-1' });
+    
+    let createdConfig: any = null;
+    (mockDb.client.$transaction as any).mockImplementation(async (cb: any) => {
+      const tx = {
+        tenant: {
+          create: vi.fn().mockImplementation(({ data }: any) => {
+            createdConfig = data.config_json;
+            return {
+              id: 'tenant-1',
+              name: data.name,
+              slug: data.slug,
+              industry: data.industry,
+            };
+          }),
+        },
+        user: { create: vi.fn() },
+        tenantPlan: { create: vi.fn() },
+      };
+      return cb(tx);
+    });
+
+    const result = await svc.create({
+      name: 'Test Tenant',
+      slug: 'test-tenant',
+      industry: 'healthcare',
+      plan_id: 'plan-1',
+      owner: { name: 'Owner', email: 'owner@test.com' },
+      capabilities: ['capability/billing'],
+    });
+
+    expect(result.isOk()).toBe(true);
+    // Healthcare default capability is 'capability/appointment'
+    // Requested capability is 'capability/billing'
+    expect(createdConfig).toBeDefined();
+    expect(createdConfig.enabled_capabilities).toContain('capability/appointment');
+    expect(createdConfig.enabled_capabilities).toContain('capability/billing');
+  });
+});
+
+/* ------------------------------------------------------------------ */
 /*  Helper                                                              */
 /* ------------------------------------------------------------------ */
 function mockContext(): any {
