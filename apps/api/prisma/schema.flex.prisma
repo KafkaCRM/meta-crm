@@ -1,0 +1,12 @@
+model FlexRecord {
+  id           String   @id @default(cuid())
+  tenant_id    String
+  object_type  String   // Points to CustomObjectDefinition.api_name
+  data_json    Json     // Stores key-value values for the record
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  tenant       Tenant   @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id, object_type])
+}
