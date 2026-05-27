@@ -39,6 +39,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { LookupInput } from './LookupInput';
 
 export type { FieldDefinitionResponse as FieldDefinition } from '@meta-crm/types';
 
@@ -479,6 +480,17 @@ function FormField<T extends FieldValues>({
             );
           })}
         </div>
+      );
+      break;
+
+    case 'lookup':
+      input = (
+        <LookupInput
+          value={(currentValue as string) ?? ''}
+          onChange={(val) => setValue(fieldName, val as PathValue<T, typeof fieldName>, { shouldDirty: true, shouldValidate: true })}
+          relatedTo={field.related_to || ''}
+          placeholder={`Search ${t(`field.${field.name}`) ?? field.label}...`}
+        />
       );
       break;
 
