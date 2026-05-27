@@ -1,0 +1,30 @@
+model PageLayout {
+  id          String   @id @default(cuid())
+  tenant_id   String
+  object_type String   // e.g. "Party", "Case", or custom object names
+  name        String
+  layout_json Json     // Stores sections, column structures, field order, and read-only flags
+  is_default  Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  tenant      Tenant   @relation(fields: [tenant_id], references: [id])
+
+  @@unique([tenant_id, object_type, name])
+}
+
+model CustomObjectDefinition {
+  id           String   @id @default(cuid())
+  tenant_id    String
+  api_name     String   // e.g. "PropertyListing__c"
+  singular_label String
+  plural_label String
+  description  String?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  tenant       Tenant   @relation(fields: [tenant_id], references: [id])
+  fields       FieldDefinition[]
+
+  @@unique([tenant_id, api_name])
+}
