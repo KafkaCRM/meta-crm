@@ -47,6 +47,11 @@ class CreateTenantBody {
   @ValidateNested()
   @Type(() => OwnerDto)
   owner!: OwnerDto;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  capabilities?: string[];
 }
 
 class TenantListQuery {
