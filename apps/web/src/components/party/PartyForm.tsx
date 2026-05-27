@@ -81,6 +81,26 @@ export function PartyForm({ party }: PartyFormProps) {
     return [...CORE_FIELD_DEFS, ...custom];
   }, [fetchedFieldDefinitions]);
 
+  const { data: defaultLayout } = useQuery({
+    queryKey: ['settings', 'layouts', 'Party', 'default'],
+    queryFn: () => settingsApi.pageLayouts.getDefault('Party'),
+    staleTime: 60_000,
+    retry: false,
+  });
+
+  const sectionGroups = useMemo(() => {
+    if (defaultLayout?.layout_json?.sections) {
+      return defaultLayout.layout_json.sections.map((sec: any) => ({
+        label: sec.name,
+        fieldNames: sec.fields.map((f: any) => f.name),
+      }));
+    }
+    return [
+      { label: 'Basic Info', fieldNames: ['type', 'name', 'phone', 'email', 'source'] },
+      { label: 'Assignment', fieldNames: ['branch_brand_assignment_id'] },
+    ];
+  }, [defaultLayout]);
+
   useEffect(() => {
     if (prefillSource && prefillLeadId && !isEdit) {
       partiesApi
@@ -222,10 +242,7 @@ export function PartyForm({ party }: PartyFormProps) {
         onSubmit={handleSubmit}
         submitLabel={isEdit ? (t('party.save') ?? 'Save Changes') : (t('party.create') ?? 'Create Party')}
         onPhoneBlur={handlePhoneBlur}
-        sectionGroups={[
-          { label: 'Basic Info', fieldNames: ['type', 'name', 'phone', 'email', 'source'] },
-          { label: 'Assignment', fieldNames: ['branch_brand_assignment_id'] },
-        ]}
+        sectionGroups={sectionGroups}
       />
     </div>
   );
