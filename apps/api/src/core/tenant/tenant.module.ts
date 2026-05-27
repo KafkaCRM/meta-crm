@@ -20,6 +20,7 @@ import { TenantScopeGuard } from './tenant-scope.guard';
         const pool = new Pool({
           connectionString: url,
           ssl: { rejectUnauthorized: false },
+          max: 2,
         });
         const adapter = new PrismaPg(pool);
         return new PrismaClient({ adapter });
