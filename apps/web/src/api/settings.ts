@@ -69,6 +69,7 @@ export interface FieldDefinition {
   required: boolean;
   order: number;
   visibility_rules?: unknown[];
+  related_to?: string;
   created_at: string;
 }
 
@@ -161,6 +162,15 @@ export const settingsApi = {
       apiCall<FieldDefinition>(`/field-definitions/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     remove: (id: string) =>
       apiCall<{ message: string }>(`/field-definitions/${id}`, { method: 'DELETE' }),
+  },
+
+  pageLayouts: {
+    list: (objectType: string) => apiCall<any[]>(`/page-layouts?object_type=${objectType}`),
+    getDefault: (objectType: string) => apiCall<any>(`/page-layouts/default?object_type=${objectType}`),
+    create: (data: { object_type: string; name: string; layout_json: any }) =>
+      apiCall<any>('/page-layouts', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: any) =>
+      apiCall<any>(`/page-layouts/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   },
 
   labels: {
