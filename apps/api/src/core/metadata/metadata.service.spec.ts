@@ -3,6 +3,7 @@ import { ClsService } from 'nestjs-cls';
 import { evaluateVisibilityRules } from '@meta-crm/types';
 import { TenantScopedPrismaService } from '../tenant/tenant-scoped-prisma.service';
 import { FieldDefinitionService } from './field-definition.service';
+import { SetupAuditTrailService } from './setup-audit.service';
 import { LabelService, HARDCODED_DEFAULTS, INDUSTRY_DEFAULTS } from './label.service';
 import { TemplateService } from './template.service';
 import { FieldValidationService } from './field-validation.service';
@@ -71,7 +72,8 @@ describe('FieldDefinitionService', () => {
 
   function buildField() {
     const db = mockDb();
-    const svc = new FieldDefinitionService(db);
+    const audit = { log: vi.fn() } as unknown as SetupAuditTrailService;
+    const svc = new FieldDefinitionService(db, audit);
     return { db, svc, client: db.client };
   }
 });
