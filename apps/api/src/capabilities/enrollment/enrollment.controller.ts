@@ -9,6 +9,8 @@ import { IsOptional, IsString, IsNumber, Min, Max } from 'class-validator';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { PermissionsGuard } from '../../core/permissions/permissions.guard';
 import { CheckPermissions } from '../../core/permissions/permissions.decorator';
+import { CapabilityGuard } from '../../core/capability/capability.guard';
+import { RequireCapability } from '../../core/capability/capability.decorator';
 import { EnrollmentService } from './enrollment.service';
 
 class EnrollmentListQuery {
@@ -28,7 +30,8 @@ class EnrollmentListQuery {
 }
 
 @Controller('enrollments')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@RequireCapability('capability/enrollment')
+@UseGuards(JwtAuthGuard, CapabilityGuard, PermissionsGuard)
 export class EnrollmentController {
   constructor(private readonly service: EnrollmentService) {}
 

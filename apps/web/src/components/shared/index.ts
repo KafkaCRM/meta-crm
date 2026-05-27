@@ -8,3 +8,5 @@ export { NotificationToast } from './NotificationToast';
 
 export { BulkActionBar } from './BulkActionBar';
 export type { BulkAction } from './BulkActionBar';
+
+export { CapabilityGate } from './CapabilityGate';

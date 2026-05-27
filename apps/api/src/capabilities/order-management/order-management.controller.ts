@@ -16,6 +16,8 @@ import { Type } from 'class-transformer';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { PermissionsGuard } from '../../core/permissions/permissions.guard';
 import { CheckPermissions } from '../../core/permissions/permissions.decorator';
+import { CapabilityGuard } from '../../core/capability/capability.guard';
+import { RequireCapability } from '../../core/capability/capability.decorator';
 import { OrderManagementService } from './order-management.service';
 
 class CreateOrderLineItemDto {
@@ -76,7 +78,8 @@ class ListOrdersQuery {
 }
 
 @Controller('orders')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@RequireCapability('capability/order-management')
+@UseGuards(JwtAuthGuard, CapabilityGuard, PermissionsGuard)
 @CheckPermissions('read', 'Case')
 export class OrderManagementController {
   constructor(private readonly orderService: OrderManagementService) {}

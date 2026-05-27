@@ -25,6 +25,8 @@ model Tenant {
   customObjectDefinitions CustomObjectDefinition[]
   flexRecords            FlexRecord[]
   automationFlows        AutomationFlow[]
+  tenantExtensions       TenantExtension[]
+  secureCredentials      SecureCredential[]
 }
 
 model Brand {

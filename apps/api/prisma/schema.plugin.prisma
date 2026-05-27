@@ -32,3 +32,38 @@ model TenantCapability {
   @@unique([tenant_id, capability_id])
 }
 
+// ─── Extension Registry (Phase 2) ────────────────────────────────────────────
+
+/// Central catalog of all known platform extensions.
+/// type: "capability" | "integration" | "plugin"
+model ExtensionRegistry {
+  id           String   @id @default(cuid())
+  type         String   // "capability" | "integration" | "plugin"
+  package_name String   @unique
+  version      String
+  manifest     Json     // Full manifest: name, description, industry, requires_plan, etc.
+  status       String   @default("active")
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  tenantExtensions TenantExtension[]
+}
+
+/// Records which extensions a tenant has installed/activated.
+/// config_json stores non-sensitive per-tenant configuration.
+/// Sensitive credentials (API keys, OAuth tokens) live in SecureCredential.
+model TenantExtension {
+  id           String   @id @default(cuid())
+  tenant_id    String
+  extension_id String
+  enabled      Boolean  @default(true)
+  config_json  Json     @default("{}")
+  installed_at DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  tenant    Tenant            @relation(fields: [tenant_id], references: [id])
+  extension ExtensionRegistry @relation(fields: [extension_id], references: [id])
+
+  @@unique([tenant_id, extension_id])
+  @@index([tenant_id, enabled])
+}

@@ -18,6 +18,8 @@ import { IsString, IsOptional, IsNumber, Min, IsArray, IsNotEmpty } from 'class-
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { PermissionsGuard } from '../../core/permissions/permissions.guard';
 import { CheckPermissions } from '../../core/permissions/permissions.decorator';
+import { CapabilityGuard } from '../../core/capability/capability.guard';
+import { RequireCapability } from '../../core/capability/capability.decorator';
 import { PropertyService } from './property.service';
 
 class CreatePropertyDto {
@@ -145,7 +147,8 @@ class ListPropertiesQuery {
 }
 
 @Controller('properties')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@RequireCapability('capability/property-listing')
+@UseGuards(JwtAuthGuard, CapabilityGuard, PermissionsGuard)
 @CheckPermissions('read', 'Case')
 export class PropertyController {
   constructor(private readonly propertyService: PropertyService) {}

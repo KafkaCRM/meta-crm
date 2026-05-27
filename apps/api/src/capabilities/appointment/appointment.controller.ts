@@ -15,6 +15,8 @@ import { IsString, IsOptional, IsDateString, IsNotEmpty } from 'class-validator'
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { PermissionsGuard } from '../../core/permissions/permissions.guard';
 import { CheckPermissions } from '../../core/permissions/permissions.decorator';
+import { CapabilityGuard } from '../../core/capability/capability.guard';
+import { RequireCapability } from '../../core/capability/capability.decorator';
 import { AppointmentService } from './appointment.service';
 
 class CreateAppointmentDto {
@@ -100,7 +102,8 @@ class GetSlotsQuery {
 }
 
 @Controller('appointments')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@RequireCapability('capability/appointment')
+@UseGuards(JwtAuthGuard, CapabilityGuard, PermissionsGuard)
 @CheckPermissions('read', 'Case')
 export class AppointmentController {
   constructor(private readonly appointmentService: AppointmentService) {}

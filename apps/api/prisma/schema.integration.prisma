@@ -23,3 +23,26 @@ model WebhookSubscription {
 
   tenant Tenant @relation(fields: [tenant_id], references: [id])
 }
+
+// ─── Secure Credentials Vault (Phase 2) ──────────────────────────────────────
+
+/// Stores AES-256-GCM encrypted API keys and OAuth tokens for integrations.
+/// Each row holds exactly one credential set per tenant per extension.
+/// cipher_text: base64-encoded ciphertext
+/// iv: base64-encoded initialization vector (12 bytes for GCM)
+/// tag: base64-encoded GCM authentication tag (16 bytes)
+model SecureCredential {
+  id           String   @id @default(cuid())
+  tenant_id    String
+  extension_id String   // References ExtensionRegistry.id
+  cipher_text  String   // Encrypted payload (base64)
+  iv           String   // AES-GCM IV (base64)
+  tag          String   // AES-GCM auth tag (base64)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@unique([tenant_id, extension_id])
+  @@index([tenant_id])
+}
