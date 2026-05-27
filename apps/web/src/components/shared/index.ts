@@ -1,5 +1,6 @@
 export { DynamicForm } from './DynamicForm';
 export type { FieldDefinition, DuplicateCheckResult } from './DynamicForm';
+export { RecordLayout } from './RecordLayout';
 
 export { VirtualTable } from './VirtualTable';
 
