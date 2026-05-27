@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import { useAuth } from '@/contexts/auth.context';
 import { Link, useLocation } from '@tanstack/react-router';
 import {
@@ -37,6 +37,11 @@ import {
   LogOut,
   Shield,
   LayoutDashboard,
+  Settings,
+  Sliders,
+  Zap,
+  Search,
+  X,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -56,6 +61,9 @@ const navItems: NavItem[] = [
   { label: 'Tenants', path: '/admin/tenants', icon: Building2, requiredPermission: ['read', 'PlatformTenant'] },
   { label: 'Plans', path: '/admin/plans', icon: CreditCard, requiredPermission: ['read', 'PlatformPlan'] },
   { label: 'Plugins', path: '/admin/plugins', icon: Puzzle, requiredPermission: ['read', 'PlatformPlugin'] },
+  { label: 'Object Manager', path: '/admin/objects', icon: Settings, requiredPermission: ['manage', 'PlatformTenant'] },
+  { label: 'Layout Designer', path: '/admin/layouts', icon: Sliders, requiredPermission: ['manage', 'PlatformTenant'] },
+  { label: 'Process Builder', path: '/admin/flows', icon: Zap, requiredPermission: ['manage', 'PlatformTenant'] },
   { label: 'Reports', path: '/admin/reports', icon: BarChart3, requiredPermission: ['read', 'PlatformReport'] },
   { label: 'Platform Team', path: '/admin/users', icon: Users, requiredPermission: ['read', 'PlatformUser'] },
   { label: 'System Health', path: '/admin/health', icon: Activity, requiredPermission: ['read', 'SystemHealth'] },
@@ -69,6 +77,7 @@ const navItems: NavItem[] = [
 export function AdminLayout({ children }: { children: ReactNode }) {
   const { user, ability, logout } = useAuth();
   const location = useLocation();
+  const [quickFind, setQuickFind] = useState('');
 
   if (!user || !ability) return null;
 
@@ -76,6 +85,10 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     if (!item.requiredPermission) return true;
     return ability.can(item.requiredPermission[0] as any, item.requiredPermission[1] as any);
   });
+
+  const filteredVisibleItems = visibleItems.filter((item) =>
+    item.label.toLowerCase().includes(quickFind.toLowerCase())
+  );
 
   const initials = user.email
     ? user.email.slice(0, 2).toUpperCase()
@@ -104,13 +117,32 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           </SidebarHeader>
 
           <SidebarContent className="px-2 py-3 bg-[#0b0f19]">
+            {/* Quick Find Input Box */}
+            <div className="px-2 mb-4">
+              <div className="flex items-center gap-2 bg-slate-900 border border-slate-800/80 rounded-lg px-2.5 py-1">
+                <Search size={12} className="text-slate-500 flex-shrink-0" />
+                <input 
+                  type="text" 
+                  placeholder="Quick Find..." 
+                  value={quickFind}
+                  onChange={e => setQuickFind(e.target.value)}
+                  className="bg-transparent border-none outline-none text-slate-200 text-xs w-full placeholder-slate-500 py-0.5"
+                />
+                {quickFind && (
+                  <button onClick={() => setQuickFind('')} className="text-slate-500 hover:text-slate-300">
+                    <X size={11} />
+                  </button>
+                )}
+              </div>
+            </div>
+
             <SidebarGroup>
               <SidebarGroupLabel className="text-slate-500 text-[10px] font-bold uppercase tracking-wider px-2 mb-1">
                 Platform
               </SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {visibleItems.map((item) => {
+                  {filteredVisibleItems.map((item) => {
                     const isActive =
                       location.pathname === item.path ||
                       (item.path !== '/' && location.pathname.startsWith(item.path));
