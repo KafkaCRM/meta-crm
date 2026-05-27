@@ -2,7 +2,6 @@ import { IsString, IsOptional, IsIn, IsBoolean, IsNumber, IsArray, IsObject } fr
 
 export class CreateFieldDefinitionDto {
   @IsString()
-  @IsIn(['Party', 'Case', 'Interaction'])
   entity_type!: string;
 
   @IsString()
@@ -12,7 +11,7 @@ export class CreateFieldDefinitionDto {
   label!: string;
 
   @IsString()
-  @IsIn(['text', 'number', 'date', 'select', 'multi_select', 'boolean', 'phone', 'email'])
+  @IsIn(['text', 'number', 'date', 'select', 'multi_select', 'boolean', 'phone', 'email', 'lookup'])
   field_type!: string;
 
   @IsOptional()
@@ -30,6 +29,10 @@ export class CreateFieldDefinitionDto {
   @IsOptional()
   @IsArray()
   visibility_rules?: unknown[];
+
+  @IsOptional()
+  @IsString()
+  related_to?: string;
 }
 
 export class UpdateFieldDefinitionDto {
