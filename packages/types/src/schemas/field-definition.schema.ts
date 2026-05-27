@@ -56,19 +56,21 @@ export const FieldTypeSchema = z.enum([
   'boolean',
   'phone',
   'email',
+  'lookup',
 ]);
 
 export type FieldType = z.infer<typeof FieldTypeSchema>;
 
 export const CreateFieldDefinitionSchema = z.object({
-  entity_type: z.enum(['Party', 'Case', 'Interaction']),
+  entity_type: z.string(),
   name: z.string().min(1),
   label: z.string().min(1),
   field_type: FieldTypeSchema,
-  options: z.array(z.string()).optional(),
+  options: z.array(z.string()).optional().nullable(),
   required: z.boolean().optional(),
   order: z.number().int().optional(),
   visibility_rules: z.array(VisibilityRuleEntrySchema).optional(),
+  related_to: z.string().optional().nullable(),
 });
 
 export const UpdateFieldDefinitionSchema = CreateFieldDefinitionSchema.partial();
