@@ -12,6 +12,7 @@ import { interactionsApi } from '@/api/interactions';
 import { queryClient } from '@/lib/query-client';
 import { MergeWizard } from './MergeWizard';
 import { Button } from '@/components/ui/button';
+import { RecordLayout } from '@/components/shared';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -510,67 +511,7 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
 
         {/* Right column (40%): Party info + Cases + Related */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Party info panel */}
-          <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold text-[#0f172a]">
-                {t('party.details') ?? 'Contact Information'}
-              </CardTitle>
-            </CardHeader>
-            <Separator className="bg-[#e2e8f0]" />
-            <CardContent className="pt-4 space-y-3">
-              <EditableDetailField
-                label="Full Name"
-                value={party.name}
-                field="name"
-                editing={editingField === 'name'}
-                editValue={editValue}
-                onEdit={() => { setEditingField('name'); setEditValue(party.name); }}
-                onSave={() => handleSaveField('name')}
-                onCancel={() => setEditingField(null)}
-                onEditValueChange={setEditValue}
-                canUpdate={can('update', 'Party')}
-                icon={<Building2 size={13} className="text-[#94a3b8]" />}
-              />
-              <EditableDetailField
-                label="Phone"
-                value={party.phone_raw}
-                field="phone_raw"
-                editing={editingField === 'phone_raw'}
-                editValue={editValue}
-                onEdit={() => { setEditingField('phone_raw'); setEditValue(party.phone_raw); }}
-                onSave={() => handleSaveField('phone_raw')}
-                onCancel={() => setEditingField(null)}
-                onEditValueChange={setEditValue}
-                canUpdate={can('update', 'Party')}
-                icon={<Phone size={13} className="text-[#94a3b8]" />}
-              />
-              <EditableDetailField
-                label="Email"
-                value={party.email ?? '—'}
-                field="email"
-                editing={editingField === 'email'}
-                editValue={editValue}
-                onEdit={() => { setEditingField('email'); setEditValue(party.email ?? ''); }}
-                onSave={() => handleSaveField('email')}
-                onCancel={() => setEditingField(null)}
-                onEditValueChange={setEditValue}
-                canUpdate={can('update', 'Party')}
-                icon={<Mail size={13} className="text-[#94a3b8]" />}
-              />
-              <div className="flex items-center gap-3 pt-1">
-                <Calendar size={13} className="text-[#94a3b8] shrink-0" />
-                <div>
-                  <p className="text-xs text-[#94a3b8]">Created</p>
-                  <p className="text-sm text-[#0f172a]">
-                    {new Date(party.created_at).toLocaleDateString('en-US', {
-                      year: 'numeric', month: 'long', day: 'numeric',
-                    })}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <RecordLayout objectType="Party" record={party} t={t} />
 
           {/* Cases list */}
           <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none">
