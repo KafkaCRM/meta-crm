@@ -448,3 +448,29 @@ export interface TenantHierarchy {
 export async function getTenantHierarchy(tenantId: string): Promise<TenantHierarchy> {
   return apiCall<TenantHierarchy>(`/platform/tenants/${tenantId}/hierarchy`);
 }
+
+export interface PlatformAuditLog {
+  id: string;
+  actor_id: string;
+  actor_email: string;
+  actor_role: string;
+  action: string;
+  target_id: string | null;
+  actor_ip: string;
+  user_agent: string;
+  details: any;
+  reason: string | null;
+  created_at: string;
+}
+
+export interface PlatformAuditLogsResponse {
+  data: PlatformAuditLog[];
+  next_cursor: string | undefined;
+}
+
+export async function getPlatformAuditLogs(cursor?: string, limit = 50): Promise<PlatformAuditLogsResponse> {
+  const params = new URLSearchParams();
+  if (cursor) params.set('cursor', cursor);
+  params.set('limit', String(limit));
+  return apiCall<PlatformAuditLogsResponse>(`/platform/audit-logs?${params.toString()}`);
+}

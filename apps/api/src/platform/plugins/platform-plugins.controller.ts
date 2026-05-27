@@ -11,12 +11,16 @@ import {
   InternalServerErrorException,
   HttpCode,
   HttpStatus,
+  Req,
 } from '@nestjs/common';
 import { IsString, IsObject } from 'class-validator';
+import type { FastifyRequest } from 'fastify';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { PlatformPermissionsGuard } from '../../core/permissions/permissions.guard';
 import { CheckPlatformPermissions } from '../../core/permissions/permissions.decorator';
 import { PlatformPluginsService } from './platform-plugins.service';
+import { CurrentUser } from '../../core/auth/decorators/current-user.decorator';
+import type { RequestScope } from '../../core/tenant/request-scope.interface';
 
 class CreatePluginBody {
   @IsString()
@@ -47,8 +51,17 @@ export class PlatformPluginsController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @CheckPlatformPermissions('manage', 'PlatformPlugin')
-  async create(@Body() body: CreatePluginBody) {
-    const result = await this.service.create(body);
+  async create(
+    @Body() body: CreatePluginBody,
+    @Req() req: FastifyRequest,
+    @CurrentUser() scope: RequestScope,
+  ) {
+    const result = await this.service.create(body, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+    });
     if (result.isErr()) {
       if (result.error.code === 'INVALID_MANIFEST') {
         throw new BadRequestException(result.error);
@@ -61,8 +74,17 @@ export class PlatformPluginsController {
   @Patch(':id/deprecate')
   @HttpCode(HttpStatus.OK)
   @CheckPlatformPermissions('update', 'PlatformPlugin')
-  async deprecate(@Param('id') id: string) {
-    const result = await this.service.deprecate(id);
+  async deprecate(
+    @Param('id') id: string,
+    @Req() req: FastifyRequest,
+    @CurrentUser() scope: RequestScope,
+  ) {
+    const result = await this.service.deprecate(id, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+    });
     if (result.isErr()) {
       if (result.error.code === 'PLUGIN_NOT_FOUND') {
         throw new NotFoundException(result.error);
@@ -75,8 +97,17 @@ export class PlatformPluginsController {
   @Patch(':id/disable')
   @HttpCode(HttpStatus.OK)
   @CheckPlatformPermissions('update', 'PlatformPlugin')
-  async disable(@Param('id') id: string) {
-    const result = await this.service.disable(id);
+  async disable(
+    @Param('id') id: string,
+    @Req() req: FastifyRequest,
+    @CurrentUser() scope: RequestScope,
+  ) {
+    const result = await this.service.disable(id, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+    });
     if (result.isErr()) {
       if (result.error.code === 'PLUGIN_NOT_FOUND') {
         throw new NotFoundException(result.error);

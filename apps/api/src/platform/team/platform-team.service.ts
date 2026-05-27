@@ -3,6 +3,7 @@ import * as bcrypt from 'bcrypt';
 import { ok, err } from 'neverthrow';
 import type { Result } from 'neverthrow';
 import { PlatformPrismaService } from '../../core/tenant/platform-prisma.service';
+import { PlatformAuditService } from '../audit/platform-audit.service';
 import type { RequestScope } from '../../core/tenant/request-scope.interface';
 import type { PlatformRole } from '@meta-crm/types';
 
@@ -53,7 +54,10 @@ export interface InviteResponse {
 
 @Injectable()
 export class PlatformTeamService {
-  constructor(private readonly db: PlatformPrismaService) {}
+  constructor(
+    private readonly db: PlatformPrismaService,
+    private readonly audit: PlatformAuditService,
+  ) {}
 
   private checkRoleEscalation(inviterRole: string, targetRole: string): boolean {
     const inviterLevel = ROLE_HIERARCHY[inviterRole] ?? 0;
@@ -84,6 +88,7 @@ export class PlatformTeamService {
   async invite(
     input: InviteInput,
     inviter: RequestScope,
+    auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
   ): Promise<Result<InviteResponse, PlatformTeamError>> {
     if (!this.checkRoleEscalation(inviter.platform_role ?? '', input.role)) {
       return err({
@@ -114,6 +119,19 @@ export class PlatformTeamService {
         },
       });
 
+      if (auditMeta) {
+        await this.audit.writeLog({
+          actor_id: auditMeta.actor_id,
+          actor_role: auditMeta.actor_role,
+          action: 'team:invite',
+          target_id: user.id,
+          actor_ip: auditMeta.actor_ip,
+          user_agent: auditMeta.user_agent,
+          details: { invited_user_id: user.id, email: user.email, role: input.role },
+          reason: auditMeta.reason,
+        });
+      }
+
       return ok({
         id: user.id,
         email: user.email,
@@ -129,6 +147,7 @@ export class PlatformTeamService {
     userId: string,
     newRole: PlatformRole,
     actor: RequestScope,
+    auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
   ): Promise<Result<void, PlatformTeamError>> {
     if (actor.platform_role !== 'platform_owner') {
       return err({
@@ -149,10 +168,26 @@ export class PlatformTeamService {
       data: { role: newRole },
     });
 
+    if (auditMeta) {
+      await this.audit.writeLog({
+        actor_id: auditMeta.actor_id,
+        actor_role: auditMeta.actor_role,
+        action: 'team:change_role',
+        target_id: userId,
+        actor_ip: auditMeta.actor_ip,
+        user_agent: auditMeta.user_agent,
+        details: { user_id: userId, email: existing.email, new_role: newRole },
+        reason: auditMeta.reason,
+      });
+    }
+
     return ok(undefined);
   }
 
-  async deactivate(userId: string): Promise<Result<void, PlatformTeamError>> {
+  async deactivate(
+    userId: string,
+    auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
+  ): Promise<Result<void, PlatformTeamError>> {
     const existing = await this.db.client.platformUser.findUnique({
       where: { id: userId },
     });
@@ -164,6 +199,19 @@ export class PlatformTeamService {
       where: { id: userId },
       data: { status: 'inactive' },
     });
+
+    if (auditMeta) {
+      await this.audit.writeLog({
+        actor_id: auditMeta.actor_id,
+        actor_role: auditMeta.actor_role,
+        action: 'team:deactivate',
+        target_id: userId,
+        actor_ip: auditMeta.actor_ip,
+        user_agent: auditMeta.user_agent,
+        details: { user_id: userId, email: existing.email },
+        reason: auditMeta.reason,
+      });
+    }
 
     return ok(undefined);
   }

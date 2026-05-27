@@ -20,3 +20,18 @@ model TenantPlan {
   tenant Tenant             @relation(fields: [tenant_id], references: [id])
   plan   SubscriptionPlan   @relation(fields: [plan_id], references: [id])
 }
+
+model PlatformAuditLog {
+  id          String   @id @default(cuid())
+  actor_id    String
+  actor_email String
+  actor_role  String
+  action      String
+  target_id   String?
+  actor_ip    String
+  user_agent  String
+  details     Json     @default("{}")
+  reason      String?
+  created_at  DateTime @default(now())
+}
+

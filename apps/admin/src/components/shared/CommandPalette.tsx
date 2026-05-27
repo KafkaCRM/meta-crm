@@ -19,14 +19,12 @@ import {
   BarChart3,
   Users,
   Activity,
-  Settings,
-  Sliders,
-  Zap,
   LayoutDashboard,
   Database,
   RefreshCw,
   Cpu,
   CornerDownLeft,
+  History,
 } from 'lucide-react';
 
 interface CommandPaletteProps {
@@ -99,18 +97,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             <Puzzle className="mr-2 h-4 w-4 text-slate-400" />
             <span>Go to Plugins</span>
           </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => navigate({ to: '/admin/objects' }))}>
-            <Settings className="mr-2 h-4 w-4 text-slate-400" />
-            <span>Go to Object Manager</span>
-          </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => navigate({ to: '/admin/layouts' }))}>
-            <Sliders className="mr-2 h-4 w-4 text-slate-400" />
-            <span>Go to Layout Designer</span>
-          </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => navigate({ to: '/admin/flows' }))}>
-            <Zap className="mr-2 h-4 w-4 text-slate-400" />
-            <span>Go to Process Builder</span>
-          </CommandItem>
+
           <CommandItem onSelect={() => runCommand(() => navigate({ to: '/admin/reports' }))}>
             <BarChart3 className="mr-2 h-4 w-4 text-slate-400" />
             <span>Go to Platform Reports</span>
@@ -126,6 +113,10 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           <CommandItem onSelect={() => runCommand(() => navigate({ to: '/admin/billing' }))}>
             <CreditCard className="mr-2 h-4 w-4 text-slate-400" />
             <span>Go to Billing & Invoices</span>
+          </CommandItem>
+          <CommandItem onSelect={() => runCommand(() => navigate({ to: '/admin/audit' }))}>
+            <History className="mr-2 h-4 w-4 text-slate-400" />
+            <span>Go to Audit Trail</span>
           </CommandItem>
         </CommandGroup>
 

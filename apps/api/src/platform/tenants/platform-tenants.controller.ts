@@ -13,15 +13,23 @@ import {
   InternalServerErrorException,
   HttpCode,
   HttpStatus,
+  Req,
 } from '@nestjs/common';
 import { IsString, IsOptional, IsNumber, Min, Max, IsEmail, ValidateNested, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
+import type { FastifyRequest } from 'fastify';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { PlatformPermissionsGuard } from '../../core/permissions/permissions.guard';
 import { CheckPlatformPermissions } from '../../core/permissions/permissions.decorator';
 import { PlatformTenantsService } from './platform-tenants.service';
 import { CurrentUser } from '../../core/auth/decorators/current-user.decorator';
 import type { RequestScope } from '../../core/tenant/request-scope.interface';
+
+class DangerousActionBody {
+  @IsOptional()
+  @IsString()
+  reason?: string;
+}
 
 class OwnerDto {
   @IsString()
@@ -114,8 +122,17 @@ export class PlatformTenantsController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @CheckPlatformPermissions('create', 'PlatformTenant')
-  async create(@Body() body: CreateTenantBody) {
-    const result = await this.service.create(body);
+  async create(
+    @Body() body: CreateTenantBody,
+    @Req() req: FastifyRequest,
+    @CurrentUser() scope: RequestScope,
+  ) {
+    const result = await this.service.create(body, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+    });
     if (result.isErr()) {
       switch (result.error.code) {
         case 'SLUG_TAKEN':
@@ -132,8 +149,19 @@ export class PlatformTenantsController {
   @Patch(':id/suspend')
   @HttpCode(HttpStatus.OK)
   @CheckPlatformPermissions('update', 'PlatformTenant')
-  async suspend(@Param('id') id: string) {
-    const result = await this.service.suspend(id);
+  async suspend(
+    @Param('id') id: string,
+    @Body() body: DangerousActionBody,
+    @Req() req: FastifyRequest,
+    @CurrentUser() scope: RequestScope,
+  ) {
+    const result = await this.service.suspend(id, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+      reason: body.reason,
+    });
     if (result.isErr()) {
       if (result.error.code === 'TENANT_NOT_FOUND') {
         throw new NotFoundException(result.error);
@@ -146,8 +174,19 @@ export class PlatformTenantsController {
   @Patch(':id/reactivate')
   @HttpCode(HttpStatus.OK)
   @CheckPlatformPermissions('update', 'PlatformTenant')
-  async reactivate(@Param('id') id: string) {
-    const result = await this.service.reactivate(id);
+  async reactivate(
+    @Param('id') id: string,
+    @Body() body: DangerousActionBody,
+    @Req() req: FastifyRequest,
+    @CurrentUser() scope: RequestScope,
+  ) {
+    const result = await this.service.reactivate(id, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+      reason: body.reason,
+    });
     if (result.isErr()) {
       if (result.error.code === 'TENANT_NOT_FOUND') {
         throw new NotFoundException(result.error);
@@ -181,8 +220,15 @@ export class PlatformTenantsController {
   async updateEntitlements(
     @Param('id') id: string,
     @Body() body: UpdateEntitlementsBody,
+    @Req() req: FastifyRequest,
+    @CurrentUser() scope: RequestScope,
   ) {
-    const result = await this.service.updateEntitlements(id, body.plugin_ids);
+    const result = await this.service.updateEntitlements(id, body.plugin_ids, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+    });
     if (result.isErr()) {
       if (result.error.code === 'TENANT_NOT_FOUND') {
         throw new NotFoundException(result.error);
@@ -198,8 +244,15 @@ export class PlatformTenantsController {
   async updateCapabilities(
     @Param('id') id: string,
     @Body() body: UpdateCapabilitiesBody,
+    @Req() req: FastifyRequest,
+    @CurrentUser() scope: RequestScope,
   ) {
-    const result = await this.service.updateCapabilities(id, body.capabilities);
+    const result = await this.service.updateCapabilities(id, body.capabilities, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+    });
     if (result.isErr()) {
       if (result.error.code === 'TENANT_NOT_FOUND') {
         throw new NotFoundException(result.error);
@@ -212,8 +265,17 @@ export class PlatformTenantsController {
   @Patch(':id/reset-owner-password')
   @HttpCode(HttpStatus.OK)
   @CheckPlatformPermissions('update', 'PlatformTenant')
-  async resetOwnerPassword(@Param('id') id: string) {
-    const result = await this.service.resetOwnerPassword(id);
+  async resetOwnerPassword(
+    @Param('id') id: string,
+    @Req() req: FastifyRequest,
+    @CurrentUser() scope: RequestScope,
+  ) {
+    const result = await this.service.resetOwnerPassword(id, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+    });
     if (result.isErr()) {
       if (result.error.code === 'TENANT_NOT_FOUND') {
         throw new NotFoundException(result.error);
@@ -229,8 +291,15 @@ export class PlatformTenantsController {
   async updateOverrides(
     @Param('id') id: string,
     @Body() body: Record<string, any>,
+    @Req() req: FastifyRequest,
+    @CurrentUser() scope: RequestScope,
   ) {
-    const result = await this.service.updateOverrides(id, body);
+    const result = await this.service.updateOverrides(id, body, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+    });
     if (result.isErr()) {
       if (result.error.code === 'TENANT_NOT_FOUND') {
         throw new NotFoundException(result.error);
@@ -259,9 +328,15 @@ export class PlatformTenantsController {
   async enableCapabilitySimple(
     @Param('id') id: string,
     @Param('capabilityId') capabilityId: string,
+    @Req() req: FastifyRequest,
     @CurrentUser() scope: RequestScope,
   ) {
-    const result = await this.service.enableCapability(id, capabilityId, scope.user_id);
+    const result = await this.service.enableCapability(id, capabilityId, scope.user_id, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+    });
     if (result.isErr()) {
       if (result.error.code === 'TENANT_NOT_FOUND') {
         throw new NotFoundException(result.error);
@@ -278,10 +353,16 @@ export class PlatformTenantsController {
     @Param('id') id: string,
     @Param('type') type: string,
     @Param('name') name: string,
+    @Req() req: FastifyRequest,
     @CurrentUser() scope: RequestScope,
   ) {
     const capabilityId = `${type}/${name}`;
-    const result = await this.service.enableCapability(id, capabilityId, scope.user_id);
+    const result = await this.service.enableCapability(id, capabilityId, scope.user_id, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+    });
     if (result.isErr()) {
       if (result.error.code === 'TENANT_NOT_FOUND') {
         throw new NotFoundException(result.error);
@@ -297,9 +378,15 @@ export class PlatformTenantsController {
   async disableCapabilitySimple(
     @Param('id') id: string,
     @Param('capabilityId') capabilityId: string,
+    @Req() req: FastifyRequest,
     @CurrentUser() scope: RequestScope,
   ) {
-    const result = await this.service.disableCapability(id, capabilityId, scope.user_id);
+    const result = await this.service.disableCapability(id, capabilityId, scope.user_id, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+    });
     if (result.isErr()) {
       if (result.error.code === 'TENANT_NOT_FOUND') {
         throw new NotFoundException(result.error);
@@ -316,10 +403,16 @@ export class PlatformTenantsController {
     @Param('id') id: string,
     @Param('type') type: string,
     @Param('name') name: string,
+    @Req() req: FastifyRequest,
     @CurrentUser() scope: RequestScope,
   ) {
     const capabilityId = `${type}/${name}`;
-    const result = await this.service.disableCapability(id, capabilityId, scope.user_id);
+    const result = await this.service.disableCapability(id, capabilityId, scope.user_id, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+    });
     if (result.isErr()) {
       if (result.error.code === 'TENANT_NOT_FOUND') {
         throw new NotFoundException(result.error);
@@ -348,8 +441,15 @@ export class PlatformTenantsController {
   async installPlugin(
     @Param('id') id: string,
     @Param('pluginId') pluginId: string,
+    @Req() req: FastifyRequest,
+    @CurrentUser() scope: RequestScope,
   ) {
-    const result = await this.service.installPlugin(id, pluginId);
+    const result = await this.service.installPlugin(id, pluginId, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+    });
     if (result.isErr()) {
       if (result.error.code === 'TENANT_NOT_FOUND') {
         throw new NotFoundException(result.error);
@@ -368,8 +468,15 @@ export class PlatformTenantsController {
   async uninstallPlugin(
     @Param('id') id: string,
     @Param('pluginId') pluginId: string,
+    @Req() req: FastifyRequest,
+    @CurrentUser() scope: RequestScope,
   ) {
-    const result = await this.service.uninstallPlugin(id, pluginId);
+    const result = await this.service.uninstallPlugin(id, pluginId, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+    });
     if (result.isErr()) {
       if (result.error.code === 'TENANT_NOT_FOUND') {
         throw new NotFoundException(result.error);

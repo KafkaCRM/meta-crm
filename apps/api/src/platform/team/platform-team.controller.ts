@@ -13,8 +13,10 @@ import {
   InternalServerErrorException,
   HttpCode,
   HttpStatus,
+  Req,
 } from '@nestjs/common';
 import { IsString, IsEmail } from 'class-validator';
+import type { FastifyRequest } from 'fastify';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { PlatformPermissionsGuard } from '../../core/permissions/permissions.guard';
 import { CheckPlatformPermissions } from '../../core/permissions/permissions.decorator';
@@ -56,10 +58,20 @@ export class PlatformTeamController {
   @Post('invite')
   @HttpCode(HttpStatus.CREATED)
   @CheckPlatformPermissions('create', 'PlatformUser')
-  async invite(@Body() body: InviteBody, @CurrentUser() scope: RequestScope) {
+  async invite(
+    @Body() body: InviteBody,
+    @Req() req: FastifyRequest,
+    @CurrentUser() scope: RequestScope,
+  ) {
     const result = await this.service.invite(
       { name: body.name, email: body.email, role: body.role as any },
       scope,
+      {
+        actor_id: scope.user_id,
+        actor_role: scope.platform_role || scope.role,
+        actor_ip: req.ip,
+        user_agent: (req.headers['user-agent'] as string) || '',
+      },
     );
     if (result.isErr()) {
       switch (result.error.code) {
@@ -77,8 +89,18 @@ export class PlatformTeamController {
   @Patch(':id/role')
   @HttpCode(HttpStatus.OK)
   @CheckPlatformPermissions('manage', 'PlatformUser')
-  async changeRole(@Param('id') id: string, @Body() body: ChangeRoleBody, @CurrentUser() scope: RequestScope) {
-    const result = await this.service.changeRole(id, body.role as any, scope);
+  async changeRole(
+    @Param('id') id: string,
+    @Body() body: ChangeRoleBody,
+    @Req() req: FastifyRequest,
+    @CurrentUser() scope: RequestScope,
+  ) {
+    const result = await this.service.changeRole(id, body.role as any, scope, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+    });
     if (result.isErr()) {
       switch (result.error.code) {
         case 'USER_NOT_FOUND':
@@ -95,8 +117,17 @@ export class PlatformTeamController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @CheckPlatformPermissions('delete', 'PlatformUser')
-  async deactivate(@Param('id') id: string) {
-    const result = await this.service.deactivate(id);
+  async deactivate(
+    @Param('id') id: string,
+    @Req() req: FastifyRequest,
+    @CurrentUser() scope: RequestScope,
+  ) {
+    const result = await this.service.deactivate(id, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+    });
     if (result.isErr()) {
       if (result.error.code === 'USER_NOT_FOUND') {
         throw new NotFoundException(result.error);

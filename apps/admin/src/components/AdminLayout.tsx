@@ -37,9 +37,7 @@ import {
   LogOut,
   Shield,
   LayoutDashboard,
-  Settings,
-  Sliders,
-  Zap,
+  History,
   Search,
   X,
 } from 'lucide-react';
@@ -64,13 +62,11 @@ const navItems: NavItem[] = [
   { label: 'Tenants', path: '/admin/tenants', icon: Building2, requiredPermission: ['read', 'PlatformTenant'] },
   { label: 'Plans', path: '/admin/plans', icon: CreditCard, requiredPermission: ['read', 'PlatformPlan'] },
   { label: 'Plugins', path: '/admin/plugins', icon: Puzzle, requiredPermission: ['read', 'PlatformPlugin'] },
-  { label: 'Object Manager', path: '/admin/objects', icon: Settings, requiredPermission: ['manage', 'PlatformTenant'] },
-  { label: 'Layout Designer', path: '/admin/layouts', icon: Sliders, requiredPermission: ['manage', 'PlatformTenant'] },
-  { label: 'Process Builder', path: '/admin/flows', icon: Zap, requiredPermission: ['manage', 'PlatformTenant'] },
   { label: 'Reports', path: '/admin/reports', icon: BarChart3, requiredPermission: ['read', 'PlatformReport'] },
   { label: 'Platform Team', path: '/admin/users', icon: Users, requiredPermission: ['read', 'PlatformUser'] },
   { label: 'System Health', path: '/admin/health', icon: Activity, requiredPermission: ['read', 'SystemHealth'] },
   { label: 'Billing', path: '/admin/billing', icon: CreditCard, requiredPermission: ['read', 'Billing'] },
+  { label: 'Audit Trail', path: '/admin/audit', icon: History, requiredPermission: ['read', 'PlatformReport'] },
 ];
 
 /* ------------------------------------------------------------------ */

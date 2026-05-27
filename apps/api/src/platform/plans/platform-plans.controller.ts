@@ -11,12 +11,16 @@ import {
   InternalServerErrorException,
   HttpCode,
   HttpStatus,
+  Req,
 } from '@nestjs/common';
 import { IsString, IsNumber, IsOptional, Min } from 'class-validator';
+import type { FastifyRequest } from 'fastify';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { PlatformPermissionsGuard } from '../../core/permissions/permissions.guard';
 import { CheckPlatformPermissions } from '../../core/permissions/permissions.decorator';
 import { PlatformPlansService } from './platform-plans.service';
+import { CurrentUser } from '../../core/auth/decorators/current-user.decorator';
+import type { RequestScope } from '../../core/tenant/request-scope.interface';
 
 class CreatePlanBody {
   @IsString()
@@ -83,8 +87,17 @@ export class PlatformPlansController {
   @Post('plans')
   @HttpCode(HttpStatus.CREATED)
   @CheckPlatformPermissions('create', 'PlatformPlan')
-  async create(@Body() body: CreatePlanBody) {
-    const result = await this.service.create(body);
+  async create(
+    @Body() body: CreatePlanBody,
+    @Req() req: FastifyRequest,
+    @CurrentUser() scope: RequestScope,
+  ) {
+    const result = await this.service.create(body, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+    });
     if (result.isErr()) {
       throw new InternalServerErrorException(result.error);
     }
@@ -94,8 +107,18 @@ export class PlatformPlansController {
   @Patch('plans/:id')
   @HttpCode(HttpStatus.OK)
   @CheckPlatformPermissions('update', 'PlatformPlan')
-  async update(@Param('id') id: string, @Body() body: UpdatePlanBody) {
-    const result = await this.service.update(id, body);
+  async update(
+    @Param('id') id: string,
+    @Body() body: UpdatePlanBody,
+    @Req() req: FastifyRequest,
+    @CurrentUser() scope: RequestScope,
+  ) {
+    const result = await this.service.update(id, body, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+    });
     if (result.isErr()) {
       if (result.error.code === 'PLAN_NOT_FOUND') {
         throw new NotFoundException(result.error);
@@ -108,8 +131,18 @@ export class PlatformPlansController {
   @Post('tenants/:id/assign-plan')
   @HttpCode(HttpStatus.OK)
   @CheckPlatformPermissions('assign', 'PlatformPlan')
-  async assignPlan(@Param('id') tenantId: string, @Body() body: AssignPlanBody) {
-    const result = await this.service.assignPlan(tenantId, body.plan_id);
+  async assignPlan(
+    @Param('id') tenantId: string,
+    @Body() body: AssignPlanBody,
+    @Req() req: FastifyRequest,
+    @CurrentUser() scope: RequestScope,
+  ) {
+    const result = await this.service.assignPlan(tenantId, body.plan_id, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+    });
     if (result.isErr()) {
       switch (result.error.code) {
         case 'TENANT_NOT_FOUND':

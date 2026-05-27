@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ok, err } from 'neverthrow';
 import type { Result } from 'neverthrow';
 import { PlatformPrismaService } from '../../core/tenant/platform-prisma.service';
+import { PlatformAuditService } from '../audit/platform-audit.service';
 
 export type PlatformPlanErrorCode =
   | 'PLAN_NOT_FOUND'
@@ -30,7 +31,10 @@ export interface UpdatePlanInput {
 
 @Injectable()
 export class PlatformPlansService {
-  constructor(private readonly db: PlatformPrismaService) {}
+  constructor(
+    private readonly db: PlatformPrismaService,
+    private readonly audit: PlatformAuditService,
+  ) {}
 
   async list(): Promise<Result<any[], PlatformPlanError>> {
     const plans = await this.db.client.subscriptionPlan.findMany({
@@ -39,7 +43,10 @@ export class PlatformPlansService {
     return ok(plans);
   }
 
-  async create(input: CreatePlanInput): Promise<Result<any, PlatformPlanError>> {
+  async create(
+    input: CreatePlanInput,
+    auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
+  ): Promise<Result<any, PlatformPlanError>> {
     try {
       const plan = await this.db.client.subscriptionPlan.create({
         data: {
@@ -50,13 +57,31 @@ export class PlatformPlansService {
           price_monthly: input.price_monthly ?? null,
         },
       });
+
+      if (auditMeta) {
+        await this.audit.writeLog({
+          actor_id: auditMeta.actor_id,
+          actor_role: auditMeta.actor_role,
+          action: 'plan:create',
+          target_id: plan.id,
+          actor_ip: auditMeta.actor_ip,
+          user_agent: auditMeta.user_agent,
+          details: { plan_id: plan.id, name: plan.name, max_branches: plan.max_branches, max_users: plan.max_users },
+          reason: auditMeta.reason,
+        });
+      }
+
       return ok(plan);
     } catch (e: any) {
       return err({ code: 'TRANSACTION_FAILED', message: e?.message ?? 'Failed to create plan' });
     }
   }
 
-  async update(id: string, input: UpdatePlanInput): Promise<Result<any, PlatformPlanError>> {
+  async update(
+    id: string,
+    input: UpdatePlanInput,
+    auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
+  ): Promise<Result<any, PlatformPlanError>> {
     const existing = await this.db.client.subscriptionPlan.findUnique({ where: { id } });
     if (!existing) {
       return err({ code: 'PLAN_NOT_FOUND', message: 'Plan not found' });
@@ -72,10 +97,27 @@ export class PlatformPlansService {
       },
     });
 
+    if (auditMeta) {
+      await this.audit.writeLog({
+        actor_id: auditMeta.actor_id,
+        actor_role: auditMeta.actor_role,
+        action: 'plan:update',
+        target_id: id,
+        actor_ip: auditMeta.actor_ip,
+        user_agent: auditMeta.user_agent,
+        details: { plan_id: id, input },
+        reason: auditMeta.reason,
+      });
+    }
+
     return ok(updated);
   }
 
-  async assignPlan(tenantId: string, planId: string): Promise<Result<void, PlatformPlanError>> {
+  async assignPlan(
+    tenantId: string,
+    planId: string,
+    auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
+  ): Promise<Result<void, PlatformPlanError>> {
     const tenant = await this.db.client.tenant.findUnique({ where: { id: tenantId } });
     if (!tenant) {
       return err({ code: 'TENANT_NOT_FOUND', message: 'Tenant not found' });
@@ -98,6 +140,19 @@ export class PlatformPlansService {
     } else {
       await this.db.client.tenantPlan.create({
         data: { tenant_id: tenantId, plan_id: planId },
+      });
+    }
+
+    if (auditMeta) {
+      await this.audit.writeLog({
+        actor_id: auditMeta.actor_id,
+        actor_role: auditMeta.actor_role,
+        action: 'tenant:assign_plan',
+        target_id: tenantId,
+        actor_ip: auditMeta.actor_ip,
+        user_agent: auditMeta.user_agent,
+        details: { tenant_id: tenantId, plan_id: planId },
+        reason: auditMeta.reason,
       });
     }
 

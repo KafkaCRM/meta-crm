@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { ok, err } from 'neverthrow';
 import type { Result } from 'neverthrow';
 import { PlatformPrismaService } from '../../core/tenant/platform-prisma.service';
+import { PlatformAuditService } from '../audit/platform-audit.service';
 
 const PluginManifestSchema = z.object({
   id: z.string().min(1, 'Manifest id is required'),
@@ -39,7 +40,10 @@ export interface CreatePluginInput {
 
 @Injectable()
 export class PlatformPluginsService {
-  constructor(private readonly db: PlatformPrismaService) {}
+  constructor(
+    private readonly db: PlatformPrismaService,
+    private readonly audit: PlatformAuditService,
+  ) {}
 
   validateManifest(manifest: unknown): Result<PluginManifest, PlatformPluginError> {
     const parsed = PluginManifestSchema.safeParse(manifest);
@@ -61,7 +65,10 @@ export class PlatformPluginsService {
     return ok(plugins);
   }
 
-  async create(input: CreatePluginInput): Promise<Result<any, PlatformPluginError>> {
+  async create(
+    input: CreatePluginInput,
+    auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
+  ): Promise<Result<any, PlatformPluginError>> {
     const validation = this.validateManifest(input.manifest);
     if (validation.isErr()) {
       return err(validation.error);
@@ -76,13 +83,30 @@ export class PlatformPluginsService {
           status: 'active',
         },
       });
+
+      if (auditMeta) {
+        await this.audit.writeLog({
+          actor_id: auditMeta.actor_id,
+          actor_role: auditMeta.actor_role,
+          action: 'plugin:create',
+          target_id: plugin.id,
+          actor_ip: auditMeta.actor_ip,
+          user_agent: auditMeta.user_agent,
+          details: { plugin_id: plugin.id, package_name: plugin.package_name, version: plugin.version },
+          reason: auditMeta.reason,
+        });
+      }
+
       return ok(plugin);
     } catch (e: any) {
       return err({ code: 'TRANSACTION_FAILED', message: e?.message ?? 'Failed to create plugin' });
     }
   }
 
-  async deprecate(id: string): Promise<Result<void, PlatformPluginError>> {
+  async deprecate(
+    id: string,
+    auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
+  ): Promise<Result<void, PlatformPluginError>> {
     const existing = await this.db.client.pluginRegistry.findUnique({ where: { id } });
     if (!existing) {
       return err({ code: 'PLUGIN_NOT_FOUND', message: 'Plugin not found' });
@@ -93,10 +117,26 @@ export class PlatformPluginsService {
       data: { status: 'deprecated' },
     });
 
+    if (auditMeta) {
+      await this.audit.writeLog({
+        actor_id: auditMeta.actor_id,
+        actor_role: auditMeta.actor_role,
+        action: 'plugin:deprecate',
+        target_id: id,
+        actor_ip: auditMeta.actor_ip,
+        user_agent: auditMeta.user_agent,
+        details: { plugin_id: id, package_name: existing.package_name },
+        reason: auditMeta.reason,
+      });
+    }
+
     return ok(undefined);
   }
 
-  async disable(id: string): Promise<Result<void, PlatformPluginError>> {
+  async disable(
+    id: string,
+    auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
+  ): Promise<Result<void, PlatformPluginError>> {
     const existing = await this.db.client.pluginRegistry.findUnique({ where: { id } });
     if (!existing) {
       return err({ code: 'PLUGIN_NOT_FOUND', message: 'Plugin not found' });
@@ -106,6 +146,19 @@ export class PlatformPluginsService {
       where: { id },
       data: { status: 'disabled' },
     });
+
+    if (auditMeta) {
+      await this.audit.writeLog({
+        actor_id: auditMeta.actor_id,
+        actor_role: auditMeta.actor_role,
+        action: 'plugin:disable',
+        target_id: id,
+        actor_ip: auditMeta.actor_ip,
+        user_agent: auditMeta.user_agent,
+        details: { plugin_id: id, package_name: existing.package_name },
+        reason: auditMeta.reason,
+      });
+    }
 
     return ok(undefined);
   }

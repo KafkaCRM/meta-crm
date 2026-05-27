@@ -5,7 +5,5 @@ export { PlanForm } from './PlanForm';
 export { PlatformBilling } from './PlatformBilling';
 export { PlatformDashboard } from './PlatformDashboard';
 export { SystemHealth } from './SystemHealth';
-export { ObjectManager } from './ObjectManager';
-export { LayoutBuilder } from './LayoutBuilder';
-export { FlowBuilder } from './FlowBuilder';
+export { PlatformAuditLogs } from './PlatformAuditLogs';
 

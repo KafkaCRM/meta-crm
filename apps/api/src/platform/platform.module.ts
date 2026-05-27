@@ -9,6 +9,8 @@ import { PlatformPluginsController } from './plugins/platform-plugins.controller
 import { PlatformPluginsService } from './plugins/platform-plugins.service';
 import { PlatformTeamController } from './team/platform-team.controller';
 import { PlatformTeamService } from './team/platform-team.service';
+import { PlatformAuditController } from './audit/platform-audit.controller';
+import { PlatformAuditService } from './audit/platform-audit.service';
 
 import { TenantModule } from '../core/tenant/tenant.module';
 
@@ -19,12 +21,15 @@ import { TenantModule } from '../core/tenant/tenant.module';
     PlatformPlansController,
     PlatformPluginsController,
     PlatformTeamController,
+    PlatformAuditController,
   ],
   providers: [
     PlatformTenantsService,
     PlatformPlansService,
     PlatformPluginsService,
     PlatformTeamService,
+    PlatformAuditService,
   ],
+  exports: [PlatformAuditService],
 })
 export class PlatformModule {}

@@ -5,6 +5,8 @@ import { ok, err } from 'neverthrow';
 import type { Result } from 'neverthrow';
 import { PlatformPrismaService } from '../../core/tenant/platform-prisma.service';
 import { AVAILABLE_CAPABILITIES } from '../../core/capability/capability.service';
+import { PlatformAuditService } from '../audit/platform-audit.service';
+import type { RequestScope } from '../../core/tenant/request-scope.interface';
 
 const BCRYPT_COST = 12;
 
@@ -91,7 +93,10 @@ export interface TenantDetail {
 
 @Injectable()
 export class PlatformTenantsService {
-  constructor(private readonly db: PlatformPrismaService) {}
+  constructor(
+    private readonly db: PlatformPrismaService,
+    private readonly audit: PlatformAuditService,
+  ) {}
 
   async list(params: {
     cursor?: string;
@@ -195,6 +200,7 @@ export class PlatformTenantsService {
   async updateEntitlements(
     id: string,
     pluginIds: string[],
+    auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
   ): Promise<Result<TenantDetail, PlatformTenantError>> {
     const tenant = await this.db.client.tenant.findUnique({ where: { id } });
     if (!tenant) {
@@ -232,6 +238,19 @@ export class PlatformTenantsService {
         }
       });
 
+      if (auditMeta) {
+        await this.audit.writeLog({
+          actor_id: auditMeta.actor_id,
+          actor_role: auditMeta.actor_role,
+          action: 'tenant:update_entitlements',
+          target_id: id,
+          actor_ip: auditMeta.actor_ip,
+          user_agent: auditMeta.user_agent,
+          details: { tenant_id: id, plugin_ids: pluginIds },
+          reason: auditMeta.reason,
+        });
+      }
+
       return this.findOne(id);
     } catch (e: any) {
       return err({
@@ -244,6 +263,7 @@ export class PlatformTenantsService {
   async updateCapabilities(
     id: string,
     capabilities: string[],
+    auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
   ): Promise<Result<TenantDetail, PlatformTenantError>> {
     const tenant = await this.db.client.tenant.findUnique({ where: { id } });
     if (!tenant) {
@@ -261,6 +281,19 @@ export class PlatformTenantsService {
         },
       });
 
+      if (auditMeta) {
+        await this.audit.writeLog({
+          actor_id: auditMeta.actor_id,
+          actor_role: auditMeta.actor_role,
+          action: 'tenant:update_capabilities',
+          target_id: id,
+          actor_ip: auditMeta.actor_ip,
+          user_agent: auditMeta.user_agent,
+          details: { tenant_id: id, capabilities },
+          reason: auditMeta.reason,
+        });
+      }
+
       return this.findOne(id);
     } catch (e: any) {
       return err({
@@ -272,6 +305,7 @@ export class PlatformTenantsService {
 
   async resetOwnerPassword(
     id: string,
+    auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
   ): Promise<Result<{ email: string; temporary_password: string }, PlatformTenantError>> {
     const tenant = await this.db.client.tenant.findUnique({ where: { id } });
     if (!tenant) {
@@ -296,6 +330,19 @@ export class PlatformTenantsService {
         data: { password_hash: passwordHash },
       });
 
+      if (auditMeta) {
+        await this.audit.writeLog({
+          actor_id: auditMeta.actor_id,
+          actor_role: auditMeta.actor_role,
+          action: 'tenant:reset_owner_password',
+          target_id: id,
+          actor_ip: auditMeta.actor_ip,
+          user_agent: auditMeta.user_agent,
+          details: { tenant_id: id, owner_id: owner.id, owner_email: owner.email },
+          reason: auditMeta.reason,
+        });
+      }
+
       return ok({
         email: owner.email,
         temporary_password: temporaryPassword,
@@ -308,7 +355,10 @@ export class PlatformTenantsService {
     }
   }
 
-  async create(input: CreateTenantInput): Promise<Result<CreateTenantResponse, PlatformTenantError>> {
+  async create(
+    input: CreateTenantInput,
+    auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
+  ): Promise<Result<CreateTenantResponse, PlatformTenantError>> {
     const existing = await this.db.client.tenant.findUnique({ where: { slug: input.slug } });
     if (existing) {
       return err({ code: 'SLUG_TAKEN', message: `Slug "${input.slug}" is already taken` });
@@ -419,6 +469,19 @@ export class PlatformTenantsService {
         }
       }
 
+      if (auditMeta) {
+        await this.audit.writeLog({
+          actor_id: auditMeta.actor_id,
+          actor_role: auditMeta.actor_role,
+          action: 'tenant:create',
+          target_id: tenant.id,
+          actor_ip: auditMeta.actor_ip,
+          user_agent: auditMeta.user_agent,
+          details: { tenant_id: tenant.id, name: tenant.name, slug: tenant.slug, industry: tenant.industry, plan_id: input.plan_id },
+          reason: auditMeta.reason,
+        });
+      }
+
       return ok({
         tenant: {
           id: tenant.id,
@@ -439,7 +502,10 @@ export class PlatformTenantsService {
     }
   }
 
-  async suspend(id: string): Promise<Result<void, PlatformTenantError>> {
+  async suspend(
+    id: string,
+    auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
+  ): Promise<Result<void, PlatformTenantError>> {
     const tenant = await this.db.client.tenant.findUnique({ where: { id } });
     if (!tenant) {
       return err({ code: 'TENANT_NOT_FOUND', message: 'Tenant not found' });
@@ -450,10 +516,26 @@ export class PlatformTenantsService {
       data: { status: 'suspended' },
     });
 
+    if (auditMeta) {
+      await this.audit.writeLog({
+        actor_id: auditMeta.actor_id,
+        actor_role: auditMeta.actor_role,
+        action: 'tenant:suspend',
+        target_id: id,
+        actor_ip: auditMeta.actor_ip,
+        user_agent: auditMeta.user_agent,
+        details: { tenant_id: id, tenant_name: tenant.name },
+        reason: auditMeta.reason,
+      });
+    }
+
     return ok(undefined);
   }
 
-  async reactivate(id: string): Promise<Result<void, PlatformTenantError>> {
+  async reactivate(
+    id: string,
+    auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
+  ): Promise<Result<void, PlatformTenantError>> {
     const tenant = await this.db.client.tenant.findUnique({ where: { id } });
     if (!tenant) {
       return err({ code: 'TENANT_NOT_FOUND', message: 'Tenant not found' });
@@ -463,6 +545,19 @@ export class PlatformTenantsService {
       where: { id },
       data: { status: 'active' },
     });
+
+    if (auditMeta) {
+      await this.audit.writeLog({
+        actor_id: auditMeta.actor_id,
+        actor_role: auditMeta.actor_role,
+        action: 'tenant:reactivate',
+        target_id: id,
+        actor_ip: auditMeta.actor_ip,
+        user_agent: auditMeta.user_agent,
+        details: { tenant_id: id, tenant_name: tenant.name },
+        reason: auditMeta.reason,
+      });
+    }
 
     return ok(undefined);
   }
@@ -696,6 +791,7 @@ export class PlatformTenantsService {
   async updateOverrides(
     id: string,
     overrides: Record<string, any>,
+    auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
   ): Promise<Result<TenantDetail, PlatformTenantError>> {
     const tenant = await this.db.client.tenant.findUnique({ where: { id } });
     if (!tenant) {
@@ -715,6 +811,19 @@ export class PlatformTenantsService {
           config_json: config,
         },
       });
+
+      if (auditMeta) {
+        await this.audit.writeLog({
+          actor_id: auditMeta.actor_id,
+          actor_role: auditMeta.actor_role,
+          action: 'tenant:update_overrides',
+          target_id: id,
+          actor_ip: auditMeta.actor_ip,
+          user_agent: auditMeta.user_agent,
+          details: { tenant_id: id, overrides },
+          reason: auditMeta.reason,
+        });
+      }
 
       return this.findOne(id);
     } catch (e: any) {
@@ -763,6 +872,7 @@ export class PlatformTenantsService {
     tenantId: string,
     capabilityId: string,
     userId: string,
+    auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
   ): Promise<Result<{ id: string; enabled: boolean }, PlatformTenantError>> {
     const tenant = await this.db.client.tenant.findUnique({ where: { id: tenantId } });
     if (!tenant) {
@@ -806,6 +916,19 @@ export class PlatformTenantsService {
       data: { config_json: config },
     });
 
+    if (auditMeta) {
+      await this.audit.writeLog({
+        actor_id: auditMeta.actor_id,
+        actor_role: auditMeta.actor_role,
+        action: 'tenant:enable_capability',
+        target_id: tenantId,
+        actor_ip: auditMeta.actor_ip,
+        user_agent: auditMeta.user_agent,
+        details: { tenant_id: tenantId, capability_id: capabilityId },
+        reason: auditMeta.reason,
+      });
+    }
+
     return ok({ id: capabilityId, enabled: true });
   }
 
@@ -813,6 +936,7 @@ export class PlatformTenantsService {
     tenantId: string,
     capabilityId: string,
     userId: string,
+    auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
   ): Promise<Result<{ id: string; enabled: boolean }, PlatformTenantError>> {
     const tenant = await this.db.client.tenant.findUnique({ where: { id: tenantId } });
     if (!tenant) {
@@ -856,6 +980,19 @@ export class PlatformTenantsService {
       data: { config_json: config },
     });
 
+    if (auditMeta) {
+      await this.audit.writeLog({
+        actor_id: auditMeta.actor_id,
+        actor_role: auditMeta.actor_role,
+        action: 'tenant:disable_capability',
+        target_id: tenantId,
+        actor_ip: auditMeta.actor_ip,
+        user_agent: auditMeta.user_agent,
+        details: { tenant_id: tenantId, capability_id: capabilityId },
+        reason: auditMeta.reason,
+      });
+    }
+
     return ok({ id: capabilityId, enabled: false });
   }
 
@@ -894,6 +1031,7 @@ export class PlatformTenantsService {
   async installPlugin(
     tenantId: string,
     pluginId: string,
+    auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
   ): Promise<Result<{ id: string; installed: boolean }, PlatformTenantError>> {
     const tenant = await this.db.client.tenant.findUnique({
       where: { id: tenantId },
@@ -944,12 +1082,26 @@ export class PlatformTenantsService {
       });
     }
 
+    if (auditMeta) {
+      await this.audit.writeLog({
+        actor_id: auditMeta.actor_id,
+        actor_role: auditMeta.actor_role,
+        action: 'tenant:install_plugin',
+        target_id: tenantId,
+        actor_ip: auditMeta.actor_ip,
+        user_agent: auditMeta.user_agent,
+        details: { tenant_id: tenantId, plugin_id: pluginId },
+        reason: auditMeta.reason,
+      });
+    }
+
     return ok({ id: pluginId, installed: true });
   }
 
   async uninstallPlugin(
     tenantId: string,
     pluginId: string,
+    auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
   ): Promise<Result<{ id: string; installed: boolean }, PlatformTenantError>> {
     const tenant = await this.db.client.tenant.findUnique({ where: { id: tenantId } });
     if (!tenant) {
@@ -972,6 +1124,19 @@ export class PlatformTenantsService {
           plugin_registry_id: pluginId,
           enabled: false,
         },
+      });
+    }
+
+    if (auditMeta) {
+      await this.audit.writeLog({
+        actor_id: auditMeta.actor_id,
+        actor_role: auditMeta.actor_role,
+        action: 'tenant:uninstall_plugin',
+        target_id: tenantId,
+        actor_ip: auditMeta.actor_ip,
+        user_agent: auditMeta.user_agent,
+        details: { tenant_id: tenantId, plugin_id: pluginId },
+        reason: auditMeta.reason,
       });
     }
 

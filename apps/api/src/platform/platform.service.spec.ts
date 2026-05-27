@@ -12,6 +12,11 @@ import { PlatformTenantsService } from './tenants/platform-tenants.service';
 import type { RequestScope } from '../core/tenant/request-scope.interface';
 import type { PlatformPrismaService } from '../core/tenant/platform-prisma.service';
 
+const mockAudit = {
+  writeLog: vi.fn().mockResolvedValue({ isOk: () => true, isErr: () => false }),
+  list: vi.fn(),
+} as any;
+
 /* ------------------------------------------------------------------ */
 /*  PlatformPermissionsGuard — tenant JWT rejection                     */
 /* ------------------------------------------------------------------ */
@@ -98,7 +103,7 @@ describe('PlatformPluginsService', () => {
   beforeEach(() => {
     const mockClient = {} as any;
     const db = { client: mockClient } as unknown as PlatformPrismaService;
-    svc = new PlatformPluginsService(db);
+    svc = new PlatformPluginsService(db, mockAudit);
   });
 
   describe('validateManifest', () => {
@@ -181,7 +186,7 @@ describe('PlatformTeamService — role escalation prevention', () => {
         platformUserRole: { updateMany: vi.fn(), create: vi.fn() },
       },
     };
-    svc = new PlatformTeamService(mockDb as unknown as PlatformPrismaService);
+    svc = new PlatformTeamService(mockDb as unknown as PlatformPrismaService, mockAudit);
   });
 
   it('platform_sales inviting platform_admin returns ROLE_ESCALATION', async () => {
@@ -288,7 +293,7 @@ describe('PlatformTenantsService — getHierarchy', () => {
         workflowStage: { groupBy: vi.fn(), findMany: vi.fn() },
       },
     };
-    svc = new PlatformTenantsService(mockDb as unknown as PlatformPrismaService);
+    svc = new PlatformTenantsService(mockDb as unknown as PlatformPrismaService, mockAudit);
   });
 
   it('returns TENANT_NOT_FOUND when tenant does not exist', async () => {
@@ -356,7 +361,7 @@ describe('PlatformTenantsService — create', () => {
         tenantPlugin: { create: vi.fn() },
       },
     };
-    svc = new PlatformTenantsService(mockDb as unknown as PlatformPrismaService);
+    svc = new PlatformTenantsService(mockDb as unknown as PlatformPrismaService, mockAudit);
     // Mock applyTemplate to return ok
     vi.spyOn(svc, 'applyTemplate').mockResolvedValue({ isErr: () => false, isOk: () => true } as any);
   });
