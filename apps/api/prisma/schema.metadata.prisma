@@ -9,9 +9,12 @@ model FieldDefinition {
   required        Boolean  @default(false)
   order           Int      @default(0)
   visibility_rules Json     @default("[]")
+  custom_obj_id   String?
+  related_to      String?  // Target object api_name for lookup field types
   created_at      DateTime @default(now())
 
   tenant Tenant @relation(fields: [tenant_id], references: [id])
+  customObject CustomObjectDefinition? @relation(fields: [custom_obj_id], references: [id])
 
   @@index([tenant_id, entity_type])
 }
@@ -34,3 +37,16 @@ model IndustryTemplate {
   version    String   @default("1.0")
   created_at DateTime @default(now())
 }
+
+model SetupAuditTrail {
+  id         String   @id @default(cuid())
+  tenant_id  String
+  user_email String
+  action     String   // e.g., "Created Field", "Updated Layout", "Activated Flow"
+  section    String   // e.g., "Object Manager", "Layout Designer", "Process Builder"
+  details    String   // JSON-serialized string of modifications
+  created_at DateTime @default(now())
+
+  @@index([tenant_id])
+}
+
