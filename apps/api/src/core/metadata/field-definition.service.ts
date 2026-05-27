@@ -3,6 +3,7 @@ import { ok, err } from 'neverthrow';
 import type { Result } from 'neverthrow';
 import { TenantScopedPrismaService } from '../tenant/tenant-scoped-prisma.service';
 import { CreateFieldDefinitionDto, UpdateFieldDefinitionDto } from './dto/metadata.dto';
+import { SetupAuditTrailService } from './setup-audit.service';
 
 export type FieldErrorCode = 'NOT_FOUND';
 
@@ -13,7 +14,10 @@ export interface FieldError {
 
 @Injectable()
 export class FieldDefinitionService {
-  constructor(private readonly db: TenantScopedPrismaService) {}
+  constructor(
+    private readonly db: TenantScopedPrismaService,
+    private readonly audit: SetupAuditTrailService,
+  ) {}
 
   async findByEntity(entityType: string): Promise<Result<any[], FieldError>> {
     const fields = await this.db.getClient().fieldDefinition.findMany({
@@ -34,8 +38,17 @@ export class FieldDefinitionService {
         required: dto.required ?? false,
         order: dto.order ?? 0,
         visibility_rules: (dto.visibility_rules ?? []) as any,
+        related_to: dto.related_to,
       } as any,
     });
+
+    // Write metadata change log to Setup Audit Trail
+    await this.audit.log(
+      `Created Custom Field '${field.label}' (${field.name})`,
+      'Object Manager',
+      { entity_type: field.entity_type, name: field.name, field_type: field.field_type, related_to: field.related_to }
+    );
+
     return ok(field);
   }
 
@@ -56,6 +69,13 @@ export class FieldDefinitionService {
       where: { id },
       data: data as any,
     });
+
+    await this.audit.log(
+      `Updated Field '${updated.label}' (${updated.name})`,
+      'Object Manager',
+      { entity_type: updated.entity_type, name: updated.name }
+    );
+
     return ok(updated);
   }
 
@@ -66,6 +86,14 @@ export class FieldDefinitionService {
     }
 
     await this.db.getClient().fieldDefinition.delete({ where: { id } });
+
+    // Write metadata change log to Setup Audit Trail
+    await this.audit.log(
+      `Deleted Custom Field '${existing.label}' (${existing.name})`,
+      'Object Manager',
+      { entity_type: existing.entity_type, name: existing.name }
+    );
+
     return ok(undefined);
   }
 }
