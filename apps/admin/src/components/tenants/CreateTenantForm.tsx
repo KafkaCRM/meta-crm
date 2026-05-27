@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { createTenant, CreateTenantResponse, listPlans } from '@/api/platform';
 import { useNavigate } from '@tanstack/react-router';
@@ -19,6 +19,45 @@ import { toast } from 'sonner';
 
 const INDUSTRIES = ['education', 'healthcare', 'real-estate', 'retail', 'finance', 'technology'];
 
+const AVAILABLE_CAPABILITIES = [
+  {
+    id: 'capability/enrollment',
+    name: 'Enrollment',
+    description: 'Enables academic courses, cohort tracking, and enrollment workflow stages.',
+    industry: 'education',
+  },
+  {
+    id: 'capability/appointment',
+    name: 'Appointments & Scheduling',
+    description: 'Adds appointments, slots, availability schedules, and calendar view.',
+    industry: 'healthcare',
+  },
+  {
+    id: 'capability/billing',
+    name: 'Invoicing & Billing',
+    description: 'Adds invoice documents, line items, payments, and billing ledger.',
+    industry: 'finance',
+  },
+  {
+    id: 'capability/property-listing',
+    name: 'Property Listings',
+    description: 'Adds property coordinates, bedrooms, floor plans, and listing status.',
+    industry: 'real-estate',
+  },
+  {
+    id: 'capability/order-management',
+    name: 'Order Management',
+    description: 'Adds order creation, product line items, payment status, and order tracking.',
+    industry: 'retail',
+  },
+  {
+    id: 'capability/customer-onboarding',
+    name: 'Customer Onboarding',
+    description: 'Adds multi-step customer onboarding workflows, tracking setup steps and contract values.',
+    industry: 'technology',
+  },
+];
+
 export function CreateTenantForm() {
   const navigate = useNavigate();
   const [name, setName] = useState('');
@@ -31,11 +70,22 @@ export function CreateTenantForm() {
   const [result, setResult] = useState<CreateTenantResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [selectedCapabilities, setSelectedCapabilities] = useState<string[]>([]);
 
-  const { data: plans } = useQuery({
+  const { data: plans, isLoading: isLoadingPlans, error: plansError } = useQuery({
     queryKey: ['plans'],
     queryFn: listPlans,
   });
+
+  // Auto-select first plan when plans load
+  useEffect(() => {
+    if (plans && plans.length > 0 && !planId) {
+      const firstPlan = plans[0];
+      if (firstPlan) {
+        setPlanId(firstPlan.id);
+      }
+    }
+  }, [plans, planId]);
 
   const handleSlugChange = (val: string) => {
     // Auto-sanitize: lowercase, replace spaces/invalid chars with hyphens
@@ -44,6 +94,18 @@ export function CreateTenantForm() {
       .replace(/[^a-z0-9-]/g, '')
       .replace(/-+/g, '-');
     setSlug(sanitized);
+  };
+
+  const handleIndustryChange = (val: string) => {
+    setIndustry(val);
+    const coreCap = AVAILABLE_CAPABILITIES.find(c => c.industry === val);
+    setSelectedCapabilities(coreCap ? [coreCap.id] : []);
+  };
+
+  const handleToggleCapability = (id: string) => {
+    setSelectedCapabilities(prev =>
+      prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
+    );
   };
 
   const handleCopyPassword = async (password: string) => {
@@ -79,6 +141,7 @@ export function CreateTenantForm() {
           name: ownerName,
           email: ownerEmail,
         },
+        capabilities: selectedCapabilities,
       });
       setResult(response);
       toast.success('Workspace tenant provisioned successfully!');
@@ -258,7 +321,7 @@ export function CreateTenantForm() {
               <select
                 id="industry"
                 value={industry}
-                onChange={(e) => setIndustry(e.target.value)}
+                onChange={(e) => handleIndustryChange(e.target.value)}
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all cursor-pointer"
                 required
               >
@@ -271,6 +334,80 @@ export function CreateTenantForm() {
               </select>
             </div>
 
+            {/* Dynamic Capabilities Configuration */}
+            {industry && (
+              <div className="p-4 bg-slate-50/60 rounded-xl border border-slate-200/80 shadow-inner space-y-3.5 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="flex items-center gap-1.5 pb-2 border-b border-slate-200/60">
+                  <div className="w-5 h-5 rounded-md bg-indigo-50 flex items-center justify-center text-indigo-500">
+                    <Sparkles size={12} className="animate-pulse" />
+                  </div>
+                  <h4 className="text-[11px] font-semibold text-slate-800 tracking-wide uppercase">Capabilities & Workflows</h4>
+                </div>
+
+                <div className="space-y-3">
+                  {/* Core Capability Section */}
+                  <div>
+                    <span className="text-[9px] font-bold text-indigo-600 tracking-wider uppercase block mb-1.5">Core (Included)</span>
+                    {AVAILABLE_CAPABILITIES.filter(c => c.industry === industry).map(cap => (
+                      <div key={cap.id} className="flex items-start gap-2.5 p-2.5 bg-indigo-50/40 rounded-lg border border-indigo-100/50">
+                        <input
+                          type="checkbox"
+                          checked={true}
+                          disabled={true}
+                          className="mt-0.5 h-3.5 w-3.5 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500 cursor-not-allowed"
+                        />
+                        <div>
+                          <label className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                            {cap.name}
+                            <span className="text-[9px] font-bold px-1.5 py-0.2 bg-indigo-100 text-indigo-700 rounded-full">Primary</span>
+                          </label>
+                          <p className="text-[11px] text-slate-500 leading-normal mt-0.5">{cap.description}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Optional Capabilities Section */}
+                  <div>
+                    <span className="text-[9px] font-bold text-slate-500 tracking-wider uppercase block mb-1.5">Optional Add-ons</span>
+                    <div className="grid grid-cols-1 gap-2">
+                      {AVAILABLE_CAPABILITIES.filter(c => c.industry !== industry).map(cap => {
+                        const isChecked = selectedCapabilities.includes(cap.id);
+                        return (
+                          <div 
+                            key={cap.id} 
+                            onClick={() => handleToggleCapability(cap.id)}
+                            className={`flex items-start gap-2.5 p-2.5 rounded-lg border transition-all duration-200 cursor-pointer ${
+                              isChecked 
+                                ? 'bg-white border-indigo-200 shadow-sm ring-1 ring-indigo-100/40' 
+                                : 'bg-white/80 border-slate-200 hover:border-slate-300 hover:bg-white'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                handleToggleCapability(cap.id);
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                            />
+                            <div>
+                              <label className="text-xs font-semibold text-slate-800 cursor-pointer">
+                                {cap.name}
+                              </label>
+                              <p className="text-[11px] text-slate-500 leading-normal mt-0.5">{cap.description}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Plan Picker */}
             <div>
               <label htmlFor="plan" className="mb-1 block text-xs font-semibold text-slate-600">
@@ -282,14 +419,22 @@ export function CreateTenantForm() {
                 onChange={(e) => setPlanId(e.target.value)}
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all cursor-pointer"
                 required
+                disabled={isLoadingPlans || !!plansError}
               >
-                <option value="">Select plan entitlement...</option>
+                {isLoadingPlans && <option value="">Loading subscription plans...</option>}
+                {plansError && <option value="">Failed to load subscription plans</option>}
+                {!isLoadingPlans && !plansError && <option value="">Select plan entitlement...</option>}
                 {plans?.map((plan) => (
                   <option key={plan.id} value={plan.id}>
                     {plan.name} — Max {plan.max_branches} branches, {plan.max_users} users
                   </option>
                 ))}
               </select>
+              {plansError && (
+                <p className="mt-1 text-[11px] text-rose-600 font-medium">
+                  Error loading plans. Please check the backend connection.
+                </p>
+              )}
             </div>
           </div>
           
