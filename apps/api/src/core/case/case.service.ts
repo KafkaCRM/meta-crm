@@ -8,6 +8,7 @@ import type { CreateCaseDto } from './dto/create-case.dto';
 import type { RequestScope } from '../tenant/request-scope.interface';
 import { CampaignAutoTagService } from '../campaign/campaign-auto-tag.service';
 import { FieldValidationService } from '../metadata/field-validation.service';
+import { HooksService } from '../hooks/hooks.service';
 
 export type CaseErrorCode = 'NOT_FOUND' | 'PARTY_NOT_FOUND' | 'WORKFLOW_NOT_FOUND' | 'VALIDATION_FAILED';
 
@@ -25,6 +26,7 @@ export class CaseService {
     private readonly caseEvent: CaseEventService,
     private readonly campaignAutoTagService: CampaignAutoTagService,
     private readonly fieldValidation: FieldValidationService,
+    private readonly hooks: HooksService,
   ) {}
 
   async findMany(params: {
@@ -202,6 +204,14 @@ export class CaseService {
       payload: { title: dto.title, type: dto.type, stage: dto.stage },
     });
 
+    const tenantId = scope?.tenant_id || '';
+    this.hooks.emit('record.event', {
+      tenantId,
+      objectType: 'Case',
+      event: 'create',
+      record: caseRecord,
+    });
+
     return ok(caseRecord);
   }
 
@@ -253,6 +263,14 @@ export class CaseService {
         actor_type: 'user',
       });
     }
+
+    const tenantId = scope?.tenant_id || '';
+    this.hooks.emit('record.event', {
+      tenantId,
+      objectType: 'Case',
+      event: 'update',
+      record: updated,
+    });
 
     return ok(updated);
   }
