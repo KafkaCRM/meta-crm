@@ -172,15 +172,15 @@
 
 /* === Custom utility classes === */
 @layer utilities {
-  .canvas { background-color: #f8fafc; }
-  .surface-1 { background-color: #ffffff; }
-  .surface-2 { background-color: #f1f5f9; }
-  .fin-orange { color: #4f46e5; }
-  .bg-fin-orange { background-color: #4f46e5; }
-  .ink { color: #0f172a; }
-  .ink-muted { color: #64748b; }
-  .ink-subtle { color: #94a3b8; }
-  .hairline { border-color: #e2e8f0; }
+  .canvas { background-color: var(--background); }
+  .surface-1 { background-color: var(--card); }
+  .surface-2 { background-color: var(--muted); }
+  .fin-orange { color: var(--color-fin-orange); }
+  .bg-fin-orange { background-color: var(--color-fin-orange); }
+  .ink { color: var(--foreground); }
+  .ink-muted { color: var(--muted-foreground); }
+  .ink-subtle { color: oklch(0.706 0.012 240); }
+  .hairline { border-color: var(--border); }
   .tracking-display { letter-spacing: -0.03em; }
   .tracking-headline { letter-spacing: -0.02em; }
 }

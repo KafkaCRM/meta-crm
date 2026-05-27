@@ -4,6 +4,7 @@ import { settingsApi } from '@/api/settings';
 import { Lock, FileText, ChevronDown, ChevronUp, AlertCircle, Copy } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
+import { WhatsAppButton } from '@/components/shared/WhatsAppButton';
 
 
 interface RecordLayoutProps {
@@ -117,7 +118,7 @@ export function RecordLayout({ objectType, record, t }: RecordLayoutProps) {
         return (
           <div 
             key={section.name} 
-            className="bg-white border border-[#e2e8f0] rounded-xl shadow-none overflow-hidden"
+            className="bg-white border border-border rounded-xl shadow-none overflow-hidden"
           >
             {/* Section Header */}
             <button
@@ -137,7 +138,7 @@ export function RecordLayout({ objectType, record, t }: RecordLayoutProps) {
             {/* Section Content */}
             {!isCollapsed && (
               <>
-                <Separator className="bg-[#e2e8f0]" />
+                <Separator />
                 <div className="p-4">
                   <div className={`grid gap-4 ${section.columns === 1 ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
                     {section.fields.map((layoutField: any) => {
@@ -147,6 +148,8 @@ export function RecordLayout({ objectType, record, t }: RecordLayoutProps) {
                       
                       // Format values depending on type
                       let displayVal: React.ReactNode = '—';
+                      const isPhone = fieldDef?.field_type === 'phone' || layoutField.name === 'phone' || layoutField.name === 'phone_raw';
+                      
                       if (rawVal !== null && rawVal !== undefined && rawVal !== '') {
                         if (typeof rawVal === 'boolean') {
                           displayVal = rawVal ? 'Yes' : 'No';
@@ -158,6 +161,21 @@ export function RecordLayout({ objectType, record, t }: RecordLayoutProps) {
                           } catch {
                             displayVal = String(rawVal);
                           }
+                        } else if (isPhone) {
+                          displayVal = (
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono text-slate-800">{String(rawVal)}</span>
+                              <WhatsAppButton 
+                                phone={String(rawVal)} 
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5 border-0 hover:bg-slate-100 p-0 flex items-center justify-center text-slate-400 hover:text-emerald-600"
+                                title="Chat on WhatsApp"
+                              >
+                                <span className="sr-only">WhatsApp</span>
+                              </WhatsAppButton>
+                            </div>
+                          );
                         } else if (fieldDef?.field_type === 'lookup' && fieldDef?.related_to) {
                           displayVal = <LookupValue relatedTo={fieldDef.related_to} value={String(rawVal)} />;
                         } else if (Array.isArray(rawVal)) {
@@ -172,7 +190,7 @@ export function RecordLayout({ objectType, record, t }: RecordLayoutProps) {
                           <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                             {displayLabel}
                           </label>
-                          <div className="flex items-center gap-1.5 min-h-[28px] text-sm text-slate-800 font-semibold group/val">
+                          <div className="flex items-center gap-1.5 min-h-[28px] text-sm text-foreground font-semibold group/val">
                             {layoutField.readonly && <Lock size={12} className="text-slate-400 flex-shrink-0" />}
                             <span className="break-all">{displayVal}</span>
                             {rawVal !== null && rawVal !== undefined && rawVal !== '' && (

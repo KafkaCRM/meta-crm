@@ -6,6 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { CheckCircle2, Phone, Mail, Calendar, AlertCircle, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { WhatsAppButton } from '@/components/shared/WhatsAppButton';
 
 interface PriorityTask {
   id: string;
@@ -15,6 +16,7 @@ interface PriorityTask {
   type: 'call' | 'email' | 'meeting' | 'task';
   targetName: string;
   completed: boolean;
+  phone?: string;
 }
 
 export function DailyPriorities() {
@@ -26,6 +28,7 @@ export function DailyPriorities() {
       priority: 'high',
       type: 'call',
       targetName: 'Sarah Chen (TechCorp)',
+      phone: '9876543210',
       completed: false,
     },
     {
@@ -44,6 +47,7 @@ export function DailyPriorities() {
       priority: 'medium',
       type: 'meeting',
       targetName: 'James Wilson',
+      phone: '9988776655',
       completed: false,
     },
     {
@@ -84,7 +88,7 @@ export function DailyPriorities() {
             <CardTitle className="text-sm font-semibold text-[#0f172a] flex items-center gap-1.5">
               Daily Priorities
               {activeCount > 0 && (
-                <Badge className="bg-indigo-55 text-white font-bold text-[9px] px-1.5 py-0 rounded-full">
+                <Badge className="bg-indigo-600 text-white font-bold text-[9px] px-1.5 py-0 rounded-full">
                   {activeCount}
                 </Badge>
               )}
@@ -162,15 +166,29 @@ export function DailyPriorities() {
               {!task.completed && (
                 <div className="flex items-center gap-1 shrink-0 pt-0.5">
                   {task.type === 'call' && (
-                    <Button 
-                      variant="ghost" 
-                      size="icon-xs"
-                      onClick={() => toast.success(`Starting outbound dialer to ${task.targetName}...`)}
-                      className="h-6 w-6 text-slate-450 hover:text-indigo-600 hover:bg-slate-100 rounded-md"
-                      title="Outbound dialer"
-                    >
-                      <Phone size={12} />
-                    </Button>
+                    <>
+                      <Button 
+                        variant="ghost" 
+                        size="icon-xs"
+                        onClick={() => toast.success(`Starting outbound dialer to ${task.targetName}...`)}
+                        className="h-6 w-6 text-slate-450 hover:text-indigo-600 hover:bg-slate-100 rounded-md"
+                        title="Outbound dialer"
+                      >
+                        <Phone size={12} />
+                      </Button>
+                      {task.phone && (
+                        <WhatsAppButton
+                          phone={task.phone}
+                          message={`Hi ${task.targetName.split(' ')[0]}, following up from our conversation...`}
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 border-0 text-slate-450 hover:text-emerald-600 hover:bg-slate-100 rounded-md p-0 flex items-center justify-center"
+                          title="WhatsApp direct chat"
+                        >
+                          <span className="sr-only">WhatsApp</span>
+                        </WhatsAppButton>
+                      )}
+                    </>
                   )}
                   {task.type === 'email' && (
                     <Button 

@@ -13,6 +13,7 @@ import { BulkActionBar, type BulkAction } from '@/components/shared/BulkActionBa
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { PageShell } from '@/components/shared/PageShell';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Plus, Search, Users, Download, UserPlus } from 'lucide-react';
@@ -29,41 +30,33 @@ import dayjs from 'dayjs';
 
 const columnHelper = createColumnHelper<PartyResponse>();
 
-const SOURCE_COLORS: Record<string, string> = {
-  [PartySource.WhatsApp]: 'bg-[#0bdf50]/10 text-[#0a7f2e] border-[#0bdf50]/20',
-  [PartySource.JustDial]: 'bg-[#ff8c00]/10 text-[#cc7000] border-[#ff8c00]/20',
-  [PartySource.Facebook]: 'bg-[#1877f2]/10 text-[#1565c0] border-[#1877f2]/20',
-  [PartySource.Manual]: 'bg-[#94a3b8]/10 text-[#64748b] border-[#94a3b8]/20',
-  [PartySource.WebForm]: 'bg-[#8b5cf6]/10 text-[#7c3aed] border-[#8b5cf6]/20',
-  [PartySource.Api]: 'bg-[#ff5600]/10 text-[#cc4400] border-[#ff5600]/20',
-};
-
 function SourceBadge({ source }: { source: string }) {
-  const cls = SOURCE_COLORS[source] ?? 'bg-[#94a3b8]/10 text-[#64748b] border-[#94a3b8]/20';
+  let variant: 'success' | 'warning' | 'info' | 'secondary' | 'outline' = 'outline';
+  if (source === PartySource.WhatsApp) variant = 'success';
+  else if (source === PartySource.JustDial) variant = 'warning';
+  else if (source === PartySource.Facebook) variant = 'info';
+  else if (source === PartySource.WebForm) variant = 'secondary';
+  
+  const label = source === PartySource.WhatsApp ? 'WhatsApp' : source === PartySource.JustDial ? 'JustDial' : source === PartySource.Facebook ? 'Facebook' : source === PartySource.WebForm ? 'Web Form' : source === PartySource.Manual ? 'Manual' : source;
+  
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${cls}`}>
-      {source === PartySource.WhatsApp ? 'WhatsApp' : source === PartySource.JustDial ? 'JustDial' : source === PartySource.Facebook ? 'Facebook' : source === PartySource.WebForm ? 'Web Form' : source === PartySource.Manual ? 'Manual' : source}
-    </span>
+    <Badge variant={variant} className="capitalize shrink-0">
+      {label}
+    </Badge>
   );
 }
 
-const STAGE_COLORS: Record<string, string> = {
-  new: 'bg-[#3b82f6]/10 text-[#2563eb] border-[#3b82f6]/20',
-  contacted: 'bg-[#3b82f6]/10 text-[#2563eb] border-[#3b82f6]/20',
-  qualified: 'bg-[#f59e0b]/10 text-[#d97706] border-[#f59e0b]/20',
-  negotiation: 'bg-[#f59e0b]/10 text-[#d97706] border-[#f59e0b]/20',
-  won: 'bg-[#0bdf50]/10 text-[#0a7f2e] border-[#0bdf50]/20',
-  enrolled: 'bg-[#0bdf50]/10 text-[#0a7f2e] border-[#0bdf50]/20',
-  lost: 'bg-[#c41c1c]/10 text-[#c41c1c] border-[#c41c1c]/20',
-  dropped: 'bg-[#c41c1c]/10 text-[#c41c1c] border-[#c41c1c]/20',
-};
-
 function StageBadge({ stage }: { stage: string }) {
-  const cls = STAGE_COLORS[stage] ?? 'bg-[#94a3b8]/10 text-[#64748b] border-[#94a3b8]/20';
+  let variant: 'default' | 'success' | 'warning' | 'destructive' | 'secondary' = 'secondary';
+  if (stage === 'won' || stage === 'enrolled') variant = 'success';
+  else if (stage === 'lost' || stage === 'dropped') variant = 'destructive';
+  else if (stage === 'qualified' || stage === 'negotiation') variant = 'warning';
+  else if (stage === 'new' || stage === 'contacted') variant = 'default';
+  
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border capitalize ${cls}`}>
+    <Badge variant={variant} className="capitalize shrink-0">
       {stage}
-    </span>
+    </Badge>
   );
 }
 
@@ -118,13 +111,13 @@ export function PartyList() {
       columnHelper.accessor('name', {
         header: t('party.name') ?? 'Name',
         cell: (info) => (
-          <span className="font-medium text-[#0f172a]">{info.getValue()}</span>
+          <span className="font-medium text-foreground">{info.getValue()}</span>
         ),
       }),
       columnHelper.accessor('phone_raw', {
         header: t('party.phone') ?? 'Phone',
         cell: (info) => (
-          <span className="text-[#64748b] text-sm font-mono">{info.getValue()}</span>
+          <span className="text-muted-foreground text-sm font-mono">{info.getValue()}</span>
         ),
       }),
       columnHelper.accessor('source', {
@@ -144,7 +137,7 @@ export function PartyList() {
       columnHelper.accessor('created_at', {
         header: 'Created',
         cell: (info) => (
-          <span className="text-sm text-[#94a3b8]">
+          <span className="text-sm text-muted-foreground">
             {dayjs(info.getValue()).format('DD MMM YYYY')}
           </span>
         ),
@@ -199,41 +192,38 @@ export function PartyList() {
 
   const hasActiveFilters = debouncedSearch || filterSources.length > 0 || filterCounsellor || dateFrom || dateTo;
 
+  const headerActions = useMemo(() => {
+    if (!can('create', 'Party')) return null;
+    return (
+      <Button
+        onClick={() => navigate({ to: '/parties/new' })}
+        className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg h-9 px-4 text-sm font-medium"
+      >
+        <Plus size={15} className="mr-1.5" />
+        New {t('party.singular') ?? 'Contact'}
+      </Button>
+    );
+  }, [can, navigate, t]);
+
   return (
-    <div className="space-y-5 max-w-[1280px]">
-      {/* Page header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-medium text-[#0f172a] tracking-tight">
-            {t('party.plural') ?? 'Contacts'}
-          </h1>
-          <p className="text-sm text-[#94a3b8] mt-0.5">
-            {parties.length > 0 ? `${parties.length} ${t('party.plural')?.toLowerCase() ?? 'contacts'}` : `Manage your ${t('party.plural')?.toLowerCase() ?? 'contacts'}`}
-          </p>
-        </div>
-        {can('create', 'Party') && (
-          <Button
-            onClick={() => navigate({ to: '/parties/new' })}
-            className="bg-[#0f172a] hover:bg-[#1e293b] text-white rounded-lg h-9 px-4 text-sm font-medium"
-          >
-            <Plus size={15} className="mr-1.5" />
-            New {t('party.singular') ?? 'Contact'}
-          </Button>
-        )}
-      </div>
+    <PageShell
+      title={t('party.plural') ?? 'Contacts'}
+      description={parties.length > 0 ? `${parties.length} ${t('party.plural')?.toLowerCase() ?? 'contacts'}` : `Manage your ${t('party.plural')?.toLowerCase() ?? 'contacts'}`}
+      actions={headerActions}
+    >
 
       {/* Filters bar */}
-      <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none">
+      <Card className="bg-white border-border rounded-xl shadow-none">
         <CardContent className="p-4">
           <div className="flex items-center gap-2 flex-wrap">
             <div className="relative flex-1 min-w-[200px]">
-              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="text"
                 placeholder="Search by name or phone…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 h-8 bg-[#f8fafc] border-[#e2e8f0] text-sm placeholder:text-[#94a3b8] focus-visible:ring-[#0f172a]/30"
+                className="pl-8 h-8 bg-muted/40 border-border text-sm placeholder:text-muted-foreground focus-visible:ring-primary/30"
               />
             </div>
 
@@ -245,7 +235,7 @@ export function PartyList() {
                   else setFilterSources([v]);
                 }}
               >
-                <SelectTrigger className="h-8 w-full bg-[#f8fafc] border-[#e2e8f0] text-sm">
+                <SelectTrigger className="h-8 w-full bg-muted/40 border-border text-sm">
                   <SelectValue placeholder="All sources" />
                 </SelectTrigger>
                 <SelectContent>
@@ -264,14 +254,14 @@ export function PartyList() {
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
               placeholder="From"
-              className="h-8 w-[140px] bg-[#f8fafc] border-[#e2e8f0] text-sm"
+              className="h-8 w-[140px] bg-muted/40 border-border text-sm"
             />
             <Input
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
               placeholder="To"
-              className="h-8 w-[140px] bg-[#f8fafc] border-[#e2e8f0] text-sm"
+              className="h-8 w-[140px] bg-muted/40 border-border text-sm"
             />
 
             {hasActiveFilters && (
@@ -286,7 +276,7 @@ export function PartyList() {
                   setDateFrom('');
                   setDateTo('');
                 }}
-                className="h-8 text-xs text-[#94a3b8] hover:text-[#0f172a]"
+                className="h-8 text-xs text-muted-foreground hover:text-foreground"
               >
                 Clear
               </Button>
@@ -296,7 +286,7 @@ export function PartyList() {
       </Card>
 
       {/* Table card */}
-      <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none overflow-hidden">
+      <Card className="bg-white border-border rounded-xl shadow-none overflow-hidden">
         <VirtualTable<PartyResponse>
           data={parties}
           columns={columns}
@@ -318,8 +308,8 @@ export function PartyList() {
             },
           } : {})}
           emptyIcon={
-            <div className="w-12 h-12 rounded-full bg-[#f8fafc] flex items-center justify-center mb-4">
-              <Users size={20} className="text-[#94a3b8]" />
+            <div className="w-12 h-12 rounded-full bg-muted/40 flex items-center justify-center mb-4">
+              <Users size={20} className="text-muted-foreground" />
             </div>
           }
         />
@@ -338,6 +328,6 @@ export function PartyList() {
         objectType="Party" 
         onClose={() => setPreviewOpen(false)} 
       />
-    </div>
+    </PageShell>
   );
 }
