@@ -4,6 +4,7 @@ import { REDIS_CLIENT } from './redis-client.token';
 import { PermissionCacheService } from './permission-cache.service';
 import { PermissionsService } from './permissions.service';
 import { PermissionsGuard, PlatformPermissionsGuard } from './permissions.guard';
+import { DynamicValidatorService } from './dynamic-validator.service';
 
 @Global()
 @Module({
@@ -25,7 +26,8 @@ import { PermissionsGuard, PlatformPermissionsGuard } from './permissions.guard'
     PermissionsService,
     PermissionsGuard,
     PlatformPermissionsGuard,
+    DynamicValidatorService,
   ],
-  exports: [PermissionsGuard, PlatformPermissionsGuard, PermissionsService, PermissionCacheService],
+  exports: [PermissionsGuard, PlatformPermissionsGuard, PermissionsService, PermissionCacheService, DynamicValidatorService],
 })
 export class PermissionsModule {}
