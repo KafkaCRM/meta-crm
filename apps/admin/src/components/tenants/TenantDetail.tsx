@@ -23,6 +23,7 @@ import { useAuth } from '@/contexts/auth.context';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Link } from '@tanstack/react-router';
+import { DangerousActionModal } from '@/components/shared/DangerousActionModal';
 import {
   Building,
   Globe,
@@ -890,9 +891,12 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
   const { ability } = useAuth();
   const queryClient = useQueryClient();
   
-  const [confirmName, setConfirmName] = useState('');
   const [selectedPlanId, setSelectedPlanId] = useState('');
   const [assignError, setAssignError] = useState('');
+  
+  // Modal states
+  const [isSuspendModalOpen, setIsSuspendModalOpen] = useState(false);
+  const [isReactivateModalOpen, setIsReactivateModalOpen] = useState(false);
   
   // Owner Credentials Reset states
   const [resetResult, setResetResult] = useState<{ email: string; temporary_password: string } | null>(null);
@@ -909,10 +913,9 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
   });
 
   const suspendMutation = useMutation({
-    mutationFn: () => suspendTenant(tenantId),
+    mutationFn: (reason: string) => suspendTenant(tenantId, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tenant', tenantId] });
-      setConfirmName('');
       toast.success('Workspace suspended successfully');
     },
     onError: (err: any) => {
@@ -921,7 +924,7 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
   });
 
   const reactivateMutation = useMutation({
-    mutationFn: () => reactivateTenant(tenantId),
+    mutationFn: (reason: string) => reactivateTenant(tenantId, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tenant', tenantId] });
       toast.success('Workspace reactivated successfully');
@@ -988,11 +991,6 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
       </div>
     );
   }
-
-  const handleSuspend = () => {
-    if (confirmName !== tenant.name) return;
-    suspendMutation.mutate();
-  };
 
   const TenantIndustryIcon = getIndustryIcon(tenant.industry);
 
@@ -1292,62 +1290,65 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
             {tenant.status === 'active' ? (
               <div className="space-y-3">
                 <p className="text-[10px] text-rose-700/80 leading-normal bg-rose-50/50 p-2.5 rounded-lg border border-rose-100">
-                  Suspending this workspace halts core branch systems and prevents login attempts. Confirm by typing the workspace name below.
+                  Suspending this workspace halts core branch systems, blocks user logins, and invalidates API keys.
                 </p>
-                <div className="space-y-2">
-                  <input
-                    type="text"
-                    value={confirmName}
-                    onChange={(e) => setConfirmName(e.target.value)}
-                    placeholder={`Type "${tenant.name}" to confirm`}
-                    className="w-full rounded-lg border border-rose-200 px-3 py-2 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-rose-600 focus:border-rose-600 font-medium"
-                  />
-                  <button
-                    onClick={handleSuspend}
-                    disabled={confirmName !== tenant.name || suspendMutation.isPending}
-                    className="w-full py-2.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm"
-                  >
-                    {suspendMutation.isPending ? (
-                      <>
-                        <RefreshCw size={13} className="animate-spin" />
-                        Suspending…
-                      </>
-                    ) : (
-                      <>
-                        <Power size={13} />
-                        Suspend Workspace
-                      </>
-                    )}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsSuspendModalOpen(true)}
+                  className="w-full py-2.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                >
+                  <Power size={13} />
+                  Suspend Workspace...
+                </button>
               </div>
             ) : (
               <div className="space-y-3 animate-in fade-in duration-200">
                 <p className="text-[10px] text-emerald-800/80 leading-normal bg-emerald-50/50 p-2.5 rounded-lg border border-emerald-100">
-                  Reactivating this workspace will immediately lift the access block and restore active data connections.
+                  Reactivating this workspace will lift the access block and restore active data connections.
                 </p>
                 <button
-                  onClick={() => reactivateMutation.mutate()}
-                  disabled={reactivateMutation.isPending}
-                  className="w-full py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                  type="button"
+                  onClick={() => setIsReactivateModalOpen(true)}
+                  className="w-full py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
                 >
-                  {reactivateMutation.isPending ? (
-                    <>
-                      <RefreshCw size={13} className="animate-spin" />
-                      Reactivating…
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles size={13} />
-                      Reactivate Workspace
-                    </>
-                  )}
+                  <Sparkles size={13} />
+                  Reactivate Workspace...
                 </button>
               </div>
             )}
           </div>
         )}
       </div>
+
+      {/* Dangerous Action Modals */}
+      {tenant && (
+        <>
+          <DangerousActionModal
+            isOpen={isSuspendModalOpen}
+            onClose={() => setIsSuspendModalOpen(false)}
+            onConfirm={async (reason) => {
+              await suspendMutation.mutateAsync(reason);
+            }}
+            title="Suspend Tenant Workspace"
+            description={`You are about to suspend the workspace "${tenant.name}". This will restrict login access, disable extensions, and block active CRM operations.`}
+            targetName={tenant.name}
+            confirmButtonText="Suspend Workspace"
+            isPending={suspendMutation.isPending}
+          />
+          <DangerousActionModal
+            isOpen={isReactivateModalOpen}
+            onClose={() => setIsReactivateModalOpen(false)}
+            onConfirm={async (reason) => {
+              await reactivateMutation.mutateAsync(reason);
+            }}
+            title="Reactivate Tenant Workspace"
+            description={`You are about to reactivate the workspace "${tenant.name}". This will immediately lift the login restrictions and restore database queries/connections.`}
+            targetName={tenant.name}
+            confirmButtonText="Reactivate Workspace"
+            isPending={reactivateMutation.isPending}
+          />
+        </>
+      )}
 
     </div>
   );

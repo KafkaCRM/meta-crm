@@ -12,8 +12,13 @@ import {
   Mail, 
   ShieldAlert, 
   ArrowRight,
+  ArrowLeft,
   Sparkles,
-  Building
+  Building,
+  MapPin,
+  Loader2,
+  CheckCircle,
+  HelpCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -58,19 +63,40 @@ const AVAILABLE_CAPABILITIES = [
   },
 ];
 
+const REGIONS = [
+  { id: 'us-east-1', name: 'US East (N. Virginia)', provider: 'AWS' },
+  { id: 'us-west-2', name: 'US West (Oregon)', provider: 'AWS' },
+  { id: 'eu-central-1', name: 'EU Central (Frankfurt)', provider: 'AWS' },
+  { id: 'ap-south-1', name: 'Asia Pacific (Mumbai)', provider: 'AWS' },
+];
+
 export function CreateTenantForm() {
   const navigate = useNavigate();
+  const [step, setStep] = useState(1);
+  
+  // Step 1: Basic Details
   const [name, setName] = useState('');
-  const [slug, setSlug] = useState('');
   const [industry, setIndustry] = useState('');
+  const [region, setRegion] = useState('us-east-1');
+  
+  // Step 2: Entitlements (Slug & Plans)
+  const [slug, setSlug] = useState('');
   const [planId, setPlanId] = useState('');
+  const [checkingSlug, setCheckingSlug] = useState(false);
+  const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
+  
+  // Step 3: Capabilities
+  const [selectedCapabilities, setSelectedCapabilities] = useState<string[]>([]);
+  
+  // Step 4: Owner Credentials
   const [ownerName, setOwnerName] = useState('');
   const [ownerEmail, setOwnerEmail] = useState('');
+  
+  // Submitting and Result States
   const [error, setError] = useState('');
   const [result, setResult] = useState<CreateTenantResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [selectedCapabilities, setSelectedCapabilities] = useState<string[]>([]);
 
   const { data: plans, isLoading: isLoadingPlans, error: plansError } = useQuery({
     queryKey: ['plans'],
@@ -87,8 +113,22 @@ export function CreateTenantForm() {
     }
   }, [plans, planId]);
 
+  // Live Slug Checks Mock (with Debounce)
+  useEffect(() => {
+    if (!slug) {
+      setSlugAvailable(null);
+      return;
+    }
+    setCheckingSlug(true);
+    const timer = setTimeout(() => {
+      setCheckingSlug(false);
+      // Simulating slug checks
+      setSlugAvailable(slug.length >= 3 && !slug.includes('admin') && !slug.includes('meta'));
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [slug]);
+
   const handleSlugChange = (val: string) => {
-    // Auto-sanitize: lowercase, replace spaces/invalid chars with hyphens
     const sanitized = val
       .toLowerCase()
       .replace(/[^a-z0-9-]/g, '')
@@ -122,14 +162,7 @@ export function CreateTenantForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setResult(null);
     setIsSubmitting(true);
-
-    if (!slug) {
-      setError('Workspace URL Slug is required');
-      setIsSubmitting(false);
-      return;
-    }
 
     try {
       const response = await createTenant({
@@ -150,6 +183,27 @@ export function CreateTenantForm() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Step Navigations
+  const handleNextStep = () => {
+    if (step === 1 && (!name.trim() || !industry)) {
+      toast.error('Please specify workspace name and select industry scope.');
+      return;
+    }
+    if (step === 2 && (!slug.trim() || !slugAvailable || !planId)) {
+      toast.error('Please input a valid URL slug and select subscription plan.');
+      return;
+    }
+    if (step === 4 && (!ownerName.trim() || !ownerEmail.trim() || !ownerEmail.includes('@'))) {
+      toast.error('Please enter valid administrator profile details.');
+      return;
+    }
+    setStep(prev => prev + 1);
+  };
+
+  const handleBackStep = () => {
+    setStep(prev => prev - 1);
   };
 
   // SUCCESS SCREEN
@@ -190,7 +244,6 @@ export function CreateTenantForm() {
             </div>
           </div>
 
-          {/* Premium Copy Widget for Temporary Password */}
           <div className="border border-amber-200 bg-amber-50/40 rounded-xl p-4 space-y-3">
             <div className="flex items-start gap-2 text-amber-800">
               <ShieldAlert size={16} className="mt-0.5 flex-shrink-0" />
@@ -228,11 +281,11 @@ export function CreateTenantForm() {
           </div>
         </div>
 
-        {/* Dynamic Actions Grid */}
         <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
           <button
             onClick={() => {
               setResult(null);
+              setStep(1);
               setName('');
               setSlug('');
               setIndustry('');
@@ -257,30 +310,64 @@ export function CreateTenantForm() {
     );
   }
 
-  // DEFAULT FORM VIEW
+  // WIZARD RENDER STEPS
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold text-slate-900 tracking-tight">Provision Workspace Tenant</h2>
-        <p className="text-xs text-slate-400 mt-0.5">Fill in the tenant profile and owner account details below to spin up a new isolated organization.</p>
+    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm max-w-4xl mx-auto">
+      {/* Step Progress indicators */}
+      <div className="mb-8 border-b border-slate-100 pb-6">
+        <div className="flex items-center justify-between">
+          {[
+            { id: 1, name: 'General', label: 'Basic configurations' },
+            { id: 2, name: 'Subscription', label: 'Billing and slugs' },
+            { id: 3, name: 'Capabilities', label: 'Add-ons registry' },
+            { id: 4, name: 'Administrator', label: 'Primary owner details' },
+            { id: 5, name: 'Provision', label: 'System verification' },
+          ].map((item, idx) => {
+            const isCompleted = step > item.id;
+            const isCurrent = step === item.id;
+            return (
+              <div key={item.id} className="flex-1 relative last:flex-initial">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all border ${
+                      isCompleted
+                        ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
+                        : isCurrent
+                        ? 'bg-white border-indigo-600 text-indigo-600 font-bold ring-2 ring-indigo-100'
+                        : 'bg-white border-slate-200 text-slate-400'
+                    }`}
+                  >
+                    {isCompleted ? <Check size={12} strokeWidth={3} /> : item.id}
+                  </div>
+                  <div className="hidden md:block text-left min-w-0">
+                    <p className={`text-xs font-bold truncate leading-none ${isCurrent ? 'text-slate-900' : 'text-slate-400'}`}>
+                      {item.name}
+                    </p>
+                    <p className="text-[9px] text-slate-400 truncate mt-0.5">{item.label}</p>
+                  </div>
+                </div>
+                {idx < 4 && (
+                  <div className={`hidden md:block absolute top-[13px] left-[135px] right-4 h-0.5 bg-slate-100 -z-10 transition-colors ${step > item.id ? 'bg-indigo-600/30' : ''}`} />
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          
-          {/* Column 1: Workspace Details */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-              <div className="w-6 h-6 rounded-md bg-slate-50 flex items-center justify-center text-slate-500">
-                <Building size={14} />
-              </div>
-              <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wider">Workspace Parameters</h3>
+        
+        {/* STEP 1: GENERAL PARAMETERS */}
+        {step === 1 && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-100 mb-2">
+              <Building size={16} className="text-indigo-600" />
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">Workspace Profile</h3>
             </div>
 
-            {/* Tenant Name */}
             <div>
-              <label htmlFor="name" className="mb-1 block text-xs font-semibold text-slate-600">
-                Tenant Name
+              <label htmlFor="name" className="mb-1 block text-xs font-bold text-slate-700">
+                Workspace / Tenant Name
               </label>
               <input
                 id="name"
@@ -288,136 +375,124 @@ export function CreateTenantForm() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Acme Corporation"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all font-medium text-slate-800"
                 required
               />
             </div>
 
-            {/* URL Slug with Dynamic preview */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              <div>
+                <label htmlFor="industry" className="mb-1 block text-xs font-bold text-slate-700">
+                  Industry Scope Focus
+                </label>
+                <select
+                  id="industry"
+                  value={industry}
+                  onChange={(e) => handleIndustryChange(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all cursor-pointer font-medium text-slate-800"
+                  required
+                >
+                  <option value="">Select industry scope focus...</option>
+                  {INDUSTRIES.map((ind) => (
+                    <option key={ind} value={ind}>
+                      {ind.charAt(0).toUpperCase() + ind.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="region" className="mb-1 block text-xs font-bold text-slate-700">
+                  Data Hosting Region
+                </label>
+                <select
+                  id="region"
+                  value={region}
+                  onChange={(e) => setRegion(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all cursor-pointer font-medium text-slate-800"
+                  required
+                >
+                  {REGIONS.map((reg) => (
+                    <option key={reg.id} value={reg.id}>
+                      {reg.name} [{reg.provider}]
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-start gap-2.5 mt-4">
+              <MapPin size={16} className="text-slate-500 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-xs font-bold text-slate-800">Hosting Infrastructure Isolation</p>
+                <p className="text-[11px] text-slate-400 leading-normal mt-0.5">
+                  Selecting the region provisions an isolated database node cluster automatically. Once configured, data residency cannot be moved.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 2: SUBSCRIPTION & INSTANT URL */}
+        {step === 2 && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-100 mb-2">
+              <Globe size={16} className="text-indigo-600" />
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">Workspace Subdomain URL & Plan</h3>
+            </div>
+
             <div>
-              <label htmlFor="slug" className="mb-1 block text-xs font-semibold text-slate-600">
-                Workspace URL Slug
+              <label htmlFor="slug" className="mb-1 block text-xs font-bold text-slate-700">
+                Subdomain URL Slug
               </label>
-              <input
-                id="slug"
-                type="text"
-                value={slug}
-                onChange={(e) => handleSlugChange(e.target.value)}
-                placeholder="e.g. acme-corp"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all"
-                required
-              />
+              <div className="relative">
+                <input
+                  id="slug"
+                  type="text"
+                  value={slug}
+                  onChange={(e) => handleSlugChange(e.target.value)}
+                  placeholder="e.g. acme-corp"
+                  className={`w-full rounded-lg border px-3 py-2 text-sm font-mono focus:outline-none focus:ring-1 transition-all ${
+                    slugAvailable === true
+                      ? 'border-emerald-200 focus:ring-emerald-600 focus:border-emerald-600'
+                      : slugAvailable === false
+                      ? 'border-rose-200 focus:ring-rose-600 focus:border-rose-600'
+                      : 'border-slate-200 focus:ring-indigo-600 focus:border-indigo-600'
+                  }`}
+                  required
+                />
+                <div className="absolute right-3 top-2.5 flex items-center gap-1.5 text-xs">
+                  {checkingSlug && <Loader2 size={14} className="animate-spin text-slate-400" />}
+                  {!checkingSlug && slugAvailable === true && (
+                    <span className="text-emerald-600 font-bold flex items-center gap-1">
+                      <CheckCircle size={13} />
+                      Available
+                    </span>
+                  )}
+                  {!checkingSlug && slugAvailable === false && (
+                    <span className="text-rose-600 font-bold flex items-center gap-1">
+                      <AlertTriangle size={13} />
+                      Invalid / Taken
+                    </span>
+                  )}
+                </div>
+              </div>
+              
               <p className="mt-1.5 text-xs text-slate-400 flex items-center gap-1.5 font-mono bg-slate-50 p-2 rounded border border-slate-100 select-all">
                 <Globe size={13} className="text-slate-400 flex-shrink-0" />
                 https://{slug || 'workspace'}.meta-crm.local
               </p>
             </div>
 
-            {/* Industry Selection */}
             <div>
-              <label htmlFor="industry" className="mb-1 block text-xs font-semibold text-slate-600">
-                Industry Scope
-              </label>
-              <select
-                id="industry"
-                value={industry}
-                onChange={(e) => handleIndustryChange(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all cursor-pointer"
-                required
-              >
-                <option value="">Select industry scope...</option>
-                {INDUSTRIES.map((ind) => (
-                  <option key={ind} value={ind}>
-                    {ind.charAt(0).toUpperCase() + ind.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Dynamic Capabilities Configuration */}
-            {industry && (
-              <div className="p-4 bg-slate-50/60 rounded-xl border border-slate-200/80 shadow-inner space-y-3.5 animate-in fade-in slide-in-from-top-2 duration-300">
-                <div className="flex items-center gap-1.5 pb-2 border-b border-slate-200/60">
-                  <div className="w-5 h-5 rounded-md bg-indigo-50 flex items-center justify-center text-indigo-500">
-                    <Sparkles size={12} className="animate-pulse" />
-                  </div>
-                  <h4 className="text-[11px] font-semibold text-slate-800 tracking-wide uppercase">Capabilities & Workflows</h4>
-                </div>
-
-                <div className="space-y-3">
-                  {/* Core Capability Section */}
-                  <div>
-                    <span className="text-[9px] font-bold text-indigo-600 tracking-wider uppercase block mb-1.5">Core (Included)</span>
-                    {AVAILABLE_CAPABILITIES.filter(c => c.industry === industry).map(cap => (
-                      <div key={cap.id} className="flex items-start gap-2.5 p-2.5 bg-indigo-50/40 rounded-lg border border-indigo-100/50">
-                        <input
-                          type="checkbox"
-                          checked={true}
-                          disabled={true}
-                          className="mt-0.5 h-3.5 w-3.5 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500 cursor-not-allowed"
-                        />
-                        <div>
-                          <label className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
-                            {cap.name}
-                            <span className="text-[9px] font-bold px-1.5 py-0.2 bg-indigo-100 text-indigo-700 rounded-full">Primary</span>
-                          </label>
-                          <p className="text-[11px] text-slate-500 leading-normal mt-0.5">{cap.description}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Optional Capabilities Section */}
-                  <div>
-                    <span className="text-[9px] font-bold text-slate-500 tracking-wider uppercase block mb-1.5">Optional Add-ons</span>
-                    <div className="grid grid-cols-1 gap-2">
-                      {AVAILABLE_CAPABILITIES.filter(c => c.industry !== industry).map(cap => {
-                        const isChecked = selectedCapabilities.includes(cap.id);
-                        return (
-                          <div 
-                            key={cap.id} 
-                            onClick={() => handleToggleCapability(cap.id)}
-                            className={`flex items-start gap-2.5 p-2.5 rounded-lg border transition-all duration-200 cursor-pointer ${
-                              isChecked 
-                                ? 'bg-white border-indigo-200 shadow-sm ring-1 ring-indigo-100/40' 
-                                : 'bg-white/80 border-slate-200 hover:border-slate-300 hover:bg-white'
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={(e) => {
-                                e.stopPropagation();
-                                handleToggleCapability(cap.id);
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                              className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                            />
-                            <div>
-                              <label className="text-xs font-semibold text-slate-800 cursor-pointer">
-                                {cap.name}
-                              </label>
-                              <p className="text-[11px] text-slate-500 leading-normal mt-0.5">{cap.description}</p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Plan Picker */}
-            <div>
-              <label htmlFor="plan" className="mb-1 block text-xs font-semibold text-slate-600">
-                Subscription Plan
+              <label htmlFor="plan" className="mb-1 block text-xs font-bold text-slate-700">
+                Subscription Plan Entitlements
               </label>
               <select
                 id="plan"
                 value={planId}
                 onChange={(e) => setPlanId(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all cursor-pointer"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all cursor-pointer font-medium text-slate-800"
                 required
                 disabled={isLoadingPlans || !!plansError}
               >
@@ -426,31 +501,102 @@ export function CreateTenantForm() {
                 {!isLoadingPlans && !plansError && <option value="">Select plan entitlement...</option>}
                 {plans?.map((plan) => (
                   <option key={plan.id} value={plan.id}>
-                    {plan.name} — Max {plan.max_branches} branches, {plan.max_users} users
+                    {plan.name} — Max {plan.max_branches} branches, {plan.max_users} users, {plan.max_plugins} plugins (${plan.price_monthly ?? 0}/mo)
                   </option>
                 ))}
               </select>
-              {plansError && (
-                <p className="mt-1 text-[11px] text-rose-600 font-medium">
-                  Error loading plans. Please check the backend connection.
-                </p>
-              )}
             </div>
           </div>
-          
-          {/* Column 2: Owner Details */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-              <div className="w-6 h-6 rounded-md bg-slate-50 flex items-center justify-center text-slate-500">
-                <User size={14} />
-              </div>
-              <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wider">Owner Profile</h3>
+        )}
+
+        {/* STEP 3: CAPABILITIES ADD-ONS */}
+        {step === 3 && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-100 mb-2">
+              <Sparkles size={16} className="text-indigo-600" />
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">Workflows & Core Capabilities</h3>
             </div>
 
-            {/* Owner Name */}
+            {industry ? (
+              <div className="space-y-4">
+                <div>
+                  <span className="text-[10px] font-bold text-indigo-600 tracking-wider uppercase block mb-2">Core Included (Based on Industry: {industry})</span>
+                  {AVAILABLE_CAPABILITIES.filter(c => c.industry === industry).map(cap => (
+                    <div key={cap.id} className="flex items-start gap-3 p-3 bg-indigo-50/40 border border-indigo-100 rounded-xl">
+                      <input
+                        type="checkbox"
+                        checked={true}
+                        disabled={true}
+                        className="mt-0.5 h-4 w-4 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500 cursor-not-allowed"
+                      />
+                      <div>
+                        <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                          {cap.name}
+                          <span className="text-[9px] font-bold px-1.5 py-0.2 bg-indigo-100 text-indigo-700 rounded-full">Core</span>
+                        </label>
+                        <p className="text-[11px] text-slate-500 leading-normal mt-0.5">{cap.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div>
+                  <span className="text-[10px] font-bold text-slate-500 tracking-wider uppercase block mb-2">Optional Domain Add-ons</span>
+                  <div className="grid gap-3">
+                    {AVAILABLE_CAPABILITIES.filter(c => c.industry !== industry).map(cap => {
+                      const isChecked = selectedCapabilities.includes(cap.id);
+                      return (
+                        <div 
+                          key={cap.id} 
+                          onClick={() => handleToggleCapability(cap.id)}
+                          className={`flex items-start gap-3 p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
+                            isChecked 
+                              ? 'bg-white border-indigo-300 ring-1 ring-indigo-200 shadow-sm' 
+                              : 'bg-white/80 border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              handleToggleCapability(cap.id);
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                          />
+                          <div>
+                            <label className="text-xs font-bold text-slate-900 cursor-pointer">
+                              {cap.name}
+                            </label>
+                            <p className="text-[11px] text-slate-500 leading-normal mt-0.5">{cap.description}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="py-8 text-center text-slate-400 font-semibold text-xs border border-dashed border-slate-200 rounded-xl">
+                <HelpCircle size={22} className="mx-auto mb-2 text-slate-300" />
+                Please select an industry scope focus in Step 1.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* STEP 4: ADMINISTRATOR CREDENTIALS */}
+        {step === 4 && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-100 mb-2">
+              <User size={16} className="text-indigo-600" />
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">Primary Owner Credentials</h3>
+            </div>
+
             <div>
-              <label htmlFor="ownerName" className="mb-1 block text-xs font-semibold text-slate-600">
-                Full Name
+              <label htmlFor="ownerName" className="mb-1 block text-xs font-bold text-slate-700">
+                Owner Full Name
               </label>
               <input
                 id="ownerName"
@@ -458,15 +604,14 @@ export function CreateTenantForm() {
                 value={ownerName}
                 onChange={(e) => setOwnerName(e.target.value)}
                 placeholder="e.g. John Doe"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all font-medium text-slate-800"
                 required
               />
             </div>
 
-            {/* Owner Email */}
             <div>
-              <label htmlFor="ownerEmail" className="mb-1 block text-xs font-semibold text-slate-600">
-                Administrative Email
+              <label htmlFor="ownerEmail" className="mb-1 block text-xs font-bold text-slate-700">
+                Administrative Email Address
               </label>
               <input
                 id="ownerEmail"
@@ -474,49 +619,126 @@ export function CreateTenantForm() {
                 value={ownerEmail}
                 onChange={(e) => setOwnerEmail(e.target.value)}
                 placeholder="e.g. owner@acme-corp.com"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all font-medium text-slate-800"
                 required
               />
             </div>
 
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-500 space-y-2 mt-6">
-              <p className="font-semibold text-slate-900 flex items-center gap-1.5">
+            <div className="p-4 bg-amber-50/40 border border-amber-200 text-xs text-amber-900 space-y-2 mt-6 rounded-xl">
+              <p className="font-semibold flex items-center gap-1.5">
                 <AlertTriangle size={13} className="text-amber-600" />
-                Administrative Privilege
+                Administrative Credentials Verification
               </p>
-              <p className="leading-relaxed">
-                This email will serve as the primary administrator login credential for the new workspace. Upon creation, a strong temporary password will be dynamically generated.
+              <p className="leading-relaxed text-amber-800/90 font-medium">
+                Verify this email address. The system will send provisioned verification links and register this address as the root administrator access account for the tenant.
               </p>
             </div>
           </div>
+        )}
 
-        </div>
+        {/* STEP 5: REVIEW & VERIFY */}
+        {step === 5 && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-100 mb-2">
+              <Sparkles size={16} className="text-indigo-600 animate-pulse" />
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">Review & Provision Settings</h3>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-xs bg-slate-50 border border-slate-200 rounded-2xl p-5">
+              <div>
+                <span className="text-slate-400 font-semibold block uppercase text-[10px]">Workspace Name</span>
+                <span className="font-bold text-slate-900 mt-1 block">{name}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 font-semibold block uppercase text-[10px]">Industry Scope Focus</span>
+                <span className="font-bold text-slate-900 mt-1 block capitalize">{industry}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 font-semibold block uppercase text-[10px]">Data residency region</span>
+                <span className="font-bold text-slate-900 mt-1 block">{REGIONS.find(r => r.id === region)?.name || region}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 font-semibold block uppercase text-[10px]">Entitlement Plan</span>
+                <span className="font-bold text-slate-900 mt-1 block">
+                  {plans?.find(p => p.id === planId)?.name || 'Custom'}
+                </span>
+              </div>
+              <div className="col-span-2 border-t border-slate-200/60 pt-3">
+                <span className="text-slate-400 font-semibold block uppercase text-[10px]">Configured URL Domain</span>
+                <span className="font-bold text-slate-900 mt-1 block font-mono">
+                  https://{slug}.meta-crm.local
+                </span>
+              </div>
+              <div className="col-span-2 border-t border-slate-200/60 pt-3">
+                <span className="text-slate-400 font-semibold block uppercase text-[10px]">Owner administrator profile</span>
+                <span className="font-bold text-slate-900 mt-1 block">
+                  {ownerName} ({ownerEmail})
+                </span>
+              </div>
+            </div>
+            
+            <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-xl space-y-1.5">
+              <p className="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
+                <CheckCircle2 size={13} className="text-indigo-600" />
+                Verification Status: Clear
+              </p>
+              <p className="text-[11px] text-indigo-700/90 leading-relaxed font-semibold">
+                Core structures confirm. Clicking "Provision Tenant" below begins instant system deployment: creating isolated Postgres workspaces, building metadata tables, and registering primary user privileges.
+              </p>
+            </div>
+          </div>
+        )}
 
         {error && (
-          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-xs font-medium flex items-center gap-2">
+          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-850 rounded-lg text-xs font-semibold flex items-center gap-2">
             <AlertTriangle size={14} className="flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        <div className="pt-4 border-t border-slate-100 flex justify-end">
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="px-6 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
-          >
-            {isSubmitting ? (
-              <>
-                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Provisioning...
-              </>
-            ) : (
-              <>
-                <Sparkles size={14} />
-                Provision Tenant
-              </>
-            )}
-          </button>
+        {/* Action Controls Footer */}
+        <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
+          {step > 1 ? (
+            <button
+              type="button"
+              onClick={handleBackStep}
+              className="px-4 py-2.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 flex items-center gap-1 transition-all cursor-pointer"
+            >
+              <ArrowLeft size={13} />
+              Back
+            </button>
+          ) : (
+            <div />
+          )}
+
+          {step < 5 ? (
+            <button
+              type="button"
+              onClick={handleNextStep}
+              className="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1 transition-all shadow-sm cursor-pointer"
+            >
+              Next Step
+              <ArrowRight size={13} />
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-6 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={13} className="animate-spin" />
+                  Deploying systems...
+                </>
+              ) : (
+                <>
+                  <Sparkles size={13} />
+                  Provision Tenant
+                </>
+              )}
+            </button>
+          )}
         </div>
       </form>
     </div>

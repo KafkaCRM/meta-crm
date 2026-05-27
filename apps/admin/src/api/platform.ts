@@ -92,15 +92,17 @@ export async function createTenant(data: CreateTenantRequest): Promise<CreateTen
   });
 }
 
-export async function suspendTenant(id: string): Promise<{ message: string }> {
+export async function suspendTenant(id: string, reason?: string): Promise<{ message: string }> {
   return apiCall<{ message: string }>(`/platform/tenants/${id}/suspend`, {
     method: 'PATCH',
+    body: reason ? JSON.stringify({ reason }) : undefined,
   });
 }
 
-export async function reactivateTenant(id: string): Promise<{ message: string }> {
+export async function reactivateTenant(id: string, reason?: string): Promise<{ message: string }> {
   return apiCall<{ message: string }>(`/platform/tenants/${id}/reactivate`, {
     method: 'PATCH',
+    body: reason ? JSON.stringify({ reason }) : undefined,
   });
 }
 

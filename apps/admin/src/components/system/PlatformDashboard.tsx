@@ -34,6 +34,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Link } from '@tanstack/react-router';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from 'recharts';
 
 interface PlatformEvent {
   id: string;
@@ -292,6 +304,67 @@ export function PlatformDashboard() {
             <div className="w-10 h-10 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
               <Activity size={18} />
             </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Platform Analytics Charts */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card className="bg-white border-slate-200 rounded-xl shadow-sm hover:shadow-xs transition-shadow">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-bold text-slate-900 uppercase tracking-wide">Monthly Recurring Revenue (MRR)</CardTitle>
+            <CardDescription className="text-xs">SaaS subscription revenue & growth trend</CardDescription>
+          </CardHeader>
+          <CardContent className="h-64 pt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={[
+                { month: 'Jan', mrr: 12000 },
+                { month: 'Feb', mrr: 15400 },
+                { month: 'Mar', mrr: 19800 },
+                { month: 'Apr', mrr: 26000 },
+                { month: 'May', mrr: 34500 },
+                { month: 'Jun', mrr: 45000 },
+              ]} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorMrr" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="month" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
+                <Tooltip formatter={(value) => [`$${value}`, 'MRR']} contentStyle={{ background: '#0b0f19', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '12px' }} />
+                <Area type="monotone" dataKey="mrr" stroke="#4f46e5" strokeWidth={2} fillOpacity={1} fill="url(#colorMrr)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white border-slate-200 rounded-xl shadow-sm hover:shadow-xs transition-shadow">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-bold text-slate-900 uppercase tracking-wide">System Response & Latencies</CardTitle>
+            <CardDescription className="text-xs">API response times vs Queue worker lags (ms)</CardDescription>
+          </CardHeader>
+          <CardContent className="h-64 pt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={[
+                { time: '08:00', latency: 45, lag: 12 },
+                { time: '10:00', latency: 52, lag: 18 },
+                { time: '12:00', latency: 85, lag: 42 },
+                { time: '14:00', latency: 60, lag: 28 },
+                { time: '16:00', latency: 48, lag: 15 },
+                { time: '18:00', latency: 42, lag: 9 },
+              ]} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="time" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}ms`} />
+                <Tooltip contentStyle={{ background: '#0b0f19', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '12px' }} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                <Line type="monotone" dataKey="latency" name="API Latency" stroke="#4f46e5" strokeWidth={2.5} activeDot={{ r: 6 }} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="lag" name="Queue Lag" stroke="#f59e0b" strokeWidth={2.5} activeDot={{ r: 6 }} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
