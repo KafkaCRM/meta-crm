@@ -19,6 +19,7 @@ export const SYSTEM_ROLE_MAP: Record<TenantRole, PermissionDefinition[]> = {
     { action: 'read', resource: 'Interaction' },
     { action: 'read', resource: 'Vertical' },
     { action: 'read', resource: 'Campaign' },
+    { action: 'read', resource: 'Plugin' },
   ],
 
   [TenantRole.BranchSupervisor]: [
@@ -33,6 +34,7 @@ export const SYSTEM_ROLE_MAP: Record<TenantRole, PermissionDefinition[]> = {
     { action: 'read', resource: 'User' },
     { action: 'read', resource: 'Vertical' },
     { action: 'read', resource: 'Campaign' },
+    { action: 'read', resource: 'Plugin' },
   ],
 
   [TenantRole.BranchManager]: [
@@ -49,6 +51,7 @@ export const SYSTEM_ROLE_MAP: Record<TenantRole, PermissionDefinition[]> = {
     { action: 'read', resource: 'Report' },
     { action: 'read', resource: 'Vertical' },
     { action: 'read', resource: 'Campaign' },
+    { action: 'read', resource: 'Plugin' },
   ],
 
   [TenantRole.BrandManager]: [
@@ -67,6 +70,7 @@ export const SYSTEM_ROLE_MAP: Record<TenantRole, PermissionDefinition[]> = {
     { action: 'read', resource: 'Workflow' },
     { action: 'read', resource: 'Vertical' },
     { action: 'read', resource: 'Campaign' },
+    { action: 'read', resource: 'Plugin' },
   ],
 
   [TenantRole.TenantAdmin]: [

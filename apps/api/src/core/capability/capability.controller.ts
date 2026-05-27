@@ -28,7 +28,7 @@ export class CapabilityController {
   constructor(private readonly capabilityService: CapabilityService) {}
 
   @Get()
-  @CheckPermissions('manage', 'Plugin')
+  @CheckPermissions('read', 'Plugin')
   async listCapabilities() {
     const result = await this.capabilityService.listCapabilities();
     if (result.isErr()) {

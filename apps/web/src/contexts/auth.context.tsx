@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { Ability } from '@casl/ability';
 import { buildTenantAbility } from '@meta-crm/permissions';
 import type { TenantRoleEntry, TenantAbility } from '@meta-crm/permissions';
@@ -162,16 +162,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    initAuthHelpers({
-      getAccessToken: () => state.accessToken,
-      setTokens: (access) => {
-        setState((s) => ({ ...s, accessToken: access }));
-      },
-      doRefresh: refresh,
-      doLogout: logout,
-    });
-  }, [state.accessToken, refresh, logout]);
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
+  const refreshRef = useRef(refresh);
+  refreshRef.current = refresh;
+
+  const logoutRef = useRef(logout);
+  logoutRef.current = logout;
+
+  // Register auth helpers synchronously in the render body.
+  // This ensures that any child component mounting or triggering side effects (such as LabelsProvider)
+  // during the same render cycle will immediately have access to the latest token and helper references,
+  // avoiding timing issues and stale closures.
+  initAuthHelpers({
+    getAccessToken: () => stateRef.current.accessToken,
+    setTokens: (access) => {
+      setState((s) => ({ ...s, accessToken: access }));
+    },
+    doRefresh: () => refreshRef.current(),
+    doLogout: () => logoutRef.current(),
+  });
 
   useEffect(() => {
     onReconnecting(() => {
