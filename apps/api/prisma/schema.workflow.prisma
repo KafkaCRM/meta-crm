@@ -30,3 +30,21 @@ model WorkflowTransition {
 
   workflowDefinition WorkflowDefinition @relation(fields: [workflow_definition_id], references: [id])
 }
+
+// New table to hold custom process builder flowchart configurations
+model AutomationFlow {
+  id            String   @id @default(cuid())
+  tenant_id     String
+  name          String
+  description   String?
+  trigger_event String   // e.g. "Party:create", "Case:update", etc.
+  flow_json     Json     // Holds steps, conditions, actions, and connections
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  tenant        Tenant   @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id, trigger_event])
+}
+
