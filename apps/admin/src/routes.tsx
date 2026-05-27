@@ -8,7 +8,7 @@ import { TenantList, TenantDetail, CreateTenantForm, ImpersonateView } from '@/c
 import { PluginRegistry, PublishPlugin, PluginDetail } from '@/components/plugins';
 import { PlatformUserList, InvitePlatformUser, PlatformRoleMatrix } from '@/components/team';
 import { PlatformReports } from '@/components/reports';
-import { QueueMonitor, WebhookFailures, PlanList, PlanForm, PlatformBilling, PlatformDashboard, SystemHealth } from '@/components/system';
+import { QueueMonitor, WebhookFailures, PlanList, PlanForm, PlatformBilling, PlatformDashboard, SystemHealth, ObjectManager, LayoutBuilder, FlowBuilder } from '@/components/system';
 import { queryClient } from '@/lib/query-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -497,6 +497,36 @@ const billingRoute = createRoute({
   ),
 });
 
+const objectManagerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/objects',
+  component: () => (
+    <AuthGuard>
+      <ObjectManager />
+    </AuthGuard>
+  ),
+});
+
+const layoutBuilderRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/layouts',
+  component: () => (
+    <AuthGuard>
+      <LayoutBuilder />
+    </AuthGuard>
+  ),
+});
+
+const flowBuilderRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/flows',
+  component: () => (
+    <AuthGuard>
+      <FlowBuilder />
+    </AuthGuard>
+  ),
+});
+
 /* ------------------------------------------------------------------ */
 /*  Router                                                             */
 /* ------------------------------------------------------------------ */
@@ -519,6 +549,9 @@ const routeTree = rootRoute.addChildren([
   usersRoute,
   healthRoute,
   billingRoute,
+  objectManagerRoute,
+  layoutBuilderRoute,
+  flowBuilderRoute,
 ]);
 
 export const router = createRouter({
