@@ -127,9 +127,15 @@ export function PartySourceWidget({ className, hasPermission = true }: PartySour
               outerRadius={70}
               paddingAngle={2}
               dataKey="value"
+              onClick={(data) => {
+                if (data && data.name) {
+                  navigate({ to: '/parties', search: { source: data.name } as any });
+                }
+              }}
+              className="cursor-pointer"
             >
               {chartData.map((entry, index) => (
-                <Cell key={index} fill={entry.fill} strokeWidth={0} />
+                <Cell key={index} fill={entry.fill} strokeWidth={0} className="outline-none" />
               ))}
             </Pie>
             <Tooltip

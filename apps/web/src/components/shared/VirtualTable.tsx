@@ -33,6 +33,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Separator } from '@/components/ui/separator';
+import { FilterChips } from './FilterChips';
+
 
 interface VirtualTableProps<TData> {
   data: TData[];
@@ -370,6 +372,12 @@ export function VirtualTable<TData>({
           </DropdownMenu>
         </div>
       )}
+
+      <FilterChips 
+        filters={columnFilters} 
+        onRemove={(id) => setColumnFilters(prev => prev.filter(f => f.id !== id))} 
+        onClearAll={() => setColumnFilters([])} 
+      />
 
       <div
         ref={tableContainerRef}

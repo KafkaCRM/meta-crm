@@ -31,6 +31,23 @@ export function RoleMatrix() {
     staleTime: 30_000,
   });
 
+  const sortedRoles = useMemo(() => {
+    if (!roles) return [];
+    const systemRolesOrder = ['owner', 'admin', 'manager', 'member', 'viewer'];
+    const system = roles.filter((r) => r.is_system_role);
+    const custom = roles.filter((r) => !r.is_system_role);
+
+    const sortedSystem = system.sort((a, b) => {
+      const aIndex = systemRolesOrder.indexOf(a.slug);
+      const bIndex = systemRolesOrder.indexOf(b.slug);
+      return aIndex - bIndex;
+    });
+
+    const sortedCustom = custom.sort((a, b) => a.name.localeCompare(b.name));
+
+    return [...sortedSystem, ...sortedCustom];
+  }, [roles]);
+
   const createMutation = useMutation({
     mutationFn: (data: { name: string; slug: string; description?: string }) =>
       settingsApi.roles.create(data),
@@ -103,7 +120,7 @@ export function RoleMatrix() {
       <div className="grid gap-6 lg:grid-cols-3 items-start">
         {/* Permission matrices list */}
         <div className={cn("space-y-4", canManage ? "lg:col-span-2" : "lg:col-span-3")}>
-          {roles?.map((role) => (
+          {sortedRoles.map((role) => (
             <RolePermissionGrid
               key={role.id}
               role={role}
@@ -233,7 +250,9 @@ function RolePermissionGrid({ role, onToggle, onDelete, isSaving, canManage }: R
             {role.description ? (
               <p className="text-xs text-[#64748b] mt-0.5 truncate max-w-sm lg:max-w-md">{role.description}</p>
             ) : (
-              <p className="text-[10px] font-mono text-[#94a3b8] mt-0.5 truncate">{role.slug}</p>
+              <p className="text-[10px] text-[#94a3b8] mt-0.5 truncate">
+                {role.is_system_role ? 'System security profile' : 'Custom security profile'}
+              </p>
             )}
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Plus, Trash2, Loader2, Mail, Shield, UserPlus, X } from 'lucide-react';
@@ -27,6 +27,23 @@ export function UserManager() {
     queryFn: () => settingsApi.roles.list(),
     staleTime: 30_000,
   });
+
+  const sortedRoles = useMemo(() => {
+    if (!roles) return [];
+    const systemRolesOrder = ['owner', 'admin', 'manager', 'member', 'viewer'];
+    const system = roles.filter((r) => r.is_system_role);
+    const custom = roles.filter((r) => !r.is_system_role);
+
+    const sortedSystem = system.sort((a, b) => {
+      const aIndex = systemRolesOrder.indexOf(a.slug);
+      const bIndex = systemRolesOrder.indexOf(b.slug);
+      return aIndex - bIndex;
+    });
+
+    const sortedCustom = custom.sort((a, b) => a.name.localeCompare(b.name));
+
+    return [...sortedSystem, ...sortedCustom];
+  }, [roles]);
 
   const inviteMutation = useMutation({
     mutationFn: (data: { name: string; email: string; role_ids: string[] }) =>
@@ -222,7 +239,7 @@ export function UserManager() {
                     Assigned Roles
                   </label>
                   <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1 border border-[#e2e8f0] rounded-lg bg-[#f8fafc]/50">
-                    {roles?.map((role) => {
+                    {sortedRoles.map((role) => {
                       const isSelected = inviteForm.roleIds.includes(role.id);
                       return (
                         <button

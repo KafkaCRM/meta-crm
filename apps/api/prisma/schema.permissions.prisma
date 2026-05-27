@@ -3,6 +3,7 @@ model Role {
   tenant_id     String
   name          String
   slug          String
+  display_name  String?
   description   String?
   is_system_role Boolean @default(false)
   created_at    DateTime @default(now())

@@ -206,4 +206,17 @@ export const settingsApi = {
     update: (id: string, data: { name: string; stages: any[]; transitions: any[] }) =>
       apiCall<any>(`/workflows/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   },
+  customObjects: {
+    list: () => apiCall<any[]>('/custom-objects'),
+    get: (id: string) => apiCall<any>(`/custom-objects/${id}`),
+    create: (data: { api_name: string; singular_label: string; plural_label: string; description?: string }) =>
+      apiCall<any>('/custom-objects', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: { singular_label?: string; plural_label?: string; description?: string }) =>
+      apiCall<any>(`/custom-objects/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    remove: (id: string) =>
+      apiCall<{ message: string }>(`/custom-objects/${id}`, { method: 'DELETE' }),
+  },
+  setupAudits: {
+    list: () => apiCall<any[]>('/setup-audits'),
+  },
 };

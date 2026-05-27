@@ -10,7 +10,7 @@ export class SetupAuditTrailController {
   constructor(private readonly service: SetupAuditTrailService) {}
 
   @Get()
-  @CheckPermissions('manage', 'PlatformTenant')
+  @CheckPermissions('manage', 'FieldDefinition')
   async list() {
     return await this.service.findMany();
   }

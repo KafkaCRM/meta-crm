@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { settingsApi } from '@/api/settings';
-import { Lock, FileText, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
+import { Lock, FileText, ChevronDown, ChevronUp, AlertCircle, Copy } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
+
 
 interface RecordLayoutProps {
   objectType: string;
@@ -170,9 +172,21 @@ export function RecordLayout({ objectType, record, t }: RecordLayoutProps) {
                           <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                             {displayLabel}
                           </label>
-                          <div className="flex items-center gap-1.5 min-h-[28px] text-sm text-slate-800 font-semibold">
+                          <div className="flex items-center gap-1.5 min-h-[28px] text-sm text-slate-800 font-semibold group/val">
                             {layoutField.readonly && <Lock size={12} className="text-slate-400 flex-shrink-0" />}
                             <span className="break-all">{displayVal}</span>
+                            {rawVal !== null && rawVal !== undefined && rawVal !== '' && (
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(String(rawVal));
+                                  toast.success('Copied to clipboard');
+                                }}
+                                className="opacity-0 group-hover/val:opacity-100 transition-opacity text-slate-400 hover:text-slate-700 cursor-pointer ml-1"
+                                title="Copy to clipboard"
+                              >
+                                <Copy size={11} />
+                              </button>
+                            )}
                           </div>
                         </div>
                       );

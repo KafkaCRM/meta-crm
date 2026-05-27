@@ -33,6 +33,10 @@ export class CreateFieldDefinitionDto {
   @IsOptional()
   @IsString()
   related_to?: string;
+
+  @IsOptional()
+  @IsString()
+  custom_obj_id?: string;
 }
 
 export class UpdateFieldDefinitionDto {

@@ -12,6 +12,9 @@ import { LabelEditor } from '@/components/settings/LabelEditor';
 import { CapabilityToggle } from '@/components/settings/CapabilityToggle';
 import { PluginStore } from '@/components/settings/PluginStore';
 import { IntegrationSettings } from '@/components/settings/IntegrationSettings';
+import { ObjectManager } from '@/components/settings/ObjectManager';
+import { SetupAuditTrail } from '@/components/settings/SetupAuditTrail';
+import { LayoutBuilder } from '@/components/settings/LayoutBuilder';
 
 function SettingsPage({ children }: { children: React.ReactNode }) {
   return <SettingsLayout>{children}</SettingsLayout>;
@@ -91,4 +94,22 @@ export const settingsIntegrationsRoute = createRoute({
   getParentRoute: () => settingsRoute,
   path: 'integrations',
   component: IntegrationSettings,
+});
+
+export const settingsObjectsRoute = createRoute({
+  getParentRoute: () => settingsRoute,
+  path: 'objects',
+  component: ObjectManager,
+});
+
+export const settingsAuditTrailRoute = createRoute({
+  getParentRoute: () => settingsRoute,
+  path: 'audit-trail',
+  component: SetupAuditTrail,
+});
+
+export const settingsLayoutBuilderRoute = createRoute({
+  getParentRoute: () => settingsRoute,
+  path: 'layout-builder',
+  component: LayoutBuilder,
 });

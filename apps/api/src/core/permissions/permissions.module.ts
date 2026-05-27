@@ -5,9 +5,12 @@ import { PermissionCacheService } from './permission-cache.service';
 import { PermissionsService } from './permissions.service';
 import { PermissionsGuard, PlatformPermissionsGuard } from './permissions.guard';
 import { DynamicValidatorService } from './dynamic-validator.service';
+import { RoleController } from './role.controller';
 
 @Global()
 @Module({
+  imports: [],
+  controllers: [RoleController],
   providers: [
     {
       provide: REDIS_CLIENT,

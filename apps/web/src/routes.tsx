@@ -62,6 +62,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { useCapabilities } from '@/hooks/useCapabilities';
+import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
+import { CommandPalette } from '@/components/shared/CommandPalette';
+
 
 /* ------------------------------------------------------------------ */
 /*  App Shell Sidebar                                                  */
@@ -257,6 +260,8 @@ function RootLayout() {
   const { isAuthenticated, ability, isLoading } = useAuth();
   const location = useLocation();
   const router = useRouter();
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+
 
   console.log('RootLayout render:', { isAuthenticated, isLoading, pathname: location.pathname });
 
@@ -294,16 +299,41 @@ function RootLayout() {
             <AppSidebar />
             <div className="flex-1 flex flex-col min-w-0">
               {/* Top bar */}
-              <header className="h-14 bg-[#f8fafc] border-b border-[#e2e8f0]/60 flex items-center gap-3 px-4 sticky top-0 z-10">
-                <SidebarTrigger className="text-[#64748b] hover:text-[#0f172a]" />
-                <div className="relative flex-1 max-w-sm">
-                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
-                  <Input
-                    placeholder="Search contacts, companies…"
-                    className="pl-8 h-8 bg-white border-[#e2e8f0] text-sm placeholder:text-[#94a3b8] focus-visible:ring-[#e2e8f0]"
-                  />
+              <header className="h-14 bg-[#f8fafc] border-b border-[#e2e8f0]/60 flex items-center justify-between px-4 sticky top-0 z-10">
+                <div className="flex items-center gap-3">
+                  <SidebarTrigger className="text-[#64748b] hover:text-[#0f172a]" />
+                  <Separator orientation="vertical" className="h-4 bg-[#e2e8f0]" />
+                  <Breadcrumbs />
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  {/* Command search launcher trigger */}
+                  <button
+                    onClick={() => setCommandPaletteOpen(true)}
+                    className="relative w-full sm:w-[240px] h-8 bg-white border border-[#e2e8f0] hover:border-slate-350 rounded-lg flex items-center justify-between px-3 text-slate-400 text-xs font-semibold select-none cursor-pointer transition-all shadow-xs"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Search size={13} className="text-slate-400" />
+                      Search console...
+                    </span>
+                    <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded border border-slate-200 bg-slate-50 px-1.5 font-mono text-[9px] font-bold text-slate-400 leading-none">
+                      <span>⌘</span>K
+                    </kbd>
+                  </button>
+
+                  {/* Sandbox Environment Badge */}
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/10 border border-amber-500/25 rounded-md">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    <span className="text-[9px] font-bold text-amber-700 uppercase tracking-wider font-mono">Sandbox</span>
+                  </div>
+
+                  {/* Tenant Workspace Selector */}
+                  <div className="text-xs font-bold text-slate-600 border border-[#e2e8f0] px-2.5 py-1 rounded-lg bg-white select-none shadow-xs">
+                    Workspace: Acme Corp
+                  </div>
                 </div>
               </header>
+              <CommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
               {/* Page content */}
               <main className="flex-1 p-6 overflow-auto">
                 <Outlet />
@@ -466,6 +496,9 @@ import {
   settingsCapabilitiesRoute,
   settingsPluginsRoute,
   settingsIntegrationsRoute,
+  settingsObjectsRoute,
+  settingsAuditTrailRoute,
+  settingsLayoutBuilderRoute,
 } from './routes/settings';
 
 import { appointmentsRoute } from './routes/appointments';
@@ -507,6 +540,9 @@ export const routeTree = rootRoute.addChildren([
   settingsCapabilitiesRoute,
   settingsPluginsRoute,
   settingsIntegrationsRoute,
+  settingsObjectsRoute,
+  settingsAuditTrailRoute,
+  settingsLayoutBuilderRoute,
 ]);
 
 export const router = createRouter({ routeTree });

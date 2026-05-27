@@ -10,3 +10,7 @@ export { LabelEditor } from './LabelEditor';
 export { CapabilityToggle } from './CapabilityToggle';
 export { PluginStore } from './PluginStore';
 export { IntegrationSettings } from './IntegrationSettings';
+export { ObjectManager } from './ObjectManager';
+export { SetupAuditTrail } from './SetupAuditTrail';
+export { LayoutBuilder } from './LayoutBuilder';
+

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { TenantRole } from '@meta-crm/types';
 import * as bcrypt from 'bcrypt';
 import { ok, err } from 'neverthrow';
 import type { Result } from 'neverthrow';
@@ -579,6 +580,108 @@ export class PlatformTenantsService {
           create: { tenant_id: id, label_key: key, override_value: value },
           update: { override_value: value },
         });
+      }
+
+      // Provision the 5 universal system roles
+      const industryKey = industry.toLowerCase().replace(/_/g, '-').replace(/\s+/g, '-');
+      let memberName = 'Member';
+      let managerName = 'Manager';
+      let adminName = 'Administrator';
+
+      if (industryKey === 'education') {
+        memberName = 'Counsellor';
+        managerName = 'Branch Head';
+        adminName = 'Academic Director';
+      } else if (industryKey === 'healthcare') {
+        memberName = 'Coordinator';
+        managerName = 'Department Head';
+        adminName = 'Hospital Administrator';
+      } else if (industryKey === 'real-estate' || industryKey === 'realestate') {
+        memberName = 'Agent';
+        managerName = 'Team Lead';
+        adminName = 'Operations Head';
+      } else if (industryKey === 'it-services' || industryKey === 'it_services' || industryKey === 'technology' || industryKey === 'tech') {
+        memberName = 'Consultant';
+        managerName = 'Practice Lead';
+        adminName = 'Operations Head';
+      }
+
+      const roleDefinitions = [
+        { slug: 'owner', name: 'owner', display_name: 'Owner', description: 'Tenant Owner - full capabilities and billing manage' },
+        { slug: 'admin', name: 'admin', display_name: adminName, description: 'Tenant Administrator - manage all metadata and operations' },
+        { slug: 'manager', name: 'manager', display_name: managerName, description: 'Tenant Manager - manage records and cases' },
+        { slug: 'member', name: 'member', display_name: memberName, description: 'Tenant Member - basic record view and creation' },
+        { slug: 'viewer', name: 'viewer', display_name: 'Viewer', description: 'Read-only access across contacts and cases' },
+      ];
+
+      for (const roleDef of roleDefinitions) {
+        const role = await this.db.client.role.upsert({
+          where: {
+            tenant_id_name: {
+              tenant_id: id,
+              name: roleDef.name,
+            },
+          },
+          update: {
+            display_name: roleDef.display_name,
+            description: roleDef.description,
+            slug: roleDef.slug,
+          },
+          create: {
+            tenant_id: id,
+            name: roleDef.name,
+            slug: roleDef.slug,
+            display_name: roleDef.display_name,
+            description: roleDef.description,
+            is_system_role: true,
+          },
+        });
+
+        const { SYSTEM_ROLE_MAP } = await import('@meta-crm/permissions');
+        const defaultPerms = SYSTEM_ROLE_MAP[roleDef.slug as TenantRole] ?? [];
+
+        await this.db.client.rolePermission.deleteMany({
+          where: { role_id: role.id },
+        });
+
+        for (const perm of defaultPerms) {
+          await this.db.client.rolePermission.create({
+            data: {
+              role_id: role.id,
+              resource: perm.resource,
+              action: perm.action,
+              conditions: perm.conditions ? JSON.parse(JSON.stringify(perm.conditions)) : null,
+            },
+          });
+        }
+      }
+
+      // Automatically assign the first tenant user to the 'owner' role
+      const firstUser = await this.db.client.user.findFirst({
+        where: { tenant_id: id },
+        orderBy: { created_at: 'asc' },
+      });
+
+      if (firstUser) {
+        const ownerRole = await this.db.client.role.findFirst({
+          where: { tenant_id: id, slug: 'owner' },
+        });
+        if (ownerRole) {
+          await this.db.client.userRole.upsert({
+            where: {
+              user_id_role_id: {
+                user_id: firstUser.id,
+                role_id: ownerRole.id,
+              },
+            },
+            update: {},
+            create: {
+              user_id: firstUser.id,
+              role_id: ownerRole.id,
+              tenant_id: id,
+            },
+          });
+        }
       }
 
       return ok(undefined);

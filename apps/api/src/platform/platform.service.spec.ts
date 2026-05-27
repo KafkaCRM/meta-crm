@@ -25,7 +25,7 @@ describe('PlatformPermissionsGuard — tenant JWT rejection', () => {
     user_id: 'tenant-user',
     tenant_id: 'tenant-a',
     assignment_ids: ['assign-1'],
-    role: TenantRole.TenantAdmin as any,
+    role: TenantRole.Admin as any,
   };
 
   const supportScope: RequestScope = {

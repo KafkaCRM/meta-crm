@@ -61,23 +61,53 @@ export class CustomObjectDefinitionService {
       });
     }
 
-    const object = await this.db.getClient().customObjectDefinition.create({
-      data: {
-        api_name: dto.api_name,
-        singular_label: dto.singular_label,
-        plural_label: dto.plural_label,
-        description: dto.description,
-        tenant: { connect: { id: scope.tenant_id } },
-      },
-    });
+    try {
+      const object = await this.db.getClient().$transaction(async (tx) => {
+        const created = await tx.customObjectDefinition.create({
+          data: {
+            api_name: dto.api_name,
+            singular_label: dto.singular_label,
+            plural_label: dto.plural_label,
+            description: dto.description,
+            tenant: { connect: { id: scope.tenant_id } },
+          },
+        });
 
-    await this.audit.log(
-      `Created Custom Object '${object.singular_label}' (${object.api_name})`,
-      'Object Manager',
-      { api_name: object.api_name, label: object.singular_label }
-    );
+        // Provision empty default page layout
+        await tx.pageLayout.create({
+          data: {
+            tenant_id: scope.tenant_id,
+            object_type: dto.api_name,
+            name: 'Default Layout',
+            layout_json: {
+              sections: [
+                {
+                  name: 'General Information',
+                  columns: 2,
+                  fields: [],
+                },
+              ],
+            },
+            is_default: true,
+          },
+        });
 
-    return ok(object);
+        return created;
+      });
+
+      await this.audit.log(
+        `Created Custom Object '${object.singular_label}' (${object.api_name})`,
+        'Object Manager',
+        { api_name: object.api_name, label: object.singular_label }
+      );
+
+      return ok(object);
+    } catch (e: any) {
+      return err({
+        code: 'DUPLICATE_NAME',
+        message: e?.message ?? 'Failed to create custom object definition transaction',
+      });
+    }
   }
 
   async update(

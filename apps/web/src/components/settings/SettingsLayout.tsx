@@ -45,6 +45,7 @@ const NAV: SettingsNavSection[] = [
       { id: 'branches', label: 'Branches', icon: GitBranch, permission: ['manage', 'Branch'] },
       { id: 'brands', label: 'Brands', icon: Building2, permission: ['manage', 'Brand'] },
       { id: 'assignments', label: 'Assignments', icon: UserCog, permission: ['manage', 'Branch'] },
+      { id: 'audit-trail', label: 'Setup Audit Trail', icon: Sliders, permission: ['manage', 'FieldDefinition'] },
     ],
   },
   {
@@ -57,6 +58,8 @@ const NAV: SettingsNavSection[] = [
   {
     group: 'CRM',
     items: [
+      { id: 'objects', label: 'Object Manager', icon: Settings2, permission: ['manage', 'FieldDefinition'] },
+      { id: 'layout-builder', label: 'Layout Designer', icon: Layers, permission: ['manage', 'FieldDefinition'] },
       { id: 'workflows', label: 'Workflows', icon: Workflow, permission: ['manage', 'Workflow'] },
       { id: 'fields', label: 'Custom Fields', icon: Sliders, permission: ['manage', 'FieldDefinition'] },
       { id: 'labels', label: 'Labels', icon: Tags, permission: ['manage', 'LabelOverride'] },

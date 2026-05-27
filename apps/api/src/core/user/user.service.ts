@@ -1,6 +1,7 @@
 import { Injectable, ForbiddenException, NotFoundException, ConflictException } from '@nestjs/common';
 import { TenantScopedPrismaService } from '../tenant/tenant-scoped-prisma.service';
 import { PlatformPrismaService } from '../tenant/platform-prisma.service';
+import { PermissionCacheService } from '../permissions/permission-cache.service';
 import * as bcrypt from 'bcrypt';
 
 export interface InviteUserInput {
@@ -23,6 +24,7 @@ export class UserService {
   constructor(
     private readonly tenantDb: TenantScopedPrismaService,
     private readonly platformDb: PlatformPrismaService,
+    private readonly cache: PermissionCacheService,
   ) {}
 
   async getMaxUserLimit(tenantId: string): Promise<number> {
@@ -66,7 +68,7 @@ export class UserService {
       created_at: user.created_at,
       roles: user.userRoles.map((ur) => ({
         role_id: ur.role.id,
-        role_name: ur.role.name,
+        role_name: ur.role.display_name || ur.role.name,
         assignment_id: ur.assignment_id ?? undefined,
       })),
     }));
@@ -121,7 +123,7 @@ export class UserService {
         });
       }
 
-      return {
+      const res = {
         id: user.id,
         tenant_id: user.tenant_id,
         name: user.name,
@@ -130,6 +132,8 @@ export class UserService {
         created_at: user.created_at,
         temporary_password: tempPassword, // Included so details can be shown to inviter
       };
+      await this.cache.invalidate(user.id, tenantId);
+      return res;
     });
   }
 
@@ -169,6 +173,7 @@ export class UserService {
         }
       }
 
+      await this.cache.invalidate(id, tenantId);
       return updatedUser;
     });
   }
@@ -193,6 +198,7 @@ export class UserService {
         where: { id },
       });
 
+      await this.cache.invalidate(id, tenantId);
       return { message: 'User removed successfully' };
     });
   }

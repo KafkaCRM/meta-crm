@@ -13,9 +13,9 @@ describe('buildTenantAbility', () => {
   const MANAGER_ASSIGNMENTS = ['assignment-1', 'assignment-2'];
   const OTHER_ASSIGNMENT = 'assignment-99';
 
-  describe('BranchUser', () => {
+  describe('Member', () => {
     const ability = buildTenantAbility(
-      [{ role: TenantRole.BranchUser }],
+      [{ role: TenantRole.Member }],
       USER_ASSIGNMENTS,
     );
 
@@ -64,28 +64,34 @@ describe('buildTenantAbility', () => {
     });
   });
 
-  describe('BranchSupervisor', () => {
+  describe('Viewer', () => {
     const ability = buildTenantAbility(
-      [{ role: TenantRole.BranchSupervisor }],
-      MANAGER_ASSIGNMENTS,
+      [{ role: TenantRole.Viewer }],
+      USER_ASSIGNMENTS,
     );
 
-    it('can create Party', () => {
-      expect(ability.can('create', 'Party')).toBe(true);
+    it('can read Party', () => {
+      expect(ability.can('read', 'Party')).toBe(true);
     });
 
-    it('can read User', () => {
-      expect(ability.can('read', 'User')).toBe(true);
+    it('cannot create Party', () => {
+      expect(ability.can('create', 'Party')).toBe(false);
     });
 
-    it('can read Case in any supervised assignment', () => {
-      expect(
-        ability.can('read', sub('Case', { branch_brand_assignment_id: 'assignment-2' })),
-      ).toBe(true);
+    it('can read Case', () => {
+      expect(ability.can('read', 'Case')).toBe(true);
     });
 
-    it('cannot delete Case', () => {
-      expect(ability.can('delete', 'Case')).toBe(false);
+    it('cannot create Case', () => {
+      expect(ability.can('create', 'Case')).toBe(false);
+    });
+
+    it('can read Interaction', () => {
+      expect(ability.can('read', 'Interaction')).toBe(true);
+    });
+
+    it('cannot create Interaction', () => {
+      expect(ability.can('create', 'Interaction')).toBe(false);
     });
 
     it('cannot assign Case', () => {
@@ -97,9 +103,9 @@ describe('buildTenantAbility', () => {
     });
   });
 
-  describe('BranchManager', () => {
+  describe('Manager', () => {
     const ability = buildTenantAbility(
-      [{ role: TenantRole.BranchManager }],
+      [{ role: TenantRole.Manager }],
       MANAGER_ASSIGNMENTS,
     );
 
@@ -130,36 +136,9 @@ describe('buildTenantAbility', () => {
     });
   });
 
-  describe('BrandManager', () => {
+  describe('Admin', () => {
     const ability = buildTenantAbility(
-      [{ role: TenantRole.BrandManager }],
-      MANAGER_ASSIGNMENTS,
-    );
-
-    it('can export Report', () => {
-      expect(ability.can('export', 'Report')).toBe(true);
-    });
-
-    it('can read Workflow', () => {
-      expect(ability.can('read', 'Workflow')).toBe(true);
-    });
-
-    it('can assign Case', () => {
-      expect(ability.can('assign', 'Case')).toBe(true);
-    });
-
-    it('cannot manage Integration', () => {
-      expect(ability.can('manage', 'Integration')).toBe(false);
-    });
-
-    it('cannot manage BillingRecord', () => {
-      expect(ability.can('manage', 'BillingRecord')).toBe(false);
-    });
-  });
-
-  describe('TenantAdmin', () => {
-    const ability = buildTenantAbility(
-      [{ role: TenantRole.TenantAdmin }],
+      [{ role: TenantRole.Admin }],
       [],
     );
 
@@ -184,9 +163,9 @@ describe('buildTenantAbility', () => {
     });
   });
 
-  describe('TenantOwner', () => {
+  describe('Owner', () => {
     const ability = buildTenantAbility(
-      [{ role: TenantRole.TenantOwner }],
+      [{ role: TenantRole.Owner }],
       [],
     );
 
@@ -211,8 +190,8 @@ describe('buildTenantAbility', () => {
     it('merges permissions from multiple roles', () => {
       const ability = buildTenantAbility(
         [
-          { role: TenantRole.BranchManager },
-          { role: TenantRole.TenantOwner },
+          { role: TenantRole.Manager },
+          { role: TenantRole.Owner },
         ],
         MANAGER_ASSIGNMENTS,
       );
@@ -222,19 +201,33 @@ describe('buildTenantAbility', () => {
   });
 
   describe('role normalization', () => {
-    it('normalizes admin role to tenant_admin', () => {
-      const ability = buildTenantAbility([{ role: 'admin' }], []);
-      expect(ability.can('manage', 'Role')).toBe(true);
-      expect(ability.can('manage', 'Integration')).toBe(true);
-      expect(ability.can('manage', 'Party')).toBe(true);
-      expect(ability.can('manage', 'BillingRecord')).toBe(false);
+    it('normalizes admin role to tenant_admin / admin', () => {
+      const ability1 = buildTenantAbility([{ role: 'admin' }], []);
+      expect(ability1.can('manage', 'Role')).toBe(true);
+      expect(ability1.can('manage', 'BillingRecord')).toBe(false);
+
+      const ability2 = buildTenantAbility([{ role: 'tenant_admin' }], []);
+      expect(ability2.can('manage', 'Role')).toBe(true);
+      expect(ability2.can('manage', 'BillingRecord')).toBe(false);
     });
 
-    it('normalizes owner role to tenant_owner', () => {
-      const ability = buildTenantAbility([{ role: 'owner' }], []);
-      expect(ability.can('manage', 'BillingRecord')).toBe(true);
-      expect(ability.can('manage', 'Role')).toBe(true);
-      expect(ability.can('manage', 'Plugin')).toBe(true);
+    it('normalizes owner role to tenant_owner / owner', () => {
+      const ability1 = buildTenantAbility([{ role: 'owner' }], []);
+      expect(ability1.can('manage', 'BillingRecord')).toBe(true);
+
+      const ability2 = buildTenantAbility([{ role: 'tenant_owner' }], []);
+      expect(ability2.can('manage', 'BillingRecord')).toBe(true);
+    });
+
+    it('normalizes manager roles to manager', () => {
+      const ability1 = buildTenantAbility([{ role: 'branch_manager' }], MANAGER_ASSIGNMENTS);
+      expect(ability1.can('assign', 'Case')).toBe(true);
+
+      const ability2 = buildTenantAbility([{ role: 'brand_manager' }], MANAGER_ASSIGNMENTS);
+      expect(ability2.can('assign', 'Case')).toBe(true);
+
+      const ability3 = buildTenantAbility([{ role: 'manager' }], MANAGER_ASSIGNMENTS);
+      expect(ability3.can('assign', 'Case')).toBe(true);
     });
   });
 });

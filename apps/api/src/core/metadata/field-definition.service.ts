@@ -39,6 +39,7 @@ export class FieldDefinitionService {
         order: dto.order ?? 0,
         visibility_rules: (dto.visibility_rules ?? []) as any,
         related_to: dto.related_to,
+        custom_obj_id: dto.custom_obj_id,
       } as any,
     });
 

@@ -13,6 +13,7 @@ import { queryClient } from '@/lib/query-client';
 import { MergeWizard } from './MergeWizard';
 import { Button } from '@/components/ui/button';
 import { RecordLayout } from '@/components/shared';
+import { StagePath } from '../case/StagePath';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -408,6 +409,12 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
           )}
         </div>
       </div>
+      
+      <StagePath 
+        currentStage={(party as any).stage || 'new'} 
+        stages={['new', 'contacted', 'qualified', 'negotiation', 'won', 'lost']} 
+        onStageSelect={(stage) => updateMutation.mutate({ id: party.id, data: { stage } })} 
+      />
 
       {/* Two-column layout */}
       <div className="grid gap-4 lg:grid-cols-5">

@@ -20,6 +20,10 @@ function mockDb() {
     workflowDefinition: { findFirst: vi.fn(), create: vi.fn() },
     workflowStage: { findFirst: vi.fn(), create: vi.fn() },
     workflowTransition: { findFirst: vi.fn(), create: vi.fn() },
+    role: { findFirst: vi.fn(), upsert: vi.fn().mockImplementation(({ create }: any) => Promise.resolve({ id: `role-${create.name}`, ...create })), create: vi.fn() },
+    rolePermission: { deleteMany: vi.fn(), create: vi.fn() },
+    user: { findFirst: vi.fn().mockResolvedValue({ id: 'user-1' }) },
+    userRole: { upsert: vi.fn(), create: vi.fn() },
   };
   return { getClient: vi.fn().mockReturnValue(client), client } as unknown as TenantScopedPrismaService & { client: any };
 }

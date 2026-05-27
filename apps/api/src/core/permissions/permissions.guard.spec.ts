@@ -15,7 +15,7 @@ const tenantScope: RequestScope = {
   user_id: 'user-a',
   tenant_id: 'tenant-a',
   assignment_ids: ['assign-1'],
-  role: TenantRole.BranchUser,
+  role: TenantRole.Member,
 };
 
 const adminScope: RequestScope = {
@@ -47,7 +47,7 @@ describe('PermissionsGuard', () => {
   });
 
   it('allows when ability.can returns true', async () => {
-    const ability = buildTenantAbility([{ role: TenantRole.TenantAdmin }], []);
+    const ability = buildTenantAbility([{ role: TenantRole.Admin }], []);
     (cls.get as any).mockReturnValue(tenantScope);
     reflector.get.mockReturnValue({ action: 'read', resource: 'Case' });
 
@@ -56,7 +56,7 @@ describe('PermissionsGuard', () => {
   });
 
   it('denies with PERMISSION_DENIED when ability.can returns false', async () => {
-    const ability = buildTenantAbility([{ role: TenantRole.BranchUser }], ['assign-1']);
+    const ability = buildTenantAbility([{ role: TenantRole.Member }], ['assign-1']);
     (cls.get as any).mockReturnValue(tenantScope);
     reflector.get.mockReturnValue({ action: 'manage', resource: 'Workflow' });
 
@@ -80,7 +80,7 @@ describe('PermissionsGuard', () => {
   });
 
   it('denies with PERMISSION_DENIED when no scope in CLS', async () => {
-    const ability = buildTenantAbility([{ role: TenantRole.TenantAdmin }], []);
+    const ability = buildTenantAbility([{ role: TenantRole.Admin }], []);
     (cls.get as any).mockReturnValue(null);
     reflector.get.mockReturnValue({ action: 'read', resource: 'Case' });
 
@@ -196,7 +196,7 @@ describe('PermissionCacheService', () => {
 /* ------------------------------------------------------------------ */
 describe('Attribute condition — own_assignment_only', () => {
   const buildAbility = (assignments: string[]) =>
-    buildTenantAbility([{ role: TenantRole.BranchUser }], assignments);
+    buildTenantAbility([{ role: TenantRole.Member }], assignments);
 
   it('allows access when branch_brand_assignment_id is in user assignments', () => {
     const ability = buildAbility(['assign-1', 'assign-2']);
@@ -220,7 +220,7 @@ describe('Attribute condition — own_assignment_only', () => {
   });
 
   it('tenant_admin with manage permission bypasses assignment check', () => {
-    const ability = buildTenantAbility([{ role: TenantRole.TenantAdmin }], []);
+    const ability = buildTenantAbility([{ role: TenantRole.Admin }], []);
 
     const allowed = ability.can('manage', subject('Case', { branch_brand_assignment_id: 'any' }) as any);
     expect(allowed).toBe(true);

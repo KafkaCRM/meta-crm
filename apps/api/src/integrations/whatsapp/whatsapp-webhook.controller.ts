@@ -2,6 +2,7 @@ import { Controller, Post, Body, Headers, Logger } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { WhatsAppWebhookService } from './whatsapp-webhook.service';
 import type { RequestScope } from '../../core/tenant/request-scope.interface';
+import { TenantRole } from '@meta-crm/types';
 
 @Controller('webhooks/whatsapp')
 export class WhatsAppWebhookController {
@@ -41,7 +42,7 @@ export class WhatsAppWebhookController {
           tenant_id: '',
           user_id: '',
           assignment_ids: [],
-          role: 'branch_user',
+          role: TenantRole.Member,
           vertical_ids: [],
         } as RequestScope;
         this.cls.set('scope', syntheticScope);

@@ -8,7 +8,7 @@ export interface PermissionDefinition {
 }
 
 export const SYSTEM_ROLE_MAP: Record<TenantRole, PermissionDefinition[]> = {
-  [TenantRole.BranchUser]: [
+  [TenantRole.Member]: [
     { action: 'create', resource: 'Party' },
     { action: 'read', resource: 'Party' },
     { action: 'update', resource: 'Party' },
@@ -22,39 +22,7 @@ export const SYSTEM_ROLE_MAP: Record<TenantRole, PermissionDefinition[]> = {
     { action: 'read', resource: 'Plugin' },
   ],
 
-  [TenantRole.BranchSupervisor]: [
-    { action: 'create', resource: 'Party' },
-    { action: 'read', resource: 'Party' },
-    { action: 'update', resource: 'Party' },
-    { action: 'create', resource: 'Case', conditions: { own_assignment_only: true } },
-    { action: 'read', resource: 'Case', conditions: { own_assignment_only: true } },
-    { action: 'update', resource: 'Case', conditions: { own_assignment_only: true } },
-    { action: 'create', resource: 'Interaction' },
-    { action: 'read', resource: 'Interaction' },
-    { action: 'read', resource: 'User' },
-    { action: 'read', resource: 'Vertical' },
-    { action: 'read', resource: 'Campaign' },
-    { action: 'read', resource: 'Plugin' },
-  ],
-
-  [TenantRole.BranchManager]: [
-    { action: 'create', resource: 'Party' },
-    { action: 'read', resource: 'Party' },
-    { action: 'update', resource: 'Party' },
-    { action: 'create', resource: 'Case', conditions: { own_assignment_only: true } },
-    { action: 'read', resource: 'Case', conditions: { own_assignment_only: true } },
-    { action: 'update', resource: 'Case', conditions: { own_assignment_only: true } },
-    { action: 'assign', resource: 'Case' },
-    { action: 'create', resource: 'Interaction' },
-    { action: 'read', resource: 'Interaction' },
-    { action: 'read', resource: 'User' },
-    { action: 'read', resource: 'Report' },
-    { action: 'read', resource: 'Vertical' },
-    { action: 'read', resource: 'Campaign' },
-    { action: 'read', resource: 'Plugin' },
-  ],
-
-  [TenantRole.BrandManager]: [
+  [TenantRole.Manager]: [
     { action: 'create', resource: 'Party' },
     { action: 'read', resource: 'Party' },
     { action: 'update', resource: 'Party' },
@@ -73,7 +41,7 @@ export const SYSTEM_ROLE_MAP: Record<TenantRole, PermissionDefinition[]> = {
     { action: 'read', resource: 'Plugin' },
   ],
 
-  [TenantRole.TenantAdmin]: [
+  [TenantRole.Admin]: [
     { action: 'manage', resource: 'Party' },
     { action: 'manage', resource: 'Case' },
     { action: 'manage', resource: 'Interaction' },
@@ -92,7 +60,7 @@ export const SYSTEM_ROLE_MAP: Record<TenantRole, PermissionDefinition[]> = {
     { action: 'manage', resource: 'Plugin' },
   ],
 
-  [TenantRole.TenantOwner]: [
+  [TenantRole.Owner]: [
     { action: 'manage', resource: 'Party' },
     { action: 'manage', resource: 'Case' },
     { action: 'manage', resource: 'Interaction' },
@@ -110,5 +78,14 @@ export const SYSTEM_ROLE_MAP: Record<TenantRole, PermissionDefinition[]> = {
     { action: 'manage', resource: 'Campaign' },
     { action: 'manage', resource: 'Plugin' },
     { action: 'manage', resource: 'BillingRecord' },
+  ],
+
+  [TenantRole.Viewer]: [
+    { action: 'read', resource: 'Party' },
+    { action: 'read', resource: 'Case' },
+    { action: 'read', resource: 'Interaction' },
+    { action: 'read', resource: 'Vertical' },
+    { action: 'read', resource: 'Campaign' },
+    { action: 'read', resource: 'Plugin' },
   ],
 };

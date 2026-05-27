@@ -80,14 +80,39 @@ export class DynamicValidatorService {
           });
           break;
         case 'picklist':
+        case 'select':
           // Fetch picklist options from the Json options configuration
-          const options: string[] = (field.options as any)?.options ?? [];
+          let options: string[] = [];
+          if (field.options) {
+            if (Array.isArray(field.options)) {
+              options = field.options as string[];
+            } else if (typeof field.options === 'object') {
+              options = (field.options as any).options ?? [];
+            }
+          }
           if (options.length > 0) {
             validator = z.string().refine((val) => options.includes(val), {
               message: `Field '${field.label}' must be one of: [${options.join(', ')}]`,
             });
           } else {
             validator = z.string();
+          }
+          break;
+        case 'multi_select':
+          let multiOptions: string[] = [];
+          if (field.options) {
+            if (Array.isArray(field.options)) {
+              multiOptions = field.options as string[];
+            } else if (typeof field.options === 'object') {
+              multiOptions = (field.options as any).options ?? [];
+            }
+          }
+          if (multiOptions.length > 0) {
+            validator = z.array(z.string()).refine((vals) => Array.isArray(vals) && vals.every((val) => multiOptions.includes(val)), {
+              message: `Field '${field.label}' values must be from: [${multiOptions.join(', ')}]`,
+            });
+          } else {
+            validator = z.array(z.string());
           }
           break;
         case 'lookup':

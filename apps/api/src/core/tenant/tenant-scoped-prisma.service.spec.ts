@@ -13,7 +13,7 @@ const tenantAScope: RequestScope = {
   user_id: 'user-a',
   tenant_id: 'tenant-a',
   assignment_ids: ['assign-1'],
-  role: TenantRole.BranchUser,
+  role: TenantRole.Member,
   vertical_ids: [],
 };
 
@@ -21,7 +21,7 @@ const tenantBScope: RequestScope = {
   user_id: 'user-b',
   tenant_id: 'tenant-b',
   assignment_ids: ['assign-2'],
-  role: TenantRole.BranchUser,
+  role: TenantRole.Member,
   vertical_ids: [],
 };
 
@@ -211,7 +211,7 @@ describe('applyTenantScope', () => {
         user_id: 'user-a',
         tenant_id: 'tenant-a',
         assignment_ids: ['assign-1'],
-        role: TenantRole.BranchUser,
+        role: TenantRole.Member,
         vertical_ids: ['v1', 'v2'],
       };
 
@@ -236,7 +236,7 @@ describe('applyTenantScope', () => {
         user_id: 'user-a',
         tenant_id: 'tenant-a',
         assignment_ids: ['assign-1'],
-        role: TenantRole.BranchManager,
+        role: TenantRole.Manager,
         vertical_ids: [],
       };
 
@@ -260,7 +260,7 @@ describe('applyTenantScope', () => {
         user_id: 'user-a',
         tenant_id: 'tenant-a',
         assignment_ids: ['assign-1'],
-        role: TenantRole.BranchUser,
+        role: TenantRole.Member,
         vertical_ids: ['v1'],
       };
 

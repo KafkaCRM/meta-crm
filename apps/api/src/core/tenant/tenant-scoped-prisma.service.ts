@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, ForbiddenException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { ClsService } from 'nestjs-cls';
 import { PRISMA_CLIENT } from './prisma-client.token';
@@ -40,7 +40,12 @@ export async function applyTenantScope<T>(
   }
 
   if (operation === 'findUnique' || operation === 'findUniqueOrThrow') {
-    return query(args);
+    const scope = cls.get<RequestScope>('scope');
+    const result = await query(args);
+    if (scope?.tenant_id && result && typeof result === 'object' && 'tenant_id' in result && (result as any).tenant_id !== scope.tenant_id) {
+      throw new ForbiddenException('Cross-tenant resource access forbidden');
+    }
+    return result;
   }
 
   const scope = cls.get<RequestScope>('scope');

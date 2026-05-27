@@ -321,10 +321,9 @@ export class AuthService {
     assignmentIds: string[],
   ): Promise<string[]> {
     if (
-      role === TenantRole.BranchManager ||
-      role === TenantRole.BrandManager ||
-      role === TenantRole.TenantAdmin ||
-      role === TenantRole.TenantOwner ||
+      role === TenantRole.Manager ||
+      role === TenantRole.Admin ||
+      role === TenantRole.Owner ||
       !tenantId ||
       assignmentIds.length === 0
     ) {

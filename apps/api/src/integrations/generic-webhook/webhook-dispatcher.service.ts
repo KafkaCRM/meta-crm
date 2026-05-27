@@ -5,6 +5,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ClsService } from 'nestjs-cls';
 import { TenantScopedPrismaService } from '../../core/tenant/tenant-scoped-prisma.service';
 import type { RequestScope } from '../../core/tenant/request-scope.interface';
+import { TenantRole } from '@meta-crm/types';
 
 export interface WebhookDeliveryJob {
   subscriptionId: string;
@@ -39,7 +40,7 @@ export class WebhookDispatcherService implements OnModuleInit {
             tenant_id: tenantId,
             user_id: '',
             assignment_ids: [],
-            role: 'branch_user',
+            role: TenantRole.Member,
             vertical_ids: [],
           } as RequestScope);
 

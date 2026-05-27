@@ -38,10 +38,16 @@ export function buildTenantAbility(
 
   for (const entry of roles) {
     let roleKey = entry.role;
-    if (roleKey === 'admin') {
-      roleKey = TenantRole.TenantAdmin;
-    } else if (roleKey === 'owner') {
-      roleKey = TenantRole.TenantOwner;
+    if (roleKey === 'admin' || roleKey === 'tenant_admin') {
+      roleKey = TenantRole.Admin;
+    } else if (roleKey === 'owner' || roleKey === 'tenant_owner') {
+      roleKey = TenantRole.Owner;
+    } else if (roleKey === 'member' || roleKey === 'branch_user') {
+      roleKey = TenantRole.Member;
+    } else if (roleKey === 'manager' || roleKey === 'branch_manager' || roleKey === 'brand_manager') {
+      roleKey = TenantRole.Manager;
+    } else if (roleKey === 'viewer') {
+      roleKey = TenantRole.Viewer;
     }
 
     const permissions = SYSTEM_ROLE_MAP[roleKey as TenantRole];

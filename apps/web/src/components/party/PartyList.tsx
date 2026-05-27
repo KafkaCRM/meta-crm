@@ -8,6 +8,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useLabels } from '@/hooks/useLabels';
 import { partiesApi } from '@/api/parties';
 import { VirtualTable } from '@/components/shared/VirtualTable';
+import { SidePanelPreview } from '@/components/shared/SidePanelPreview';
 import { BulkActionBar, type BulkAction } from '@/components/shared/BulkActionBar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,6 +80,8 @@ export function PartyList() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [selectedRows, setSelectedRows] = useState<PartyResponse[]>([]);
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -152,9 +155,10 @@ export function PartyList() {
 
   const handleRowClick = useCallback(
     (row: PartyResponse) => {
-      navigate({ to: '/parties/$id', params: { id: row.id } });
+      setPreviewId(row.id);
+      setPreviewOpen(true);
     },
-    [navigate],
+    [],
   );
 
   const parties = data?.data ?? [];
@@ -326,6 +330,13 @@ export function PartyList() {
         actions={bulkActions}
         onClearSelection={() => setSelectedRows([])}
         resource="Party"
+      />
+
+      <SidePanelPreview 
+        isOpen={previewOpen} 
+        recordId={previewId} 
+        objectType="Party" 
+        onClose={() => setPreviewOpen(false)} 
       />
     </div>
   );
