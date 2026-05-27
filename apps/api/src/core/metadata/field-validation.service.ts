@@ -7,6 +7,45 @@ import type { Result } from 'neverthrow';
 export class FieldValidationService {
   constructor(private readonly db: TenantScopedPrismaService) {}
 
+  async validateLookupExists(
+    tenantId: string,
+    relatedTo: string,
+    id: string,
+  ): Promise<boolean> {
+    if (!id || typeof id !== 'string') return false;
+
+    // If it's a custom dynamic object
+    if (relatedTo.endsWith('__c')) {
+      const record = await this.db.getClient().flexRecord.findFirst({
+        where: {
+          id,
+          tenant_id: tenantId,
+          object_type: relatedTo,
+        },
+      });
+      return !!record;
+    }
+
+    // Standard CRM objects (e.g. Party, Case, User, Appointment, Invoice, Payment, Property, Order, Onboarding)
+    const prismaModelName = relatedTo.charAt(0).toLowerCase() + relatedTo.slice(1);
+    const client = this.db.getClient() as any;
+    if (client[prismaModelName]) {
+      try {
+        const record = await client[prismaModelName].findFirst({
+          where: {
+            id,
+            ...(prismaModelName !== 'user' ? { tenant_id: tenantId } : {}),
+          },
+        });
+        return !!record;
+      } catch (error) {
+        return false;
+      }
+    }
+
+    return false;
+  }
+
   async validateAttributes(
     entityType: 'Case' | 'Party',
     attributes: Record<string, unknown>,
@@ -59,6 +98,15 @@ export class FieldValidationService {
           const options = Array.isArray(def.options) ? def.options : [];
           if (options.length > 0 && !options.includes(val)) {
             errors.push(`Field "${def.label}" must be one of the specified options: [${options.join(', ')}]`);
+          }
+          break;
+        }
+        case 'lookup': {
+          if (def.related_to) {
+            const exists = await this.validateLookupExists(def.tenant_id, def.related_to, val as string);
+            if (!exists) {
+              errors.push(`Field "${def.label}" refers to record with ID "${val}" which does not exist in "${def.related_to}"`);
+            }
           }
           break;
         }
