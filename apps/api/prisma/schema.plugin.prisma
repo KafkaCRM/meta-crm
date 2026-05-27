@@ -46,7 +46,8 @@ model ExtensionRegistry {
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
 
-  tenantExtensions TenantExtension[]
+  tenantExtensions  TenantExtension[]
+  secureCredentials SecureCredential[]
 }
 
 /// Records which extensions a tenant has installed/activated.

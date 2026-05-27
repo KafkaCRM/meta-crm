@@ -39,7 +39,9 @@ export const SYSTEM_ROLE_MAP: Record<TenantRole, PermissionDefinition[]> = {
     { action: 'read', resource: 'Vertical' },
     { action: 'read', resource: 'Campaign' },
     { action: 'read', resource: 'Plugin' },
+    { action: 'read', resource: 'Integration' },
   ],
+
 
   [TenantRole.Admin]: [
     { action: 'manage', resource: 'Party' },

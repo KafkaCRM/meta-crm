@@ -1,27 +1,48 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { CheckCircle2, XCircle, Loader2, Eye, EyeOff, Mail, MessageSquare, Share2, PhoneCall, Link, ShieldCheck } from 'lucide-react';
+import {
+  CheckCircle2,
+  XCircle,
+  Loader2,
+  Eye,
+  EyeOff,
+  Mail,
+  MessageSquare,
+  Share2,
+  PhoneCall,
+  Link,
+  ShieldCheck,
+  Plug,
+} from 'lucide-react';
 import { settingsApi, type IntegrationConfig } from '@/api/settings';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { usePermissions } from '@/hooks/usePermissions';
 
-const PROVIDERS = [
-  { id: 'whatsapp', name: 'WhatsApp', description: 'WhatsApp Business API messaging integration', fields: ['api_key', 'phone_number_id'] },
-  { id: 'facebook', name: 'Facebook', description: 'Facebook Lead Ads integration webhook', fields: ['access_token', 'page_id'] },
-  { id: 'justdial', name: 'JustDial', description: 'JustDial developer API lead capture integration', fields: ['api_key', 'client_id'] },
-  { id: 'email', name: 'Email', description: 'SMTP integration to send system notifications and updates', fields: ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass'] },
-];
+// ── Icon mapping (driven by manifest, not hardcoded) ──────────────────────────
+
+function resolveIcon(icon: string) {
+  switch (icon) {
+    case 'MessageSquare': return MessageSquare;
+    case 'Share2':        return Share2;
+    case 'PhoneCall':     return PhoneCall;
+    case 'Mail':          return Mail;
+    case 'Plug':          return Plug;
+    default:              return Link;
+  }
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 
 export function IntegrationSettings() {
   const { can } = usePermissions();
   const canManage = can('manage', 'Integration');
   const queryClient = useQueryClient();
 
-  const { data: integrations, isLoading } = useQuery({
+  const { data: integrations = [], isLoading } = useQuery({
     queryKey: ['settings', 'integrations'],
     queryFn: () => settingsApi.integrations.list(),
     staleTime: 30_000,
@@ -40,91 +61,78 @@ export function IntegrationSettings() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-[#0f172a]">Integrations</h1>
         <p className="text-sm text-[#64748b] mt-0.5">
-          Connect your workspace with third-party service providers, API credentials, and email channels
+          Connect your workspace with third-party services. Credentials are encrypted using AES-256-GCM and never stored in plaintext.
         </p>
       </div>
 
       <div className="space-y-4">
-        {PROVIDERS.map((provider) => {
-          const config = integrations?.find((i) => i.provider === provider.id);
-          return (
-            <IntegrationCard
-              key={provider.id}
-              provider={provider}
-              config={config}
-              canManage={canManage}
-              onConfigured={() => {
-                queryClient.invalidateQueries({ queryKey: ['settings', 'integrations'] });
-                toast.success(`${provider.name} configured successfully`);
-              }}
-              onDisconnected={() => {
-                queryClient.invalidateQueries({ queryKey: ['settings', 'integrations'] });
-                toast.success(`${provider.name} disconnected successfully`);
-              }}
-            />
-          );
-        })}
+        {integrations.map((integration) => (
+          <IntegrationCard
+            key={integration.provider}
+            integration={integration}
+            canManage={canManage}
+            onConfigured={() => {
+              queryClient.invalidateQueries({ queryKey: ['settings', 'integrations'] });
+              toast.success(`${integration.name} configured successfully`);
+            }}
+            onDisconnected={() => {
+              queryClient.invalidateQueries({ queryKey: ['settings', 'integrations'] });
+              toast.success(`${integration.name} disconnected`);
+            }}
+          />
+        ))}
       </div>
     </div>
   );
 }
 
+// ── Card component ────────────────────────────────────────────────────────────
+
 interface IntegrationCardProps {
-  provider: { id: string; name: string; description: string; fields: string[] };
-  config: IntegrationConfig | undefined;
+  integration: IntegrationConfig;
+  canManage: boolean;
   onConfigured: () => void;
   onDisconnected: () => void;
-  canManage: boolean;
 }
 
-function IntegrationCard({ provider, config, onConfigured, onDisconnected, canManage }: IntegrationCardProps) {
+function IntegrationCard({ integration, canManage, onConfigured, onDisconnected }: IntegrationCardProps) {
   const [showForm, setShowForm] = useState(false);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [showValues, setShowValues] = useState<Record<string, boolean>>({});
 
   const configureMutation = useMutation({
     mutationFn: (data: Record<string, string>) =>
-      settingsApi.integrations.configure(provider.id, data),
+      settingsApi.integrations.configure(integration.provider, data),
     onSuccess: () => {
       onConfigured();
       setShowForm(false);
+      setFieldValues({});
     },
-    onError: () => toast.error(`Failed to configure ${provider.name}`),
+    onError: () => toast.error(`Failed to configure ${integration.name}`),
   });
 
   const disconnectMutation = useMutation({
-    mutationFn: () => settingsApi.integrations.disconnect(provider.id),
+    mutationFn: () => settingsApi.integrations.disconnect(integration.provider),
     onSuccess: () => {
       onDisconnected();
       setShowForm(false);
     },
-    onError: () => toast.error(`Failed to disconnect ${provider.name}`),
+    onError: () => toast.error(`Failed to disconnect ${integration.name}`),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Validate all required fields are filled
+    const missing = integration.credential_fields.filter((f) => !fieldValues[f]?.trim());
+    if (missing.length > 0) {
+      toast.error(`Please fill in: ${missing.join(', ')}`);
+      return;
+    }
     configureMutation.mutate(fieldValues);
   };
 
-  const isConnected = config?.status === 'connected';
-
-  // Resolve integration provider icons
-  const getProviderIcon = (id: string) => {
-    switch (id) {
-      case 'whatsapp':
-        return MessageSquare;
-      case 'facebook':
-        return Share2;
-      case 'justdial':
-        return PhoneCall;
-      case 'email':
-        return Mail;
-      default:
-        return Link;
-    }
-  };
-
-  const ProviderIcon = getProviderIcon(provider.id);
+  const isConnected = integration.status === 'connected';
+  const ProviderIcon = resolveIcon(integration.icon);
 
   return (
     <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none overflow-hidden">
@@ -139,21 +147,21 @@ function IntegrationCard({ provider, config, onConfigured, onDisconnected, canMa
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-semibold text-[#0f172a]">{provider.name}</span>
+              <span className="text-sm font-semibold text-[#0f172a]">{integration.name}</span>
               {isConnected && (
                 <Badge variant="outline" className="bg-emerald-50 text-emerald-600 border-emerald-100 text-[8px] rounded-md font-bold py-0 px-1.5 flex items-center gap-0.5">
                   <CheckCircle2 size={8} />
                   Connected
                 </Badge>
               )}
-              {config?.status === 'error' && (
+              {integration.status === 'error' && (
                 <Badge variant="outline" className="bg-red-50 text-red-600 border-red-100 text-[8px] rounded-md font-bold py-0 px-1.5 flex items-center gap-0.5">
                   <XCircle size={8} />
                   Error
                 </Badge>
               )}
             </div>
-            <p className="text-xs text-[#64748b] mt-0.5 leading-relaxed">{provider.description}</p>
+            <p className="text-xs text-[#64748b] mt-0.5 leading-relaxed">{integration.description}</p>
           </div>
         </div>
 
@@ -170,34 +178,48 @@ function IntegrationCard({ provider, config, onConfigured, onDisconnected, canMa
               </Button>
             )}
             {isConnected && (
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={disconnectMutation.isPending}
-                onClick={() => {
-                  if (window.confirm(`Are you sure you want to disconnect your ${provider.name} integration? This will erase credential logs.`)) {
-                    disconnectMutation.mutate();
-                  }
-                }}
-                className="border-red-100 text-red-600 hover:bg-red-50 hover:text-red-700 h-8 rounded-lg font-semibold"
-              >
-                {disconnectMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
-                Disconnect
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setShowForm(!showForm);
+                    setFieldValues({});
+                  }}
+                  className="border-[#e2e8f0] text-[#0f172a] hover:bg-[#f8fafc] h-8 rounded-lg font-semibold"
+                >
+                  Update Credentials
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={disconnectMutation.isPending}
+                  onClick={() => {
+                    if (window.confirm(`Disconnect ${integration.name}? This will erase all stored credentials.`)) {
+                      disconnectMutation.mutate();
+                    }
+                  }}
+                  className="border-red-100 text-red-600 hover:bg-red-50 hover:text-red-700 h-8 rounded-lg font-semibold"
+                >
+                  {disconnectMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
+                  Disconnect
+                </Button>
+              </>
             )}
           </div>
         )}
       </div>
 
+      {/* Credential form */}
       {showForm && (
         <form onSubmit={handleSubmit} className="border-t border-[#e2e8f0] bg-[#f8fafc]/40 px-4 py-4 space-y-4">
           <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-[#94a3b8]">
             <ShieldCheck size={12} />
-            <span>Secure API Credentials</span>
+            <span>Secure API Credentials — Encrypted with AES-256-GCM</span>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            {provider.fields.map((field) => (
+            {integration.credential_fields.map((field) => (
               <div key={field} className="space-y-1.5">
                 <label className="text-xs font-medium text-[#64748b] capitalize">
                   {field.replace(/_/g, ' ')}
@@ -209,7 +231,7 @@ function IntegrationCard({ provider, config, onConfigured, onDisconnected, canMa
                     onChange={(e) =>
                       setFieldValues((f) => ({ ...f, [field]: e.target.value }))
                     }
-                    placeholder={`Enter custom ${field.replace(/_/g, ' ')}`}
+                    placeholder={`Enter ${field.replace(/_/g, ' ')}`}
                     required
                     className="h-9 border-[#e2e8f0] bg-white text-[#0f172a] placeholder-[#94a3b8] pr-10"
                   />
@@ -229,7 +251,7 @@ function IntegrationCard({ provider, config, onConfigured, onDisconnected, canMa
 
           <div className="flex items-center justify-between pt-2">
             <span className="text-[10px] text-[#94a3b8] leading-normal max-w-xs">
-              Credentials are encrypted at rest and never shown again post-validation.
+              Credentials are encrypted at rest and never shown again post-save.
             </span>
             <Button
               type="submit"
@@ -237,31 +259,27 @@ function IntegrationCard({ provider, config, onConfigured, onDisconnected, canMa
               className="bg-[#0f172a] hover:bg-[#1e293b] text-white h-9 rounded-lg"
             >
               {configureMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />}
-              Save Configuration
+              Save & Encrypt
             </Button>
           </div>
         </form>
       )}
 
-      {isConnected && config?.has_credentials && (
+      {/* Connected credential fingerprint */}
+      {isConnected && integration.has_credentials && !showForm && (
         <div className="border-t border-[#e2e8f0] bg-[#f8fafc]/30 px-4 py-3 flex items-center justify-between text-xs">
           <div>
-            <p className="font-medium text-[#0f172a]">Active Connection Credentials</p>
-            <p className="text-[10px] text-[#94a3b8] font-mono mt-0.5">SHA-256 Fingerprint: ••••••••••••</p>
+            <p className="font-medium text-[#0f172a]">Credentials stored (AES-256-GCM encrypted)</p>
+            {integration.configured_at && (
+              <p className="text-[10px] text-[#94a3b8] mt-0.5">
+                Last updated: {new Date(integration.configured_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </p>
+            )}
           </div>
-          {canManage && (
-            <Button
-              variant="outline"
-              size="xs"
-              onClick={() => {
-                setShowForm(true);
-                setFieldValues({});
-              }}
-              className="border-[#e2e8f0] hover:bg-[#f8fafc] text-xs h-7 rounded-md font-semibold"
-            >
-              Update Credentials
-            </Button>
-          )}
+          <div className="flex items-center gap-1 text-emerald-600">
+            <ShieldCheck size={13} />
+            <span className="text-[10px] font-semibold">Secure</span>
+          </div>
         </div>
       )}
     </Card>

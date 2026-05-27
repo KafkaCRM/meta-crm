@@ -1,14 +1,16 @@
 model IntegrationConfig {
-  id             String   @id @default(cuid())
-  tenant_id      String
-  provider       String
-  config_json    Json     @default("{}")
-  credentials_ref Json
-  enabled        Boolean  @default(false)
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
+  id              String   @id @default(cuid())
+  tenant_id       String
+  provider        String
+  config_json     Json     @default("{}")
+  credentials_ref Json     @default("{}")
+  enabled         Boolean  @default(false)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@unique([tenant_id, provider])
 }
 
 model WebhookSubscription {
@@ -34,15 +36,17 @@ model WebhookSubscription {
 model SecureCredential {
   id           String   @id @default(cuid())
   tenant_id    String
-  extension_id String   // References ExtensionRegistry.id
-  cipher_text  String   // Encrypted payload (base64)
-  iv           String   // AES-GCM IV (base64)
-  tag          String   // AES-GCM auth tag (base64)
+  extension_id String
+  cipher_text  String
+  iv           String
+  tag          String
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
 
-  tenant Tenant @relation(fields: [tenant_id], references: [id])
+  tenant    Tenant            @relation(fields: [tenant_id], references: [id])
+  extension ExtensionRegistry @relation(fields: [extension_id], references: [id])
 
   @@unique([tenant_id, extension_id])
   @@index([tenant_id])
 }
+

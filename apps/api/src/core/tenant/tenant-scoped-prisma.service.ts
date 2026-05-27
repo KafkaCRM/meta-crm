@@ -26,7 +26,12 @@ export const TENANT_SCOPED_MODELS: readonly string[] = [
   'TenantPlan',
   'Vertical',
   'Campaign',
+  // Phase 2 — Extension Registry
+  'TenantExtension',
+  'SecureCredential',
+  // NOTE: ExtensionRegistry is a GLOBAL catalog (no tenant_id) — intentionally excluded
 ];
+
 
 export async function applyTenantScope<T>(
   cls: ClsService,

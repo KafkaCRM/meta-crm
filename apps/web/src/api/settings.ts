@@ -80,11 +80,16 @@ export interface LabelOverride {
 
 export interface IntegrationConfig {
   id: string;
-  tenant_id: string;
+  tenant_id?: string;
   provider: string;
+  name: string;
+  description: string;
+  icon: string;
+  credential_fields: string[];
   status: 'connected' | 'disconnected' | 'error';
-  configured_at?: string;
   has_credentials: boolean;
+  configured_at?: string;
+  config_json: Record<string, unknown>;
 }
 
 export interface Plugin {
