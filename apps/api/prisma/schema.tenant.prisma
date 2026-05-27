@@ -21,6 +21,10 @@ model Tenant {
   webhookSubscriptions   WebhookSubscription[]
   tenantPlugins          TenantPlugin[]
   tenantPlans            TenantPlan[]
+  pageLayouts            PageLayout[]
+  customObjectDefinitions CustomObjectDefinition[]
+  flexRecords            FlexRecord[]
+  automationFlows        AutomationFlow[]
 }
 
 model Brand {
