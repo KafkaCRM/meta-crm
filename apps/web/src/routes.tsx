@@ -272,9 +272,6 @@ function RootLayout() {
   const router = useRouter();
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
-
-  console.log('RootLayout render:', { isAuthenticated, isLoading, pathname: location.pathname });
-
   // Redirect to login if not authenticated (called unconditionally)
   useEffect(() => {
     if (location.pathname !== '/login' && !isAuthenticated && !isLoading) {

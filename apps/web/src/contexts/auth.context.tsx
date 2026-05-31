@@ -159,7 +159,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
     // Only run once on mount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const stateRef = useRef(state);

@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { usePermissions } from '@/hooks/usePermissions';
 import { cn } from '@/lib/utils';
@@ -98,14 +98,16 @@ export function SettingsLayout({ children }: SettingsLayoutProps) {
   );
 
   // Calculate all visible items the user can read or manage
-  const allVisibleItems = NAV.flatMap((section) =>
-    section.items.filter(
-      (item) =>
-        !item.permission ||
-        can(item.permission[0] as any, item.permission[1] as any) ||
-        can('read' as any, item.permission[1] as any),
-    ),
-  );
+  const allVisibleItems = useMemo(() => {
+    return NAV.flatMap((section) =>
+      section.items.filter(
+        (item) =>
+          !item.permission ||
+          can(item.permission[0] as any, item.permission[1] as any) ||
+          can('read' as any, item.permission[1] as any),
+      ),
+    );
+  }, [can]);
 
   const subPageMatch = currentPath.match(/\/settings\/([^/]+)/);
   const currentSubPageId = subPageMatch ? subPageMatch[1] : null;
