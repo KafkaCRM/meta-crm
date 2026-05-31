@@ -15,9 +15,13 @@ export class PermissionsService {
   ) {}
 
   async getTenantAbility(scope: RequestScope): Promise<TenantAbility> {
-    const cachedRules = await this.cache.getRules(scope.user_id, scope.tenant_id);
-    if (cachedRules) {
-      return new Ability(cachedRules as any) as unknown as TenantAbility;
+    try {
+      const cachedRules = await this.cache.getRules(scope.user_id, scope.tenant_id);
+      if (cachedRules) {
+        return new Ability(cachedRules as any) as unknown as TenantAbility;
+      }
+    } catch (err: any) {
+      console.warn(`Failed to read from permission cache: ${err?.message || err}. Falling back to database.`);
     }
 
     const userRoles = await this.db.getClient().userRole.findMany({
@@ -32,7 +36,11 @@ export class PermissionsService {
     const ability = buildTenantAbility(roleEntries, scope.assignment_ids);
 
     if (userRoles.length > 0) {
-      await this.cache.setRules(scope.user_id, scope.tenant_id, ability.rules);
+      try {
+        await this.cache.setRules(scope.user_id, scope.tenant_id, ability.rules);
+      } catch (err: any) {
+        console.warn(`Failed to write to permission cache: ${err?.message || err}`);
+      }
     }
 
     return ability;

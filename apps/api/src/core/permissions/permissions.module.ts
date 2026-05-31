@@ -18,6 +18,7 @@ import { RoleController } from './role.controller';
         const client = new Redis(process.env['REDIS_URL'] || 'redis://localhost:6379', {
           maxRetriesPerRequest: null,
           lazyConnect: true,
+          enableOfflineQueue: false,
         });
         client.on('error', (err) => {
           console.error('Redis PermissionsModule client error:', err);
