@@ -58,9 +58,19 @@ import {
   ShoppingCart,
   ClipboardList,
   Megaphone,
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  Globe,
+  Sparkles,
+  CheckCircle2,
+  ArrowRight,
+  MessageSquare,
+  Check,
+  Search,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
 import { useCapabilities } from '@/hooks/useCapabilities';
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
 import { CommandPalette } from '@/components/shared/CommandPalette';
@@ -359,8 +369,21 @@ function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [tenantSlug, setTenantSlug] = useState('');
+  const [showTenantSlug, setShowTenantSlug] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Load saved email if rememberMe was true
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('meta_crm_remember_email');
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
   if (isAuthenticated) {
     router.navigate({ to: '/' });
@@ -372,79 +395,316 @@ function LoginPage() {
     setError('');
     setIsLoading(true);
     try {
-      await login(email, password);
+      if (rememberMe) {
+        localStorage.setItem('meta_crm_remember_email', email);
+      } else {
+        localStorage.removeItem('meta_crm_remember_email');
+      }
+      
+      const slug = showTenantSlug && tenantSlug.trim() ? tenantSlug.trim() : undefined;
+      await login(email, password, slug);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      if (err instanceof Error) {
+        if (err.message === 'INVALID_CREDENTIALS') {
+          setError('Invalid email or password. Please check your credentials.');
+        } else if (err.message === 'TENANT_NOT_FOUND') {
+          setError('The requested workspace slug could not be found.');
+        } else if (err.message === 'ACCOUNT_SUSPENDED') {
+          setError('This workspace or account is currently suspended.');
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError('Login failed. Please verify your connection and try again.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
+  const loginStyles = `
+    @keyframes float-y-1 {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-12px) rotate(0.5deg); }
+    }
+    @keyframes float-y-2 {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(8px) rotate(-0.5deg); }
+    }
+    @keyframes pulse-glow-slow {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.03); }
+    }
+    .animate-float-1 {
+      animation: float-y-1 6s ease-in-out infinite;
+    }
+    .animate-float-2 {
+      animation: float-y-2 7s ease-in-out infinite;
+    }
+    .animate-pulse-glow {
+      animation: pulse-glow-slow 5s ease-in-out infinite;
+    }
+  `;
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f8fafc]">
-      <div className="w-full max-w-sm">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex w-10 h-10 rounded-xl bg-[#0f172a] items-center justify-center mb-4">
-            <span className="text-white font-semibold">M</span>
+    <div className="flex min-h-screen w-full bg-white select-none">
+      <style dangerouslySetInnerHTML={{ __html: loginStyles }} />
+      
+      <div className="grid w-full lg:grid-cols-12">
+        {/* Left Column: Form Panel */}
+        <div className="lg:col-span-5 flex flex-col justify-between p-6 sm:p-10 md:p-14 bg-slate-50/50">
+          {/* Logo Branding */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 shadow-md shadow-indigo-500/25">
+              <span className="text-white font-bold font-mono text-lg">M</span>
+            </div>
+            <div>
+              <span className="text-base font-bold text-slate-900 tracking-tight block">Meta CRM</span>
+              <span className="text-[10px] text-slate-400 font-medium tracking-wide uppercase">Workspace Portal</span>
+            </div>
           </div>
-          <h1 className="text-2xl font-medium text-[#0f172a] tracking-tight mb-1">
-            Welcome back
-          </h1>
-          <p className="text-sm text-[#64748b]">Sign in to your account</p>
+
+          {/* Form Container */}
+          <div className="my-auto max-w-sm w-full mx-auto py-10">
+            <div className="mb-8">
+              <h1 className="text-3xl font-extrabold text-slate-950 tracking-tight">
+                Welcome back
+              </h1>
+              <p className="text-sm text-slate-500 mt-2 font-medium">
+                Sign in to manage your customer relations and campaigns.
+              </p>
+            </div>
+
+            {error && (
+              <div className="mb-5 rounded-xl bg-rose-50/70 border border-rose-200/50 p-4 text-sm text-rose-700 font-medium flex items-start gap-2.5 animate-fadeIn">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-600 mt-1.5 shrink-0" />
+                <p>{error}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <label htmlFor="email" className="text-xs font-semibold text-slate-700 uppercase tracking-wider block">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                    <Mail className="w-4 h-4" />
+                  </span>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@company.com"
+                    className="bg-white border-slate-200 pl-10 placeholder:text-slate-400 focus-visible:ring-indigo-600 focus-visible:border-indigo-600 h-11 rounded-lg"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="password" className="text-xs font-semibold text-slate-700 uppercase tracking-wider block">
+                    Password
+                  </label>
+                </div>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                    <Lock className="w-4 h-4" />
+                  </span>
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="bg-white border-slate-200 pl-10 pr-10 focus-visible:ring-indigo-600 focus-visible:border-indigo-600 h-11 rounded-lg"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Workspace ID Selector Toggle */}
+              <div className="pt-1.5">
+                <button
+                  type="button"
+                  onClick={() => setShowTenantSlug(!showTenantSlug)}
+                  className="text-xs font-medium text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  <Globe className="w-3.5 h-3.5" />
+                  {showTenantSlug ? 'Hide workspace ID option' : 'Log into specific workspace ID'}
+                </button>
+                
+                {showTenantSlug && (
+                  <div className="mt-2.5 space-y-1.5 transition-all duration-300">
+                    <label htmlFor="tenantSlug" className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                      Workspace ID / Slug
+                    </label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                        <Building2 className="w-4 h-4" />
+                      </span>
+                      <Input
+                        id="tenantSlug"
+                        type="text"
+                        value={tenantSlug}
+                        onChange={(e) => setTenantSlug(e.target.value)}
+                        placeholder="my-company"
+                        className="bg-white border-slate-200 pl-10 focus-visible:ring-indigo-600 focus-visible:border-indigo-600 h-10 rounded-lg text-sm"
+                        required={showTenantSlug}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Remember Me */}
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  id="remember-me"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer"
+                />
+                <label htmlFor="remember-me" className="text-xs font-medium text-slate-600 cursor-pointer select-none">
+                  Remember this email
+                </label>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg h-11 mt-3 shadow-md shadow-indigo-500/10 hover:shadow-indigo-500/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {isLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  <>
+                    Sign in
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </Button>
+            </form>
+          </div>
+
+          {/* Localized Footer */}
+          <div className="flex items-center justify-between text-xs text-slate-400 border-t border-slate-200/60 pt-4">
+            <span className="flex items-center gap-1">
+              <span className="text-slate-600 font-medium">🇮🇳 Localized</span> for Indian SMEs
+            </span>
+            <span>Secure Vault active</span>
+          </div>
         </div>
 
-        {/* Card */}
-        <div className="bg-white rounded-2xl border border-[#e2e8f0] p-8 shadow-none">
-          {error && (
-            <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
-              {error}
-            </div>
-          )}
+        {/* Right Column: Visual Showcase Panel */}
+        <div className="hidden lg:col-span-7 lg:flex relative overflow-hidden bg-[#060814] flex-col justify-between p-12 text-white border-l border-slate-900 select-none">
+          {/* Background patterns */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(79,70,229,0.18)_0%,rgba(139,92,246,0.06)_50%,transparent_100%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:32px_32px]" />
+          
+          {/* Decorative Orbs */}
+          <div className="absolute top-1/4 -right-20 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px] animate-pulse-glow" />
+          <div className="absolute bottom-1/4 -left-20 w-80 h-80 bg-violet-600/10 rounded-full blur-[90px] animate-pulse-glow" style={{ animationDelay: '2s' }} />
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label htmlFor="email" className="text-sm font-medium text-[#0f172a]">
-                Email
-              </label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="bg-[#f8fafc] border-[#e2e8f0] placeholder:text-[#94a3b8] focus-visible:ring-[#0f172a] focus-visible:border-[#0f172a]"
-                required
-              />
+          {/* Header Info */}
+          <div className="relative z-10 flex items-center gap-3">
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 backdrop-blur-md border border-white/20">
+              <Sparkles className="w-4 h-4 text-indigo-400" />
+            </div>
+            <span className="text-xs font-semibold tracking-wider text-slate-400 uppercase">System Status Console</span>
+          </div>
+
+          {/* Showcase Cards Container */}
+          <div className="relative z-10 my-auto flex flex-col gap-6 max-w-md mx-auto w-full">
+            
+            {/* Pipeline Card */}
+            <div className="bg-slate-950/40 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl shadow-indigo-950/20 animate-float-1">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Leads Pipeline Overview</span>
+                </div>
+                <span className="text-xs font-bold text-indigo-400 tracking-tight">₹48.6 Lakhs active</span>
+              </div>
+              
+              <div className="space-y-3.5">
+                <div>
+                  <div className="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>Direct Site Visits</span>
+                    <span className="font-semibold text-slate-200">72% completed</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full" style={{ width: '72%' }} />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>WhatsApp Nurturing Campaigns</span>
+                    <span className="font-semibold text-slate-200">48% running</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-cyan-500 to-indigo-500 rounded-full" style={{ width: '48%' }} />
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label htmlFor="password" className="text-sm font-medium text-[#0f172a]">
-                Password
-              </label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="bg-[#f8fafc] border-[#e2e8f0] focus-visible:ring-[#0f172a] focus-visible:border-[#0f172a]"
-                required
-              />
-            </div>
+            {/* Live Activity Feed Card */}
+            <div className="bg-slate-950/40 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl shadow-indigo-950/20 animate-float-2">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Live Activity Feed</span>
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-extrabold text-emerald-400 uppercase tracking-wider">
+                  Live Stream
+                </div>
+              </div>
 
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-[#0f172a] hover:bg-[#000000] text-white font-medium rounded-lg h-10 mt-2"
-            >
-              {isLoading ? 'Signing in…' : 'Sign in'}
-            </Button>
-          </form>
+              <div className="space-y-3">
+                <div className="flex gap-3 text-xs">
+                  <div className="w-6 h-6 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+                    <MessageSquare className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-slate-200">IndiaMART Lead: Karan Malhotra</p>
+                    <p className="text-slate-400 text-[11px] mt-0.5">Interested in unit A-402, auto-routed round-robin to Mumbai Desk.</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 text-xs">
+                  <div className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                    <Check className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-slate-200">Token Amount Confirmed</p>
+                    <p className="text-slate-400 text-[11px] mt-0.5">₹50,000 received via Razorpay webhook from user "Aarav Sharma".</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer Info */}
+          <div className="relative z-10 flex items-center justify-between text-xs text-slate-400">
+            <div className="flex items-center gap-1.5">
+              <Globe className="w-3.5 h-3.5 text-indigo-400 animate-spin" style={{ animationDuration: '8s' }} />
+              <span>Active Node: ap-south-1 (Mumbai)</span>
+            </div>
+            <span>AES-256 encrypted</span>
+          </div>
         </div>
-
-        <p className="text-center text-xs text-[#94a3b8] mt-4">
-          Meta CRM · All rights reserved
-        </p>
       </div>
     </div>
   );
