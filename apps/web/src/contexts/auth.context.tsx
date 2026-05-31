@@ -72,6 +72,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(LOGGED_IN_KEY, 'true');
       localStorage.setItem(USER_KEY, JSON.stringify(result.user));
 
+      // Clear React Query cache so the new user session starts fresh
+      queryClient.clear();
+
       setState({
         user: result.user,
         accessToken: result.access_token,

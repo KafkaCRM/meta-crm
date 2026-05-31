@@ -12,6 +12,7 @@ import type { CaseDto, WorkflowStageDto } from '@meta-crm/types';
 import { KanbanCard } from './KanbanCard';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { useLabels } from '@/hooks/useLabels';
 
 dayjs.extend(relativeTime);
 
@@ -48,6 +49,7 @@ export function KanbanColumn({
   criteriaMet,
   unmetCriteria,
 }: KanbanColumnProps) {
+  const { t } = useLabels();
   const [collapsed, setCollapsed] = useState(() => {
     try {
       return localStorage.getItem(getLocalStorageKey(stage.id)) === 'true';
@@ -260,7 +262,7 @@ export function KanbanColumn({
 
             {cases.length === 0 && (
               <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-                No cases in this stage
+                No {t('case.plural')?.toLowerCase() ?? 'cases'} in this stage
               </div>
             )}
           </div>

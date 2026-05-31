@@ -82,40 +82,40 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         {/* Navigation Group */}
         <CommandGroup heading="Quick Jumps">
           <CommandItem onSelect={() => runCommand(() => navigate({ to: '/' }))}>
-            <LayoutDashboard className="mr-2 h-4 w-4 text-slate-400" />
+            <LayoutDashboard className="mr-2 h-4 w-4 text-muted-foreground" />
             <span>Go to Dashboard</span>
           </CommandItem>
           <CommandItem onSelect={() => runCommand(() => navigate({ to: '/admin/tenants' }))}>
-            <Building2 className="mr-2 h-4 w-4 text-slate-400" />
+            <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
             <span>Go to Tenants</span>
           </CommandItem>
           <CommandItem onSelect={() => runCommand(() => navigate({ to: '/admin/plans' }))}>
-            <CreditCard className="mr-2 h-4 w-4 text-slate-400" />
+            <CreditCard className="mr-2 h-4 w-4 text-muted-foreground" />
             <span>Go to Plans</span>
           </CommandItem>
           <CommandItem onSelect={() => runCommand(() => navigate({ to: '/admin/plugins' }))}>
-            <Puzzle className="mr-2 h-4 w-4 text-slate-400" />
+            <Puzzle className="mr-2 h-4 w-4 text-muted-foreground" />
             <span>Go to Plugins</span>
           </CommandItem>
 
           <CommandItem onSelect={() => runCommand(() => navigate({ to: '/admin/reports' }))}>
-            <BarChart3 className="mr-2 h-4 w-4 text-slate-400" />
+            <BarChart3 className="mr-2 h-4 w-4 text-muted-foreground" />
             <span>Go to Platform Reports</span>
           </CommandItem>
           <CommandItem onSelect={() => runCommand(() => navigate({ to: '/admin/users' }))}>
-            <Users className="mr-2 h-4 w-4 text-slate-400" />
+            <Users className="mr-2 h-4 w-4 text-muted-foreground" />
             <span>Go to Platform Team</span>
           </CommandItem>
           <CommandItem onSelect={() => runCommand(() => navigate({ to: '/admin/health' }))}>
-            <Activity className="mr-2 h-4 w-4 text-slate-400" />
+            <Activity className="mr-2 h-4 w-4 text-muted-foreground" />
             <span>Go to System Health</span>
           </CommandItem>
           <CommandItem onSelect={() => runCommand(() => navigate({ to: '/admin/billing' }))}>
-            <CreditCard className="mr-2 h-4 w-4 text-slate-400" />
+            <CreditCard className="mr-2 h-4 w-4 text-muted-foreground" />
             <span>Go to Billing & Invoices</span>
           </CommandItem>
           <CommandItem onSelect={() => runCommand(() => navigate({ to: '/admin/audit' }))}>
-            <History className="mr-2 h-4 w-4 text-slate-400" />
+            <History className="mr-2 h-4 w-4 text-muted-foreground" />
             <span>Go to Audit Trail</span>
           </CommandItem>
         </CommandGroup>
@@ -130,10 +130,10 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                   value={`tenant ${tenant.name} ${tenant.slug}`}
                   onSelect={() => runCommand(() => navigate({ to: '/admin/tenants/$id', params: { id: tenant.id } }))}
                 >
-                  <Building2 className="mr-2 h-4 w-4 text-indigo-400" />
+                  <Building2 className="mr-2 h-4 w-4 text-fin-orange" />
                   <span className="font-medium">{tenant.name}</span>
-                  <span className="ml-2 text-xs text-slate-400">({tenant.slug})</span>
-                  <span className="ml-auto text-[10px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-1">
+                  <span className="ml-2 text-xs text-muted-foreground">({tenant.slug})</span>
+                  <span className="ml-auto text-[10px] text-muted-foreground bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-1">
                     Select <CornerDownLeft size={8} />
                   </span>
                 </CommandItem>

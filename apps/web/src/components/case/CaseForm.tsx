@@ -165,7 +165,7 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
   if (!can('create', 'Case')) {
     return (
       <div className="flex items-center justify-center py-12">
-        <p className="text-[#94a3b8]">You do not have permission to create cases.</p>
+        <p className="text-muted-foreground">You do not have permission to create {t('case.plural')?.toLowerCase() ?? 'cases'}.</p>
       </div>
     );
   }
@@ -185,34 +185,34 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
               navigate({ to: '/cases' });
             }
           }}
-          className="text-[#94a3b8] hover:text-[#0f172a] h-8"
+          className="text-muted-foreground hover:text-foreground h-8"
         >
           <ArrowLeft size={14} className="mr-1" />
           Back
         </Button>
         <div>
-          <h1 className="text-2xl font-medium text-[#0f172a] tracking-tight">
-            New Case
+          <h1 className="text-2xl font-medium text-foreground tracking-tight">
+            New {t('case.singular') ?? 'Case'}
           </h1>
-          <p className="text-sm text-[#94a3b8] mt-0.5">
-            Initialize a new case on default pipeline definition
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Initialize a new {t('case.singular')?.toLowerCase() ?? 'case'} on default pipeline definition
           </p>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-[#e2e8f0] p-8 shadow-none">
+      <div className="bg-card rounded-2xl border border-border p-8 shadow-none">
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Title */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[#0f172a]">
-              Case Title
+            <label className="text-sm font-medium text-foreground">
+              {t('case.singular') ?? 'Case'} Title
             </label>
             <Input
               type="text"
               placeholder="e.g., Admission Inquiry - Rahul Sharma"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="bg-[#f8fafc] border-[#e2e8f0] placeholder:text-[#94a3b8] focus-visible:ring-[#0f172a]"
+              className="bg-background border-border placeholder:text-muted-foreground focus-visible:ring-[#0f172a]"
             />
             {errors.title && (
               <p className="text-xs text-red-600 mt-1">{errors.title}</p>
@@ -222,13 +222,13 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
           {/* Type & Workflow */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[#0f172a]">
-                Case Type
+              <label className="text-sm font-medium text-foreground">
+                {t('case.singular') ?? 'Case'} Type
               </label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value)}
-                className="w-full h-9 rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
+                className="w-full h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
               >
                 <option value="enrollment">Enrollment</option>
                 <option value="appointment">Appointment</option>
@@ -237,12 +237,12 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[#0f172a]">
+              <label className="text-sm font-medium text-foreground">
                 Pipeline Workflow
               </label>
               <select
                 disabled
-                className="w-full h-9 rounded-lg border border-[#e2e8f0]/60 bg-[#f8fafc]/60 px-3 text-sm text-[#94a3b8] cursor-not-allowed"
+                className="w-full h-9 rounded-lg border border-border bg-background/60 px-3 text-sm text-muted-foreground cursor-not-allowed"
               >
                 <option value="wf_default_001">Default Admissions Workflow</option>
               </select>
@@ -251,24 +251,24 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
 
           {/* Contact (Party) */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[#0f172a]">
-              Select Contact (Party)
+            <label className="text-sm font-medium text-foreground">
+              Select {t('party.singular') ?? 'Contact'}
             </label>
             {searchPartyId && prefilledParty ? (
-              <div className="flex items-center justify-between rounded-lg border border-[#e2e8f0]/60 bg-[#f8fafc]/50 px-3 py-2 text-sm text-[#0f172a]">
+              <div className="flex items-center justify-between rounded-lg border border-border bg-background/50 px-3 py-2 text-sm text-foreground">
                 <div>
                   <p className="font-medium">{prefilledParty.name}</p>
-                  <p className="text-xs text-[#94a3b8]">{prefilledParty.phone_raw} · {prefilledParty.email}</p>
+                  <p className="text-xs text-muted-foreground">{prefilledParty.phone_raw} · {prefilledParty.email}</p>
                 </div>
-                <span className="text-xs bg-[#0f172a]/10 px-2 py-0.5 rounded text-[#0f172a] font-semibold">Prefilled</span>
+                <span className="text-xs bg-primary/10 px-2 py-0.5 rounded text-foreground font-semibold">Prefilled</span>
               </div>
             ) : (
               <select
                 value={partyId}
                 onChange={(e) => setPartyId(e.target.value)}
-                className="w-full h-9 rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
+                className="w-full h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
               >
-                <option value="">-- Choose Contact --</option>
+                <option value="">-- Choose {t('party.singular') ?? 'Contact'} --</option>
                 {partiesData?.data.map((party) => (
                   <option key={party.id} value={party.id}>
                     {party.name} ({party.phone_raw})
@@ -283,13 +283,13 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
 
           {/* Assignment Group */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[#0f172a]">
+            <label className="text-sm font-medium text-foreground">
               Branch & Brand Assignment
             </label>
             <select
               value={assignmentId}
               onChange={(e) => setAssignmentId(e.target.value)}
-              className="w-full h-9 rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
+              className="w-full h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
             >
               <option value="">-- Choose Branch Assignment --</option>
               {assignmentOptions.map((opt) => (
@@ -305,13 +305,13 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
 
           {/* Assigned To (User) */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[#0f172a]">
+            <label className="text-sm font-medium text-foreground">
               Assigned Agent (Optional)
             </label>
             <select
               value={assignedToId}
               onChange={(e) => setAssignedToId(e.target.value)}
-              className="w-full h-9 rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
+              className="w-full h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
             >
               <option value="">-- Unassigned --</option>
               {users.map((user) => (
@@ -324,13 +324,13 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
 
           {/* Campaign (Optional) */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[#0f172a]">
+            <label className="text-sm font-medium text-foreground">
               Campaign (Optional)
             </label>
             <select
               value={campaignId}
               onChange={(e) => setCampaignId(e.target.value)}
-              className="w-full h-9 rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
+              className="w-full h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
             >
               <option value="">-- No Campaign (Auto-Tag) --</option>
               {campaigns.map((camp) => (
@@ -339,23 +339,23 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
                 </option>
               ))}
             </select>
-            <p className="text-xs text-[#94a3b8]">
-              Attribute this case manually to an active campaign, or leave empty to trigger auto-tagging rules.
+            <p className="text-xs text-muted-foreground">
+              Attribute this {t('case.singular')?.toLowerCase() ?? 'case'} manually to an active campaign, or leave empty to trigger auto-tagging rules.
             </p>
           </div>
 
           <Button
             type="submit"
             disabled={createMutation.isPending || isPageLoading}
-            className="w-full bg-[#0f172a] hover:bg-[#1e293b] text-white font-medium rounded-lg h-10 mt-2"
+            className="w-full bg-primary hover:bg-[#1e293b] text-white font-medium rounded-lg h-10 mt-2"
           >
             {createMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating Case...
+                Creating {t('case.singular') ?? 'Case'}...
               </>
             ) : (
-              'Create Case'
+              `Create ${t('case.singular') ?? 'Case'}`
             )}
           </Button>
         </form>

@@ -217,8 +217,8 @@ export function PlatformDashboard() {
   if (isLoadingAll) {
     return (
       <div className="py-12 flex flex-col items-center justify-center gap-2">
-        <div className="w-5 h-5 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin" />
-        <span className="text-xs text-slate-400">Loading platform control deck…</span>
+        <div className="w-5 h-5 border-2 border-border border-t-indigo-600 rounded-full animate-spin" />
+        <span className="text-xs text-muted-foreground">Loading platform control deck…</span>
       </div>
     );
   }
@@ -228,14 +228,14 @@ export function PlatformDashboard() {
       {/* Upper Title Section */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Platform Dashboard</h1>
-          <p className="text-xs text-slate-400 mt-0.5 font-semibold font-mono">
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Platform Dashboard</h1>
+          <p className="text-xs text-muted-foreground mt-0.5 font-semibold font-mono">
             Meta CRM Core Console &bull; super_admin deck
           </p>
         </div>
         <div className="flex gap-2">
           <Link to="/admin/tenants/new">
-            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg h-9 px-4 text-xs font-bold shadow-sm transition-colors gap-1">
+            <Button className="bg-fin-orange hover:bg-fin-orange/90 text-white rounded-lg h-9 px-4 text-xs font-bold shadow-sm transition-colors gap-1">
               <Plus size={14} />
               New Tenant
             </Button>
@@ -245,63 +245,63 @@ export function PlatformDashboard() {
 
       {/* Primary KPIs Deck */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm hover:shadow-xs transition-shadow">
+        <Card className="bg-card border-border rounded-xl shadow-sm hover:shadow-xs transition-shadow">
           <CardContent className="p-5 flex justify-between items-center">
             <div className="space-y-1">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Total Active Tenants</span>
-              <span className="text-3xl font-bold text-slate-900 tracking-tight block">{totalTenants}</span>
-              <span className="text-[10px] text-slate-400 font-medium block">
+              <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Total Active Tenants</span>
+              <span className="text-3xl font-bold text-foreground tracking-tight block">{totalTenants}</span>
+              <span className="text-[10px] text-muted-foreground font-medium block">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block mr-1" />
                 All healthy
               </span>
             </div>
-            <div className="w-10 h-10 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+            <div className="w-10 h-10 rounded-lg bg-fin-orange/10 border border-fin-orange/20 flex items-center justify-center text-fin-orange">
               <Building2 size={18} />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm hover:shadow-xs transition-shadow">
+        <Card className="bg-card border-border rounded-xl shadow-sm hover:shadow-xs transition-shadow">
           <CardContent className="p-5 flex justify-between items-center">
             <div className="space-y-1">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Active Plugins</span>
-              <span className="text-3xl font-bold text-slate-900 tracking-tight block">{activePlugins}</span>
-              <span className="text-[10px] text-slate-400 font-medium block">
-                <span className="text-indigo-600 font-bold">{plugins.length}</span> registered in index
+              <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Active Plugins</span>
+              <span className="text-3xl font-bold text-foreground tracking-tight block">{activePlugins}</span>
+              <span className="text-[10px] text-muted-foreground font-medium block">
+                <span className="text-fin-orange font-bold">{plugins.length}</span> registered in index
               </span>
             </div>
-            <div className="w-10 h-10 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+            <div className="w-10 h-10 rounded-lg bg-fin-orange/10 border border-fin-orange/20 flex items-center justify-center text-fin-orange">
               <Puzzle size={18} />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm hover:shadow-xs transition-shadow">
+        <Card className="bg-card border-border rounded-xl shadow-sm hover:shadow-xs transition-shadow">
           <CardContent className="p-5 flex justify-between items-center">
             <div className="space-y-1">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Subscription Tiers</span>
-              <span className="text-3xl font-bold text-slate-900 tracking-tight block">{totalPlans}</span>
-              <span className="text-[10px] text-slate-400 font-medium block">
+              <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Subscription Tiers</span>
+              <span className="text-3xl font-bold text-foreground tracking-tight block">{totalPlans}</span>
+              <span className="text-[10px] text-muted-foreground font-medium block">
                 With granular CRM scopes
               </span>
             </div>
-            <div className="w-10 h-10 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+            <div className="w-10 h-10 rounded-lg bg-fin-orange/10 border border-fin-orange/20 flex items-center justify-center text-fin-orange">
               <Shield size={18} />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm hover:shadow-xs transition-shadow">
+        <Card className="bg-card border-border rounded-xl shadow-sm hover:shadow-xs transition-shadow">
           <CardContent className="p-5 flex justify-between items-center">
             <div className="space-y-1">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Active Queue Workers</span>
-              <span className="text-3xl font-bold text-slate-900 tracking-tight block">5</span>
-              <span className="text-[10px] text-slate-400 font-medium block">
+              <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Active Queue Workers</span>
+              <span className="text-3xl font-bold text-foreground tracking-tight block">5</span>
+              <span className="text-[10px] text-muted-foreground font-medium block">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block mr-1 animate-pulse" />
                 Lag: 23ms &bull; active slots
               </span>
             </div>
-            <div className="w-10 h-10 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+            <div className="w-10 h-10 rounded-lg bg-fin-orange/10 border border-fin-orange/20 flex items-center justify-center text-fin-orange">
               <Activity size={18} />
             </div>
           </CardContent>
@@ -310,9 +310,9 @@ export function PlatformDashboard() {
 
       {/* Platform Analytics Charts */}
       <div className="grid gap-6 md:grid-cols-2">
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm hover:shadow-xs transition-shadow">
+        <Card className="bg-card border-border rounded-xl shadow-sm hover:shadow-xs transition-shadow">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-bold text-slate-900 uppercase tracking-wide">Monthly Recurring Revenue (MRR)</CardTitle>
+            <CardTitle className="text-sm font-bold text-foreground uppercase tracking-wide">Monthly Recurring Revenue (MRR)</CardTitle>
             <CardDescription className="text-xs">SaaS subscription revenue & growth trend</CardDescription>
           </CardHeader>
           <CardContent className="h-64 pt-4">
@@ -341,9 +341,9 @@ export function PlatformDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm hover:shadow-xs transition-shadow">
+        <Card className="bg-card border-border rounded-xl shadow-sm hover:shadow-xs transition-shadow">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-bold text-slate-900 uppercase tracking-wide">System Response & Latencies</CardTitle>
+            <CardTitle className="text-sm font-bold text-foreground uppercase tracking-wide">System Response & Latencies</CardTitle>
             <CardDescription className="text-xs">API response times vs Queue worker lags (ms)</CardDescription>
           </CardHeader>
           <CardContent className="h-64 pt-4">
@@ -370,59 +370,59 @@ export function PlatformDashboard() {
       </div>
 
       {/* Super User Action Bar */}
-      <Card className="bg-slate-50 border-slate-200 rounded-xl shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-4">
+      <Card className="bg-muted border-border rounded-xl shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-border flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
-              <Server size={14} className="text-indigo-600" />
+            <h3 className="text-sm font-bold text-foreground uppercase tracking-wide flex items-center gap-1.5">
+              <Server size={14} className="text-fin-orange" />
               Administrative Operations Cockpit
             </h3>
-            <p className="text-[10px] text-slate-400 mt-0.5">Quick triggers for SaaS server diagnostic configurations</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Quick triggers for SaaS server diagnostic configurations</p>
           </div>
-          <span className="text-[10px] font-mono font-bold text-slate-400">Node_Cluster: meta-us-east-1</span>
+          <span className="text-[10px] font-mono font-bold text-muted-foreground">Node_Cluster: meta-us-east-1</span>
         </div>
         <CardContent className="p-5 grid gap-4 sm:grid-cols-3">
           <Button
             variant="outline"
-            className="h-12 bg-white hover:bg-slate-100/50 border-slate-200 text-slate-700 rounded-xl flex items-center justify-start gap-3.5 px-4 group transition-all"
+            className="h-12 bg-card hover:bg-muted/70/50 border-border text-foreground/80 rounded-xl flex items-center justify-start gap-3.5 px-4 group transition-all"
             onClick={handleBackupDB}
             disabled={isBackingUp}
           >
-            <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
+            <div className="w-7 h-7 rounded-lg bg-fin-orange/10 text-fin-orange flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
               <Database size={14} />
             </div>
             <div className="text-left">
-              <span className="text-xs font-bold text-slate-800 block">Backup Database</span>
-              <span className="text-[9px] text-slate-400 font-medium">Create system snapshot</span>
+              <span className="text-xs font-bold text-foreground block">Backup Database</span>
+              <span className="text-[9px] text-muted-foreground font-medium">Create system snapshot</span>
             </div>
           </Button>
 
           <Button
             variant="outline"
-            className="h-12 bg-white hover:bg-slate-100/50 border-slate-200 text-slate-700 rounded-xl flex items-center justify-start gap-3.5 px-4 group transition-all"
+            className="h-12 bg-card hover:bg-muted/70/50 border-border text-foreground/80 rounded-xl flex items-center justify-start gap-3.5 px-4 group transition-all"
             onClick={handleFlushCache}
             disabled={isFlushing}
           >
-            <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
+            <div className="w-7 h-7 rounded-lg bg-fin-orange/10 text-fin-orange flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
               <RefreshCw size={14} className={isFlushing ? 'animate-spin' : ''} />
             </div>
             <div className="text-left">
-              <span className="text-xs font-bold text-slate-800 block">Flush Redis Caches</span>
-              <span className="text-[9px] text-slate-400 font-medium">Reset cache mappings</span>
+              <span className="text-xs font-bold text-foreground block">Flush Redis Caches</span>
+              <span className="text-[9px] text-muted-foreground font-medium">Reset cache mappings</span>
             </div>
           </Button>
 
           <Button
             variant="outline"
-            className="h-12 bg-white hover:bg-slate-100/50 border-slate-200 text-slate-700 rounded-xl flex items-center justify-start gap-3.5 px-4 group transition-all"
+            className="h-12 bg-card hover:bg-muted/70/50 border-border text-foreground/80 rounded-xl flex items-center justify-start gap-3.5 px-4 group transition-all"
             onClick={handleDownloadLogs}
           >
-            <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
+            <div className="w-7 h-7 rounded-lg bg-fin-orange/10 text-fin-orange flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
               <Download size={14} />
             </div>
             <div className="text-left">
-              <span className="text-xs font-bold text-slate-800 block">Download System Logs</span>
-              <span className="text-[9px] text-slate-400 font-medium">Get health logs bundle</span>
+              <span className="text-xs font-bold text-foreground block">Download System Logs</span>
+              <span className="text-[9px] text-muted-foreground font-medium">Get health logs bundle</span>
             </div>
           </Button>
         </CardContent>
@@ -432,43 +432,43 @@ export function PlatformDashboard() {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Live Event Registry */}
         <div className="lg:col-span-2 space-y-4">
-          <Card className="bg-white border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            <CardHeader className="pb-3 border-b border-slate-100">
+          <Card className="bg-card border-border rounded-xl shadow-sm overflow-hidden">
+            <CardHeader className="pb-3 border-b border-border/50">
               <div className="flex justify-between items-center">
                 <div>
-                  <CardTitle className="text-base font-bold text-slate-900">Platform Event Registry</CardTitle>
-                  <CardDescription className="text-xs text-slate-400">
+                  <CardTitle className="text-base font-bold text-foreground">Platform Event Registry</CardTitle>
+                  <CardDescription className="text-xs text-muted-foreground">
                     Audit logs of operations and security events.
                   </CardDescription>
                 </div>
-                <Badge className="bg-indigo-50 text-indigo-800 border-indigo-200 border text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                <Badge className="bg-fin-orange/10 text-indigo-800 border-fin-orange/30 border text-[10px] font-semibold px-2 py-0.5 rounded-full">
                   Real-time Audits
                 </Badge>
               </div>
             </CardHeader>
             <CardContent className="p-0">
               {/* Search filter */}
-              <div className="p-4 border-b border-slate-100">
+              <div className="p-4 border-b border-border/50">
                 <div className="relative">
-                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                   <input
                     type="text"
                     placeholder="Search by event details, categories, or actors..."
                     value={filterText}
                     onChange={(e) => setFilterText(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 placeholder:text-slate-400 text-slate-900"
+                    className="w-full pl-9 pr-4 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 placeholder:text-muted-foreground text-foreground"
                   />
                 </div>
               </div>
 
               {filteredEvents.length === 0 ? (
-                <div className="py-12 text-center text-sm text-slate-400 font-semibold">
+                <div className="py-12 text-center text-sm text-muted-foreground font-semibold">
                   No core events logged under the active filter
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-slate-50 text-slate-500 border-b border-slate-100">
+                    <thead className="bg-muted text-muted-foreground border-b border-border/50">
                       <tr>
                         <th className="px-4 py-2.5 text-left font-medium text-xs uppercase tracking-wider">Event ID</th>
                         <th className="px-4 py-2.5 text-left font-medium text-xs uppercase tracking-wider">Category</th>
@@ -477,14 +477,14 @@ export function PlatformDashboard() {
                         <th className="px-4 py-2.5 text-left font-medium text-xs uppercase tracking-wider">Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-border/50">
                       {filteredEvents.map((evt) => (
                         <tr
                           key={evt.id}
-                          className="hover:bg-slate-50/50 cursor-pointer transition-colors"
+                          className="hover:bg-muted/50 cursor-pointer transition-colors"
                           onClick={() => setSelectedEvent(evt)}
                         >
-                          <td className="px-4 py-3 font-mono text-xs font-semibold text-indigo-600">
+                          <td className="px-4 py-3 font-mono text-xs font-semibold text-fin-orange">
                             {evt.id}
                           </td>
                           <td className="px-4 py-3">
@@ -495,15 +495,15 @@ export function PlatformDashboard() {
                                 ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                                 : evt.category === 'system'
                                 ? 'bg-rose-50 text-rose-800 border border-rose-200'
-                                : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                : 'bg-slate-100 text-foreground/80 border border-border'
                             }`}>
                               {evt.category}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-slate-900 font-semibold truncate max-w-[220px]">
+                          <td className="px-4 py-3 text-foreground font-semibold truncate max-w-[220px]">
                             {evt.message}
                           </td>
-                          <td className="px-4 py-3 text-slate-600 text-xs font-medium font-mono">
+                          <td className="px-4 py-3 text-muted-foreground text-xs font-medium font-mono">
                             {evt.actor}
                           </td>
                           <td className="px-4 py-3">
@@ -538,12 +538,12 @@ export function PlatformDashboard() {
               <CardHeader className="border-b border-slate-800 pb-3 bg-slate-900/40">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Terminal size={15} className="text-indigo-400" />
-                    <span className="text-[10px] uppercase font-mono tracking-widest text-indigo-400">SuperUser Audit Log JSON</span>
+                    <Terminal size={15} className="text-fin-orange" />
+                    <span className="text-[10px] uppercase font-mono tracking-widest text-fin-orange">SuperUser Audit Log JSON</span>
                   </div>
                   <button
                     onClick={() => setSelectedEvent(null)}
-                    className="text-slate-400 hover:text-white text-xs font-semibold px-2 py-0.5 rounded-md hover:bg-slate-800"
+                    className="text-muted-foreground hover:text-white text-xs font-semibold px-2 py-0.5 rounded-md hover:bg-muted"
                   >
                     Close
                   </button>
@@ -551,36 +551,36 @@ export function PlatformDashboard() {
                 <CardTitle className="text-xs font-bold font-mono text-white mt-2 truncate">
                   {selectedEvent.message}
                 </CardTitle>
-                <CardDescription className="text-[10px] text-slate-400 font-mono mt-0.5">
+                <CardDescription className="text-[10px] text-muted-foreground font-mono mt-0.5">
                   UID: {selectedEvent.id}
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-4 space-y-4 text-xs font-mono">
                 {/* Event Context Table */}
-                <div className="grid grid-cols-2 gap-2 text-[10px] bg-slate-950 p-3 rounded-lg border border-slate-900 text-slate-400">
+                <div className="grid grid-cols-2 gap-2 text-[10px] bg-slate-950 p-3 rounded-lg border border-slate-900 text-muted-foreground">
                   <div>
-                    <span className="text-slate-500 block">ACTOR:</span>
+                    <span className="text-muted-foreground block">ACTOR:</span>
                     <span className="text-slate-200">{selectedEvent.actor}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500 block">TIMESTAMP:</span>
+                    <span className="text-muted-foreground block">TIMESTAMP:</span>
                     <span className="text-slate-200">{new Date(selectedEvent.timestamp).toLocaleTimeString()}</span>
                   </div>
                   <div className="mt-1">
-                    <span className="text-slate-500 block">SEVERITY:</span>
+                    <span className="text-muted-foreground block">SEVERITY:</span>
                     <span className={selectedEvent.status === 'failed' ? 'text-rose-400' : 'text-emerald-400'}>
                       {selectedEvent.status.toUpperCase()}
                     </span>
                   </div>
                   <div className="mt-1">
-                    <span className="text-slate-500 block">LOGGER:</span>
-                    <span className="text-indigo-400">MetaCRM_AuditEngine</span>
+                    <span className="text-muted-foreground block">LOGGER:</span>
+                    <span className="text-fin-orange">MetaCRM_AuditEngine</span>
                   </div>
                 </div>
 
                 {/* Event Payload */}
                 <div className="space-y-1">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Audit Metadata Payload</p>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Audit Metadata Payload</p>
                   <pre className="bg-slate-950 p-2.5 rounded-lg border border-slate-900 font-mono text-[9px] text-indigo-300 overflow-auto max-h-[220px] leading-tight select-all">
                     {JSON.stringify({
                       auditId: selectedEvent.id,
@@ -611,9 +611,9 @@ export function PlatformDashboard() {
           ) : (
             <div className="space-y-6">
               {/* Quick Navigation Card */}
-              <Card className="bg-white border-slate-200 rounded-xl shadow-sm">
-                <CardHeader className="pb-3 border-b border-slate-100">
-                  <CardTitle className="text-sm font-bold text-slate-900 uppercase tracking-wide">Quick Operations Links</CardTitle>
+              <Card className="bg-card border-border rounded-xl shadow-sm">
+                <CardHeader className="pb-3 border-b border-border/50">
+                  <CardTitle className="text-sm font-bold text-foreground uppercase tracking-wide">Quick Operations Links</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-4 space-y-2">
                   {[
@@ -625,23 +625,23 @@ export function PlatformDashboard() {
                     <Link
                       key={link.path}
                       to={link.path}
-                      className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:bg-slate-50 hover:border-slate-200 transition-all group"
+                      className="flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:bg-muted hover:border-border transition-all group"
                     >
-                      <div className="w-7 h-7 rounded-md bg-slate-50 flex items-center justify-center group-hover:bg-white transition-colors border border-slate-100">
-                        <link.icon size={13} className="text-slate-500" />
+                      <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center group-hover:bg-card transition-colors border border-border/50">
+                        <link.icon size={13} className="text-muted-foreground" />
                       </div>
-                      <span className="text-xs font-semibold text-slate-900">{link.label}</span>
-                      <ArrowUpRight size={12} className="ml-auto text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <span className="text-xs font-semibold text-foreground">{link.label}</span>
+                      <ArrowUpRight size={12} className="ml-auto text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                     </Link>
                   ))}
                 </CardContent>
               </Card>
 
               {/* Platform Clusters Uptime */}
-              <Card className="bg-white border-slate-200 rounded-xl shadow-sm">
-                <CardHeader className="pb-3 border-b border-slate-100">
+              <Card className="bg-card border-border rounded-xl shadow-sm">
+                <CardHeader className="pb-3 border-b border-border/50">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-bold text-slate-900 uppercase tracking-wide">Cluster Nodes Health</CardTitle>
+                    <CardTitle className="text-sm font-bold text-foreground uppercase tracking-wide">Cluster Nodes Health</CardTitle>
                     <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md text-[10px] font-semibold px-2 py-0.5">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block mr-1 animate-pulse" />
                       All Online
@@ -658,9 +658,9 @@ export function PlatformDashboard() {
                     <div key={item.service} className="flex items-center justify-between py-1 border-b border-slate-50 last:border-0 last:pb-0">
                       <div className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        <span className="font-semibold text-slate-600 text-xs">{item.service}</span>
+                        <span className="font-semibold text-muted-foreground text-xs">{item.service}</span>
                       </div>
-                      <span className="text-[10px] font-bold text-slate-400 font-mono">{item.uptime}</span>
+                      <span className="text-[10px] font-bold text-muted-foreground font-mono">{item.uptime}</span>
                     </div>
                   ))}
                 </CardContent>

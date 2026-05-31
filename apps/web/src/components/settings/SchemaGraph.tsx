@@ -131,29 +131,29 @@ export function SchemaGraph({ objects = [], fieldsByObject = {} }: SchemaGraphPr
   }, [nodes]);
 
   return (
-    <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none overflow-hidden">
-      <CardHeader className="pb-3 border-b border-[#e2e8f0]">
+    <Card className="bg-card border-border rounded-xl shadow-none overflow-hidden">
+      <CardHeader className="pb-3 border-b border-border">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-indigo-50 border border-indigo-100 rounded-lg text-indigo-500">
+          <div className="p-1.5 bg-fin-orange/10 border border-fin-orange/20 rounded-lg text-fin-orange">
             <GitFork size={15} />
           </div>
           <div>
-            <CardTitle className="text-sm font-semibold text-[#0f172a]">
+            <CardTitle className="text-sm font-semibold text-foreground">
               Relationship Schema Graph
             </CardTitle>
-            <CardDescription className="text-[11px] text-[#94a3b8]">
+            <CardDescription className="text-[11px] text-muted-foreground">
               Interactive visual map of database connections, entity lookups, and primary keys.
             </CardDescription>
           </div>
         </div>
       </CardHeader>
       
-      <CardContent className="p-0 relative bg-slate-50/20">
+      <CardContent className="p-0 relative bg-muted/20">
         <div className="overflow-x-auto min-h-[480px] p-4 flex justify-center">
           <svg 
             width={640} 
             height={600} 
-            className="rounded-lg border border-slate-100/50 bg-slate-900/5 select-none"
+            className="rounded-lg border border-border/50/50 bg-slate-900/5 select-none"
           >
             {/* Grid Patterns for premium look */}
             <defs>
@@ -382,7 +382,7 @@ export function SchemaGraph({ objects = [], fieldsByObject = {} }: SchemaGraphPr
         </div>
 
         {/* Small Legend Block */}
-        <div className="p-3 border-t border-[#e2e8f0] bg-slate-50/50 flex items-center justify-between text-[10px] text-slate-500 font-medium">
+        <div className="p-3 border-t border-border bg-muted/50 flex items-center justify-between text-[10px] text-muted-foreground font-medium">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded bg-slate-200 border border-slate-300 inline-block" />
@@ -397,7 +397,7 @@ export function SchemaGraph({ objects = [], fieldsByObject = {} }: SchemaGraphPr
               Lookup Relationships
             </span>
           </div>
-          <span className="text-slate-400 italic">Hover nodes or lines to trace paths</span>
+          <span className="text-muted-foreground italic">Hover nodes or lines to trace paths</span>
         </div>
       </CardContent>
     </Card>

@@ -15,10 +15,17 @@ import { IntegrationSettings } from '@/components/settings/IntegrationSettings';
 import { ObjectManager } from '@/components/settings/ObjectManager';
 import { SetupAuditTrail } from '@/components/settings/SetupAuditTrail';
 import { LayoutBuilder } from '@/components/settings/LayoutBuilder';
+import { IndustrySettings } from '@/components/settings/IndustrySettings';
 
 function SettingsPage({ children }: { children: React.ReactNode }) {
   return <SettingsLayout>{children}</SettingsLayout>;
 }
+
+export const settingsIndustryRoute = createRoute({
+  getParentRoute: () => settingsRoute,
+  path: 'industry',
+  component: IndustrySettings,
+});
 
 export const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,

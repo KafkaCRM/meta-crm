@@ -27,7 +27,7 @@ export function ImpersonateView({ tenantId }: ImpersonateViewProps) {
         </p>
       </div>
 
-      <div className="rounded-lg bg-white p-6 shadow-md">
+      <div className="rounded-lg bg-card p-6 shadow-md">
         <h2 className="mb-4 text-xl font-bold">{tenant.name}</h2>
 
         <div className="grid grid-cols-2 gap-4 text-sm">
@@ -60,7 +60,7 @@ export function ImpersonateView({ tenantId }: ImpersonateViewProps) {
         </div>
       </div>
 
-      <div className="rounded-lg bg-white p-6 shadow-md">
+      <div className="rounded-lg bg-card p-6 shadow-md">
         <h3 className="mb-4 text-lg font-semibold">Installed Plugins</h3>
         {tenant.plugin_list.length > 0 ? (
           <ul className="space-y-2">

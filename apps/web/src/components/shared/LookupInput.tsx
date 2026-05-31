@@ -123,7 +123,7 @@ export function LookupInput({
 
   if (disabled) {
     return (
-      <div className={`relative w-full rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-3 py-2 text-sm text-[#64748b] ${className}`}>
+      <div className={`relative w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-muted-foreground ${className}`}>
         {selectedLabel || value || placeholder}
       </div>
     );
@@ -155,25 +155,25 @@ export function LookupInput({
             }}
             onFocus={() => setIsOpen(true)}
             placeholder={placeholder}
-            className="pl-9 pr-8 h-9 rounded-lg border-[#e2e8f0] focus-visible:ring-1 focus-visible:ring-[#0f172a]"
+            className="pl-9 pr-8 h-9 rounded-lg border-border focus-visible:ring-1 focus-visible:ring-[#0f172a]"
           />
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           {isLoading && (
-            <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-slate-400" />
+            <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
           )}
         </div>
       )}
 
       {/* Glassmorphic Dropdown Overlay */}
       {isOpen && !value && (
-        <div className="absolute left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-lg border border-slate-200/80 bg-white/95 backdrop-blur-md p-1 shadow-lg focus:outline-none animate-in fade-in slide-in-from-top-1 duration-150">
+        <div className="absolute left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-lg border border-border/80 bg-card/95 backdrop-blur-md p-1 shadow-lg focus:outline-none animate-in fade-in slide-in-from-top-1 duration-150">
           {isLoading && results.length === 0 ? (
-            <div className="flex items-center justify-center py-6 text-sm text-slate-500">
-              <Loader2 className="mr-2 h-4 w-4 animate-spin text-[#0f172a]" />
+            <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin text-foreground" />
               Searching records...
             </div>
           ) : results.length === 0 ? (
-            <div className="py-6 text-center text-sm text-slate-500">
+            <div className="py-6 text-center text-sm text-muted-foreground">
               No matching records found in {relatedTo}
             </div>
           ) : (
@@ -183,11 +183,11 @@ export function LookupInput({
                   key={item.id}
                   type="button"
                   onClick={() => handleSelect(item)}
-                  className="flex flex-col text-left w-full px-3 py-2 text-sm rounded-md hover:bg-slate-100/80 hover:text-slate-900 transition-colors focus:bg-slate-100 focus:outline-none"
+                  className="flex flex-col text-left w-full px-3 py-2 text-sm rounded-md hover:bg-muted/70/80 hover:text-foreground transition-colors focus:bg-slate-100 focus:outline-none"
                 >
-                  <span className="font-medium text-slate-800 truncate">{item.label}</span>
+                  <span className="font-medium text-foreground truncate">{item.label}</span>
                   {item.subtext && (
-                    <span className="text-xs text-slate-400 truncate mt-0.5">{item.subtext}</span>
+                    <span className="text-xs text-muted-foreground truncate mt-0.5">{item.subtext}</span>
                   )}
                 </button>
               ))}

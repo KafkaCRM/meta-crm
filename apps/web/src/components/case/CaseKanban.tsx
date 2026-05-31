@@ -18,6 +18,7 @@ import type { CaseDto, WorkflowStageDto } from '@meta-crm/types';
 import { casesApi, type CasesByStage } from '@/api/cases';
 import { useRealtime } from '@/hooks/useRealtime';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useLabels } from '@/hooks/useLabels';
 import { KanbanColumn } from './KanbanColumn';
 import { KanbanCard } from './KanbanCard';
 import { BulkActionBar, type BulkAction } from '@/components/shared/BulkActionBar';
@@ -74,6 +75,7 @@ export function CaseKanban({ workflowDefinitionId }: CaseKanbanProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { can } = usePermissions();
+  const { t } = useLabels();
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -477,7 +479,7 @@ export function CaseKanban({ workflowDefinitionId }: CaseKanbanProps) {
     >
       <div className="flex items-center justify-between px-4 py-2 border-b">
         <span className="text-sm text-muted-foreground">
-          {totalCases} {totalCases === 1 ? 'case' : 'cases'}
+          {totalCases} {totalCases === 1 ? (t('case.singular')?.toLowerCase() ?? 'case') : (t('case.plural')?.toLowerCase() ?? 'cases')}
         </span>
         <div className="flex items-center gap-1 bg-muted rounded-md p-1">
           <button

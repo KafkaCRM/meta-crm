@@ -84,7 +84,7 @@ export function BranchManager() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-[#94a3b8]" />
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -92,20 +92,20 @@ export function BranchManager() {
   return (
     <div className="space-y-6 max-w-[1000px]">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-[#0f172a]">Branches</h1>
-        <p className="text-sm text-[#64748b] mt-0.5">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Branches</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
           Configure and manage your organisation's physical branches and locations
         </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
         {/* Branch listing card */}
-        <Card className={cn("bg-white border-[#e2e8f0] rounded-xl shadow-none", canManage ? "md:col-span-2" : "md:col-span-3")}>
-          <CardHeader className="pb-3 border-b border-[#e2e8f0]">
-            <CardTitle className="text-base font-medium text-[#0f172a]">
+        <Card className={cn("bg-card border-border rounded-xl shadow-none", canManage ? "md:col-span-2" : "md:col-span-3")}>
+          <CardHeader className="pb-3 border-b border-border">
+            <CardTitle className="text-base font-medium text-foreground">
               Active Locations
             </CardTitle>
-            <CardDescription className="text-xs text-[#94a3b8]">
+            <CardDescription className="text-xs text-muted-foreground">
               {branches?.length ?? 0} branches configured in this tenant
             </CardDescription>
           </CardHeader>
@@ -114,17 +114,17 @@ export function BranchManager() {
               {branches?.map((branch) => (
                 <div
                   key={branch.id}
-                  className="flex items-center justify-between p-4 hover:bg-[#f8fafc]/60 transition-colors group"
+                  className="flex items-center justify-between p-4 hover:bg-background/60 transition-colors group"
                 >
                   <div className="flex items-start gap-3 min-w-0">
-                    <div className="mt-0.5 p-2 bg-[#f1f5f9] rounded-lg text-[#64748b] group-hover:bg-white group-hover:text-[#0f172a] border border-transparent group-hover:border-[#e2e8f0] transition-colors">
+                    <div className="mt-0.5 p-2 bg-[#f1f5f9] rounded-lg text-muted-foreground group-hover:bg-card group-hover:text-foreground border border-transparent group-hover:border-border transition-colors">
                       <Building2 size={16} />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-[#0f172a] truncate">{branch.name}</p>
+                      <p className="text-sm font-medium text-foreground truncate">{branch.name}</p>
                       {(branch.address || branch.city) && (
-                        <p className="text-xs text-[#64748b] mt-0.5 flex items-center gap-1">
-                          <MapPin size={12} className="text-[#94a3b8]" />
+                        <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                          <MapPin size={12} className="text-muted-foreground" />
                           <span>
                             {branch.address}
                             {branch.address && branch.city && ', '}
@@ -139,7 +139,7 @@ export function BranchManager() {
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        className="text-[#64748b] hover:text-[#0f172a] hover:bg-[#e2e8f0]"
+                        className="text-muted-foreground hover:text-foreground hover:bg-[#e2e8f0]"
                         onClick={() => handleEdit(branch)}
                       >
                         <Pencil size={14} />
@@ -161,7 +161,7 @@ export function BranchManager() {
                 </div>
               ))}
               {branches?.length === 0 && (
-                <div className="p-8 text-center text-sm text-[#64748b]">
+                <div className="p-8 text-center text-sm text-muted-foreground">
                   No active branches found. {canManage && 'Add one on the right.'}
                 </div>
               )}
@@ -171,65 +171,65 @@ export function BranchManager() {
 
         {/* Form panel card */}
         {canManage && (
-        <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none h-fit">
-          <CardHeader className="pb-3 border-b border-[#e2e8f0]">
+        <Card className="bg-card border-border rounded-xl shadow-none h-fit">
+          <CardHeader className="pb-3 border-b border-border">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-medium text-[#0f172a]">
+              <CardTitle className="text-base font-medium text-foreground">
                 {editingId ? 'Edit Location' : 'New Location'}
               </CardTitle>
               {editingId && (
                 <Button
                   variant="ghost"
                   size="icon-xs"
-                  className="text-[#94a3b8] hover:text-[#0f172a]"
+                  className="text-muted-foreground hover:text-foreground"
                   onClick={handleCancel}
                 >
                   <X size={14} />
                 </Button>
               )}
             </div>
-            <CardDescription className="text-xs text-[#94a3b8]">
+            <CardDescription className="text-xs text-muted-foreground">
               {editingId ? 'Modify location details' : 'Deploy a new physical office'}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[#64748b]">Branch Name</label>
+                <label className="text-xs font-medium text-muted-foreground">Branch Name</label>
                 <Input
                   type="text"
                   placeholder="e.g. West Coast HQ"
                   value={formData.name}
                   onChange={(e) => setFormData((f) => ({ ...f, name: e.target.value }))}
                   required
-                  className="h-9 border-[#e2e8f0] bg-white text-[#0f172a] placeholder-[#94a3b8]"
+                  className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[#64748b]">Street Address</label>
+                <label className="text-xs font-medium text-muted-foreground">Street Address</label>
                 <Input
                   type="text"
                   placeholder="e.g. 100 Pine St, Suite 400"
                   value={formData.address}
                   onChange={(e) => setFormData((f) => ({ ...f, address: e.target.value }))}
-                  className="h-9 border-[#e2e8f0] bg-white text-[#0f172a] placeholder-[#94a3b8]"
+                  className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[#64748b]">City</label>
+                <label className="text-xs font-medium text-muted-foreground">City</label>
                 <Input
                   type="text"
                   placeholder="e.g. San Francisco"
                   value={formData.city}
                   onChange={(e) => setFormData((f) => ({ ...f, city: e.target.value }))}
-                  className="h-9 border-[#e2e8f0] bg-white text-[#0f172a] placeholder-[#94a3b8]"
+                  className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
                 />
               </div>
               <div className="flex gap-2 pt-2">
                 <Button
                   type="submit"
                   disabled={createMutation.isPending || updateMutation.isPending}
-                  className="bg-[#0f172a] hover:bg-[#1e293b] text-white flex-1 h-9 rounded-lg"
+                  className="bg-primary hover:bg-[#1e293b] text-white flex-1 h-9 rounded-lg"
                 >
                   {(createMutation.isPending || updateMutation.isPending) && (
                     <Loader2 className="h-4 w-4 animate-spin mr-1" />

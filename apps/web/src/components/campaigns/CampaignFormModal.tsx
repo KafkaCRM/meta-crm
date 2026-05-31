@@ -176,29 +176,29 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto p-6 bg-white border border-[#e2e8f0]">
-        <DialogHeader className="pb-3 border-b border-[#e2e8f0]">
-          <DialogTitle className="text-lg font-semibold text-[#0f172a]">Create Campaign</DialogTitle>
-          <DialogDescription className="text-xs text-[#64748b] mt-1">
+      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto p-6 bg-card border border-border">
+        <DialogHeader className="pb-3 border-b border-border">
+          <DialogTitle className="text-lg font-semibold text-foreground">Create Campaign</DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground mt-1">
             Deploy a new marketing channel or UTM tracking tag to measure acquisition funnels.
           </DialogDescription>
         </DialogHeader>
 
         {isFormLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-[#94a3b8]" />
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4 pt-4">
             {/* Name */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[#0f172a] uppercase tracking-wider">Campaign Name</label>
+              <label className="text-xs font-semibold text-foreground uppercase tracking-wider">Campaign Name</label>
               <Input
                 type="text"
                 placeholder="e.g. Summer Admissions Drive 2026"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="bg-[#f8fafc] border-[#e2e8f0] placeholder:text-[#94a3b8] focus-visible:ring-[#0f172a] h-9 text-sm"
+                className="bg-background border-border placeholder:text-muted-foreground focus-visible:ring-[#0f172a] h-9 text-sm"
               />
               {errors.name && <p className="text-xs text-red-600 mt-1">{errors.name}</p>}
             </div>
@@ -206,11 +206,11 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Channel */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-[#0f172a] uppercase tracking-wider">Marketing Channel</label>
+                <label className="text-xs font-semibold text-foreground uppercase tracking-wider">Marketing Channel</label>
                 <select
                   value={channel}
                   onChange={(e) => setChannel(e.target.value)}
-                  className="w-full h-9 rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
+                  className="w-full h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
                 >
                   <option value="meta_ads">Meta Ads</option>
                   <option value="google_ads">Google Ads</option>
@@ -225,12 +225,12 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
 
               {/* Start Date */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-[#0f172a] uppercase tracking-wider">Start Date</label>
+                <label className="text-xs font-semibold text-foreground uppercase tracking-wider">Start Date</label>
                 <Input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="bg-[#f8fafc] border-[#e2e8f0] focus-visible:ring-[#0f172a] h-9 text-sm"
+                  className="bg-background border-border focus-visible:ring-[#0f172a] h-9 text-sm"
                 />
                 {errors.startDate && <p className="text-xs text-red-600 mt-1">{errors.startDate}</p>}
               </div>
@@ -239,11 +239,11 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Assignment */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-[#0f172a] uppercase tracking-wider">Branch & Brand</label>
+                <label className="text-xs font-semibold text-foreground uppercase tracking-wider">Branch & Brand</label>
                 <select
                   value={assignmentId}
                   onChange={(e) => setAssignmentId(e.target.value)}
-                  className="w-full h-9 rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
+                  className="w-full h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
                 >
                   <option value="">-- Select Branch Assignment --</option>
                   {assignmentOptions.map((opt) => (
@@ -257,11 +257,11 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
 
               {/* Vertical */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-[#0f172a] uppercase tracking-wider">Academic Vertical</label>
+                <label className="text-xs font-semibold text-foreground uppercase tracking-wider">Academic Vertical</label>
                 <select
                   value={verticalId}
                   onChange={(e) => setVerticalId(e.target.value)}
-                  className="w-full h-9 rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
+                  className="w-full h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
                 >
                   <option value="">-- Choose Vertical --</option>
                   {verticals.map((v) => (
@@ -277,11 +277,11 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Pipeline */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-[#0f172a] uppercase tracking-wider">Target Pipeline</label>
+                <label className="text-xs font-semibold text-foreground uppercase tracking-wider">Target Pipeline</label>
                 <select
                   value={pipelineId}
                   onChange={(e) => setPipelineId(e.target.value)}
-                  className="w-full h-9 rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
+                  className="w-full h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
                 >
                   <option value="wf_default_001">Admissions Pipeline</option>
                 </select>
@@ -290,70 +290,70 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
 
               {/* Target Leads */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-[#0f172a] uppercase tracking-wider">Target Leads (Optional)</label>
+                <label className="text-xs font-semibold text-foreground uppercase tracking-wider">Target Leads (Optional)</label>
                 <Input
                   type="number"
                   placeholder="e.g. 500"
                   value={targetLeads}
                   onChange={(e) => setTargetLeads(e.target.value)}
-                  className="bg-[#f8fafc] border-[#e2e8f0] placeholder:text-[#94a3b8] focus-visible:ring-[#0f172a] h-9 text-sm"
+                  className="bg-background border-border placeholder:text-muted-foreground focus-visible:ring-[#0f172a] h-9 text-sm"
                 />
               </div>
             </div>
 
-            <div className="border-t border-[#e2e8f0] pt-4 mt-2">
-              <h3 className="text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-3">UTM Tracking Parameters (Optional)</h3>
+            <div className="border-t border-border pt-4 mt-2">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">UTM Tracking Parameters (Optional)</h3>
               
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-[#64748b] uppercase">UTM Source</label>
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">UTM Source</label>
                   <Input
                     type="text"
                     placeholder="e.g. facebook"
                     value={utmSource}
                     onChange={(e) => setUtmSource(e.target.value)}
-                    className="bg-[#f8fafc] border-[#e2e8f0] placeholder:text-[#94a3b8] focus-visible:ring-[#0f172a] h-8 text-xs"
+                    className="bg-background border-border placeholder:text-muted-foreground focus-visible:ring-[#0f172a] h-8 text-xs"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-[#64748b] uppercase">UTM Medium</label>
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">UTM Medium</label>
                   <Input
                     type="text"
                     placeholder="e.g. cpc"
                     value={utmMedium}
                     onChange={(e) => setUtmMedium(e.target.value)}
-                    className="bg-[#f8fafc] border-[#e2e8f0] placeholder:text-[#94a3b8] focus-visible:ring-[#0f172a] h-8 text-xs"
+                    className="bg-background border-border placeholder:text-muted-foreground focus-visible:ring-[#0f172a] h-8 text-xs"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-[#64748b] uppercase">UTM Campaign</label>
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">UTM Campaign</label>
                   <Input
                     type="text"
                     placeholder="e.g. summer-promo"
                     value={utmCampaign}
                     onChange={(e) => setUtmCampaign(e.target.value)}
-                    className="bg-[#f8fafc] border-[#e2e8f0] placeholder:text-[#94a3b8] focus-visible:ring-[#0f172a] h-8 text-xs"
+                    className="bg-background border-border placeholder:text-muted-foreground focus-visible:ring-[#0f172a] h-8 text-xs"
                   />
                 </div>
               </div>
-              <p className="text-[10px] text-[#94a3b8] mt-2">
+              <p className="text-[10px] text-muted-foreground mt-2">
                 If UTM Campaign is left blank, a URL-friendly version of the Campaign Name will be generated automatically.
               </p>
             </div>
 
-            <DialogFooter className="pt-4 border-t border-[#e2e8f0] -mx-6 -mb-6 px-6 bg-slate-50 flex sm:justify-end gap-2">
+            <DialogFooter className="pt-4 border-t border-border -mx-6 -mb-6 px-6 bg-muted flex sm:justify-end gap-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={onClose}
-                className="h-9 text-xs border-slate-200 bg-white hover:bg-slate-50 text-slate-600"
+                className="h-9 text-xs border-border bg-card hover:bg-muted text-muted-foreground"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={createMutation.isPending}
-                className="h-9 text-xs bg-[#0f172a] hover:bg-[#1e293b] text-white font-medium"
+                className="h-9 text-xs bg-primary hover:bg-[#1e293b] text-white font-medium"
               >
                 {createMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1.5" />}
                 Create Campaign

@@ -58,7 +58,7 @@ export function LabelEditor() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-[#94a3b8]" />
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -66,19 +66,19 @@ export function LabelEditor() {
   return (
     <div className="space-y-6 max-w-[900px]">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-[#0f172a]">Labels</h1>
-        <p className="text-sm text-[#64748b] mt-0.5">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Labels</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
           Customize naming conventions and display terms across your tenant dashboard
         </p>
       </div>
 
-      <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none">
-        <CardHeader className="pb-3 border-b border-[#e2e8f0]">
-          <CardTitle className="text-base font-medium text-[#0f172a] flex items-center gap-1.5">
-            <Type size={16} className="text-[#94a3b8]" />
+      <Card className="bg-card border-border rounded-xl shadow-none">
+        <CardHeader className="pb-3 border-b border-border">
+          <CardTitle className="text-base font-medium text-foreground flex items-center gap-1.5">
+            <Type size={16} className="text-muted-foreground" />
             Tenant Dictionary
           </CardTitle>
-          <CardDescription className="text-xs text-[#94a3b8]">
+          <CardDescription className="text-xs text-muted-foreground">
             Override default vocabulary descriptors for custom industry terminology
           </CardDescription>
         </CardHeader>
@@ -92,11 +92,11 @@ export function LabelEditor() {
               return (
                 <div
                   key={key}
-                  className="flex items-center justify-between p-4 hover:bg-[#f8fafc]/30 transition-colors group gap-6"
+                  className="flex items-center justify-between p-4 hover:bg-background/30 transition-colors group gap-6"
                 >
                   <div className="space-y-1 min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono text-xs text-indigo-600 bg-indigo-50/50 border border-indigo-100 rounded px-1.5 py-0.5">
+                      <span className="font-mono text-xs text-fin-orange bg-fin-orange/10/50 border border-fin-orange/20 rounded px-1.5 py-0.5">
                         {key}
                       </span>
                       {isOverridden && (
@@ -113,17 +113,17 @@ export function LabelEditor() {
                           value={editValue}
                           onChange={(e) => setEditValue(e.target.value)}
                           onKeyDown={handleKeyDown}
-                          className="h-8 text-xs border-[#e2e8f0] bg-white text-[#0f172a]"
+                          className="h-8 text-xs border-border bg-card text-foreground"
                           autoFocus
                         />
                       </div>
                     ) : (
-                      <p className="text-sm font-medium text-[#0f172a] pt-0.5">
+                      <p className="text-sm font-medium text-foreground pt-0.5">
                         {currentValue}
                       </p>
                     )}
 
-                    <p className="text-[11px] text-[#94a3b8]">{desc}</p>
+                    <p className="text-[11px] text-muted-foreground">{desc}</p>
                   </div>
 
                   <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -133,7 +133,7 @@ export function LabelEditor() {
                           onClick={handleSave}
                           disabled={updateMutation.isPending}
                           size="sm"
-                          className="bg-[#0f172a] hover:bg-[#1e293b] text-white text-xs h-7 px-2.5 rounded-md flex items-center gap-1"
+                          className="bg-primary hover:bg-[#1e293b] text-white text-xs h-7 px-2.5 rounded-md flex items-center gap-1"
                         >
                           {updateMutation.isPending ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
@@ -146,7 +146,7 @@ export function LabelEditor() {
                           variant="ghost"
                           size="sm"
                           onClick={() => setEditingKey(null)}
-                          className="text-[#64748b] hover:bg-[#f1f5f9] text-xs h-7 px-2.5 rounded-md"
+                          className="text-muted-foreground hover:bg-[#f1f5f9] text-xs h-7 px-2.5 rounded-md"
                         >
                           Cancel
                         </Button>
@@ -159,7 +159,7 @@ export function LabelEditor() {
                           setEditingKey(key);
                           setEditValue(currentValue);
                         }}
-                        className="opacity-0 group-hover:opacity-100 text-[#64748b] hover:text-[#0f172a] hover:bg-[#e2e8f0] text-xs h-7 px-2.5 rounded-md transition-all"
+                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground hover:bg-[#e2e8f0] text-xs h-7 px-2.5 rounded-md transition-all"
                       >
                         <Edit2 size={12} className="mr-1" />
                         Edit Label
@@ -170,8 +170,8 @@ export function LabelEditor() {
               );
             })}
           </div>
-          <div className="px-4 py-2.5 bg-[#f8fafc] border-t border-[#e2e8f0] flex items-center gap-1.5 text-[10px] text-[#64748b]">
-            <Info size={12} className="text-[#94a3b8]" />
+          <div className="px-4 py-2.5 bg-background border-t border-border flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <Info size={12} className="text-muted-foreground" />
             <span>Updates apply globally across contact forms, pipeline column titles, and page headers.</span>
           </div>
         </CardContent>

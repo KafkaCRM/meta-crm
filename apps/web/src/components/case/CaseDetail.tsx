@@ -8,6 +8,7 @@ import { casesApi } from '@/api/cases';
 import { interactionsApi } from '@/api/interactions';
 import { useRealtime } from '@/hooks/useRealtime';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useLabels } from '@/hooks/useLabels';
 import { StageBar } from './StageBar';
 import { CaseAttributePanel } from './CaseAttributePanel';
 import { Timeline } from './Timeline';
@@ -37,6 +38,7 @@ export function CaseDetail({
 }: CaseDetailProps) {
   const queryClient = useQueryClient();
   const { can } = usePermissions();
+  const { t } = useLabels();
 
   const [realtimeItems, setRealtimeItems] = useState<TimelineItem[]>([]);
 
@@ -155,7 +157,7 @@ export function CaseDetail({
   if (caseLoading || stagesLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-muted-foreground">Loading case details...</div>
+        <div className="text-muted-foreground">Loading {t('case.singular')?.toLowerCase() ?? 'case'} details...</div>
       </div>
     );
   }
@@ -163,7 +165,7 @@ export function CaseDetail({
   if (!caseData) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-muted-foreground">Case not found</div>
+        <div className="text-muted-foreground">{t('case.singular') ?? 'Case'} not found</div>
       </div>
     );
   }
@@ -198,7 +200,7 @@ export function CaseDetail({
                 {(caseData as any).campaign && (
                   <>
                     <span>·</span>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-600 border border-indigo-500/20">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-fin-orange/100/10 text-fin-orange border border-indigo-500/20">
                       Campaign: {(caseData as any).campaign.name} ({(caseData as any).campaign.channel})
                     </span>
                   </>

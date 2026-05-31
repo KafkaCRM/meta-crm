@@ -26,8 +26,8 @@ function LookupValue({ relatedTo, value }: { relatedTo: string; value: string })
 
   if (isLoading) {
     return (
-      <span className="text-slate-400 text-xs flex items-center gap-1.5 font-medium animate-pulse">
-        <span className="animate-spin h-3.5 w-3.5 border-2 border-slate-200 border-t-slate-600 rounded-full inline-block" />
+      <span className="text-muted-foreground text-xs flex items-center gap-1.5 font-medium animate-pulse">
+        <span className="animate-spin h-3.5 w-3.5 border-2 border-border border-t-slate-600 rounded-full inline-block" />
         Resolving reference...
       </span>
     );
@@ -42,7 +42,7 @@ function LookupValue({ relatedTo, value }: { relatedTo: string; value: string })
     );
   }
 
-  return <span className="font-semibold text-slate-800">{value}</span>;
+  return <span className="font-semibold text-foreground">{value}</span>;
 }
 
 export function RecordLayout({ objectType, record, t }: RecordLayoutProps) {
@@ -79,7 +79,7 @@ export function RecordLayout({ objectType, record, t }: RecordLayoutProps) {
     return (
       <div className="py-6 space-y-3">
         <div className="h-4 bg-slate-100 rounded w-1/3 animate-pulse" />
-        <div className="h-24 bg-slate-50 border border-slate-200/60 rounded-xl animate-pulse" />
+        <div className="h-24 bg-muted border border-border/60 rounded-xl animate-pulse" />
       </div>
     );
   }
@@ -118,20 +118,20 @@ export function RecordLayout({ objectType, record, t }: RecordLayoutProps) {
         return (
           <div 
             key={section.name} 
-            className="bg-white border border-border rounded-xl shadow-none overflow-hidden"
+            className="bg-card border border-border rounded-xl shadow-none overflow-hidden"
           >
             {/* Section Header */}
             <button
               onClick={() => toggleSection(section.name)}
-              className="w-full flex items-center justify-between px-4 py-3 bg-slate-50/50 hover:bg-slate-50 transition-colors text-left"
+              className="w-full flex items-center justify-between px-4 py-3 bg-muted/50 hover:bg-muted transition-colors text-left"
             >
-              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+              <h3 className="text-xs font-bold text-foreground/80 uppercase tracking-wider">
                 {section.name}
               </h3>
               {isCollapsed ? (
-                <ChevronDown size={14} className="text-slate-400" />
+                <ChevronDown size={14} className="text-muted-foreground" />
               ) : (
-                <ChevronUp size={14} className="text-slate-400" />
+                <ChevronUp size={14} className="text-muted-foreground" />
               )}
             </button>
 
@@ -164,12 +164,12 @@ export function RecordLayout({ objectType, record, t }: RecordLayoutProps) {
                         } else if (isPhone) {
                           displayVal = (
                             <div className="flex items-center gap-1.5">
-                              <span className="font-mono text-slate-800">{String(rawVal)}</span>
+                              <span className="font-mono text-foreground">{String(rawVal)}</span>
                               <WhatsAppButton 
                                 phone={String(rawVal)} 
                                 variant="ghost"
                                 size="icon"
-                                className="h-5 w-5 border-0 hover:bg-slate-100 p-0 flex items-center justify-center text-slate-400 hover:text-emerald-600"
+                                className="h-5 w-5 border-0 hover:bg-muted/70 p-0 flex items-center justify-center text-muted-foreground hover:text-emerald-600"
                                 title="Chat on WhatsApp"
                               >
                                 <span className="sr-only">WhatsApp</span>
@@ -187,11 +187,11 @@ export function RecordLayout({ objectType, record, t }: RecordLayoutProps) {
 
                       return (
                         <div key={layoutField.name} className="space-y-1 select-text">
-                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
                             {displayLabel}
                           </label>
                           <div className="flex items-center gap-1.5 min-h-[28px] text-sm text-foreground font-semibold group/val">
-                            {layoutField.readonly && <Lock size={12} className="text-slate-400 flex-shrink-0" />}
+                            {layoutField.readonly && <Lock size={12} className="text-muted-foreground flex-shrink-0" />}
                             <span className="break-all">{displayVal}</span>
                             {rawVal !== null && rawVal !== undefined && rawVal !== '' && (
                               <button
@@ -199,7 +199,7 @@ export function RecordLayout({ objectType, record, t }: RecordLayoutProps) {
                                   navigator.clipboard.writeText(String(rawVal));
                                   toast.success('Copied to clipboard');
                                 }}
-                                className="opacity-0 group-hover/val:opacity-100 transition-opacity text-slate-400 hover:text-slate-700 cursor-pointer ml-1"
+                                className="opacity-0 group-hover/val:opacity-100 transition-opacity text-muted-foreground hover:text-foreground/80 cursor-pointer ml-1"
                                 title="Copy to clipboard"
                               >
                                 <Copy size={11} />

@@ -87,7 +87,7 @@ export function InvitePlatformUser() {
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Name input */}
         <div className="space-y-1">
-          <label htmlFor="inviteName" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          <label htmlFor="inviteName" className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Operator Full Name
           </label>
           <input
@@ -96,25 +96,25 @@ export function InvitePlatformUser() {
             placeholder="e.g. John Doe"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-3 py-1.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 placeholder:text-slate-400 text-slate-900"
+            className="w-full px-3 py-1.5 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 placeholder:text-muted-foreground text-foreground"
             required
           />
         </div>
 
         {/* Email input */}
         <div className="space-y-1">
-          <label htmlFor="inviteEmail" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          <label htmlFor="inviteEmail" className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Operator Email Address
           </label>
           <div className="relative">
-            <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <input
               id="inviteEmail"
               type="email"
               placeholder="e.g. operator@company.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full pl-9 pr-4 py-1.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 placeholder:text-slate-400 text-slate-900"
+              className="w-full pl-9 pr-4 py-1.5 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 placeholder:text-muted-foreground text-foreground"
               required
             />
           </div>
@@ -122,14 +122,14 @@ export function InvitePlatformUser() {
 
         {/* Role select */}
         <div className="space-y-1">
-          <label htmlFor="inviteRole" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          <label htmlFor="inviteRole" className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Operator Platform Role
           </label>
           <select
             id="inviteRole"
             value={role}
             onChange={(e) => setRole(e.target.value)}
-            className="w-full px-3 py-1.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900"
+            className="w-full px-3 py-1.5 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-foreground"
             required
           >
             <option value="">Select platform permission tier...</option>
@@ -162,7 +162,7 @@ export function InvitePlatformUser() {
         <Button
           type="submit"
           disabled={inviteMutation.isPending || availableRoles.length === 0}
-          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg h-9 font-medium text-sm shadow-sm transition-all gap-1.5 mt-2"
+          className="w-full bg-fin-orange hover:bg-fin-orange/90 text-white rounded-lg h-9 font-medium text-sm shadow-sm transition-all gap-1.5 mt-2"
         >
           <UserPlus size={15} />
           {inviteMutation.isPending ? 'Sending Invitation...' : 'Send Platform Invitation'}
@@ -170,8 +170,8 @@ export function InvitePlatformUser() {
       </form>
 
       {/* Info helper */}
-      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-start gap-2 mt-4 text-[11px] text-slate-400 leading-normal">
-        <Info size={14} className="mt-0.5 text-indigo-400 flex-shrink-0" />
+      <div className="bg-muted border border-border rounded-lg p-3 flex items-start gap-2 mt-4 text-[11px] text-muted-foreground leading-normal">
+        <Info size={14} className="mt-0.5 text-fin-orange flex-shrink-0" />
         <span>Platform operators receive password-less magic invite links to claim their administrator access tokens instantly.</span>
       </div>
     </div>

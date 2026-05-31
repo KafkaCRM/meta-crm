@@ -71,7 +71,7 @@ export function BrandManager() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-[#94a3b8]" />
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -87,20 +87,20 @@ export function BrandManager() {
   return (
     <div className="space-y-6 max-w-[1000px]">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-[#0f172a]">Brands</h1>
-        <p className="text-sm text-[#64748b] mt-0.5">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Brands</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
           Manage your enterprise identities, custom logos, and brand naming
         </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
         {/* Brands listing grid */}
-        <Card className={cn("bg-white border-[#e2e8f0] rounded-xl shadow-none", canManage ? "md:col-span-2" : "md:col-span-3")}>
-          <CardHeader className="pb-3 border-b border-[#e2e8f0]">
-            <CardTitle className="text-base font-medium text-[#0f172a]">
+        <Card className={cn("bg-card border-border rounded-xl shadow-none", canManage ? "md:col-span-2" : "md:col-span-3")}>
+          <CardHeader className="pb-3 border-b border-border">
+            <CardTitle className="text-base font-medium text-foreground">
               Configured Brands
             </CardTitle>
-            <CardDescription className="text-xs text-[#94a3b8]">
+            <CardDescription className="text-xs text-muted-foreground">
               Active brand configurations available to link with branches
             </CardDescription>
           </CardHeader>
@@ -111,14 +111,14 @@ export function BrandManager() {
                 return (
                   <div
                     key={brand.id}
-                    className="flex items-center justify-between p-3.5 rounded-xl border border-[#e2e8f0] hover:border-slate-400 bg-white hover:bg-[#f8fafc]/40 transition-all group"
+                    className="flex items-center justify-between p-3.5 rounded-xl border border-border hover:border-slate-400 bg-card hover:bg-background/40 transition-all group"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       {brand.logo_url ? (
                         <img
                           src={brand.logo_url}
                           alt={brand.name}
-                          className="h-10 w-10 rounded-lg object-cover border border-[#e2e8f0] bg-white flex-shrink-0"
+                          className="h-10 w-10 rounded-lg object-cover border border-border bg-card flex-shrink-0"
                           onError={(e) => {
                             // Fallback if image fails to load
                             e.currentTarget.style.display = 'none';
@@ -130,15 +130,15 @@ export function BrandManager() {
                         </div>
                       )}
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-[#0f172a] truncate">{brand.name}</p>
-                        <p className="text-[10px] font-mono text-[#94a3b8] truncate">{brand.id}</p>
+                        <p className="text-sm font-medium text-foreground truncate">{brand.name}</p>
+                        <p className="text-[10px] font-mono text-muted-foreground truncate">{brand.id}</p>
                       </div>
                     </div>
                     {canManage && (
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        className="opacity-0 group-hover:opacity-100 text-[#64748b] hover:text-[#0f172a] hover:bg-[#e2e8f0] transition-all"
+                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground hover:bg-[#e2e8f0] transition-all"
                         onClick={() => handleEdit(brand)}
                       >
                         <Pencil size={13} />
@@ -148,7 +148,7 @@ export function BrandManager() {
                 );
               })}
               {brands?.length === 0 && (
-                <div className="col-span-full py-8 text-center text-sm text-[#64748b]">
+                <div className="col-span-full py-8 text-center text-sm text-muted-foreground">
                   No configured brands. {canManage && 'Add a new brand to get started.'}
                 </div>
               )}
@@ -158,55 +158,55 @@ export function BrandManager() {
 
         {/* Brand form card */}
         {canManage && (
-        <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none h-fit">
-          <CardHeader className="pb-3 border-b border-[#e2e8f0]">
+        <Card className="bg-card border-border rounded-xl shadow-none h-fit">
+          <CardHeader className="pb-3 border-b border-border">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-medium text-[#0f172a]">
+              <CardTitle className="text-base font-medium text-foreground">
                 {editingId ? 'Edit Brand' : 'New Brand'}
               </CardTitle>
               {editingId && (
                 <Button
                   variant="ghost"
                   size="icon-xs"
-                  className="text-[#94a3b8] hover:text-[#0f172a]"
+                  className="text-muted-foreground hover:text-foreground"
                   onClick={handleCancel}
                 >
                   <X size={14} />
                 </Button>
               )}
             </div>
-            <CardDescription className="text-xs text-[#94a3b8]">
+            <CardDescription className="text-xs text-muted-foreground">
               {editingId ? 'Modify brand naming and assets' : 'Configure a new brand identity'}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[#64748b]">Brand Name</label>
+                <label className="text-xs font-medium text-muted-foreground">Brand Name</label>
                 <Input
                   type="text"
                   placeholder="e.g. Apex Global"
                   value={formData.name}
                   onChange={(e) => setFormData((f) => ({ ...f, name: e.target.value }))}
                   required
-                  className="h-9 border-[#e2e8f0] bg-white text-[#0f172a] placeholder-[#94a3b8]"
+                  className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[#64748b]">Logo URL</label>
+                <label className="text-xs font-medium text-muted-foreground">Logo URL</label>
                 <Input
                   type="url"
                   placeholder="e.g. https://domain.com/logo.png"
                   value={formData.logo_url}
                   onChange={(e) => setFormData((f) => ({ ...f, logo_url: e.target.value }))}
-                  className="h-9 border-[#e2e8f0] bg-white text-[#0f172a] placeholder-[#94a3b8]"
+                  className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
                 />
               </div>
               <div className="pt-2">
                 <Button
                   type="submit"
                   disabled={createMutation.isPending || updateMutation.isPending}
-                  className="bg-[#0f172a] hover:bg-[#1e293b] text-white w-full h-9 rounded-lg"
+                  className="bg-primary hover:bg-[#1e293b] text-white w-full h-9 rounded-lg"
                 >
                   {(createMutation.isPending || updateMutation.isPending) && (
                     <Loader2 className="h-4 w-4 animate-spin mr-1" />

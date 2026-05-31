@@ -71,7 +71,7 @@ function SortableWidgetContainer({ id, children, className }: SortableWidgetProp
       <div 
         {...attributes} 
         {...listeners} 
-        className="absolute top-3 right-3 z-30 cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-600 bg-white/95 border border-slate-200/60 p-1.5 rounded-lg shadow-sm opacity-0 group-hover/widget:opacity-100 transition-all scale-90 hover:scale-100"
+        className="absolute top-3 right-3 z-30 cursor-grab active:cursor-grabbing text-muted-foreground/70 hover:text-muted-foreground bg-card/95 border border-border/60 p-1.5 rounded-lg shadow-sm opacity-0 group-hover/widget:opacity-100 transition-all scale-90 hover:scale-100"
         title="Drag to reorder widget"
       >
         <GripVertical size={13} />
@@ -136,15 +136,15 @@ export function Dashboard() {
     'stage-time': <StageTimeWidget />,
     'party-source': <PartySourceWidget />,
     'recent-activity': (
-      <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none hover:shadow-md transition-shadow h-full flex flex-col justify-between overflow-hidden">
-        <CardHeader className="pb-3 bg-slate-50/20 border-b border-[#e2e8f0]">
+      <Card className="bg-card border-border rounded-xl shadow-none hover:shadow-md transition-shadow h-full flex flex-col justify-between overflow-hidden">
+        <CardHeader className="pb-3 bg-muted/20 border-b border-border">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold text-[#0f172a]">
+            <CardTitle className="text-sm font-semibold text-foreground">
               Recent Activity
             </CardTitle>
             <Badge
               variant="secondary"
-              className="bg-[#f8fafc] text-[#64748b] border-0 text-xs rounded-md"
+              className="bg-background text-muted-foreground border-0 text-xs rounded-md"
             >
               <Activity size={11} className="mr-1 text-emerald-500 animate-pulse" />
               Live
@@ -159,16 +159,16 @@ export function Dashboard() {
             { action: 'Email sent', name: 'GlobEx Ltd.', time: '2h ago', color: '#3b82f6' },
             { action: 'Contact converted', name: 'Maria Santos', time: '4h ago', color: '#0bdf50' },
           ].map((item, i) => (
-            <div key={i} className="flex items-center gap-3 p-3.5 hover:bg-slate-50/20 transition-colors">
+            <div key={i} className="flex items-center gap-3 p-3.5 hover:bg-muted/20 transition-colors">
               <div
                 className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                 style={{ backgroundColor: item.color }}
               />
               <div className="flex-1 min-w-0">
-                <span className="text-xs text-[#64748b]">{item.action} · </span>
-                <span className="text-xs font-semibold text-[#0f172a]">{item.name}</span>
+                <span className="text-xs text-muted-foreground">{item.action} · </span>
+                <span className="text-xs font-semibold text-foreground">{item.name}</span>
               </div>
-              <span className="text-[10px] text-[#94a3b8] flex-shrink-0">{item.time}</span>
+              <span className="text-[10px] text-muted-foreground flex-shrink-0">{item.time}</span>
             </div>
           ))}
         </CardContent>
@@ -181,10 +181,10 @@ export function Dashboard() {
       {/* Page header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold text-[#0f172a] tracking-tight">
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">
             {t('dashboard.title') ?? 'Dashboard'}
           </h1>
-          <p className="text-sm text-[#94a3b8] mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5">
             Overview of your workspace activity
           </p>
         </div>
@@ -194,7 +194,7 @@ export function Dashboard() {
             <Button
               variant="outline"
               size="sm"
-              className="h-8 text-xs border-[#e2e8f0] text-[#64748b] hover:bg-[#f8fafc]"
+              className="h-8 text-xs border-border text-muted-foreground hover:bg-background"
             >
               <Download size={13} className="mr-1.5" />
               Export
@@ -203,7 +203,7 @@ export function Dashboard() {
           <Link to="/parties/new">
             <Button
               size="sm"
-              className="bg-[#0f172a] hover:bg-[#1e293b] text-white rounded-lg text-xs font-semibold h-8 px-3"
+              className="bg-primary hover:bg-[#1e293b] text-white rounded-lg text-xs font-semibold h-8 px-3"
             >
               <Plus size={14} className="mr-1.5" />
               New {t('party.singular') ?? 'Contact'}
@@ -263,24 +263,24 @@ export function Dashboard() {
         </DndContext>
       ) : (
         /* Permission-locked state for non-report users */
-        <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none relative overflow-hidden">
+        <Card className="bg-card border-border rounded-xl shadow-none relative overflow-hidden">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="absolute inset-0 backdrop-blur-sm bg-white/60 flex items-center justify-center z-10">
+            <div className="absolute inset-0 backdrop-blur-sm bg-card/60 flex items-center justify-center z-10">
               <div className="text-center">
-                <div className="w-12 h-12 rounded-full bg-[#f8fafc] flex items-center justify-center mx-auto mb-3">
-                  <TrendingUp size={20} className="text-[#94a3b8]" />
+                <div className="w-12 h-12 rounded-full bg-background flex items-center justify-center mx-auto mb-3">
+                  <TrendingUp size={20} className="text-muted-foreground" />
                 </div>
-                <h3 className="text-base font-medium text-[#0f172a] mb-1">Reports not available</h3>
-                <p className="text-sm text-[#94a3b8] max-w-xs">
+                <h3 className="text-base font-medium text-foreground mb-1">Reports not available</h3>
+                <p className="text-sm text-muted-foreground max-w-xs">
                   Upgrade your role to view analytics and reports. Contact your administrator.
                 </p>
               </div>
             </div>
-            <div className="w-12 h-12 rounded-full bg-[#f8fafc] flex items-center justify-center mb-3 opacity-30">
-              <TrendingUp size={20} className="text-[#94a3b8]" />
+            <div className="w-12 h-12 rounded-full bg-background flex items-center justify-center mb-3 opacity-30">
+              <TrendingUp size={20} className="text-muted-foreground" />
             </div>
-            <h3 className="text-base font-medium text-[#0f172a] mb-1 opacity-30">Reports</h3>
-            <p className="text-sm text-[#94a3b8] max-w-xs opacity-30">
+            <h3 className="text-base font-medium text-foreground mb-1 opacity-30">Reports</h3>
+            <p className="text-sm text-muted-foreground max-w-xs opacity-30">
               Analytics and reports are locked
             </p>
           </CardContent>

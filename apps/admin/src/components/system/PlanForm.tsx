@@ -239,8 +239,8 @@ export function PlanForm({ planId }: PlanFormProps) {
   if (planId && loadingPlans) {
     return (
       <div className="py-12 flex flex-col items-center justify-center gap-2">
-        <div className="w-5 h-5 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin" />
-        <span className="text-xs text-slate-400">Loading plan metadata…</span>
+        <div className="w-5 h-5 border-2 border-border border-t-indigo-600 rounded-full animate-spin" />
+        <span className="text-xs text-muted-foreground">Loading plan metadata…</span>
       </div>
     );
   }
@@ -271,7 +271,7 @@ export function PlanForm({ planId }: PlanFormProps) {
         <div className="grid gap-6 sm:grid-cols-2">
           {/* Plan Name */}
           <div className="space-y-1.5">
-            <label htmlFor="name" className="text-xs font-semibold text-slate-500 uppercase">
+            <label htmlFor="name" className="text-xs font-semibold text-muted-foreground uppercase">
               Plan Name
             </label>
             <input
@@ -280,18 +280,18 @@ export function PlanForm({ planId }: PlanFormProps) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={!!planId || isReadOnly}
-              className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-400 font-semibold"
+              className="w-full rounded-lg border border-border bg-card px-3.5 py-2 text-sm text-foreground focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-muted disabled:text-muted-foreground font-semibold"
               placeholder="e.g. Pro, Enterprise Tier"
               required
             />
             {planId && (
-              <p className="text-[10px] text-slate-400">System core tags cannot be adjusted post creation.</p>
+              <p className="text-[10px] text-muted-foreground">System core tags cannot be adjusted post creation.</p>
             )}
           </div>
 
           {/* Pricing */}
           <div className="space-y-1.5">
-            <label htmlFor="price" className="text-xs font-semibold text-slate-500 uppercase">
+            <label htmlFor="price" className="text-xs font-semibold text-muted-foreground uppercase">
               Monthly Pricing ($ USD)
             </label>
             <input
@@ -300,7 +300,7 @@ export function PlanForm({ planId }: PlanFormProps) {
               value={priceMonthly}
               onChange={(e) => setPriceMonthly(e.target.value === '' ? '' : Number(e.target.value))}
               disabled={isReadOnly}
-              className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-400 font-semibold"
+              className="w-full rounded-lg border border-border bg-card px-3.5 py-2 text-sm text-foreground focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-muted disabled:text-muted-foreground font-semibold"
               placeholder="0.00 (Free)"
               min={0}
               step="any"
@@ -309,15 +309,15 @@ export function PlanForm({ planId }: PlanFormProps) {
         </div>
 
         {/* Core quotas */}
-        <div className="bg-slate-50 p-4 border border-slate-200 rounded-xl space-y-4">
-          <div className="flex items-center gap-1.5 pb-2 border-b border-slate-200">
-            <Shield size={14} className="text-indigo-600" />
-            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Plan Quota Restrictions</h4>
+        <div className="bg-muted p-4 border border-border rounded-xl space-y-4">
+          <div className="flex items-center gap-1.5 pb-2 border-b border-border">
+            <Shield size={14} className="text-fin-orange" />
+            <h4 className="text-xs font-bold text-foreground/80 uppercase tracking-wider">Plan Quota Restrictions</h4>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
-              <label htmlFor="maxBranches" className="text-[10px] font-bold text-slate-500 uppercase">
+              <label htmlFor="maxBranches" className="text-[10px] font-bold text-muted-foreground uppercase">
                 Max Branches
               </label>
               <input
@@ -326,14 +326,14 @@ export function PlanForm({ planId }: PlanFormProps) {
                 value={maxBranches}
                 onChange={(e) => setMaxBranches(Number(e.target.value))}
                 disabled={isReadOnly}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900 font-mono font-bold focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-foreground font-mono font-bold focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 min={1}
                 required
               />
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="maxUsers" className="text-[10px] font-bold text-slate-500 uppercase">
+              <label htmlFor="maxUsers" className="text-[10px] font-bold text-muted-foreground uppercase">
                 Max Active Users
               </label>
               <input
@@ -342,14 +342,14 @@ export function PlanForm({ planId }: PlanFormProps) {
                 value={maxUsers}
                 onChange={(e) => setMaxUsers(Number(e.target.value))}
                 disabled={isReadOnly}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900 font-mono font-bold focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-foreground font-mono font-bold focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 min={1}
                 required
               />
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="maxPlugins" className="text-[10px] font-bold text-slate-500 uppercase">
+              <label htmlFor="maxPlugins" className="text-[10px] font-bold text-muted-foreground uppercase">
                 Max Plugin Installs
               </label>
               <input
@@ -358,7 +358,7 @@ export function PlanForm({ planId }: PlanFormProps) {
                 value={maxPlugins}
                 onChange={(e) => setMaxPlugins(Number(e.target.value))}
                 disabled={isReadOnly}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900 font-mono font-bold focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-foreground font-mono font-bold focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 min={0}
                 required
               />
@@ -369,10 +369,10 @@ export function PlanForm({ planId }: PlanFormProps) {
         {/* Entitlements Checklist grouped by industry */}
         <div className="space-y-3">
           <div className="flex items-center gap-1.5">
-            <Sparkles size={14} className="text-indigo-600 animate-pulse" />
-            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Plan Entitlements / Allowed CRM Capabilities</h4>
+            <Sparkles size={14} className="text-fin-orange animate-pulse" />
+            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Plan Entitlements / Allowed CRM Capabilities</h4>
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-muted-foreground">
             Specify which modules are bundled inside this plan. Tenants will only be able to activate capabilities selected below.
           </p>
 
@@ -380,11 +380,11 @@ export function PlanForm({ planId }: PlanFormProps) {
             {capabilityCategories.map((category) => (
               <div
                 key={category.categoryName}
-                className="p-4 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-all space-y-3"
+                className="p-4 rounded-xl border border-border bg-card hover:border-slate-300 transition-all space-y-3"
               >
                 <div>
-                  <h5 className="text-xs font-bold text-slate-800">{category.categoryName}</h5>
-                  <p className="text-[10px] text-slate-400 leading-tight mt-0.5">{category.description}</p>
+                  <h5 className="text-xs font-bold text-foreground">{category.categoryName}</h5>
+                  <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{category.description}</p>
                 </div>
 
                 <div className="space-y-2">
@@ -397,29 +397,29 @@ export function PlanForm({ planId }: PlanFormProps) {
                         onClick={() => handleToggleCapability(item.key)}
                         className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer select-none transition-all ${
                           isChecked
-                            ? 'border-indigo-500 bg-indigo-50/20'
-                            : 'border-slate-100 bg-slate-50/30 hover:border-slate-200'
+                            ? 'border-indigo-500 bg-fin-orange/10/20'
+                            : 'border-border/50 bg-muted/30 hover:border-border'
                         }`}
                       >
                         <div className={`w-7 h-7 rounded-md flex items-center justify-center border transition-colors ${
                           isChecked
-                            ? 'bg-indigo-500 border-indigo-600 text-white'
-                            : 'bg-white border-slate-200 text-slate-400'
+                            ? 'bg-fin-orange/100 border-indigo-600 text-white'
+                            : 'bg-card border-border text-muted-foreground'
                         }`}>
                           <IconComp size={13} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-slate-800">{item.name}</span>
+                            <span className="text-xs font-bold text-foreground">{item.name}</span>
                             <input
                               type="checkbox"
                               checked={isChecked}
                               readOnly
                               disabled={isReadOnly}
-                              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-3.5 w-3.5"
+                              className="rounded border-slate-300 text-fin-orange focus:ring-indigo-500 h-3.5 w-3.5"
                             />
                           </div>
-                          <p className="text-[10px] text-slate-400 leading-normal mt-0.5">{item.description}</p>
+                          <p className="text-[10px] text-muted-foreground leading-normal mt-0.5">{item.description}</p>
                         </div>
                       </div>
                     );
@@ -431,12 +431,12 @@ export function PlanForm({ planId }: PlanFormProps) {
         </div>
 
         {/* Actions */}
-        <div className="flex justify-end gap-2 border-t border-slate-100 pt-5">
+        <div className="flex justify-end gap-2 border-t border-border/50 pt-5">
           <Button
             type="button"
             variant="outline"
             onClick={() => navigate({ to: '/admin/plans' })}
-            className="h-9 px-4 text-xs font-semibold hover:bg-slate-50 border-slate-200 text-slate-700 rounded-lg"
+            className="h-9 px-4 text-xs font-semibold hover:bg-muted border-border text-foreground/80 rounded-lg"
           >
             {isReadOnly ? 'Back' : 'Cancel'}
           </Button>
@@ -444,7 +444,7 @@ export function PlanForm({ planId }: PlanFormProps) {
             <Button
               type="submit"
               disabled={mutation.isPending}
-              className="h-9 px-5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg"
+              className="h-9 px-5 text-xs font-bold bg-fin-orange hover:bg-fin-orange/90 text-white rounded-lg"
             >
               {mutation.isPending ? 'Saving Plan…' : 'Save Plan & Capabilities'}
             </Button>

@@ -53,7 +53,7 @@ function CaseDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-[#94a3b8] text-sm">Loading details...</div>
+        <div className="text-muted-foreground text-sm">Loading details...</div>
       </div>
     );
   }

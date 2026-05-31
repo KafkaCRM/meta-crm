@@ -68,8 +68,8 @@ export function BulkActionBar<TData>({
         animation: 'slideUp 0.3s ease-out',
       }}
     >
-      <div className="pointer-events-auto mx-auto mb-4 flex items-center gap-3 rounded-xl border border-[#e2e8f0] bg-white px-4 py-3 shadow-lg shadow-black/5">
-        <span className="text-sm font-semibold text-[#0f172a] min-w-[80px]">
+      <div className="pointer-events-auto mx-auto mb-4 flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-lg shadow-black/5">
+        <span className="text-sm font-semibold text-foreground min-w-[80px]">
           {selectedRows.length} selected
         </span>
 
@@ -81,7 +81,7 @@ export function BulkActionBar<TData>({
               key={action.id}
               variant="outline"
               size="sm"
-              className="h-8 text-xs border-[#e2e8f0] hover:bg-[#f8fafc] hover:text-[#0f172a]"
+              className="h-8 text-xs border-border hover:bg-background hover:text-foreground"
               onClick={() => handleAction(action)}
               disabled={executing !== null}
             >
@@ -98,7 +98,7 @@ export function BulkActionBar<TData>({
         <Separator orientation="vertical" className="h-5 bg-[#e2e8f0]" />
 
         <button
-          className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-[#f8fafc] transition-colors text-[#94a3b8] hover:text-[#0f172a]"
+          className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-background transition-colors text-muted-foreground hover:text-foreground"
           onClick={onClearSelection}
           disabled={executing !== null}
           aria-label="Clear selection"

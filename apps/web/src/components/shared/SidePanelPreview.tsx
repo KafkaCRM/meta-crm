@@ -46,15 +46,15 @@ export function SidePanelPreview({ isOpen, recordId, objectType, onClose }: Side
       />
 
       {/* Slide-over Drawer Panel */}
-      <div className="fixed right-0 top-0 h-full w-full sm:w-[460px] bg-white border-l border-slate-200 shadow-2xl z-50 flex flex-col justify-between animate-in slide-in-from-right duration-200">
+      <div className="fixed right-0 top-0 h-full w-full sm:w-[460px] bg-card border-l border-border shadow-2xl z-50 flex flex-col justify-between animate-in slide-in-from-right duration-200">
         
         {/* Drawer Header */}
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div className="px-5 py-4 border-b border-border/50 flex items-center justify-between bg-muted/50">
           <div>
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5 select-none">
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5 select-none">
               Record Workspace Preview
             </h3>
-            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5 select-none">
+            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mt-0.5 select-none">
               Quick Inspector Mode
             </p>
           </div>
@@ -69,7 +69,7 @@ export function SidePanelPreview({ isOpen, recordId, objectType, onClose }: Side
                   onClose();
                 }}
                 title="Open full record details tab"
-                className="h-7 w-7 rounded-md border-slate-200 hover:bg-slate-100 text-slate-500"
+                className="h-7 w-7 rounded-md border-border hover:bg-muted/70 text-muted-foreground"
               >
                 <ExternalLink size={13} />
               </Button>
@@ -78,7 +78,7 @@ export function SidePanelPreview({ isOpen, recordId, objectType, onClose }: Side
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="h-7 w-7 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700"
+              className="h-7 w-7 rounded-md hover:bg-muted/70 text-muted-foreground hover:text-foreground/80"
             >
               <X size={14} className="stroke-[2.5]" />
             </Button>
@@ -89,8 +89,8 @@ export function SidePanelPreview({ isOpen, recordId, objectType, onClose }: Side
         <div className="flex-1 overflow-y-auto p-5 space-y-4 no-scrollbar">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center h-full py-20 space-y-3">
-              <span className="animate-spin h-6 w-6 border-2 border-slate-200 border-t-slate-600 rounded-full inline-block" />
-              <p className="text-xs text-slate-500 font-medium">Resolving record metadata layout...</p>
+              <span className="animate-spin h-6 w-6 border-2 border-border border-t-slate-600 rounded-full inline-block" />
+              <p className="text-xs text-muted-foreground font-medium">Resolving record metadata layout...</p>
             </div>
           ) : error || !record ? (
             <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
@@ -98,8 +98,8 @@ export function SidePanelPreview({ isOpen, recordId, objectType, onClose }: Side
                 <ShieldAlert size={20} />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-slate-800">Resolve Failed</h4>
-                <p className="text-[11px] text-slate-500 max-w-xs mt-1">
+                <h4 className="text-xs font-bold text-foreground">Resolve Failed</h4>
+                <p className="text-[11px] text-muted-foreground max-w-xs mt-1">
                   Could not retrieve record contents. Verify your active connectivity scope.
                 </p>
               </div>
@@ -107,12 +107,12 @@ export function SidePanelPreview({ isOpen, recordId, objectType, onClose }: Side
           ) : (
             <div className="space-y-5 animate-in fade-in duration-200">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-[#0f172a] text-white flex items-center justify-center font-bold text-xs">
+                <div className="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs">
                   {record.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-slate-800">{record.name}</h4>
-                  <p className="text-[10px] text-slate-400 font-semibold capitalize mt-0.5">
+                  <h4 className="text-sm font-bold text-foreground">{record.name}</h4>
+                  <p className="text-[10px] text-muted-foreground font-semibold capitalize mt-0.5">
                     {record.type} · Lead Source: {record.source}
                   </p>
                 </div>
@@ -124,12 +124,12 @@ export function SidePanelPreview({ isOpen, recordId, objectType, onClose }: Side
         </div>
 
         {/* Drawer Footer Actions */}
-        <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-2">
+        <div className="px-5 py-3 border-t border-border/50 bg-muted/50 flex justify-end gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={onClose}
-            className="h-8 text-xs border-slate-200 font-semibold text-slate-700"
+            className="h-8 text-xs border-border font-semibold text-foreground/80"
           >
             Close Panel
           </Button>
@@ -140,7 +140,7 @@ export function SidePanelPreview({ isOpen, recordId, objectType, onClose }: Side
                 navigate({ to: `/parties/${recordId}` });
                 onClose();
               }}
-              className="h-8 text-xs bg-[#0f172a] hover:bg-slate-800 text-white font-semibold flex items-center gap-1 rounded-lg"
+              className="h-8 text-xs bg-primary hover:bg-muted text-white font-semibold flex items-center gap-1 rounded-lg"
             >
               <ExternalLink size={12} />
               View Customer 360

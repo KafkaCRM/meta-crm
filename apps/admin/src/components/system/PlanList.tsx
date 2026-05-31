@@ -26,12 +26,12 @@ export function PlanList() {
         header: 'Plan Name',
         cell: ({ row }) => (
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center">
-              <Shield size={14} className="text-indigo-600" />
+            <div className="w-8 h-8 rounded-lg bg-fin-orange/10 border border-fin-orange/20 flex items-center justify-center">
+              <Shield size={14} className="text-fin-orange" />
             </div>
             <div>
-              <span className="font-bold text-slate-900 block leading-tight">{row.original.name}</span>
-              <span className="text-[10px] text-slate-400 font-mono">tier: platform_plan</span>
+              <span className="font-bold text-foreground block leading-tight">{row.original.name}</span>
+              <span className="text-[10px] text-muted-foreground font-mono">tier: platform_plan</span>
             </div>
           </div>
         ),
@@ -43,7 +43,7 @@ export function PlanList() {
           const val = row.original.price_monthly;
           if (val === null || val === undefined) {
             return (
-              <Badge className="bg-slate-100 text-slate-700 border border-slate-200 font-bold px-2.5 py-0.5 rounded-full text-xs">
+              <Badge className="bg-slate-100 text-foreground/80 border border-border font-bold px-2.5 py-0.5 rounded-full text-xs">
                 Free
               </Badge>
             );
@@ -51,13 +51,13 @@ export function PlanList() {
           const num = parseFloat(String(val));
           if (isNaN(num) || num === 0) {
             return (
-              <Badge className="bg-slate-100 text-slate-700 border border-slate-200 font-bold px-2.5 py-0.5 rounded-full text-xs">
+              <Badge className="bg-slate-100 text-foreground/80 border border-border font-bold px-2.5 py-0.5 rounded-full text-xs">
                 Free
               </Badge>
             );
           }
           return (
-            <Badge className="bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold px-2.5 py-0.5 rounded-full text-xs">
+            <Badge className="bg-fin-orange/10 text-fin-orange border border-fin-orange/30 font-bold px-2.5 py-0.5 rounded-full text-xs">
               ${num.toFixed(2)}/mo
             </Badge>
           );
@@ -67,10 +67,10 @@ export function PlanList() {
         accessorKey: 'max_branches',
         header: 'Max Branches',
         cell: ({ row }) => (
-          <div className="flex items-center gap-1.5 font-mono text-xs text-slate-700">
-            <Layers size={13} className="text-slate-400" />
+          <div className="flex items-center gap-1.5 font-mono text-xs text-foreground/80">
+            <Layers size={13} className="text-muted-foreground" />
             <span className="font-bold">{row.original.max_branches}</span>
-            <span className="text-slate-400">limit</span>
+            <span className="text-muted-foreground">limit</span>
           </div>
         ),
       },
@@ -78,10 +78,10 @@ export function PlanList() {
         accessorKey: 'max_users',
         header: 'Max Users',
         cell: ({ row }) => (
-          <div className="flex items-center gap-1.5 font-mono text-xs text-slate-700">
-            <Users size={13} className="text-slate-400" />
+          <div className="flex items-center gap-1.5 font-mono text-xs text-foreground/80">
+            <Users size={13} className="text-muted-foreground" />
             <span className="font-bold">{row.original.max_users}</span>
-            <span className="text-slate-400">limit</span>
+            <span className="text-muted-foreground">limit</span>
           </div>
         ),
       },
@@ -89,10 +89,10 @@ export function PlanList() {
         accessorKey: 'max_plugins',
         header: 'Max Plugins',
         cell: ({ row }) => (
-          <div className="flex items-center gap-1.5 font-mono text-xs text-slate-700">
-            <CreditCard size={13} className="text-slate-400" />
+          <div className="flex items-center gap-1.5 font-mono text-xs text-foreground/80">
+            <CreditCard size={13} className="text-muted-foreground" />
             <span className="font-bold">{row.original.max_plugins}</span>
-            <span className="text-slate-400">limit</span>
+            <span className="text-muted-foreground">limit</span>
           </div>
         ),
       },
@@ -103,24 +103,24 @@ export function PlanList() {
           // Compute simulated allocation percent based on plan name
           const name = row.original.name.toLowerCase();
           let pct = 25;
-          let color = 'bg-indigo-500';
+          let color = 'bg-fin-orange/100';
           if (name.includes('starter') || name.includes('free')) {
             pct = 45;
             color = 'bg-sky-500';
           } else if (name.includes('professional') || name.includes('pro')) {
             pct = 35;
-            color = 'bg-indigo-500';
+            color = 'bg-fin-orange/100';
           } else if (name.includes('enterprise')) {
             pct = 20;
             color = 'bg-emerald-500';
           }
           return (
             <div className="w-36 space-y-1">
-              <div className="flex justify-between items-center text-[10px] font-semibold text-slate-500">
+              <div className="flex justify-between items-center text-[10px] font-semibold text-muted-foreground">
                 <span>{pct}% allocations</span>
                 <span>{Math.round(pct * 0.24)} tenants</span>
               </div>
-              <div className="w-full bg-slate-100 rounded-full h-1.5 border border-slate-200/50">
+              <div className="w-full bg-slate-100 rounded-full h-1.5 border border-border/50">
                 <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
               </div>
             </div>
@@ -133,8 +133,8 @@ export function PlanList() {
         cell: ({ row }) => {
           const val = row.original.created_at;
           return (
-            <div className="flex items-center gap-1 text-xs text-slate-500 font-medium">
-              <Calendar size={13} className="text-slate-400" />
+            <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
+              <Calendar size={13} className="text-muted-foreground" />
               {new Date(val).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
             </div>
           );
@@ -144,7 +144,7 @@ export function PlanList() {
         id: 'actions',
         header: '',
         cell: () => (
-          <div className="flex justify-end pr-2 text-slate-400">
+          <div className="flex justify-end pr-2 text-muted-foreground">
             <ChevronRight size={15} />
           </div>
         ),
@@ -167,9 +167,9 @@ export function PlanList() {
         }
         emptyState={
           <div className="text-center py-12">
-            <Shield size={36} className="text-slate-300 mx-auto mb-3" />
-            <p className="text-base font-semibold text-slate-900">No subscription plans defined</p>
-            <p className="text-xs text-slate-400 mt-1">Create a platform subscription tier to get started</p>
+            <Shield size={36} className="text-muted-foreground/70 mx-auto mb-3" />
+            <p className="text-base font-semibold text-foreground">No subscription plans defined</p>
+            <p className="text-xs text-muted-foreground mt-1">Create a platform subscription tier to get started</p>
           </div>
         }
       />

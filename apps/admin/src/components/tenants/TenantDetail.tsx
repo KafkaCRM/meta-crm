@@ -98,7 +98,7 @@ interface AdminLicenseManagerProps {
 const CATEGORY_COLORS: Record<string, string> = {
   Communication: 'bg-emerald-50 text-emerald-700 border-emerald-100',
   Integrations: 'bg-amber-50 text-amber-700 border-amber-100',
-  Analytics: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+  Analytics: 'bg-fin-orange/10 text-fin-orange border-fin-orange/20',
   Productivity: 'bg-purple-50 text-purple-700 border-purple-100',
   Healthcare: 'bg-rose-50 text-rose-700 border-rose-100',
   Retail: 'bg-sky-50 text-sky-700 border-sky-100',
@@ -170,8 +170,8 @@ function AdminLicenseManager({
 
   if (loadingPlugins) {
     return (
-      <div className="flex items-center gap-2 py-6 text-xs text-slate-400">
-        <RefreshCw size={13} className="animate-spin text-slate-400" />
+      <div className="flex items-center gap-2 py-6 text-xs text-muted-foreground">
+        <RefreshCw size={13} className="animate-spin text-muted-foreground" />
         Syncing plugin registry…
       </div>
     );
@@ -192,18 +192,18 @@ function AdminLicenseManager({
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between text-xs text-slate-400 font-semibold border-b border-slate-100 pb-2 mb-2">
+      <div className="flex items-center justify-between text-xs text-muted-foreground font-semibold border-b border-border/50 pb-2 mb-2">
         <span>Installed Count</span>
-        <span className={limitReached ? 'text-rose-600 font-bold' : 'text-indigo-600 font-bold'}>
+        <span className={limitReached ? 'text-rose-600 font-bold' : 'text-fin-orange font-bold'}>
           {installedCount} / {maxPlugins} Plugins Used
         </span>
       </div>
 
       {compatiblePlugins.length === 0 ? (
-        <div className="text-center py-10 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
-          <Puzzle size={22} className="mx-auto text-slate-400 mb-2.5" />
-          <p className="text-xs font-semibold text-slate-900">No extensions available</p>
-          <p className="text-[10px] text-slate-400 mt-0.5">
+        <div className="text-center py-10 border border-dashed border-border rounded-xl bg-muted/50">
+          <Puzzle size={22} className="mx-auto text-muted-foreground mb-2.5" />
+          <p className="text-xs font-semibold text-foreground">No extensions available</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">
             There are no plugins compatible with the {tenantIndustry} scope yet.
           </p>
         </div>
@@ -213,7 +213,7 @@ function AdminLicenseManager({
             const manifest = plugin.manifest;
             const isInstalled = plugin.installed;
             const cat = manifest.category ?? 'Utility';
-            const catColor = CATEGORY_COLORS[cat] ?? 'bg-slate-50 text-slate-700 border-slate-200';
+            const catColor = CATEGORY_COLORS[cat] ?? 'bg-muted text-foreground/80 border-border';
             const catIcon = CATEGORY_ICONS[cat] ?? '⚙️';
 
             return (
@@ -221,42 +221,42 @@ function AdminLicenseManager({
                 key={plugin.id}
                 className={`group relative flex flex-col justify-between p-4 rounded-xl border transition-all select-none min-h-[120px] ${
                   isInstalled
-                    ? 'bg-indigo-50/40 border-indigo-600 ring-[0.5px] ring-indigo-600'
-                    : 'bg-white border-slate-200 hover:border-slate-300'
+                    ? 'bg-fin-orange/10/40 border-indigo-600 ring-[0.5px] ring-indigo-600'
+                    : 'bg-card border-border hover:border-slate-300'
                 }`}
               >
                 <div>
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-xs font-semibold text-slate-900 tracking-tight">
+                        <span className="text-xs font-semibold text-foreground tracking-tight">
                           {catIcon} {manifest.name}
                         </span>
-                        <span className="text-[9px] bg-slate-100 text-slate-600 px-1 py-0.5 rounded font-mono font-medium">
+                        <span className="text-[9px] bg-slate-100 text-muted-foreground px-1 py-0.5 rounded font-mono font-medium">
                           v{plugin.version}
                         </span>
                         <span className={`text-[9px] px-1.5 py-0.5 rounded border ${catColor}`}>
                           {cat}
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-1.5 leading-normal">
+                      <p className="text-[11px] text-muted-foreground mt-1.5 leading-normal">
                         {manifest.description}
                       </p>
                     </div>
 
                     <div className="flex-shrink-0 mt-0.5">
                       {isInstalled ? (
-                        <div className="w-4 h-4 rounded bg-indigo-600 text-white flex items-center justify-center animate-in zoom-in-50 duration-150">
+                        <div className="w-4 h-4 rounded bg-fin-orange text-white flex items-center justify-center animate-in zoom-in-50 duration-150">
                           <Check size={10} strokeWidth={3} />
                         </div>
                       ) : (
-                        <div className="w-4 h-4 rounded border border-slate-200 bg-white" />
+                        <div className="w-4 h-4 rounded border border-border bg-card" />
                       )}
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-3 flex items-center justify-between text-[9px] text-slate-400 border-t border-slate-100 pt-2 font-mono">
+                <div className="mt-3 flex items-center justify-between text-[9px] text-muted-foreground border-t border-border/50 pt-2 font-mono">
                   <span>{plugin.package_name}</span>
                   {canUpdate ? (
                     isInstalled ? (
@@ -286,15 +286,15 @@ function AdminLicenseManager({
                         }
                         className={`px-2.5 py-1 text-[10px] font-bold border rounded-md cursor-pointer transition-colors ${
                           limitReached
-                            ? 'text-slate-400 bg-slate-50 border-slate-200 cursor-not-allowed'
-                            : 'text-indigo-600 hover:bg-indigo-50 border-indigo-200'
+                            ? 'text-muted-foreground bg-muted border-border cursor-not-allowed'
+                            : 'text-fin-orange hover:bg-fin-orange/10 border-fin-orange/30'
                         }`}
                       >
                         {installMutation.isPending ? 'Installing…' : 'Install'}
                       </button>
                     )
                   ) : (
-                    <span className={isInstalled ? 'text-emerald-700 font-semibold' : 'text-slate-400'}>
+                    <span className={isInstalled ? 'text-emerald-700 font-semibold' : 'text-muted-foreground'}>
                       {isInstalled ? 'Installed' : 'Not Installed'}
                     </span>
                   )}
@@ -389,8 +389,8 @@ function AdminCapabilityManager({
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 py-6 text-xs text-slate-400">
-        <RefreshCw size={13} className="animate-spin text-slate-400" />
+      <div className="flex items-center gap-2 py-6 text-xs text-muted-foreground">
+        <RefreshCw size={13} className="animate-spin text-muted-foreground" />
         Syncing capabilities…
       </div>
     );
@@ -426,11 +426,11 @@ function AdminCapabilityManager({
         className={`group relative flex flex-col justify-between p-4 rounded-xl border transition-all select-none min-h-[135px] ${
           isEnabled
             ? isRecommended
-              ? 'bg-indigo-50/30 border-indigo-600 ring-[0.5px] ring-indigo-600 shadow-[0_0_8px_rgba(79,70,229,0.08)]'
-              : 'bg-indigo-50/30 border-indigo-600 ring-[0.5px] ring-indigo-600'
+              ? 'bg-fin-orange/10/30 border-indigo-600 ring-[0.5px] ring-indigo-600 shadow-[0_0_8px_rgba(79,70,229,0.08)]'
+              : 'bg-fin-orange/10/30 border-indigo-600 ring-[0.5px] ring-indigo-600'
             : isRecommended
-              ? 'bg-white border-indigo-100 hover:border-indigo-300'
-              : 'bg-white border-slate-200 hover:border-slate-300'
+              ? 'bg-card border-fin-orange/20 hover:border-indigo-300'
+              : 'bg-card border-border hover:border-slate-300'
         } ${canUpdate ? 'cursor-pointer' : 'cursor-default'}`}
       >
         <div>
@@ -438,8 +438,8 @@ function AdminCapabilityManager({
             {/* Left: Capability Icon Block */}
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors flex-shrink-0 ${
               isEnabled 
-                ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' 
-                : 'bg-slate-50 text-slate-500 border border-slate-200'
+                ? 'bg-indigo-100 text-fin-orange border border-fin-orange/30' 
+                : 'bg-muted text-muted-foreground border border-border'
             }`}>
               <CapIcon size={16} />
             </div>
@@ -447,7 +447,7 @@ function AdminCapabilityManager({
             {/* Right: Toggle switch and Details */}
             <div className="flex-1">
               <div className="flex items-start justify-between gap-2">
-                <span className="text-xs font-semibold text-slate-900 tracking-tight">{cap.name}</span>
+                <span className="text-xs font-semibold text-foreground tracking-tight">{cap.name}</span>
                 <div className="flex-shrink-0">
                   {canUpdate ? (
                     <button
@@ -461,31 +461,31 @@ function AdminCapabilityManager({
                         }
                       }}
                       className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                        isEnabled ? 'bg-indigo-600' : 'bg-slate-200'
+                        isEnabled ? 'bg-fin-orange' : 'bg-slate-200'
                       }`}
                     >
                       <span
-                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-card shadow-sm ring-0 transition duration-200 ease-in-out ${
                           isEnabled ? 'translate-x-4' : 'translate-x-0'
                         }`}
                       />
                     </button>
                   ) : (
-                    <div className="w-4 h-4 rounded text-white flex items-center justify-center bg-indigo-600">
+                    <div className="w-4 h-4 rounded text-white flex items-center justify-center bg-fin-orange">
                       <Check size={10} strokeWidth={3} />
                     </div>
                   )}
                 </div>
               </div>
-              <p className="text-[11px] text-slate-400 mt-1.5 leading-normal">{cap.description}</p>
+              <p className="text-[11px] text-muted-foreground mt-1.5 leading-normal">{cap.description}</p>
             </div>
           </div>
         </div>
 
         {/* Footer info: ID name and Dynamic colored industry badges */}
-        <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2">
+        <div className="mt-3 flex items-center justify-between border-t border-border/50 pt-2">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="font-mono text-[9px] text-slate-400">{cap.id.split('/')[1]}</span>
+            <span className="font-mono text-[9px] text-muted-foreground">{cap.id.split('/')[1]}</span>
             <span className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.25 text-[8px] font-semibold uppercase tracking-wider ${theme.bg} ${theme.text}`}>
               <span className={`h-1 w-1 rounded-full ${theme.dot}`} />
               {cap.industry}
@@ -493,13 +493,13 @@ function AdminCapabilityManager({
           </div>
           
           {isRecommended && (
-            <span className="inline-flex items-center gap-0.5 text-[8px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded shadow-sm">
+            <span className="inline-flex items-center gap-0.5 text-[8px] font-bold uppercase tracking-wider text-fin-orange bg-fin-orange/10 border border-fin-orange/30 px-1.5 py-0.5 rounded shadow-sm">
               ★ Core Scope
             </span>
           )}
 
           {!canUpdate && (
-            <span className={`text-[9px] font-mono ${isEnabled ? 'text-emerald-700 font-semibold' : 'text-slate-400'}`}>
+            <span className={`text-[9px] font-mono ${isEnabled ? 'text-emerald-700 font-semibold' : 'text-muted-foreground'}`}>
               {isEnabled ? 'Enabled' : 'Disabled'}
             </span>
           )}
@@ -513,8 +513,8 @@ function AdminCapabilityManager({
       {/* Recommended Core Industry Scope */}
       {recommendedCaps.length > 0 && (
         <div className="space-y-3.5">
-          <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-            <Sparkles size={12} className="text-indigo-500 animate-pulse" />
+          <h4 className="text-[11px] font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <Sparkles size={12} className="text-fin-orange animate-pulse" />
             Recommended Core Scope
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -526,8 +526,8 @@ function AdminCapabilityManager({
       {/* Additional Cross-Domain Add-ons */}
       {otherCaps.length > 0 && (
         <div className="space-y-3.5 pt-1.5">
-          <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-            <Layers size={12} className="text-slate-400" />
+          <h4 className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <Layers size={12} className="text-muted-foreground" />
             Additional Cross-Domain Add-ons
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -603,8 +603,8 @@ function AdminOverridesManager({ tenantId, tenantData, canUpdate }: AdminOverrid
       {/* Seat Limits */}
       <div className="space-y-2.5">
         <div className="flex items-center justify-between">
-          <label className="text-[11px] font-semibold text-slate-700 flex items-center gap-1.5">
-            <Users size={12} className="text-slate-500" />
+          <label className="text-[11px] font-semibold text-foreground/80 flex items-center gap-1.5">
+            <Users size={12} className="text-muted-foreground" />
             Seat Limit Override
           </label>
           <div className="flex items-center gap-1.5 select-none">
@@ -614,9 +614,9 @@ function AdminOverridesManager({ tenantId, tenantData, canUpdate }: AdminOverrid
               checked={overrideUsers}
               disabled={!canUpdate}
               onChange={(e) => setOverrideUsers(e.target.checked)}
-              className="rounded border-slate-200 text-indigo-600 focus:ring-indigo-600 h-3.5 w-3.5 cursor-pointer"
+              className="rounded border-border text-fin-orange focus:ring-indigo-600 h-3.5 w-3.5 cursor-pointer"
             />
-            <label htmlFor="overrideUsers" className="text-[10px] text-slate-400 font-medium cursor-pointer">
+            <label htmlFor="overrideUsers" className="text-[10px] text-muted-foreground font-medium cursor-pointer">
               Custom Seat Limit
             </label>
           </div>
@@ -631,17 +631,17 @@ function AdminOverridesManager({ tenantId, tenantData, canUpdate }: AdminOverrid
               value={maxUsers}
               disabled={!canUpdate}
               onChange={(e) => setMaxUsers(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all"
+              className="w-full rounded-lg border border-border px-3 py-2 text-xs bg-card focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all"
               placeholder="Enter custom maximum seats..."
             />
-            <p className="text-[9px] text-indigo-600 font-medium leading-none">
+            <p className="text-[9px] text-fin-orange font-medium leading-none">
               Overriding default plan limit of {plan?.max_users ?? '5'} seats.
             </p>
           </div>
         ) : (
-          <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-lg text-[10px] text-slate-500 flex justify-between select-none">
+          <div className="p-2.5 bg-muted border border-border/50 rounded-lg text-[10px] text-muted-foreground flex justify-between select-none">
             <span>Inheriting plan default:</span>
-            <span className="font-semibold text-slate-800">{plan?.max_users ?? '5'} Seats</span>
+            <span className="font-semibold text-foreground">{plan?.max_users ?? '5'} Seats</span>
           </div>
         )}
       </div>
@@ -649,8 +649,8 @@ function AdminOverridesManager({ tenantId, tenantData, canUpdate }: AdminOverrid
       {/* Branch Limits */}
       <div className="space-y-2.5">
         <div className="flex items-center justify-between">
-          <label className="text-[11px] font-semibold text-slate-700 flex items-center gap-1.5">
-            <Building size={12} className="text-slate-500" />
+          <label className="text-[11px] font-semibold text-foreground/80 flex items-center gap-1.5">
+            <Building size={12} className="text-muted-foreground" />
             Branch Limit Override
           </label>
           <div className="flex items-center gap-1.5 select-none">
@@ -660,9 +660,9 @@ function AdminOverridesManager({ tenantId, tenantData, canUpdate }: AdminOverrid
               checked={overrideBranches}
               disabled={!canUpdate}
               onChange={(e) => setOverrideBranches(e.target.checked)}
-              className="rounded border-slate-200 text-indigo-600 focus:ring-indigo-600 h-3.5 w-3.5 cursor-pointer"
+              className="rounded border-border text-fin-orange focus:ring-indigo-600 h-3.5 w-3.5 cursor-pointer"
             />
-            <label htmlFor="overrideBranches" className="text-[10px] text-slate-400 font-medium cursor-pointer">
+            <label htmlFor="overrideBranches" className="text-[10px] text-muted-foreground font-medium cursor-pointer">
               Custom Branch Limit
             </label>
           </div>
@@ -677,31 +677,31 @@ function AdminOverridesManager({ tenantId, tenantData, canUpdate }: AdminOverrid
               value={maxBranches}
               disabled={!canUpdate}
               onChange={(e) => setMaxBranches(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all"
+              className="w-full rounded-lg border border-border px-3 py-2 text-xs bg-card focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all"
               placeholder="Enter custom maximum branches..."
             />
-            <p className="text-[9px] text-indigo-600 font-medium leading-none">
+            <p className="text-[9px] text-fin-orange font-medium leading-none">
               Overriding default plan limit of {plan?.max_branches ?? '1'} branches.
             </p>
           </div>
         ) : (
-          <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-lg text-[10px] text-slate-500 flex justify-between select-none">
+          <div className="p-2.5 bg-muted border border-border/50 rounded-lg text-[10px] text-muted-foreground flex justify-between select-none">
             <span>Inheriting plan default:</span>
-            <span className="font-semibold text-slate-800">{plan?.max_branches ?? '1'} Branch</span>
+            <span className="font-semibold text-foreground">{plan?.max_branches ?? '1'} Branch</span>
           </div>
         )}
       </div>
 
       {/* Resolved ceilings summary info */}
-      <div className="p-2.5 bg-slate-50/50 border border-slate-200/50 rounded-lg space-y-1">
-        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Resolved Active Ceilings</span>
+      <div className="p-2.5 bg-muted/50 border border-border/50 rounded-lg space-y-1">
+        <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block">Resolved Active Ceilings</span>
         <div className="flex items-center justify-between text-xs">
-          <span className="text-slate-500 font-medium">Max User Capacity</span>
-          <span className="font-bold text-slate-900 font-mono">{resolvedMaxUsers} Seats</span>
+          <span className="text-muted-foreground font-medium">Max User Capacity</span>
+          <span className="font-bold text-foreground font-mono">{resolvedMaxUsers} Seats</span>
         </div>
-        <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100 mt-1">
-          <span className="text-slate-500 font-medium">Max Branch Capacity</span>
-          <span className="font-bold text-slate-900 font-mono">{resolvedMaxBranches} Branches</span>
+        <div className="flex items-center justify-between text-xs pt-1 border-t border-border/50 mt-1">
+          <span className="text-muted-foreground font-medium">Max Branch Capacity</span>
+          <span className="font-bold text-foreground font-mono">{resolvedMaxBranches} Branches</span>
         </div>
       </div>
 
@@ -709,7 +709,7 @@ function AdminOverridesManager({ tenantId, tenantData, canUpdate }: AdminOverrid
         <button
           type="submit"
           disabled={updateMutation.isPending}
-          className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+          className="w-full py-2.5 rounded-lg bg-fin-orange hover:bg-fin-orange/90 text-white disabled:opacity-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm"
         >
           {updateMutation.isPending ? (
             <>
@@ -755,39 +755,39 @@ function AdminHierarchyManager({ tenantId }: AdminHierarchyManagerProps) {
   const getConversionBadgeColor = (rate: number) => {
     if (rate >= 25) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
     if (rate >= 15) return 'bg-amber-50 text-amber-700 border-amber-200';
-    return 'bg-slate-50 text-slate-600 border-slate-200';
+    return 'bg-muted text-muted-foreground border-border';
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+    <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
       <div 
         className="flex items-center justify-between cursor-pointer select-none"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-2">
-          <FolderTree size={16} className="text-slate-500" />
+          <FolderTree size={16} className="text-muted-foreground" />
           <div>
-            <h3 className="text-sm font-semibold text-slate-900">Tenant Organisation Hierarchy</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Explore the branches, active brands, and course business verticals configured under this tenant.</p>
+            <h3 className="text-sm font-semibold text-foreground">Tenant Organisation Hierarchy</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Explore the branches, active brands, and course business verticals configured under this tenant.</p>
           </div>
         </div>
-        <div className="text-slate-400">
+        <div className="text-muted-foreground">
           {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </div>
       </div>
 
       {isExpanded && (
-        <div className="mt-6 border-t border-slate-100 pt-5 animate-in fade-in duration-200">
+        <div className="mt-6 border-t border-border/50 pt-5 animate-in fade-in duration-200">
           {isLoading ? (
-            <div className="flex items-center gap-2 py-4 text-xs text-slate-400">
-              <RefreshCw size={13} className="animate-spin text-slate-400" />
+            <div className="flex items-center gap-2 py-4 text-xs text-muted-foreground">
+              <RefreshCw size={13} className="animate-spin text-muted-foreground" />
               Loading organization hierarchy…
             </div>
           ) : !hierarchy || hierarchy.branches.length === 0 ? (
-            <div className="text-center py-6 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
-              <Building size={20} className="mx-auto text-slate-400 mb-2" />
-              <p className="text-xs font-semibold text-slate-900">No branches configured yet</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">This tenant has not provisioned any branches in their portal.</p>
+            <div className="text-center py-6 border border-dashed border-border rounded-xl bg-muted/50">
+              <Building size={20} className="mx-auto text-muted-foreground mb-2" />
+              <p className="text-xs font-semibold text-foreground">No branches configured yet</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">This tenant has not provisioned any branches in their portal.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -795,22 +795,22 @@ function AdminHierarchyManager({ tenantId }: AdminHierarchyManagerProps) {
                 const isBranchExpanded = expandedBranches[branch.id] ?? false;
 
                 return (
-                  <div key={branch.id} className="border border-slate-100 rounded-xl bg-slate-50/20 overflow-hidden">
+                  <div key={branch.id} className="border border-border/50 rounded-xl bg-muted/20 overflow-hidden">
                     {/* Branch Row */}
                     <div 
-                      className="flex items-center justify-between p-3.5 bg-slate-50/50 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition-all select-none"
+                      className="flex items-center justify-between p-3.5 bg-muted/50 border-b border-border/50 cursor-pointer hover:bg-muted transition-all select-none"
                       onClick={() => toggleBranch(branch.id)}
                     >
                       <div className="flex items-center gap-2 flex-wrap">
                         {isBranchExpanded ? (
-                          <ChevronDown size={14} className="text-slate-400" />
+                          <ChevronDown size={14} className="text-muted-foreground" />
                         ) : (
-                          <ChevronRight size={14} className="text-slate-400" />
+                          <ChevronRight size={14} className="text-muted-foreground" />
                         )}
-                        <Building size={14} className="text-slate-600" />
-                        <span className="text-xs font-bold text-slate-800">{branch.name}</span>
+                        <Building size={14} className="text-muted-foreground" />
+                        <span className="text-xs font-bold text-foreground">{branch.name}</span>
                         {branch.city && (
-                          <span className="text-[10px] text-slate-400 font-medium">({branch.city})</span>
+                          <span className="text-[10px] text-muted-foreground font-medium">({branch.city})</span>
                         )}
                         
                         {/* Brands assigned under this branch */}
@@ -820,8 +820,8 @@ function AdminHierarchyManager({ tenantId }: AdminHierarchyManagerProps) {
                               key={brand.id} 
                               className={`text-[9px] px-1.5 py-0.25 rounded font-medium border uppercase tracking-wider ${
                                 brand.is_primary 
-                                  ? 'bg-indigo-50 text-indigo-700 border-indigo-200 font-bold' 
-                                  : 'bg-slate-100 text-slate-600 border-slate-200'
+                                  ? 'bg-fin-orange/10 text-fin-orange border-fin-orange/30 font-bold' 
+                                  : 'bg-slate-100 text-muted-foreground border-border'
                               }`}
                             >
                               {brand.name}
@@ -829,16 +829,16 @@ function AdminHierarchyManager({ tenantId }: AdminHierarchyManagerProps) {
                           ))}
                         </div>
                       </div>
-                      <span className="text-[10px] text-slate-400 font-medium">
+                      <span className="text-[10px] text-muted-foreground font-medium">
                         {branch.verticals.length} verticals
                       </span>
                     </div>
 
                     {/* Verticals under this Branch */}
                     {isBranchExpanded && (
-                      <div className="p-3 pl-8 bg-white space-y-2.5 animate-in slide-in-from-top-1 duration-150 border-t border-slate-100">
+                      <div className="p-3 pl-8 bg-card space-y-2.5 animate-in slide-in-from-top-1 duration-150 border-t border-border/50">
                         {branch.verticals.length === 0 ? (
-                          <div className="text-[10px] italic text-slate-400 py-1 pl-4 flex items-center gap-2">
+                          <div className="text-[10px] italic text-muted-foreground py-1 pl-4 flex items-center gap-2">
                             <span className="w-1.5 h-1.5 rounded-full bg-slate-200" />
                             No verticals configured yet for this branch.
                           </div>
@@ -846,18 +846,18 @@ function AdminHierarchyManager({ tenantId }: AdminHierarchyManagerProps) {
                           branch.verticals.map((vertical) => (
                             <div key={vertical.id} className="flex items-center justify-between gap-4 py-0.5">
                               <div className="flex items-center gap-2">
-                                <GitFork size={12} className="text-slate-400 -rotate-90" />
-                                <span className={`text-xs font-semibold ${vertical.status === 'inactive' ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
+                                <GitFork size={12} className="text-muted-foreground -rotate-90" />
+                                <span className={`text-xs font-semibold ${vertical.status === 'inactive' ? 'text-muted-foreground line-through' : 'text-foreground/80'}`}>
                                   {vertical.name}
                                 </span>
                                 {vertical.status === 'inactive' && (
-                                  <span className="text-[8px] bg-slate-100 text-slate-500 border border-slate-200 px-1 rounded uppercase tracking-wider font-mono">
+                                  <span className="text-[8px] bg-slate-100 text-muted-foreground border border-border px-1 rounded uppercase tracking-wider font-mono">
                                     Inactive
                                   </span>
                                 )}
                               </div>
                               <div className="flex items-center gap-3">
-                                <span className="text-[11px] text-slate-400 font-medium">
+                                <span className="text-[11px] text-muted-foreground font-medium">
                                   {vertical.stats.total_leads} leads
                                 </span>
                                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${getConversionBadgeColor(vertical.stats.conversion_rate)}`}>
@@ -976,18 +976,18 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
   if (isLoading) {
     return (
       <div className="py-16 text-center flex flex-col items-center justify-center gap-3">
-        <RefreshCw size={24} className="animate-spin text-slate-400" />
-        <span className="text-xs text-slate-400 font-medium">Retrieving workspace parameters…</span>
+        <RefreshCw size={24} className="animate-spin text-muted-foreground" />
+        <span className="text-xs text-muted-foreground font-medium">Retrieving workspace parameters…</span>
       </div>
     );
   }
 
   if (!tenant) {
     return (
-      <div className="py-16 text-center border border-slate-200 rounded-xl bg-white max-w-md mx-auto">
+      <div className="py-16 text-center border border-border rounded-xl bg-card max-w-md mx-auto">
         <AlertTriangle size={28} className="text-amber-500 mx-auto mb-2" />
-        <h3 className="text-sm font-semibold text-slate-900">Tenant Parameters Missing</h3>
-        <p className="text-xs text-slate-400 mt-1">This workspace tenant may have been deprovisioned or does not exist.</p>
+        <h3 className="text-sm font-semibold text-foreground">Tenant Parameters Missing</h3>
+        <p className="text-xs text-muted-foreground mt-1">This workspace tenant may have been deprovisioned or does not exist.</p>
       </div>
     );
   }
@@ -1001,15 +1001,15 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
       <div className="lg:col-span-2 space-y-6">
         
         {/* Core Details Card */}
-        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
+        <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+          <div className="flex items-center justify-between pb-4 border-b border-border/50 mb-5">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700">
+              <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-foreground/80">
                 <TenantIndustryIcon size={18} />
               </div>
               <div>
-                <h2 className="text-base font-semibold text-slate-900 tracking-tight">{tenant.name}</h2>
-                <p className="text-[10px] text-slate-400 font-mono leading-none mt-1">ID: {tenant.id}</p>
+                <h2 className="text-base font-semibold text-foreground tracking-tight">{tenant.name}</h2>
+                <p className="text-[10px] text-muted-foreground font-mono leading-none mt-1">ID: {tenant.id}</p>
               </div>
             </div>
 
@@ -1027,49 +1027,49 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
             {/* Slug / Domain */}
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
-              <span className="text-slate-400 font-medium block">Workspace Domain</span>
+            <div className="p-3 bg-muted rounded-xl border border-border/50 space-y-1">
+              <span className="text-muted-foreground font-medium block">Workspace Domain</span>
               <a
                 href={`https://${tenant.slug}.meta-crm.local`}
                 target="_blank"
                 rel="noreferrer"
-                className="font-semibold text-slate-900 flex items-center gap-1 hover:underline select-all font-mono text-[11px]"
+                className="font-semibold text-foreground flex items-center gap-1 hover:underline select-all font-mono text-[11px]"
               >
-                <Globe size={13} className="text-slate-500" />
+                <Globe size={13} className="text-muted-foreground" />
                 https://{tenant.slug}.meta-crm.local
-                <ArrowUpRight size={10} className="text-slate-400" />
+                <ArrowUpRight size={10} className="text-muted-foreground" />
               </a>
             </div>
 
             {/* Industry Scope */}
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
-              <span className="text-slate-400 font-medium block">Industry Scope</span>
-              <span className="font-semibold text-slate-900 flex items-center gap-1.5 capitalize">
-                <TenantIndustryIcon size={13} className="text-slate-500" />
+            <div className="p-3 bg-muted rounded-xl border border-border/50 space-y-1">
+              <span className="text-muted-foreground font-medium block">Industry Scope</span>
+              <span className="font-semibold text-foreground flex items-center gap-1.5 capitalize">
+                <TenantIndustryIcon size={13} className="text-muted-foreground" />
                 {tenant.industry}
               </span>
             </div>
 
             {/* Capacity Usage */}
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
-              <span className="text-slate-400 font-medium block">Active Capacity</span>
-              <div className="flex items-center gap-4 text-slate-900 font-semibold">
+            <div className="p-3 bg-muted rounded-xl border border-border/50 space-y-2">
+              <span className="text-muted-foreground font-medium block">Active Capacity</span>
+              <div className="flex items-center gap-4 text-foreground font-semibold">
                 <span className="flex items-center gap-1">
-                  <Layers size={13} className="text-slate-400" />
+                  <Layers size={13} className="text-muted-foreground" />
                   {tenant.branch_count} Branches
                 </span>
                 <span className="flex items-center gap-1">
-                  <Users size={13} className="text-slate-400" />
+                  <Users size={13} className="text-muted-foreground" />
                   {tenant.user_count} Users
                 </span>
               </div>
             </div>
 
             {/* Created On */}
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
-              <span className="text-slate-400 font-medium block">Provisioned Date</span>
-              <span className="font-semibold text-slate-900 flex items-center gap-1.5">
-                <Calendar size={13} className="text-slate-500" />
+            <div className="p-3 bg-muted rounded-xl border border-border/50 space-y-1">
+              <span className="text-muted-foreground font-medium block">Provisioned Date</span>
+              <span className="font-semibold text-foreground flex items-center gap-1.5">
+                <Calendar size={13} className="text-muted-foreground" />
                 {new Date(tenant.created_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}
               </span>
             </div>
@@ -1080,13 +1080,13 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
         <AdminHierarchyManager tenantId={tenantId} />
 
         {/* Extensions Panel */}
-        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
           <div className="mb-4">
-            <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-              <Puzzle size={15} className="text-slate-500" />
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+              <Puzzle size={15} className="text-muted-foreground" />
               Workspace Extensions
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">Enable or disable plugin registries compatible with this workspace industry template.</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Enable or disable plugin registries compatible with this workspace industry template.</p>
           </div>
           <AdminLicenseManager
             tenantId={tenantId}
@@ -1097,13 +1097,13 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
         </div>
 
         {/* Capabilities Panel */}
-        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
           <div className="mb-4">
-            <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-              <Zap size={15} className="text-slate-500" />
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+              <Zap size={15} className="text-muted-foreground" />
               Product Capabilities
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">Toggle high-level functional parameters and tenant feature flags.</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Toggle high-level functional parameters and tenant feature flags.</p>
           </div>
           <AdminCapabilityManager
             tenantId={tenantId}
@@ -1122,30 +1122,30 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
           params={{ id: tenantId }}
           className="block"
         >
-          <div className="border border-slate-200 bg-white rounded-xl p-4 flex items-center justify-between hover:bg-slate-50 hover:border-slate-300 transition-all group cursor-pointer shadow-sm">
+          <div className="border border-border bg-card rounded-xl p-4 flex items-center justify-between hover:bg-muted hover:border-slate-300 transition-all group cursor-pointer shadow-sm">
             <div className="space-y-0.5">
-              <span className="text-xs font-semibold text-slate-900 block">Support Impersonation</span>
-              <span className="text-[10px] text-slate-400 block leading-none">View read-only configuration portal.</span>
+              <span className="text-xs font-semibold text-foreground block">Support Impersonation</span>
+              <span className="text-[10px] text-muted-foreground block leading-none">View read-only configuration portal.</span>
             </div>
-            <ArrowUpRight size={14} className="text-slate-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-200" />
+            <ArrowUpRight size={14} className="text-muted-foreground group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-200" />
           </div>
         </Link>
 
         {/* Owner Credentials Widget */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+        <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-4">
           <div>
-            <h3 className="text-xs font-semibold text-slate-900 flex items-center gap-1.5 uppercase tracking-wider">
-              <Shield size={14} className="text-slate-500" />
+            <h3 className="text-xs font-semibold text-foreground flex items-center gap-1.5 uppercase tracking-wider">
+              <Shield size={14} className="text-muted-foreground" />
               Administrative Access
             </h3>
-            <p className="text-[10px] text-slate-400 mt-0.5">Regenerate and secure the credentials of the workspace owner account.</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Regenerate and secure the credentials of the workspace owner account.</p>
           </div>
 
           {!resetResult ? (
             <button
               onClick={() => resetMutation.mutate()}
               disabled={resetMutation.isPending}
-              className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+              className="w-full py-2.5 rounded-lg bg-fin-orange hover:bg-fin-orange/90 text-white disabled:opacity-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm"
             >
               {resetMutation.isPending ? (
                 <>
@@ -1173,19 +1173,19 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
               </div>
 
               {/* Account details copy card */}
-              <div className="p-3 bg-slate-50 border border-slate-100 rounded-lg space-y-2.5">
+              <div className="p-3 bg-muted border border-border/50 rounded-lg space-y-2.5">
                 <div className="text-[10px]">
-                  <span className="text-slate-400 font-medium block">Owner Username</span>
-                  <span className="font-semibold text-slate-900 block flex items-center gap-1 mt-0.5 select-all font-mono text-[11px]">
-                    <Mail size={12} className="text-slate-400" />
+                  <span className="text-muted-foreground font-medium block">Owner Username</span>
+                  <span className="font-semibold text-foreground block flex items-center gap-1 mt-0.5 select-all font-mono text-[11px]">
+                    <Mail size={12} className="text-muted-foreground" />
                     {resetResult.email}
                   </span>
                 </div>
 
-                <div className="text-[10px] border-t border-slate-100 pt-2">
-                  <span className="text-slate-400 font-medium block">Temporary Access Key</span>
-                  <div className="flex items-center justify-between gap-2 mt-1 bg-white border border-slate-200 rounded-md p-1.5 pl-2">
-                    <span className="font-mono text-xs font-bold text-slate-800 select-all tracking-wider">
+                <div className="text-[10px] border-t border-border/50 pt-2">
+                  <span className="text-muted-foreground font-medium block">Temporary Access Key</span>
+                  <div className="flex items-center justify-between gap-2 mt-1 bg-card border border-border rounded-md p-1.5 pl-2">
+                    <span className="font-mono text-xs font-bold text-foreground select-all tracking-wider">
                       {resetResult.temporary_password}
                     </span>
                     <button
@@ -1193,7 +1193,7 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
                       className={`p-1 rounded-md border transition-all ${
                         resetCopied
                           ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                          : 'bg-indigo-600 border-indigo-700 text-white hover:bg-indigo-700'
+                          : 'bg-fin-orange border-indigo-700 text-white hover:bg-fin-orange/90'
                       }`}
                     >
                       {resetCopied ? <Check size={11} /> : <Copy size={11} />}
@@ -1204,7 +1204,7 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
 
               <button
                 onClick={() => setResetResult(null)}
-                className="w-full py-1.5 rounded-lg border border-slate-200 text-[10px] font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all"
+                className="w-full py-1.5 rounded-lg border border-border text-[10px] font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
               >
                 Clear Results Block
               </button>
@@ -1214,20 +1214,20 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
 
         {/* Subscription Plan Card */}
         {canAssignPlan && (
-          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3.5">
+          <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-3.5">
             <div>
-              <h3 className="text-xs font-semibold text-slate-900 flex items-center gap-1.5 uppercase tracking-wider">
-                <CreditCard size={14} className="text-slate-500" />
+              <h3 className="text-xs font-semibold text-foreground flex items-center gap-1.5 uppercase tracking-wider">
+                <CreditCard size={14} className="text-muted-foreground" />
                 Subscription Plan
               </h3>
-              <p className="text-[10px] text-slate-400 mt-0.5">Assign plan entitlement parameters to expand branch, user, and extension limit flags.</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Assign plan entitlement parameters to expand branch, user, and extension limit flags.</p>
             </div>
 
             <div className="space-y-3">
               <select
                 value={selectedPlanId}
                 onChange={(e) => setSelectedPlanId(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all cursor-pointer"
+                className="w-full rounded-lg border border-border px-3 py-2 text-xs bg-card focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all cursor-pointer"
               >
                 <option value="">Select a subscription plan...</option>
                 {plans?.map((plan) => (
@@ -1240,7 +1240,7 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
               <button
                 onClick={() => assignPlanMutation.mutate()}
                 disabled={!selectedPlanId || assignPlanMutation.isPending}
-                className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                className="w-full py-2.5 rounded-lg bg-fin-orange hover:bg-fin-orange/90 text-white disabled:opacity-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm"
               >
                 {assignPlanMutation.isPending ? (
                   <>
@@ -1260,13 +1260,13 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
         )}
 
         {/* Custom Overrides & Capacity Limits */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3.5">
+        <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-3.5">
           <div>
-            <h3 className="text-xs font-semibold text-slate-900 flex items-center gap-1.5 uppercase tracking-wider">
-              <Zap size={14} className="text-slate-500" />
+            <h3 className="text-xs font-semibold text-foreground flex items-center gap-1.5 uppercase tracking-wider">
+              <Zap size={14} className="text-muted-foreground" />
               Custom Overrides & Limits
             </h3>
-            <p className="text-[10px] text-slate-400 mt-0.5">Override standard tier ceilings for user seats and workspace branch allocations.</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Override standard tier ceilings for user seats and workspace branch allocations.</p>
           </div>
 
           <AdminOverridesManager
@@ -1278,7 +1278,7 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
 
         {/* Danger Zone / Suspend */}
         {canSuspend && (
-          <div className="bg-white border border-rose-200 rounded-xl p-5 shadow-sm space-y-4">
+          <div className="bg-card border border-rose-200 rounded-xl p-5 shadow-sm space-y-4">
             <div>
               <h3 className="text-xs font-semibold text-rose-800 flex items-center gap-1.5 uppercase tracking-wider">
                 <Power size={14} className="text-rose-700" />

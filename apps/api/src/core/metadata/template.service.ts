@@ -56,6 +56,12 @@ export class TemplateService {
 
     try {
       await this.db.getClient().$transaction(async (tx) => {
+        // Update tenant's industry
+        await tx.tenant.update({
+          where: { id: tenantId },
+          data: { industry },
+        });
+
         for (const [entityType, fields] of Object.entries(template.field_definitions)) {
           for (const fieldDef of fields) {
             const existing = await tx.fieldDefinition.findFirst({

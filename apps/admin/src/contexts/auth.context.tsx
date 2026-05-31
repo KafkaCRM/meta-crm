@@ -111,6 +111,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(RT_KEY, result.refresh_token);
       localStorage.setItem(USER_KEY, JSON.stringify(user));
 
+      // Clear React Query cache so the new admin session starts fresh
+      queryClient.clear();
+
       setState({
         user,
         accessToken: result.access_token,

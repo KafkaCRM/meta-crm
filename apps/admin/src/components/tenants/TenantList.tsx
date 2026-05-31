@@ -109,8 +109,8 @@ export function TenantList() {
           const slug = row.original.slug;
           return (
             <div className="flex flex-col py-1">
-              <span className="font-semibold text-slate-900 text-sm">{name}</span>
-              <span className="text-xs text-slate-400 font-mono mt-0.5">{slug}.meta-crm.local</span>
+              <span className="font-semibold text-foreground text-sm">{name}</span>
+              <span className="text-xs text-muted-foreground font-mono mt-0.5">{slug}.meta-crm.local</span>
             </div>
           );
         },
@@ -128,7 +128,7 @@ export function TenantList() {
             education: { bg: 'bg-violet-50 border-violet-100', text: 'text-violet-800', dot: 'bg-violet-500' },
             'real-estate': { bg: 'bg-rose-50 border-rose-100', text: 'text-rose-800', dot: 'bg-rose-500' },
           };
-          const theme = colorMap[ind.toLowerCase()] || { bg: 'bg-slate-50 border-slate-100 border', text: 'text-slate-800', dot: 'bg-slate-500' };
+          const theme = colorMap[ind.toLowerCase()] || { bg: 'bg-muted border-border/50 border', text: 'text-foreground', dot: 'bg-muted0' };
           return (
             <span className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium ${theme.bg} ${theme.text}`}>
               <span className={`h-1.5 w-1.5 rounded-full ${theme.dot}`} />
@@ -159,8 +159,8 @@ export function TenantList() {
         accessorKey: 'branch_count',
         header: 'Branches',
         cell: ({ row }) => (
-          <div className="flex items-center gap-1.5 text-sm text-slate-600">
-            <GitBranch size={13} className="text-slate-400" />
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <GitBranch size={13} className="text-muted-foreground" />
             <span className="font-medium">{row.original.branch_count}</span>
           </div>
         )
@@ -169,8 +169,8 @@ export function TenantList() {
         accessorKey: 'user_count',
         header: 'Users',
         cell: ({ row }) => (
-          <div className="flex items-center gap-1.5 text-sm text-slate-600">
-            <Users size={13} className="text-slate-400" />
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Users size={13} className="text-muted-foreground" />
             <span className="font-medium">{row.original.user_count}</span>
           </div>
         )
@@ -179,8 +179,8 @@ export function TenantList() {
         accessorKey: 'case_count',
         header: 'Cases',
         cell: ({ row }) => (
-          <div className="flex items-center gap-1.5 text-sm text-slate-600">
-            <Briefcase size={13} className="text-slate-400" />
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Briefcase size={13} className="text-muted-foreground" />
             <span className="font-medium">{row.original.case_count}</span>
           </div>
         )
@@ -191,7 +191,7 @@ export function TenantList() {
         cell: ({ row }) => {
           const date = row.getValue('created_at') as string;
           return (
-            <div className="flex items-center gap-1.5 text-xs text-slate-400">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Calendar size={13} />
               <span>{new Date(date).toLocaleDateString()}</span>
             </div>
@@ -205,48 +205,48 @@ export function TenantList() {
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Dynamic KPI Header Panel */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 p-6 bg-slate-100/40 border-b border-slate-200">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 p-6 bg-slate-100/40 border-b border-border">
         {/* Total Tenants */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 flex items-center gap-3 transition-all duration-200 hover:shadow-xs hover:border-slate-300">
-          <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 flex-shrink-0">
+        <div className="bg-card p-4 rounded-xl border border-border flex items-center gap-3 transition-all duration-200 hover:shadow-xs hover:border-slate-300">
+          <div className="w-10 h-10 rounded-lg bg-fin-orange/10 flex items-center justify-center text-fin-orange flex-shrink-0">
             <Building2 size={20} />
           </div>
           <div>
-            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Total Tenants</p>
-            <p className="text-xl font-bold text-slate-900 mt-0.5">{isLoading ? '—' : stats.total}</p>
+            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Total Tenants</p>
+            <p className="text-xl font-bold text-foreground mt-0.5">{isLoading ? '—' : stats.total}</p>
           </div>
         </div>
 
         {/* Active Workspaces */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 flex items-center gap-3 transition-all duration-200 hover:shadow-xs hover:border-slate-300">
+        <div className="bg-card p-4 rounded-xl border border-border flex items-center gap-3 transition-all duration-200 hover:shadow-xs hover:border-slate-300">
           <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 flex-shrink-0">
             <Activity size={20} />
           </div>
           <div>
-            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Active</p>
-            <p className="text-xl font-bold text-slate-900 mt-0.5">{isLoading ? '—' : stats.active}</p>
+            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Active</p>
+            <p className="text-xl font-bold text-foreground mt-0.5">{isLoading ? '—' : stats.active}</p>
           </div>
         </div>
 
         {/* Suspended Workspaces */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 flex items-center gap-3 transition-all duration-200 hover:shadow-xs hover:border-slate-300">
+        <div className="bg-card p-4 rounded-xl border border-border flex items-center gap-3 transition-all duration-200 hover:shadow-xs hover:border-slate-300">
           <div className="w-10 h-10 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 flex-shrink-0">
             <ShieldAlert size={20} />
           </div>
           <div>
-            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Suspended</p>
-            <p className="text-xl font-bold text-slate-900 mt-0.5">{isLoading ? '—' : stats.suspended}</p>
+            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Suspended</p>
+            <p className="text-xl font-bold text-foreground mt-0.5">{isLoading ? '—' : stats.suspended}</p>
           </div>
         </div>
 
         {/* Industry Diversity */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 flex items-center gap-3 transition-all duration-200 hover:shadow-xs hover:border-slate-300">
+        <div className="bg-card p-4 rounded-xl border border-border flex items-center gap-3 transition-all duration-200 hover:shadow-xs hover:border-slate-300">
           <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600 flex-shrink-0">
             <Globe size={20} />
           </div>
           <div>
-            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Top Industry</p>
-            <p className="text-sm font-bold text-slate-900 mt-0.5 truncate">
+            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Top Industry</p>
+            <p className="text-sm font-bold text-foreground mt-0.5 truncate">
               {isLoading ? '—' : stats.topIndustry !== 'None' ? `${stats.topIndustry} (${stats.topIndustryCount})` : 'None'}
             </p>
           </div>
@@ -257,7 +257,7 @@ export function TenantList() {
       <div className="px-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Left: Search with clear state */}
         <div className="relative flex-1 max-w-md">
-          <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+          <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
             <Search size={16} />
           </span>
           <input
@@ -265,12 +265,12 @@ export function TenantList() {
             placeholder="Search tenants by name or slug..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-8 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 placeholder:text-slate-400 transition-all text-slate-900"
+            className="w-full pl-9 pr-8 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 placeholder:text-muted-foreground transition-all text-foreground"
           />
           {search && (
             <button 
               onClick={() => setSearch('')}
-              className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-900"
+              className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-muted-foreground hover:text-foreground"
             >
               <X size={15} />
             </button>
@@ -280,7 +280,7 @@ export function TenantList() {
         {/* Right: Custom Filters */}
         <div className="flex flex-wrap items-center gap-3">
           {/* Segmented Status Pill Control */}
-          <div className="bg-slate-100 p-1 rounded-lg border border-slate-200 flex gap-1 items-center">
+          <div className="bg-slate-100 p-1 rounded-lg border border-border flex gap-1 items-center">
             {ALL_STATUSES.map((status) => {
               const active = statusFilter === status;
               return (
@@ -289,8 +289,8 @@ export function TenantList() {
                   onClick={() => setStatusFilter(status)}
                   className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 ${
                     active 
-                      ? 'bg-indigo-600 text-white shadow-xs' 
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                      ? 'bg-fin-orange text-white shadow-xs' 
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                   }`}
                 >
                   {status === 'All' ? 'All Statuses' : status.charAt(0).toUpperCase() + status.slice(1)}
@@ -303,16 +303,16 @@ export function TenantList() {
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsIndustryOpen(!isIndustryOpen)}
-              className="px-3 py-1.5 text-xs font-medium bg-white border border-slate-200 hover:bg-slate-50 rounded-lg flex items-center gap-2 text-slate-900 transition-all"
+              className="px-3 py-1.5 text-xs font-medium bg-card border border-border hover:bg-muted rounded-lg flex items-center gap-2 text-foreground transition-all"
             >
               <span>
                 {industryFilter === 'All' ? 'All Industries' : industryFilter.charAt(0).toUpperCase() + industryFilter.slice(1)}
               </span>
-              <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${isIndustryOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown size={12} className={`text-muted-foreground transition-transform duration-200 ${isIndustryOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {isIndustryOpen && (
-              <div className="absolute right-0 mt-1.5 w-48 bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+              <div className="absolute right-0 mt-1.5 w-48 bg-card border border-border rounded-lg shadow-lg z-30 py-1 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
                 {ALL_INDUSTRIES.map((ind) => {
                   const active = industryFilter === ind;
                   return (
@@ -324,12 +324,12 @@ export function TenantList() {
                       }}
                       className={`w-full px-4 py-2 text-left text-xs flex items-center justify-between transition-colors duration-150 ${
                         active 
-                          ? 'bg-slate-100 text-slate-900 font-semibold' 
-                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                          ? 'bg-slate-100 text-foreground font-semibold' 
+                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                       }`}
                     >
                       <span>{ind === 'All' ? 'All Industries' : ind.charAt(0).toUpperCase() + ind.slice(1)}</span>
-                      {active && <span className="w-1.5 h-1.5 rounded-full bg-indigo-600" />}
+                      {active && <span className="w-1.5 h-1.5 rounded-full bg-fin-orange" />}
                     </button>
                   );
                 })}
@@ -353,12 +353,12 @@ export function TenantList() {
           enableColumnVisibility={false} // Clean layout, integrated filters instead
           showSearch={false}
           emptyState={
-            <div className="text-center py-12 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+            <div className="text-center py-12 border border-dashed border-border rounded-xl bg-muted/50">
               <div className="mx-auto w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-3">
-                <Sparkles size={20} className="text-slate-400" />
+                <Sparkles size={20} className="text-muted-foreground" />
               </div>
-              <p className="text-base font-semibold text-slate-900">No matches found</p>
-              <p className="text-xs text-slate-400 mt-1">Try resetting your filters or adjusting your search term.</p>
+              <p className="text-base font-semibold text-foreground">No matches found</p>
+              <p className="text-xs text-muted-foreground mt-1">Try resetting your filters or adjusting your search term.</p>
               {(search || industryFilter !== 'All' || statusFilter !== 'All') && (
                 <button
                   onClick={() => {
@@ -366,7 +366,7 @@ export function TenantList() {
                     setIndustryFilter('All');
                     setStatusFilter('All');
                   }}
-                  className="mt-4 px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all duration-200 shadow-sm shadow-indigo-100"
+                  className="mt-4 px-3 py-1.5 text-xs font-semibold bg-fin-orange hover:bg-fin-orange/90 text-white rounded-lg transition-all duration-200 shadow-sm shadow-indigo-100"
                 >
                   Clear All Filters
                 </button>

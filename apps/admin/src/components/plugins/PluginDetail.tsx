@@ -69,8 +69,8 @@ export function PluginDetail({ pluginId }: PluginDetailProps) {
 
   if (isLoading) {
     return (
-      <div className="py-16 flex flex-col items-center justify-center gap-2 text-slate-400 text-sm">
-        <div className="w-5 h-5 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin" />
+      <div className="py-16 flex flex-col items-center justify-center gap-2 text-muted-foreground text-sm">
+        <div className="w-5 h-5 border-2 border-border border-t-indigo-600 rounded-full animate-spin" />
         Resolving plugin manifest payload...
       </div>
     );
@@ -78,7 +78,7 @@ export function PluginDetail({ pluginId }: PluginDetailProps) {
 
   if (!plugin) {
     return (
-      <div className="py-16 text-center text-slate-400 text-sm">
+      <div className="py-16 text-center text-muted-foreground text-sm">
         <ShieldAlert size={28} className="mx-auto mb-2 text-rose-500 animate-bounce" />
         Platform plugin record was not found or is inactive.
       </div>
@@ -92,14 +92,14 @@ export function PluginDetail({ pluginId }: PluginDetailProps) {
     <div className="space-y-6 animate-in fade-in duration-200">
       
       {/* Premium Details Shell */}
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
         
         {/* Banner header */}
-        <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
+        <div className="p-6 border-b border-border/50 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-muted/50">
           <div className="space-y-1">
-            <span className="text-[10px] uppercase font-mono tracking-widest text-indigo-500 font-bold">Extension Details</span>
-            <h2 className="text-lg font-extrabold text-slate-900 leading-tight">{plugin.manifest?.name ?? 'Plugin Manifest'}</h2>
-            <p className="text-xs text-slate-400 font-mono mt-0.5">{plugin.package_name}</p>
+            <span className="text-[10px] uppercase font-mono tracking-widest text-fin-orange font-bold">Extension Details</span>
+            <h2 className="text-lg font-extrabold text-foreground leading-tight">{plugin.manifest?.name ?? 'Plugin Manifest'}</h2>
+            <p className="text-xs text-muted-foreground font-mono mt-0.5">{plugin.package_name}</p>
           </div>
 
           <div className="flex gap-2">
@@ -126,26 +126,26 @@ export function PluginDetail({ pluginId }: PluginDetailProps) {
           {/* Main info panel */}
           <div className="grid gap-6 md:grid-cols-3">
             
-            <div className="bg-slate-50/60 p-4 rounded-xl border border-slate-200/60 space-y-1 font-mono text-xs">
-              <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Package Version</span>
-              <p className="text-sm font-extrabold text-slate-900 mt-1 flex items-center gap-1.5">
-                <Database size={13} className="text-slate-400" />
+            <div className="bg-muted/60 p-4 rounded-xl border border-border/60 space-y-1 font-mono text-xs">
+              <span className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Package Version</span>
+              <p className="text-sm font-extrabold text-foreground mt-1 flex items-center gap-1.5">
+                <Database size={13} className="text-muted-foreground" />
                 v{plugin.version}
               </p>
             </div>
 
-            <div className="bg-slate-50/60 p-4 rounded-xl border border-slate-200/60 space-y-1 font-mono text-xs">
-              <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Subscriber Density</span>
-              <p className="text-sm font-extrabold text-slate-900 mt-1 flex items-center gap-1.5">
-                <Layers size={13} className="text-slate-400" />
+            <div className="bg-muted/60 p-4 rounded-xl border border-border/60 space-y-1 font-mono text-xs">
+              <span className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Subscriber Density</span>
+              <p className="text-sm font-extrabold text-foreground mt-1 flex items-center gap-1.5">
+                <Layers size={13} className="text-muted-foreground" />
                 {tenantCount} active workspaces
               </p>
             </div>
 
-            <div className="bg-slate-50/60 p-4 rounded-xl border border-slate-200/60 space-y-1 font-mono text-xs">
-              <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Requires Service Plan</span>
-              <p className="text-sm font-extrabold text-indigo-600 mt-1 flex items-center gap-1.5">
-                <Play size={13} className="text-indigo-400" />
+            <div className="bg-muted/60 p-4 rounded-xl border border-border/60 space-y-1 font-mono text-xs">
+              <span className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Requires Service Plan</span>
+              <p className="text-sm font-extrabold text-fin-orange mt-1 flex items-center gap-1.5">
+                <Play size={13} className="text-fin-orange" />
                 {plugin.manifest?.requires_plan ?? 'Standard (Any)'}
               </p>
             </div>
@@ -154,8 +154,8 @@ export function PluginDetail({ pluginId }: PluginDetailProps) {
 
           {/* Description */}
           <div className="space-y-1.5">
-            <span className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Developer Description</span>
-            <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100">
+            <span className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide">Developer Description</span>
+            <p className="text-sm text-foreground/80 leading-relaxed bg-muted p-4 rounded-xl border border-border/50">
               {plugin.manifest?.description ?? 'No detailed description declared in manifest.'}
             </p>
           </div>
@@ -165,37 +165,37 @@ export function PluginDetail({ pluginId }: PluginDetailProps) {
             
             {/* Industries */}
             <div className="space-y-2">
-              <span className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Compatible Industries</span>
+              <span className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide">Compatible Industries</span>
               <div className="flex flex-wrap gap-1">
                 {plugin.manifest?.compatible_industries?.map((ind: string) => (
-                  <Badge key={ind} className="bg-indigo-50/60 border-indigo-100/50 hover:bg-indigo-50 text-indigo-700 text-[10px] font-semibold px-2 py-0.5 rounded shadow-none">
+                  <Badge key={ind} className="bg-fin-orange/10/60 border-fin-orange/20/50 hover:bg-fin-orange/10 text-fin-orange text-[10px] font-semibold px-2 py-0.5 rounded shadow-none">
                     {ind}
                   </Badge>
-                )) ?? <span className="text-xs text-slate-400 font-medium">None</span>}
+                )) ?? <span className="text-xs text-muted-foreground font-medium">None</span>}
               </div>
             </div>
 
             {/* System Hooks */}
             <div className="space-y-2">
-              <span className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Registered Event Hooks</span>
+              <span className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide">Registered Event Hooks</span>
               <div className="flex flex-wrap gap-1">
                 {plugin.manifest?.hooks?.map((hk: string) => (
                   <Badge key={hk} className="bg-purple-50/60 border-purple-100/50 hover:bg-purple-50 text-purple-700 text-[10px] font-semibold px-2 py-0.5 rounded font-mono shadow-none">
                     {hk}
                   </Badge>
-                )) ?? <span className="text-xs text-slate-400 font-medium">None</span>}
+                )) ?? <span className="text-xs text-muted-foreground font-medium">None</span>}
               </div>
             </div>
 
             {/* Extends UI */}
             <div className="space-y-2">
-              <span className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Extends CRM Layout</span>
+              <span className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide">Extends CRM Layout</span>
               <div className="flex flex-wrap gap-1">
                 {plugin.manifest?.extends?.map((ext: string) => (
                   <Badge key={ext} className="bg-sky-50/60 border-sky-100/50 hover:bg-sky-50 text-sky-700 text-[10px] font-semibold px-2 py-0.5 rounded shadow-none">
                     {ext}
                   </Badge>
-                )) ?? <span className="text-xs text-slate-400 font-medium">None</span>}
+                )) ?? <span className="text-xs text-muted-foreground font-medium">None</span>}
               </div>
             </div>
 
@@ -209,15 +209,15 @@ export function PluginDetail({ pluginId }: PluginDetailProps) {
         <div className="grid gap-6 md:grid-cols-2">
           
           {/* Deprecate block */}
-          <Card className="bg-white border-slate-200 rounded-xl shadow-sm overflow-hidden">
+          <Card className="bg-card border-border rounded-xl shadow-sm overflow-hidden">
             <CardContent className="p-5 space-y-4">
               <div className="flex items-start gap-3">
                 <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 flex-shrink-0">
                   <AlertTriangle size={18} />
                 </div>
                 <div className="space-y-1">
-                  <h3 className="font-bold text-slate-900 text-sm">Deprecate Plugin package</h3>
-                  <p className="text-xs text-slate-500 leading-normal">
+                  <h3 className="font-bold text-foreground text-sm">Deprecate Plugin package</h3>
+                  <p className="text-xs text-muted-foreground leading-normal">
                     {tenantCount > 0
                       ? `⚠️ ${tenantCount} tenant workspace(s) actively license this plugin. Deprecation hides it from new plan creations without breaking active systems.`
                       : 'No active tenants license this module. Safe to deprecate.'}
@@ -239,7 +239,7 @@ export function PluginDetail({ pluginId }: PluginDetailProps) {
                     value={confirmName}
                     onChange={(e) => setConfirmName(e.target.value)}
                     placeholder={`Type "${plugin.package_name}" to verify`}
-                    className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 font-mono"
+                    className="w-full px-3 py-1.5 text-xs bg-card border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 font-mono"
                   />
                   <div className="flex gap-2">
                     <Button
@@ -255,7 +255,7 @@ export function PluginDetail({ pluginId }: PluginDetailProps) {
                         setShowDeprecateDialog(false);
                         setConfirmName('');
                       }}
-                      className="h-9 px-4 text-xs border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 bg-white"
+                      className="h-9 px-4 text-xs border-border text-muted-foreground rounded-lg hover:bg-muted bg-card"
                     >
                       Cancel
                     </Button>
@@ -266,7 +266,7 @@ export function PluginDetail({ pluginId }: PluginDetailProps) {
           </Card>
 
           {/* Emergency disable */}
-          <Card className="bg-white border-slate-200 rounded-xl shadow-sm overflow-hidden">
+          <Card className="bg-card border-border rounded-xl shadow-sm overflow-hidden">
             <CardContent className="p-5 space-y-4">
               <div className="flex items-start gap-3">
                 <div className="w-9 h-9 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 flex-shrink-0 animate-pulse">
@@ -274,7 +274,7 @@ export function PluginDetail({ pluginId }: PluginDetailProps) {
                 </div>
                 <div className="space-y-1">
                   <h3 className="font-bold text-slate-950 text-sm">Emergency System Disablement</h3>
-                  <p className="text-xs text-slate-500 leading-normal">
+                  <p className="text-xs text-muted-foreground leading-normal">
                     Immediately strip this plugin from all client instances in the database. Use in cases of security compromise or database failures.
                   </p>
                 </div>
@@ -294,7 +294,7 @@ export function PluginDetail({ pluginId }: PluginDetailProps) {
                     value={confirmName}
                     onChange={(e) => setConfirmName(e.target.value)}
                     placeholder={`Type "${plugin.package_name}" to verify`}
-                    className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-rose-500 focus:border-rose-500 font-mono"
+                    className="w-full px-3 py-1.5 text-xs bg-card border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-rose-500 focus:border-rose-500 font-mono"
                   />
                   <div className="flex gap-2">
                     <Button
@@ -310,7 +310,7 @@ export function PluginDetail({ pluginId }: PluginDetailProps) {
                         setShowDisableDialog(false);
                         setConfirmName('');
                       }}
-                      className="h-9 px-4 text-xs border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 bg-white"
+                      className="h-9 px-4 text-xs border-border text-muted-foreground rounded-lg hover:bg-muted bg-card"
                     >
                       Cancel
                     </Button>

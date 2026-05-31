@@ -49,15 +49,15 @@ export function PartySourceWidget({ className, hasPermission = true }: PartySour
 
   if (!hasPermission) {
     return (
-      <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none relative overflow-hidden ${className ?? ''}`}>
+      <Card className={`bg-card border-border rounded-xl shadow-none relative overflow-hidden ${className ?? ''}`}>
         <CardContent className="pt-5 pb-5">
-          <div className="absolute inset-0 backdrop-blur-sm bg-white/60 flex items-center justify-center z-10">
+          <div className="absolute inset-0 backdrop-blur-sm bg-card/60 flex items-center justify-center z-10">
             <div className="text-center">
-              <Lock size={20} className="mx-auto text-[#94a3b8] mb-2" />
-              <p className="text-xs font-medium text-[#64748b]">Upgrade your role to view this report</p>
+              <Lock size={20} className="mx-auto text-muted-foreground mb-2" />
+              <p className="text-xs font-medium text-muted-foreground">Upgrade your role to view this report</p>
             </div>
           </div>
-          <p className="text-xs font-medium text-[#94a3b8] uppercase tracking-wider mb-3">Contact Sources</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Contact Sources</p>
           <Skeleton className="h-36 bg-[#e2e8f0] rounded-xl" />
         </CardContent>
       </Card>
@@ -66,9 +66,9 @@ export function PartySourceWidget({ className, hasPermission = true }: PartySour
 
   if (isLoading) {
     return (
-      <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none ${className ?? ''}`}>
+      <Card className={`bg-card border-border rounded-xl shadow-none ${className ?? ''}`}>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-[#0f172a]">Contact Sources</CardTitle>
+          <CardTitle className="text-sm font-semibold text-foreground">Contact Sources</CardTitle>
         </CardHeader>
         <Separator className="bg-[#e2e8f0]" />
         <CardContent className="pt-5">
@@ -80,18 +80,18 @@ export function PartySourceWidget({ className, hasPermission = true }: PartySour
 
   if (error) {
     return (
-      <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none ${className ?? ''}`}>
+      <Card className={`bg-card border-border rounded-xl shadow-none ${className ?? ''}`}>
         <CardContent className="pt-5 pb-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-[#94a3b8] uppercase tracking-wider mb-1">Contact Sources</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Contact Sources</p>
               <p className="text-sm text-[#c41c1c]">Could not load data. Retry.</p>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={() => window.location.reload()}
-              className="h-7 text-xs border-[#e2e8f0]"
+              className="h-7 text-xs border-border"
             >
               <RefreshCw size={12} className="mr-1" />
               Retry
@@ -111,9 +111,9 @@ export function PartySourceWidget({ className, hasPermission = true }: PartySour
   })) ?? [];
 
   return (
-    <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none hover:shadow-md transition-shadow ${className ?? ''}`}>
+    <Card className={`bg-card border-border rounded-xl shadow-none hover:shadow-md transition-shadow ${className ?? ''}`}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-semibold text-[#0f172a]">Contact Sources</CardTitle>
+        <CardTitle className="text-sm font-semibold text-foreground">Contact Sources</CardTitle>
       </CardHeader>
       <Separator className="bg-[#e2e8f0]" />
       <CardContent className="pt-5">
@@ -152,15 +152,15 @@ export function PartySourceWidget({ className, hasPermission = true }: PartySour
         </ResponsiveContainer>
 
         <div className="text-center -mt-8 mb-3">
-          <p className="text-xs text-[#94a3b8]">Total</p>
-          <p className="text-lg font-bold text-[#0f172a]">{total}</p>
+          <p className="text-xs text-muted-foreground">Total</p>
+          <p className="text-lg font-bold text-foreground">{total}</p>
         </div>
 
         <div className="mt-3 space-y-1.5">
           {data?.sources.map((source) => (
             <button
               key={source.source}
-              className="w-full flex items-center justify-between text-left hover:bg-[#f8fafc] rounded-lg px-2 py-1.5 transition-colors"
+              className="w-full flex items-center justify-between text-left hover:bg-background rounded-lg px-2 py-1.5 transition-colors"
               onClick={() => navigate({ to: '/parties', search: { source: source.source } as any })}
             >
               <div className="flex items-center gap-2">
@@ -168,13 +168,13 @@ export function PartySourceWidget({ className, hasPermission = true }: PartySour
                   className="h-2 w-2 rounded-full flex-shrink-0"
                   style={{ backgroundColor: SOURCE_COLORS[source.source] ?? '#94a3b8' }}
                 />
-                <span className="text-sm text-[#0f172a]">
+                <span className="text-sm text-foreground">
                   {SOURCE_LABELS[source.source] ?? source.source}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-[#0f172a]">{source.count}</span>
-                <span className="text-xs text-[#94a3b8]">
+                <span className="text-sm font-medium text-foreground">{source.count}</span>
+                <span className="text-xs text-muted-foreground">
                   {total > 0 ? Math.round((source.count / total) * 100) : 0}%
                 </span>
               </div>

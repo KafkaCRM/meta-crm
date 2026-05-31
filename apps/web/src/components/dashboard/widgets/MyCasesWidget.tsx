@@ -25,7 +25,7 @@ const STAGE_COLORS: Record<string, string> = {
 };
 
 function StageBadge({ stage }: { stage: string }) {
-  const cls = STAGE_COLORS[stage] ?? 'bg-[#94a3b8]/10 text-[#64748b] border-[#94a3b8]/20';
+  const cls = STAGE_COLORS[stage] ?? 'bg-[#94a3b8]/10 text-muted-foreground border-[#94a3b8]/20';
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border capitalize ${cls}`}>
       {stage}
@@ -48,9 +48,9 @@ export function MyCasesWidget({ className }: MyCasesWidgetProps) {
 
   if (isLoading) {
     return (
-      <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none ${className ?? ''}`}>
+      <Card className={`bg-card border-border rounded-xl shadow-none ${className ?? ''}`}>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-[#0f172a]">My Cases Today</CardTitle>
+          <CardTitle className="text-sm font-semibold text-foreground">My Cases Today</CardTitle>
         </CardHeader>
         <Separator className="bg-[#e2e8f0]" />
         <CardContent className="pt-4 space-y-3">
@@ -67,9 +67,9 @@ export function MyCasesWidget({ className }: MyCasesWidgetProps) {
 
   if (error) {
     return (
-      <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none ${className ?? ''}`}>
+      <Card className={`bg-card border-border rounded-xl shadow-none ${className ?? ''}`}>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-[#0f172a]">My Cases Today</CardTitle>
+          <CardTitle className="text-sm font-semibold text-foreground">My Cases Today</CardTitle>
         </CardHeader>
         <Separator className="bg-[#e2e8f0]" />
         <CardContent className="pt-4">
@@ -79,7 +79,7 @@ export function MyCasesWidget({ className }: MyCasesWidgetProps) {
               variant="outline"
               size="sm"
               onClick={() => window.location.reload()}
-              className="h-7 text-xs border-[#e2e8f0]"
+              className="h-7 text-xs border-border"
             >
               Retry
             </Button>
@@ -92,9 +92,9 @@ export function MyCasesWidget({ className }: MyCasesWidgetProps) {
   const cases = data?.cases ?? [];
 
   return (
-    <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none hover:shadow-md transition-shadow ${className ?? ''}`}>
+    <Card className={`bg-card border-border rounded-xl shadow-none hover:shadow-md transition-shadow ${className ?? ''}`}>
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
-        <CardTitle className="text-sm font-semibold text-[#0f172a]">My Cases Today</CardTitle>
+        <CardTitle className="text-sm font-semibold text-foreground">My Cases Today</CardTitle>
         {cases.length > 0 && (
           <Badge variant="secondary" className="bg-[#3b82f6]/10 text-[#2563eb] border-0 text-xs rounded-md">
             {cases.length}
@@ -105,39 +105,39 @@ export function MyCasesWidget({ className }: MyCasesWidgetProps) {
       <CardContent className="pt-4">
         {cases.length === 0 ? (
           <div className="flex flex-col items-center py-8 text-center">
-            <div className="w-10 h-10 rounded-full bg-[#f8fafc] flex items-center justify-center mb-3">
-              <FileText size={18} className="text-[#94a3b8]" />
+            <div className="w-10 h-10 rounded-full bg-background flex items-center justify-center mb-3">
+              <FileText size={18} className="text-muted-foreground" />
             </div>
-            <p className="text-sm font-medium text-[#0f172a]">No cases assigned to you</p>
-            <p className="text-xs text-[#94a3b8] mt-1">You're all caught up!</p>
+            <p className="text-sm font-medium text-foreground">No cases assigned to you</p>
+            <p className="text-xs text-muted-foreground mt-1">You're all caught up!</p>
           </div>
         ) : (
           <div className="space-y-2">
             {cases.map((c) => (
               <button
                 key={c.id}
-                className="flex w-full items-center justify-between rounded-lg border border-[#e2e8f0] p-3 text-left hover:bg-[#f8fafc] transition-colors"
+                className="flex w-full items-center justify-between rounded-lg border border-border p-3 text-left hover:bg-background transition-colors"
                 onClick={() => navigate({ to: '/cases/$id', params: { id: c.id } })}
               >
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-[#0f172a] truncate">{c.party_name}</p>
-                  <p className="text-xs text-[#94a3b8] mt-0.5 truncate">{c.title}</p>
+                  <p className="text-sm font-medium text-foreground truncate">{c.party_name}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">{c.title}</p>
                 </div>
                 <div className="flex items-center gap-2 ml-3 shrink-0">
                   <StageBadge stage={c.stage} />
-                  <ArrowUpRight size={12} className="text-[#94a3b8]" />
+                  <ArrowUpRight size={12} className="text-muted-foreground" />
                 </div>
               </button>
             ))}
           </div>
         )}
 
-        <div className="mt-3 pt-3 border-t border-[#e2e8f0]">
+        <div className="mt-3 pt-3 border-t border-border">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate({ to: '/cases', search: { assigned_to_me: 'true' } as any })}
-            className="w-full h-7 text-xs text-[#64748b] hover:text-[#0f172a]"
+            className="w-full h-7 text-xs text-muted-foreground hover:text-foreground"
           >
             View all cases
             <ArrowUpRight size={12} className="ml-1" />

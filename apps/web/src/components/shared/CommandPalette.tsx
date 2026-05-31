@@ -56,25 +56,25 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         {/* Core Nav Actions */}
         <CommandGroup heading="CRM Workspace Navigations">
           <CommandItem onSelect={() => handleSelectRoute('/')}>
-            <LayoutDashboard className="mr-2 h-4 w-4 text-slate-500" />
+            <LayoutDashboard className="mr-2 h-4 w-4 text-muted-foreground" />
             <span>Go to Dashboard</span>
             <CommandShortcut>⌘D</CommandShortcut>
           </CommandItem>
           
           <CommandItem onSelect={() => handleSelectRoute('/parties')}>
-            <Users className="mr-2 h-4 w-4 text-slate-500" />
+            <Users className="mr-2 h-4 w-4 text-muted-foreground" />
             <span>Browse Contacts / Leads</span>
             <CommandShortcut>⌘C</CommandShortcut>
           </CommandItem>
           
           <CommandItem onSelect={() => handleSelectRoute('/cases')}>
-            <Workflow className="mr-2 h-4 w-4 text-slate-500" />
+            <Workflow className="mr-2 h-4 w-4 text-muted-foreground" />
             <span>Manage Case Tickets</span>
             <CommandShortcut>⌘S</CommandShortcut>
           </CommandItem>
           
           <CommandItem onSelect={() => handleSelectRoute('/campaigns')}>
-            <Megaphone className="mr-2 h-4 w-4 text-slate-500" />
+            <Megaphone className="mr-2 h-4 w-4 text-muted-foreground" />
             <span>Campaign Promotions</span>
             <CommandShortcut>⌘M</CommandShortcut>
           </CommandItem>
@@ -83,24 +83,24 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         {/* Administration Configuration Actions */}
         <CommandGroup heading="Administrative Setup Areas">
           <CommandItem onSelect={() => handleSelectRoute('/settings/objects')}>
-            <Settings2 className="mr-2 h-4 w-4 text-indigo-500" />
+            <Settings2 className="mr-2 h-4 w-4 text-fin-orange" />
             <span>Platform Object Manager</span>
             <CommandShortcut>⌘O</CommandShortcut>
           </CommandItem>
 
           <CommandItem onSelect={() => handleSelectRoute('/settings/layout-builder')}>
-            <Layers className="mr-2 h-4 w-4 text-indigo-500" />
+            <Layers className="mr-2 h-4 w-4 text-fin-orange" />
             <span>Visual Layout Designer</span>
             <CommandShortcut>⌘L</CommandShortcut>
           </CommandItem>
 
           <CommandItem onSelect={() => handleSelectRoute('/settings/fields')}>
-            <Sliders className="mr-2 h-4 w-4 text-slate-500" />
+            <Sliders className="mr-2 h-4 w-4 text-muted-foreground" />
             <span>Custom Fields Configurator</span>
           </CommandItem>
 
           <CommandItem onSelect={() => handleSelectRoute('/settings/brands')}>
-            <Building2 className="mr-2 h-4 w-4 text-slate-500" />
+            <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
             <span>Tenant Brands Manager</span>
           </CommandItem>
         </CommandGroup>

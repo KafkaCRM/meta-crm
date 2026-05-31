@@ -132,41 +132,41 @@ export function Appointments() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#0f172a]">Appointments & Scheduling</h1>
-          <p className="text-sm text-[#94a3b8] mt-0.5">Manage patient bookings, calendars, and availability</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Appointments & Scheduling</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Manage patient bookings, calendars, and availability</p>
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) resetForm(); }}>
           <DialogTrigger asChild>
-            <Button className="bg-[#0f172a] hover:bg-[#1e293b] text-white rounded-lg text-sm font-medium h-9 px-4">
+            <Button className="bg-primary hover:bg-[#1e293b] text-white rounded-lg text-sm font-medium h-9 px-4">
               <Plus size={16} className="mr-1.5" />
               Book Appointment
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md bg-white border border-[#e2e8f0] rounded-xl shadow-lg p-6">
+          <DialogContent className="max-w-md bg-card border border-border rounded-xl shadow-lg p-6">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-[#0f172a]">Book a Slot</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-foreground">Book a Slot</DialogTitle>
             </DialogHeader>
 
             <div className="space-y-4 py-3">
               <div className="space-y-1">
-                <Label htmlFor="title" className="text-xs font-semibold text-[#64748b]">Appointment Title *</Label>
+                <Label htmlFor="title" className="text-xs font-semibold text-muted-foreground">Appointment Title *</Label>
                 <Input
                   id="title"
                   placeholder="E.g., Initial Dental Checkup"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="bg-[#f8fafc] border-[#e2e8f0] focus-visible:ring-[#0f172a]"
+                  className="bg-background border-border focus-visible:ring-[#0f172a]"
                 />
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="contact" className="text-xs font-semibold text-[#64748b]">Patient/Contact *</Label>
+                <Label htmlFor="contact" className="text-xs font-semibold text-muted-foreground">Patient/Contact *</Label>
                 <select
                   id="contact"
                   value={selectedContactId}
                   onChange={(e) => setSelectedContactId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-md bg-[#f8fafc] border border-[#e2e8f0] text-[#0f172a] focus:outline-none focus:ring-1 focus:ring-[#0f172a]"
+                  className="w-full px-3 py-2 text-sm rounded-md bg-background border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-[#0f172a]"
                 >
                   <option value="">Select Contact</option>
                   {contacts.map((c) => (
@@ -176,12 +176,12 @@ export function Appointments() {
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="doctor" className="text-xs font-semibold text-[#64748b]">Assigned Doctor / Practitioner</Label>
+                <Label htmlFor="doctor" className="text-xs font-semibold text-muted-foreground">Assigned Doctor / Practitioner</Label>
                 <select
                   id="doctor"
                   value={selectedDoctorId}
                   onChange={(e) => setSelectedDoctorId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-md bg-[#f8fafc] border border-[#e2e8f0] text-[#0f172a] focus:outline-none focus:ring-1 focus:ring-[#0f172a]"
+                  className="w-full px-3 py-2 text-sm rounded-md bg-background border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-[#0f172a]"
                 >
                   <option value="">Select Practitioner (Optional)</option>
                   {users.map((u) => (
@@ -192,47 +192,47 @@ export function Appointments() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label htmlFor="date" className="text-xs font-semibold text-[#64748b]">Date</Label>
+                  <Label htmlFor="date" className="text-xs font-semibold text-muted-foreground">Date</Label>
                   <Input
                     id="date"
                     type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    className="bg-[#f8fafc] border-[#e2e8f0] focus-visible:ring-[#0f172a]"
+                    className="bg-background border-border focus-visible:ring-[#0f172a]"
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="room" className="text-xs font-semibold text-[#64748b]">Room / Cabin</Label>
+                  <Label htmlFor="room" className="text-xs font-semibold text-muted-foreground">Room / Cabin</Label>
                   <Input
                     id="room"
                     placeholder="E.g., Room 101"
                     value={room}
                     onChange={(e) => setRoom(e.target.value)}
-                    className="bg-[#f8fafc] border-[#e2e8f0] focus-visible:ring-[#0f172a]"
+                    className="bg-background border-border focus-visible:ring-[#0f172a]"
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="description" className="text-xs font-semibold text-[#64748b]">Notes</Label>
+                <Label htmlFor="description" className="text-xs font-semibold text-muted-foreground">Notes</Label>
                 <Input
                   id="description"
                   placeholder="Any specific instructions"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="bg-[#f8fafc] border-[#e2e8f0] focus-visible:ring-[#0f172a]"
+                  className="bg-background border-border focus-visible:ring-[#0f172a]"
                 />
               </div>
 
               {/* Slot Selection */}
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-[#64748b]">Available Slots</Label>
+                <Label className="text-xs font-semibold text-muted-foreground">Available Slots</Label>
                 {loadingSlots ? (
-                  <div className="text-xs text-[#94a3b8]">Checking availability...</div>
+                  <div className="text-xs text-muted-foreground">Checking availability...</div>
                 ) : slots.length === 0 ? (
                   <div className="text-xs text-red-600">No work hours or slots defined for this day.</div>
                 ) : (
-                  <div className="grid grid-cols-3 gap-1.5 max-h-32 overflow-y-auto p-1 bg-[#f8fafc] rounded-lg border border-[#e2e8f0]">
+                  <div className="grid grid-cols-3 gap-1.5 max-h-32 overflow-y-auto p-1 bg-background rounded-lg border border-border">
                     {slots.map((slot, idx) => (
                       <button
                         key={idx}
@@ -242,8 +242,8 @@ export function Appointments() {
                           !slot.available
                             ? 'bg-red-50 text-red-400 border-red-100 cursor-not-allowed opacity-50'
                             : selectedSlot?.start_time === slot.start_time
-                            ? 'bg-[#0f172a] text-white border-[#0f172a]'
-                            : 'bg-white text-[#0f172a] border-[#e2e8f0] hover:bg-[#f8fafc]'
+                            ? 'bg-primary text-white border-[#0f172a]'
+                            : 'bg-card text-foreground border-border hover:bg-background'
                         }`}
                       >
                         {dayjs(slot.start_time).format('hh:mm A')}
@@ -258,14 +258,14 @@ export function Appointments() {
               <Button
                 variant="outline"
                 onClick={() => setIsDialogOpen(false)}
-                className="border-[#e2e8f0] text-[#64748b] hover:bg-[#f8fafc]"
+                className="border-border text-muted-foreground hover:bg-background"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleBook}
                 disabled={createMutation.isPending}
-                className="bg-[#0f172a] hover:bg-[#1e293b] text-white"
+                className="bg-primary hover:bg-[#1e293b] text-white"
               >
                 {createMutation.isPending ? 'Booking...' : 'Book'}
               </Button>
@@ -277,18 +277,18 @@ export function Appointments() {
       {/* Filters & Content */}
       <div className="grid gap-6 md:grid-cols-4 items-start">
         {/* Sidebar Filters */}
-        <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none">
+        <Card className="bg-card border-border rounded-xl shadow-none">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold uppercase tracking-wider text-[#94a3b8]">Filters</CardTitle>
+            <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Filters</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1">
-              <Label htmlFor="filter-practitioner" className="text-xs text-[#64748b]">Practitioner</Label>
+              <Label htmlFor="filter-practitioner" className="text-xs text-muted-foreground">Practitioner</Label>
               <select
                 id="filter-practitioner"
                 value={filterDoctorId}
                 onChange={(e) => setFilterDoctorId(e.target.value)}
-                className="w-full px-2 py-1.5 text-xs rounded-md bg-[#f8fafc] border border-[#e2e8f0] text-[#0f172a]"
+                className="w-full px-2 py-1.5 text-xs rounded-md bg-background border border-border text-foreground"
               >
                 <option value="">All Practitioners</option>
                 {users.map((u) => (
@@ -298,12 +298,12 @@ export function Appointments() {
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="filter-contact" className="text-xs text-[#64748b]">Patient/Contact</Label>
+              <Label htmlFor="filter-contact" className="text-xs text-muted-foreground">Patient/Contact</Label>
               <select
                 id="filter-contact"
                 value={filterContactId}
                 onChange={(e) => setFilterContactId(e.target.value)}
-                className="w-full px-2 py-1.5 text-xs rounded-md bg-[#f8fafc] border border-[#e2e8f0] text-[#0f172a]"
+                className="w-full px-2 py-1.5 text-xs rounded-md bg-background border border-border text-foreground"
               >
                 <option value="">All Patients</option>
                 {contacts.map((c) => (
@@ -316,7 +316,7 @@ export function Appointments() {
               variant="outline"
               size="sm"
               onClick={() => { setFilterDoctorId(''); setFilterContactId(''); }}
-              className="w-full text-xs border-[#e2e8f0] text-[#64748b]"
+              className="w-full text-xs border-border text-muted-foreground"
             >
               Clear Filters
             </Button>
@@ -326,25 +326,25 @@ export function Appointments() {
         {/* Main List */}
         <div className="md:col-span-3 space-y-4">
           {loadingAppointments ? (
-            <div className="text-center py-12 text-[#94a3b8]">Loading appointments...</div>
+            <div className="text-center py-12 text-muted-foreground">Loading appointments...</div>
           ) : appointments.length === 0 ? (
-            <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none py-12 text-center">
-              <CalendarIcon className="mx-auto h-8 w-8 text-[#94a3b8] mb-2" />
-              <p className="text-sm font-medium text-[#0f172a]">No appointments scheduled</p>
-              <p className="text-xs text-[#94a3b8] mt-1">Book an appointment slot to get started.</p>
+            <Card className="bg-card border-border rounded-xl shadow-none py-12 text-center">
+              <CalendarIcon className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+              <p className="text-sm font-medium text-foreground">No appointments scheduled</p>
+              <p className="text-xs text-muted-foreground mt-1">Book an appointment slot to get started.</p>
             </Card>
           ) : (
             <div className="grid gap-3">
               {appointments.map((appt: Appointment) => (
-                <Card key={appt.id} className="bg-white border-[#e2e8f0] rounded-xl shadow-none hover:shadow-sm transition-shadow">
+                <Card key={appt.id} className="bg-card border-border rounded-xl shadow-none hover:shadow-sm transition-shadow">
                   <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
                     <div className="flex items-start gap-3">
-                      <div className="p-2 rounded-lg bg-[#f8fafc] text-[#0f172a] mt-0.5">
+                      <div className="p-2 rounded-lg bg-background text-foreground mt-0.5">
                         <CalendarIcon size={18} />
                       </div>
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="font-semibold text-sm text-[#0f172a]">{appt.title}</h4>
+                          <h4 className="font-semibold text-sm text-foreground">{appt.title}</h4>
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold uppercase ${
                             appt.status === 'scheduled'
                               ? 'bg-blue-50 text-blue-700 border border-blue-100'
@@ -356,7 +356,7 @@ export function Appointments() {
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-3 text-xs text-[#64748b] flex-wrap">
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                           <span className="flex items-center gap-1">
                             <Clock size={12} />
                             {dayjs(appt.start_time).format('DD MMM YYYY, hh:mm A')} - {dayjs(appt.end_time).format('hh:mm A')}
@@ -369,21 +369,21 @@ export function Appointments() {
                           )}
                         </div>
 
-                        <div className="flex items-center gap-4 pt-1 text-xs text-[#0f172a] flex-wrap">
+                        <div className="flex items-center gap-4 pt-1 text-xs text-foreground flex-wrap">
                           <span className="flex items-center gap-1">
-                            <User size={12} className="text-[#94a3b8]" />
+                            <User size={12} className="text-muted-foreground" />
                             Patient: <span className="font-medium">{appt.party?.name}</span>
                           </span>
                           {appt.user && (
                             <span className="flex items-center gap-1">
-                              <UserCheck size={12} className="text-[#94a3b8]" />
+                              <UserCheck size={12} className="text-muted-foreground" />
                               Doctor: <span className="font-medium">{appt.user.name}</span>
                             </span>
                           )}
                         </div>
 
                         {appt.description && (
-                          <p className="text-xs text-[#94a3b8] italic pt-1">Notes: "{appt.description}"</p>
+                          <p className="text-xs text-muted-foreground italic pt-1">Notes: "{appt.description}"</p>
                         )}
                       </div>
                     </div>

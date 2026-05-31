@@ -22,13 +22,13 @@ const SOURCE_COLORS: Record<string, string> = {
   [PartySource.WhatsApp]: 'bg-[#0bdf50]/10 text-[#0a7f2e] border-[#0bdf50]/20',
   [PartySource.JustDial]: 'bg-[#ff8c00]/10 text-[#cc7000] border-[#ff8c00]/20',
   [PartySource.Facebook]: 'bg-[#1877f2]/10 text-[#1565c0] border-[#1877f2]/20',
-  [PartySource.Manual]: 'bg-[#94a3b8]/10 text-[#64748b] border-[#94a3b8]/20',
+  [PartySource.Manual]: 'bg-[#94a3b8]/10 text-muted-foreground border-[#94a3b8]/20',
   [PartySource.WebForm]: 'bg-[#8b5cf6]/10 text-[#7c3aed] border-[#8b5cf6]/20',
   [PartySource.Api]: 'bg-[#ff5600]/10 text-[#cc4400] border-[#ff5600]/20',
 };
 
 function SourceBadge({ source }: { source: string }) {
-  const cls = SOURCE_COLORS[source] ?? 'bg-[#94a3b8]/10 text-[#64748b] border-[#94a3b8]/20';
+  const cls = SOURCE_COLORS[source] ?? 'bg-[#94a3b8]/10 text-muted-foreground border-[#94a3b8]/20';
   const label = source === PartySource.WhatsApp ? 'WhatsApp' : source === PartySource.JustDial ? 'JustDial' : source === PartySource.Facebook ? 'Facebook' : source === PartySource.WebForm ? 'Web Form' : source === PartySource.Manual ? 'Manual' : source;
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${cls}`}>
@@ -98,15 +98,15 @@ export function MergeWizard({ party, onClose, onMergeComplete }: MergeWizardProp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="mx-auto max-w-4xl w-full rounded-xl bg-white shadow-2xl max-h-[90vh] overflow-auto">
+      <div className="mx-auto max-w-4xl w-full rounded-xl bg-card shadow-2xl max-h-[90vh] overflow-auto">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#e2e8f0]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div className="flex items-center gap-2">
-            <GitMerge size={18} className="text-[#0f172a]" />
-            <h2 className="text-lg font-semibold text-[#0f172a]">Merge Parties</h2>
+            <GitMerge size={18} className="text-foreground" />
+            <h2 className="text-lg font-semibold text-foreground">Merge Parties</h2>
           </div>
           <button
-            className="rounded-md p-1.5 hover:bg-[#f8fafc] transition-colors text-[#94a3b8]"
+            className="rounded-md p-1.5 hover:bg-background transition-colors text-muted-foreground"
             onClick={onClose}
             disabled={mergeMutation.isPending}
           >
@@ -115,7 +115,7 @@ export function MergeWizard({ party, onClose, onMergeComplete }: MergeWizardProp
         </div>
 
         {/* Step indicators */}
-        <div className="flex items-center gap-0 px-6 py-3 bg-[#faf9f7] border-b border-[#e2e8f0]">
+        <div className="flex items-center gap-0 px-6 py-3 bg-[#faf9f7] border-b border-border">
           {(['select-candidate', 'review-diff', 'confirm'] as WizardStep[]).map((s, i) => {
             const stepLabels = ['Select Candidate', 'Review Differences', 'Confirm'];
             const isActive = step === s;
@@ -123,13 +123,13 @@ export function MergeWizard({ party, onClose, onMergeComplete }: MergeWizardProp
             return (
               <div key={s} className="flex items-center gap-2">
                 <div className={`flex items-center gap-1.5 text-sm ${
-                  isActive ? 'text-[#0f172a] font-medium' : isPast ? 'text-[#0bdf50]' : 'text-[#94a3b8]'
+                  isActive ? 'text-foreground font-medium' : isPast ? 'text-[#0bdf50]' : 'text-muted-foreground'
                 }`}>
                   {isPast ? (
                     <CheckCircle2 size={14} />
                   ) : (
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${
-                      isActive ? 'bg-[#0f172a] text-white' : 'bg-[#e2e8f0] text-[#64748b]'
+                      isActive ? 'bg-primary text-white' : 'bg-[#e2e8f0] text-muted-foreground'
                     }`}>
                       {i + 1}
                     </span>
@@ -146,40 +146,40 @@ export function MergeWizard({ party, onClose, onMergeComplete }: MergeWizardProp
           {/* Step 1: Candidate selection */}
           {step === 'select-candidate' && (
             <div className="space-y-4">
-              <p className="text-sm text-[#64748b]">
-                Select a party to merge with <strong className="text-[#0f172a]">{party.name}</strong>
+              <p className="text-sm text-muted-foreground">
+                Select a party to merge with <strong className="text-foreground">{party.name}</strong>
               </p>
 
               {candidatesLoading ? (
                 <div className="py-12 text-center">
-                  <Loader2 size={20} className="animate-spin mx-auto text-[#94a3b8]" />
-                  <p className="text-sm text-[#94a3b8] mt-2">Searching for candidates...</p>
+                  <Loader2 size={20} className="animate-spin mx-auto text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground mt-2">Searching for candidates...</p>
                 </div>
               ) : filteredCandidates.length === 0 ? (
                 <div className="py-12 text-center">
-                  <p className="text-sm text-[#94a3b8]">No merge candidates found</p>
+                  <p className="text-sm text-muted-foreground">No merge candidates found</p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {filteredCandidates.map((candidate) => (
                     <button
                       key={candidate.id}
-                      className="flex w-full items-center justify-between rounded-lg border border-[#e2e8f0] p-4 text-left hover:bg-[#f8fafc] transition-colors"
+                      className="flex w-full items-center justify-between rounded-lg border border-border p-4 text-left hover:bg-background transition-colors"
                       onClick={() => handleSelectCandidate(candidate)}
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-[#0f172a] flex items-center justify-center text-white font-medium text-sm">
+                        <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white font-medium text-sm">
                           {candidate.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <p className="font-medium text-[#0f172a]">{candidate.name}</p>
-                          <p className="text-sm text-[#64748b]">
+                          <p className="font-medium text-foreground">{candidate.name}</p>
+                          <p className="text-sm text-muted-foreground">
                             {candidate.phone_raw} · <SourceBadge source={candidate.source} />
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-[#94a3b8]">
+                        <p className="text-xs text-muted-foreground">
                           Created {new Date(candidate.created_at).toLocaleDateString()}
                         </p>
                       </div>
@@ -193,11 +193,11 @@ export function MergeWizard({ party, onClose, onMergeComplete }: MergeWizardProp
           {/* Step 2: Diff view */}
           {step === 'review-diff' && selectedCandidate && (
             <div className="space-y-4">
-              <p className="text-sm text-[#64748b]">
+              <p className="text-sm text-muted-foreground">
                 Compare fields and choose which values to keep
               </p>
 
-              <div className="grid grid-cols-4 gap-3 text-sm font-medium text-[#94a3b8] pb-2 border-b border-[#e2e8f0]">
+              <div className="grid grid-cols-4 gap-3 text-sm font-medium text-muted-foreground pb-2 border-b border-border">
                 <div>Field</div>
                 <div>{party.name}</div>
                 <div>{selectedCandidate.name}</div>
@@ -217,10 +217,10 @@ export function MergeWizard({ party, onClose, onMergeComplete }: MergeWizardProp
                       differs ? 'bg-amber-50/60 border border-amber-200/60' : ''
                     }`}
                   >
-                    <div className="font-medium text-[#64748b]">{label}</div>
+                    <div className="font-medium text-muted-foreground">{label}</div>
                     <div
                       className={`rounded-md px-2.5 py-1.5 cursor-pointer transition-colors ${
-                        keep === 'left' ? 'bg-[#0f172a] text-white' : 'bg-[#f8fafc] text-[#0f172a]'
+                        keep === 'left' ? 'bg-primary text-white' : 'bg-background text-foreground'
                       }`}
                       onClick={() => { setCanonicalId(party.id); setFieldKeep((prev) => ({ ...prev, [key]: 'left' })); }}
                     >
@@ -228,13 +228,13 @@ export function MergeWizard({ party, onClose, onMergeComplete }: MergeWizardProp
                     </div>
                     <div
                       className={`rounded-md px-2.5 py-1.5 cursor-pointer transition-colors ${
-                        keep === 'right' ? 'bg-[#0f172a] text-white' : 'bg-[#f8fafc] text-[#0f172a]'
+                        keep === 'right' ? 'bg-primary text-white' : 'bg-background text-foreground'
                       }`}
                       onClick={() => { setCanonicalId(selectedCandidate.id); setFieldKeep((prev) => ({ ...prev, [key]: 'right' })); }}
                     >
                       {valB}
                     </div>
-                    <div className="text-xs text-[#94a3b8]">
+                    <div className="text-xs text-muted-foreground">
                       {differs ? (
                         <span className="text-amber-600 font-medium">Differs</span>
                       ) : (
@@ -255,7 +255,7 @@ export function MergeWizard({ party, onClose, onMergeComplete }: MergeWizardProp
                     setFieldKeep(allLeft);
                     setCanonicalId(party.id);
                   }}
-                  className="h-8 text-xs border-[#e2e8f0]"
+                  className="h-8 text-xs border-border"
                 >
                   Keep all left
                 </Button>
@@ -268,17 +268,17 @@ export function MergeWizard({ party, onClose, onMergeComplete }: MergeWizardProp
                     setFieldKeep(allRight);
                     setCanonicalId(selectedCandidate.id);
                   }}
-                  className="h-8 text-xs border-[#e2e8f0]"
+                  className="h-8 text-xs border-border"
                 >
                   Keep all right
                 </Button>
               </div>
 
               <div className="rounded-lg bg-[#3b82f6]/5 border border-[#3b82f6]/20 p-3 text-sm">
-                <p className="font-medium text-[#0f172a]">
+                <p className="font-medium text-foreground">
                   Canonical record: <span className="text-[#3b82f6]">{canonicalParty.name}</span>
                 </p>
-                <p className="text-[#64748b] mt-1">
+                <p className="text-muted-foreground mt-1">
                   {mergedParty.name} will be marked as merged. All cases and interactions will transfer.
                 </p>
               </div>
@@ -286,7 +286,7 @@ export function MergeWizard({ party, onClose, onMergeComplete }: MergeWizardProp
               <div className="flex gap-2 pt-2">
                 <Button
                   onClick={() => setStep('confirm')}
-                  className="bg-[#0f172a] hover:bg-[#1e293b] text-white rounded-lg h-9 text-sm font-medium"
+                  className="bg-primary hover:bg-[#1e293b] text-white rounded-lg h-9 text-sm font-medium"
                 >
                   Continue
                   <ChevronRight size={14} className="ml-1" />
@@ -295,7 +295,7 @@ export function MergeWizard({ party, onClose, onMergeComplete }: MergeWizardProp
                   variant="outline"
                   onClick={() => setStep('select-candidate')}
                   disabled={mergeMutation.isPending}
-                  className="h-9 text-sm border-[#e2e8f0]"
+                  className="h-9 text-sm border-border"
                 >
                   <ArrowLeft size={14} className="mr-1" />
                   Back
@@ -337,7 +337,7 @@ export function MergeWizard({ party, onClose, onMergeComplete }: MergeWizardProp
                   variant="outline"
                   onClick={() => setStep('review-diff')}
                   disabled={mergeMutation.isPending}
-                  className="h-9 text-sm border-[#e2e8f0]"
+                  className="h-9 text-sm border-border"
                 >
                   Back
                 </Button>
@@ -345,7 +345,7 @@ export function MergeWizard({ party, onClose, onMergeComplete }: MergeWizardProp
                   variant="outline"
                   onClick={onClose}
                   disabled={mergeMutation.isPending}
-                  className="h-9 text-sm border-[#e2e8f0]"
+                  className="h-9 text-sm border-border"
                 >
                   Cancel
                 </Button>

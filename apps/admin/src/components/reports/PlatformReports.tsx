@@ -88,11 +88,11 @@ export function PlatformReports() {
     <div className="space-y-6 animate-in fade-in duration-200">
       
       {/* Dynamic Controls Ribbon */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-muted p-4 rounded-xl border border-border">
         <div className="flex items-center gap-2">
-          <Calendar size={16} className="text-slate-400" />
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Analysis Timeframe:</span>
-          <div className="inline-flex bg-white rounded-lg p-0.5 border border-slate-200">
+          <Calendar size={16} className="text-muted-foreground" />
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Analysis Timeframe:</span>
+          <div className="inline-flex bg-card rounded-lg p-0.5 border border-border">
             {(['7d', '30d', 'ytd'] as const).map((t) => (
               <button
                 key={t}
@@ -102,8 +102,8 @@ export function PlatformReports() {
                 }}
                 className={`text-[10px] font-bold px-3 py-1 rounded-md transition-colors ${
                   timeframe === t
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-500 hover:text-slate-800'
+                    ? 'bg-fin-orange text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {t.toUpperCase()}
@@ -116,7 +116,7 @@ export function PlatformReports() {
           <Button
             variant="outline"
             size="sm"
-            className="h-8 text-xs gap-1 border-slate-200 text-slate-600 rounded-lg hover:bg-slate-100 bg-white"
+            className="h-8 text-xs gap-1 border-border text-muted-foreground rounded-lg hover:bg-muted/70 bg-card"
             onClick={handleRefresh}
           >
             <RefreshCcw size={13} />
@@ -124,7 +124,7 @@ export function PlatformReports() {
           </Button>
           <Button
             size="sm"
-            className="h-8 text-xs gap-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium shadow-sm transition-colors"
+            className="h-8 text-xs gap-1 bg-fin-orange hover:bg-fin-orange/90 text-white rounded-lg font-medium shadow-sm transition-colors"
             onClick={() => toast.success('Platform executive report downloaded (Simulated)')}
           >
             <Download size={13} />
@@ -137,14 +137,14 @@ export function PlatformReports() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         
         {/* Tenants card */}
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+        <Card className="bg-card border-border rounded-xl shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-5 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 flex-shrink-0">
+            <div className="w-10 h-10 rounded-lg bg-fin-orange/10 flex items-center justify-center text-fin-orange flex-shrink-0">
               <Users size={20} />
             </div>
             <div>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total SaaS Tenants</p>
-              <p className="text-2xl font-extrabold text-slate-900 mt-0.5">{tenantCount?.total ?? 0}</p>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Total SaaS Tenants</p>
+              <p className="text-2xl font-extrabold text-foreground mt-0.5">{tenantCount?.total ?? 0}</p>
               <span className="inline-flex items-center text-[10px] text-emerald-600 font-semibold mt-1">
                 <TrendingUp size={11} className="mr-0.5" /> +12% YoY growth
               </span>
@@ -153,14 +153,14 @@ export function PlatformReports() {
         </Card>
 
         {/* MAU card */}
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+        <Card className="bg-card border-border rounded-xl shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-5 flex items-center gap-4">
             <div className="w-10 h-10 rounded-lg bg-teal-50 flex items-center justify-center text-teal-600 flex-shrink-0">
               <TrendingUp size={20} />
             </div>
             <div>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Active Users (MAU)</p>
-              <p className="text-2xl font-extrabold text-slate-900 mt-0.5">{totalMau.toLocaleString()}</p>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Total Active Users (MAU)</p>
+              <p className="text-2xl font-extrabold text-foreground mt-0.5">{totalMau.toLocaleString()}</p>
               <span className="inline-flex items-center text-[10px] text-teal-600 font-semibold mt-1">
                 <Activity size={11} className="mr-0.5" /> Active in last 24h
               </span>
@@ -169,15 +169,15 @@ export function PlatformReports() {
         </Card>
 
         {/* Plugins card */}
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+        <Card className="bg-card border-border rounded-xl shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-5 flex items-center gap-4">
             <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600 flex-shrink-0">
               <Puzzle size={20} />
             </div>
             <div>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Active Plugin Licenses</p>
-              <p className="text-2xl font-extrabold text-slate-900 mt-0.5">{pluginUsage?.plugins.length ?? 0}</p>
-              <span className="inline-flex items-center text-[10px] text-slate-500 font-semibold mt-1">
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Active Plugin Licenses</p>
+              <p className="text-2xl font-extrabold text-foreground mt-0.5">{pluginUsage?.plugins.length ?? 0}</p>
+              <span className="inline-flex items-center text-[10px] text-muted-foreground font-semibold mt-1">
                 100% catalog entitled
               </span>
             </div>
@@ -185,14 +185,14 @@ export function PlatformReports() {
         </Card>
 
         {/* SLA card */}
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+        <Card className="bg-card border-border rounded-xl shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-5 flex items-center gap-4">
             <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 flex-shrink-0">
               <ShieldCheck size={20} />
             </div>
             <div>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Operation SLA Score</p>
-              <p className="text-2xl font-extrabold text-slate-900 mt-0.5">99.99%</p>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Operation SLA Score</p>
+              <p className="text-2xl font-extrabold text-foreground mt-0.5">99.99%</p>
               <span className="inline-flex items-center text-[10px] text-emerald-600 font-semibold mt-1">
                 All regions online
               </span>
@@ -206,10 +206,10 @@ export function PlatformReports() {
       <div className="grid gap-6 md:grid-cols-2">
         
         {/* 1. Industry Share Pie */}
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm overflow-hidden">
-          <CardHeader className="pb-3 border-b border-slate-100 bg-slate-50/50">
+        <Card className="bg-card border-border rounded-xl shadow-sm overflow-hidden">
+          <CardHeader className="pb-3 border-b border-border/50 bg-muted/50">
             <CardTitle className="text-sm font-bold text-slate-950 uppercase tracking-wide">Tenant Segment Allocation</CardTitle>
-            <CardDescription className="text-xs text-slate-400">Tenant accounts grouped by business category</CardDescription>
+            <CardDescription className="text-xs text-muted-foreground">Tenant accounts grouped by business category</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="h-64 flex flex-col items-center justify-center relative">
@@ -247,10 +247,10 @@ export function PlatformReports() {
         </Card>
 
         {/* 2. Monthly Active Users Bar */}
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm overflow-hidden">
-          <CardHeader className="pb-3 border-b border-slate-100 bg-slate-50/50">
+        <Card className="bg-card border-border rounded-xl shadow-sm overflow-hidden">
+          <CardHeader className="pb-3 border-b border-border/50 bg-muted/50">
             <CardTitle className="text-sm font-bold text-slate-950 uppercase tracking-wide">Subscriber Engagement Index</CardTitle>
-            <CardDescription className="text-xs text-slate-400">Monthly active users recorded across core tenants</CardDescription>
+            <CardDescription className="text-xs text-muted-foreground">Monthly active users recorded across core tenants</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="h-64">
@@ -281,10 +281,10 @@ export function PlatformReports() {
         </Card>
 
         {/* 3. Daily Transactions Area */}
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm overflow-hidden">
-          <CardHeader className="pb-3 border-b border-slate-100 bg-slate-50/50">
+        <Card className="bg-card border-border rounded-xl shadow-sm overflow-hidden">
+          <CardHeader className="pb-3 border-b border-border/50 bg-muted/50">
             <CardTitle className="text-sm font-bold text-slate-950 uppercase tracking-wide">Platform Operation Traffic</CardTitle>
-            <CardDescription className="text-xs text-slate-400">Daily business CRM cases created globally</CardDescription>
+            <CardDescription className="text-xs text-muted-foreground">Daily business CRM cases created globally</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="h-64">
@@ -317,10 +317,10 @@ export function PlatformReports() {
         </Card>
 
         {/* 4. Plugin Adoption Horizontal Bar */}
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm overflow-hidden">
-          <CardHeader className="pb-3 border-b border-slate-100 bg-slate-50/50">
+        <Card className="bg-card border-border rounded-xl shadow-sm overflow-hidden">
+          <CardHeader className="pb-3 border-b border-border/50 bg-muted/50">
             <CardTitle className="text-sm font-bold text-slate-950 uppercase tracking-wide">Plugin Installation Density</CardTitle>
-            <CardDescription className="text-xs text-slate-400">Number of active tenant installations per extension</CardDescription>
+            <CardDescription className="text-xs text-muted-foreground">Number of active tenant installations per extension</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="h-64">

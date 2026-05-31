@@ -224,4 +224,8 @@ export const settingsApi = {
   setupAudits: {
     list: () => apiCall<any[]>('/setup-audits'),
   },
+  templates: {
+    apply: (industry: string) =>
+      apiCall<{ success: boolean }>('/templates/apply', { method: 'POST', body: JSON.stringify({ industry }) }),
+  },
 };

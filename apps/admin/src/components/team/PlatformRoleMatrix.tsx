@@ -61,28 +61,28 @@ export function PlatformRoleMatrix() {
     <div className="space-y-4 animate-in fade-in duration-200">
       
       {/* Grid Console */}
-      <div className="overflow-x-auto rounded-lg border border-slate-200">
+      <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+          <thead className="bg-muted text-muted-foreground font-semibold border-b border-border">
             <tr>
-              <th className="sticky left-0 z-10 bg-slate-50 px-4 py-3.5 text-left text-xs uppercase tracking-wider min-w-[220px]">
+              <th className="sticky left-0 z-10 bg-muted px-4 py-3.5 text-left text-xs uppercase tracking-wider min-w-[220px]">
                 Platform Subject Scope
               </th>
               {roles.map((role) => (
-                <th key={role} className="px-3 py-3.5 text-center text-xs uppercase tracking-wider min-w-[110px] border-l border-slate-200/50">
+                <th key={role} className="px-3 py-3.5 text-center text-xs uppercase tracking-wider min-w-[110px] border-l border-border/50">
                   {ROLE_LABELS[role]}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 bg-white">
+          <tbody className="divide-y divide-border/50 bg-card">
             {ALL_RESOURCES.map((resource) => (
-              <tr key={resource} className="hover:bg-slate-50/50 transition-colors">
+              <tr key={resource} className="hover:bg-muted/50 transition-colors">
                 {/* Resource Info */}
-                <td className="sticky left-0 z-10 bg-white px-4 py-3">
+                <td className="sticky left-0 z-10 bg-card px-4 py-3">
                   <div className="flex flex-col">
-                    <span className="font-semibold text-slate-900 leading-tight">{RESOURCE_LABELS[resource]}</span>
-                    <span className="text-[10px] text-slate-400 mt-0.5 leading-tight">{RESOURCE_DESCRIPTIONS[resource]}</span>
+                    <span className="font-semibold text-foreground leading-tight">{RESOURCE_LABELS[resource]}</span>
+                    <span className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{RESOURCE_DESCRIPTIONS[resource]}</span>
                   </div>
                 </td>
 
@@ -95,18 +95,18 @@ export function PlatformRoleMatrix() {
                   return (
                     <td
                       key={`${role}-${resource}`}
-                      className="px-3 py-3 text-center border-l border-slate-100 font-mono text-[10px]"
+                      className="px-3 py-3 text-center border-l border-border/50 font-mono text-[10px]"
                     >
                       <div className="flex items-center justify-center gap-1 flex-wrap max-w-[100px] mx-auto">
                         {isOwner ? (
-                          <Badge className="bg-indigo-50 border-indigo-100 text-indigo-700 hover:bg-indigo-50 text-[9px] px-1.5 py-0.5 rounded flex items-center gap-0.5 font-bold shadow-none">
+                          <Badge className="bg-fin-orange/10 border-fin-orange/20 text-fin-orange hover:bg-fin-orange/10 text-[9px] px-1.5 py-0.5 rounded flex items-center gap-0.5 font-bold shadow-none">
                             <Sparkles size={8} />
                             Master
                           </Badge>
                         ) : hasAccess ? (
                           actions.map((act) => {
                             let label = act.charAt(0).toUpperCase();
-                            let bgClass = 'bg-slate-50 border-slate-200 text-slate-600';
+                            let bgClass = 'bg-muted border-border text-muted-foreground';
                             
                             if (act === 'create') bgClass = 'bg-emerald-50 border-emerald-100 text-emerald-700 font-bold';
                             if (act === 'read') bgClass = 'bg-sky-50 border-sky-100 text-sky-700';
@@ -138,9 +138,9 @@ export function PlatformRoleMatrix() {
       </div>
 
       {/* Guide Deck */}
-      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex flex-wrap gap-x-6 gap-y-2 text-[10px] text-slate-400 font-semibold uppercase tracking-wider font-mono">
+      <div className="bg-muted border border-border rounded-lg p-3 flex flex-wrap gap-x-6 gap-y-2 text-[10px] text-muted-foreground font-semibold uppercase tracking-wider font-mono">
         <span className="flex items-center gap-1.5">
-          <span className="w-4 h-4 rounded border bg-indigo-50 border-indigo-100 text-indigo-700 flex items-center justify-center text-[9px] font-bold">★</span>
+          <span className="w-4 h-4 rounded border bg-fin-orange/10 border-fin-orange/20 text-fin-orange flex items-center justify-center text-[9px] font-bold">★</span>
           Master = All Privileges
         </span>
         <span className="flex items-center gap-1.5">

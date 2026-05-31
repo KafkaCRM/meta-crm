@@ -40,7 +40,7 @@ export function CapabilityGate({
   if (isLoading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="flex items-center gap-2 text-sm text-slate-400">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 size={16} className="animate-spin" />
           Loading workspace settings…
         </div>
@@ -53,17 +53,17 @@ export function CapabilityGate({
       <div className="flex min-h-[60vh] items-center justify-center p-8">
         <div className="max-w-md w-full text-center">
           {/* Lock Icon */}
-          <div className="inline-flex w-14 h-14 rounded-2xl bg-slate-100 border border-slate-200 items-center justify-center mb-5">
-            <Lock size={24} className="text-slate-400" />
+          <div className="inline-flex w-14 h-14 rounded-2xl bg-slate-100 border border-border items-center justify-center mb-5">
+            <Lock size={24} className="text-muted-foreground" />
           </div>
 
           {/* Headline */}
-          <h2 className="text-xl font-semibold text-slate-900 mb-2">
+          <h2 className="text-xl font-semibold text-foreground mb-2">
             {capabilityName} is not enabled
           </h2>
 
           {/* Description */}
-          <p className="text-sm text-slate-500 leading-relaxed mb-6">
+          <p className="text-sm text-muted-foreground leading-relaxed mb-6">
             {description ||
               `Your workspace has not enabled the ${capabilityName} module. Ask your administrator to enable it from the Capabilities settings.`}
           </p>
@@ -71,7 +71,7 @@ export function CapabilityGate({
           {/* CTA */}
           <Button
             variant="default"
-            className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
+            className="gap-2 bg-fin-orange hover:bg-fin-orange/90 text-white"
             onClick={() => navigate({ to: '/settings/capabilities' })}
           >
             Go to Capabilities Settings

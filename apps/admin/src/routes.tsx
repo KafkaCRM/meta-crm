@@ -36,9 +36,9 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <div className="flex items-center gap-2 text-sm text-slate-400">
-          <div className="w-4 h-4 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin" />
+      <div className="flex min-h-screen items-center justify-center bg-muted">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="w-4 h-4 border-2 border-border border-t-indigo-600 rounded-full animate-spin" />
           Loading…
         </div>
       </div>
@@ -125,17 +125,17 @@ const tenantsRoute = createRoute({
       <div className="space-y-5 max-w-[1280px]">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Tenants</h1>
-            <p className="text-sm text-slate-400 mt-0.5">Manage all workspace tenants</p>
+            <h1 className="text-2xl font-semibold text-foreground tracking-tight">Tenants</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Manage all workspace tenants</p>
           </div>
           <Link to="/admin/tenants/new">
-            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg h-9 px-4 text-sm font-medium shadow-sm transition-colors">
+            <Button className="bg-fin-orange hover:bg-fin-orange/90 text-white rounded-lg h-9 px-4 text-sm font-medium shadow-sm transition-colors">
               <Plus size={15} className="mr-1.5" />
               Create Tenant
             </Button>
           </Link>
         </div>
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm">
+        <Card className="bg-card border-border rounded-xl shadow-sm">
           <CardContent className="p-0 overflow-hidden">
             <TenantList />
           </CardContent>
@@ -152,8 +152,8 @@ const createTenantRoute = createRoute({
     <AuthGuard>
       <div className="space-y-5 max-w-4xl">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Create Tenant</h1>
-          <p className="text-sm text-slate-400 mt-0.5">Provision a new workspace tenant</p>
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Create Tenant</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Provision a new workspace tenant</p>
         </div>
         <CreateTenantForm />
       </div>
@@ -180,10 +180,10 @@ function TenantDetailRouteContent() {
     return (
       <div className="space-y-5 max-w-[1280px]">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Tenant View</h1>
-          <p className="text-sm text-slate-400 mt-0.5">Read-only access</p>
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Tenant View</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Read-only access</p>
         </div>
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm">
+        <Card className="bg-card border-border rounded-xl shadow-sm">
           <CardContent className="pt-6">
             <ImpersonateView tenantId={id} />
           </CardContent>
@@ -195,8 +195,8 @@ function TenantDetailRouteContent() {
   return (
     <div className="space-y-5 max-w-[1280px]">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Tenant Details</h1>
-        <p className="text-sm text-slate-400 mt-0.5">Configuration and settings for this tenant</p>
+        <h1 className="text-2xl font-semibold text-foreground tracking-tight">Tenant Details</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Configuration and settings for this tenant</p>
       </div>
       <TenantDetail tenantId={id} />
     </div>
@@ -210,10 +210,10 @@ const tenantImpersonateRoute = createRoute({
     <AuthGuard>
       <div className="space-y-5 max-w-[1280px]">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Impersonate Tenant</h1>
-          <p className="text-sm text-slate-400 mt-0.5">Viewing tenant workspace in read-only mode</p>
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Impersonate Tenant</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Viewing tenant workspace in read-only mode</p>
         </div>
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm">
+        <Card className="bg-card border-border rounded-xl shadow-sm">
           <CardContent className="pt-6">
             <ImpersonateView tenantId={tenantImpersonateRoute.useParams().id} />
           </CardContent>
@@ -239,19 +239,19 @@ const plansRoute = createRoute({
         <div className="space-y-5 max-w-[1280px]">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Plans</h1>
-              <p className="text-sm text-slate-400 mt-0.5">Manage subscription plans and pricing</p>
+              <h1 className="text-2xl font-semibold text-foreground tracking-tight">Plans</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">Manage subscription plans and pricing</p>
             </div>
             {canCreate && (
               <Link to="/admin/plans/new">
-                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg h-9 px-4 text-sm font-medium shadow-sm transition-colors">
+                <Button className="bg-fin-orange hover:bg-fin-orange/90 text-white rounded-lg h-9 px-4 text-sm font-medium shadow-sm transition-colors">
                   <Plus size={15} className="mr-1.5" />
                   Create Plan
                 </Button>
               </Link>
             )}
           </div>
-          <Card className="bg-white border-slate-200 rounded-xl shadow-sm">
+          <Card className="bg-card border-border rounded-xl shadow-sm">
             <CardContent className="p-0 overflow-hidden">
               <PlanList />
             </CardContent>
@@ -269,10 +269,10 @@ const createPlanRoute = createRoute({
     <AuthGuard>
       <div className="space-y-5 max-w-2xl">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Create Plan</h1>
-          <p className="text-sm text-slate-400 mt-0.5">Define a new platform subscription plan</p>
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Create Plan</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Define a new platform subscription plan</p>
         </div>
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm">
+        <Card className="bg-card border-border rounded-xl shadow-sm">
           <CardContent className="pt-6">
             <PlanForm />
           </CardContent>
@@ -297,10 +297,10 @@ function EditPlanRouteContent() {
   return (
     <div className="space-y-5 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Edit Plan</h1>
-        <p className="text-sm text-slate-400 mt-0.5">Modify subscription plan limits and billing</p>
+        <h1 className="text-2xl font-semibold text-foreground tracking-tight">Edit Plan</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Modify subscription plan limits and billing</p>
       </div>
-      <Card className="bg-white border-slate-200 rounded-xl shadow-sm">
+      <Card className="bg-card border-border rounded-xl shadow-sm">
         <CardContent className="pt-6">
           <PlanForm planId={id} />
         </CardContent>
@@ -321,17 +321,17 @@ const pluginsRoute = createRoute({
       <div className="space-y-5 max-w-[1280px]">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Plugins</h1>
-            <p className="text-sm text-slate-400 mt-0.5">Platform plugin registry</p>
+            <h1 className="text-2xl font-semibold text-foreground tracking-tight">Plugins</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Platform plugin registry</p>
           </div>
           <Link to="/admin/plugins/new">
-            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg h-9 px-4 text-sm font-medium shadow-sm transition-colors">
+            <Button className="bg-fin-orange hover:bg-fin-orange/90 text-white rounded-lg h-9 px-4 text-sm font-medium shadow-sm transition-colors">
               <Plus size={15} className="mr-1.5" />
               Register Plugin
             </Button>
           </Link>
         </div>
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        <Card className="bg-card border-border rounded-xl shadow-sm overflow-hidden">
           <CardContent className="p-0">
             <PluginRegistry />
           </CardContent>
@@ -348,10 +348,10 @@ const publishPluginRoute = createRoute({
     <AuthGuard>
       <div className="space-y-5 max-w-2xl">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Register Plugin</h1>
-          <p className="text-sm text-slate-400 mt-0.5">Add a new plugin to the platform registry</p>
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Register Plugin</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Add a new plugin to the platform registry</p>
         </div>
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm">
+        <Card className="bg-card border-border rounded-xl shadow-sm">
           <CardContent className="pt-6">
             <PublishPlugin />
           </CardContent>
@@ -368,10 +368,10 @@ const pluginDetailRoute = createRoute({
     <AuthGuard>
       <div className="space-y-5 max-w-[1280px]">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Plugin Details</h1>
-          <p className="text-sm text-slate-400 mt-0.5">Plugin configuration and usage</p>
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Plugin Details</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Plugin configuration and usage</p>
         </div>
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm">
+        <Card className="bg-card border-border rounded-xl shadow-sm">
           <CardContent className="pt-6">
             <PluginDetail pluginId={pluginDetailRoute.useParams().id} />
           </CardContent>
@@ -392,12 +392,12 @@ const reportsRoute = createRoute({
     <AuthGuard>
       <div className="space-y-5 max-w-[1280px]">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Platform Reports</h1>
-          <p className="text-sm text-slate-400 mt-0.5">
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Platform Reports</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
             Aggregate metrics only — no PII is displayed
           </p>
         </div>
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm">
+        <Card className="bg-card border-border rounded-xl shadow-sm">
           <CardContent className="pt-6">
             <PlatformReports />
           </CardContent>
@@ -418,14 +418,14 @@ const usersRoute = createRoute({
     <AuthGuard>
       <div className="space-y-5 max-w-[1280px]">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Platform Team</h1>
-          <p className="text-sm text-slate-400 mt-0.5">Manage platform-level admin users and roles</p>
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Platform Team</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Manage platform-level admin users and roles</p>
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
-          <Card className="bg-white border-slate-200 rounded-xl shadow-sm">
+          <Card className="bg-card border-border rounded-xl shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold text-slate-900">Team Members</CardTitle>
+              <CardTitle className="text-base font-semibold text-foreground">Team Members</CardTitle>
             </CardHeader>
             <Separator className="bg-slate-100" />
             <CardContent className="pt-4">
@@ -433,9 +433,9 @@ const usersRoute = createRoute({
             </CardContent>
           </Card>
 
-          <Card className="bg-white border-slate-200 rounded-xl shadow-sm">
+          <Card className="bg-card border-border rounded-xl shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold text-slate-900">Invite User</CardTitle>
+              <CardTitle className="text-base font-semibold text-foreground">Invite User</CardTitle>
             </CardHeader>
             <Separator className="bg-slate-100" />
             <CardContent className="pt-4">
@@ -444,10 +444,10 @@ const usersRoute = createRoute({
           </Card>
         </div>
 
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm">
+        <Card className="bg-card border-border rounded-xl shadow-sm">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold text-slate-900">Role Permissions Matrix</CardTitle>
-            <p className="text-sm text-slate-400 mt-0.5">
+            <CardTitle className="text-base font-semibold text-foreground">Role Permissions Matrix</CardTitle>
+            <p className="text-sm text-muted-foreground mt-0.5">
               Platform roles are system-defined and cannot be modified
             </p>
           </CardHeader>
@@ -488,8 +488,8 @@ const billingRoute = createRoute({
     <AuthGuard>
       <div className="space-y-5 max-w-[1280px]">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Billing & Invoices</h1>
-          <p className="text-sm text-slate-400 mt-0.5">Platform billing ledger and subscription payouts</p>
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Billing & Invoices</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Platform billing ledger and subscription payouts</p>
         </div>
         <PlatformBilling />
       </div>

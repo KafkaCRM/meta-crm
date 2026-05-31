@@ -61,7 +61,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
                 Application Crash
               </h1>
               
-              <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+              <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
                 An unexpected runtime exception has occurred. The system has safely halted execution to prevent data loss.
               </p>
             </div>
@@ -71,7 +71,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
                 onClick={this.handleReload}
                 className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-100 font-medium h-11 px-4 rounded-xl border border-slate-700/50 transition-all cursor-pointer shadow-sm hover:scale-[1.01] active:scale-[0.99]"
               >
-                <RefreshCw size={16} className="text-slate-400 animate-spin-slow" />
+                <RefreshCw size={16} className="text-muted-foreground animate-spin-slow" />
                 Reload Application
               </button>
 
@@ -79,7 +79,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
                 <div className="border border-slate-800/60 bg-slate-950/40 rounded-xl overflow-hidden">
                   <button
                     onClick={this.toggleDetails}
-                    className="w-full flex items-center justify-between p-3.5 text-xs text-slate-400 hover:text-slate-300 font-mono transition-colors"
+                    className="w-full flex items-center justify-between p-3.5 text-xs text-muted-foreground hover:text-muted-foreground/70 font-mono transition-colors"
                   >
                     <span className="flex items-center gap-2 font-medium uppercase tracking-wider">
                       <Terminal size={13} />
@@ -89,12 +89,12 @@ export class GlobalErrorBoundary extends Component<Props, State> {
                   </button>
 
                   {this.state.showDetails && (
-                    <div className="p-4 border-t border-slate-800/40 bg-slate-950 font-mono text-[11px] text-slate-300 overflow-auto max-h-60 leading-relaxed scrollbar-thin">
+                    <div className="p-4 border-t border-slate-800/40 bg-slate-950 font-mono text-[11px] text-muted-foreground/70 overflow-auto max-h-60 leading-relaxed scrollbar-thin">
                       <p className="font-bold text-rose-400 mb-2 break-words">
                         {this.state.error.name}: {this.state.error.message}
                       </p>
                       {this.state.errorInfo?.componentStack && (
-                        <pre className="text-slate-500 whitespace-pre-wrap select-all">
+                        <pre className="text-muted-foreground whitespace-pre-wrap select-all">
                           {this.state.errorInfo.componentStack}
                         </pre>
                       )}

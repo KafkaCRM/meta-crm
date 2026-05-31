@@ -99,8 +99,8 @@ export function DateRangePicker({ className }: DateRangePickerProps) {
           onClick={() => applyPreset('week')}
           className={`h-7 text-xs rounded-md ${
             activePreset === 'week'
-              ? 'bg-[#0f172a] text-white hover:bg-[#1e293b]'
-              : 'border-[#e2e8f0] text-[#64748b] hover:bg-[#f8fafc]'
+              ? 'bg-primary text-white hover:bg-[#1e293b]'
+              : 'border-border text-muted-foreground hover:bg-background'
           }`}
         >
           This Week
@@ -111,8 +111,8 @@ export function DateRangePicker({ className }: DateRangePickerProps) {
           onClick={() => applyPreset('month')}
           className={`h-7 text-xs rounded-md ${
             activePreset === 'month'
-              ? 'bg-[#0f172a] text-white hover:bg-[#1e293b]'
-              : 'border-[#e2e8f0] text-[#64748b] hover:bg-[#f8fafc]'
+              ? 'bg-primary text-white hover:bg-[#1e293b]'
+              : 'border-border text-muted-foreground hover:bg-background'
           }`}
         >
           This Month
@@ -123,8 +123,8 @@ export function DateRangePicker({ className }: DateRangePickerProps) {
           onClick={() => applyPreset('30d')}
           className={`h-7 text-xs rounded-md ${
             activePreset === '30d'
-              ? 'bg-[#0f172a] text-white hover:bg-[#1e293b]'
-              : 'border-[#e2e8f0] text-[#64748b] hover:bg-[#f8fafc]'
+              ? 'bg-primary text-white hover:bg-[#1e293b]'
+              : 'border-border text-muted-foreground hover:bg-background'
           }`}
         >
           Last 30 Days
@@ -134,19 +134,19 @@ export function DateRangePicker({ className }: DateRangePickerProps) {
       <Separator orientation="vertical" className="h-5 bg-[#e2e8f0]" />
 
       <div className="flex items-center gap-1.5">
-        <Calendar className="h-3.5 w-3.5 text-[#94a3b8]" />
+        <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
         <input
           type="date"
           value={date_from}
           onChange={(e) => handleChange('date_from', e.target.value)}
-          className="h-7 rounded-md border border-[#e2e8f0] px-2 text-xs bg-white text-[#0f172a] focus:border-[#0f172a] focus:outline-none"
+          className="h-7 rounded-md border border-border px-2 text-xs bg-card text-foreground focus:border-[#0f172a] focus:outline-none"
         />
-        <span className="text-xs text-[#94a3b8]">to</span>
+        <span className="text-xs text-muted-foreground">to</span>
         <input
           type="date"
           value={date_to}
           onChange={(e) => handleChange('date_to', e.target.value)}
-          className="h-7 rounded-md border border-[#e2e8f0] px-2 text-xs bg-white text-[#0f172a] focus:border-[#0f172a] focus:outline-none"
+          className="h-7 rounded-md border border-border px-2 text-xs bg-card text-foreground focus:border-[#0f172a] focus:outline-none"
         />
       </div>
     </div>

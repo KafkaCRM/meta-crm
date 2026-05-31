@@ -94,6 +94,7 @@ export class LabelService {
         ?? HARDCODED_DEFAULTS[key]
         ?? key;
     }
+    result['_industry'] = industry;
 
     return ok(result);
   }

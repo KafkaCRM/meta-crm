@@ -29,7 +29,7 @@ export function CampaignConsole() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-6 w-6 animate-spin text-[#94a3b8]" />
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -60,8 +60,8 @@ export function CampaignConsole() {
     <div className="space-y-6 max-w-[1100px] animate-in fade-in duration-200">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-[#0f172a]">Campaign Attribution</h1>
-          <p className="text-sm text-[#64748b] mt-0.5">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Campaign Attribution</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
             Measure acquisition funnels, tag inbound leads, and track multi-channel conversions
           </p>
         </div>
@@ -70,7 +70,7 @@ export function CampaignConsole() {
             variant="outline"
             size="sm"
             onClick={refreshMutation}
-            className="h-9 text-xs gap-1 border-slate-200 text-slate-600 bg-white hover:bg-slate-50"
+            className="h-9 text-xs gap-1 border-border text-muted-foreground bg-card hover:bg-muted"
           >
             <RefreshCw size={13} />
             Refresh
@@ -79,7 +79,7 @@ export function CampaignConsole() {
             <Button
               size="sm"
               onClick={() => setIsModalOpen(true)}
-              className="h-9 text-xs gap-1 bg-[#0f172a] hover:bg-[#1e293b] text-white"
+              className="h-9 text-xs gap-1 bg-primary hover:bg-[#1e293b] text-white"
             >
               <Plus size={14} />
               Create Campaign
@@ -90,65 +90,65 @@ export function CampaignConsole() {
 
       {/* Aggregate Telemetry Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none">
+        <Card className="bg-card border-border rounded-xl shadow-none">
           <CardContent className="p-5 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 flex-shrink-0">
+            <div className="w-10 h-10 rounded-lg bg-fin-orange/10 flex items-center justify-center text-fin-orange flex-shrink-0">
               <Megaphone size={20} />
             </div>
             <div>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Campaigns</p>
-              <p className="text-2xl font-extrabold text-slate-900 mt-0.5">{campaigns.length}</p>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Total Campaigns</p>
+              <p className="text-2xl font-extrabold text-foreground mt-0.5">{campaigns.length}</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none">
+        <Card className="bg-card border-border rounded-xl shadow-none">
           <CardContent className="p-5 flex items-center gap-4">
             <div className="w-10 h-10 rounded-lg bg-teal-50 flex items-center justify-center text-teal-600 flex-shrink-0">
               <Target size={20} />
             </div>
             <div>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total leads</p>
-              <p className="text-2xl font-extrabold text-slate-900 mt-0.5">{totalLeads.toLocaleString()}</p>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Total leads</p>
+              <p className="text-2xl font-extrabold text-foreground mt-0.5">{totalLeads.toLocaleString()}</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none">
+        <Card className="bg-card border-border rounded-xl shadow-none">
           <CardContent className="p-5 flex items-center gap-4">
             <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600 flex-shrink-0">
               <TrendingUp size={20} />
             </div>
             <div>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Conversion Rate</p>
-              <p className="text-2xl font-extrabold text-slate-900 mt-0.5">{overallRate}%</p>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Conversion Rate</p>
+              <p className="text-2xl font-extrabold text-foreground mt-0.5">{overallRate}%</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none">
+        <Card className="bg-card border-border rounded-xl shadow-none">
           <CardContent className="p-5 flex items-center gap-4">
             <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 flex-shrink-0">
               <Activity size={20} />
             </div>
             <div>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Top Channel</p>
-              <p className="text-2xl font-extrabold text-slate-900 mt-0.5 capitalize">{topChannel.replace('_', ' ')}</p>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Top Channel</p>
+              <p className="text-2xl font-extrabold text-foreground mt-0.5 capitalize">{topChannel.replace('_', ' ')}</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Campaigns Listing */}
-      <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none overflow-hidden">
-        <CardHeader className="border-b border-[#e2e8f0] px-6 py-4">
-          <CardTitle className="text-sm font-semibold text-[#0f172a]">Active Channels & UTM Configurations</CardTitle>
+      <Card className="bg-card border-border rounded-xl shadow-none overflow-hidden">
+        <CardHeader className="border-b border-border px-6 py-4">
+          <CardTitle className="text-sm font-semibold text-foreground">Active Channels & UTM Configurations</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-[#e2e8f0] text-slate-500 text-xs font-semibold uppercase">
+                <tr className="bg-muted border-b border-border text-muted-foreground text-xs font-semibold uppercase">
                   <th className="px-6 py-3">Campaign Name</th>
                   <th className="px-6 py-3">Channel</th>
                   <th className="px-6 py-3">Status</th>
@@ -164,7 +164,7 @@ export function CampaignConsole() {
                       ? 'text-emerald-600 font-bold'
                       : camp.conversion_rate >= 10
                         ? 'text-amber-600 font-semibold'
-                        : 'text-slate-500';
+                        : 'text-muted-foreground';
 
                   const statusBg =
                     camp.status === 'active'
@@ -172,27 +172,27 @@ export function CampaignConsole() {
                       : camp.status === 'paused'
                         ? 'bg-amber-50 text-amber-700 border-amber-200'
                         : camp.status === 'completed'
-                          ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                          : 'bg-slate-50 text-slate-700 border-slate-200';
+                          ? 'bg-fin-orange/10 text-fin-orange border-fin-orange/30'
+                          : 'bg-muted text-foreground/80 border-border';
 
                   return (
-                    <tr key={camp.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-6 py-4 font-medium text-slate-900">{camp.name}</td>
-                      <td className="px-6 py-4 capitalize text-slate-600">{camp.channel.replace('_', ' ')}</td>
+                    <tr key={camp.id} className="hover:bg-muted/50 transition-colors">
+                      <td className="px-6 py-4 font-medium text-foreground">{camp.name}</td>
+                      <td className="px-6 py-4 capitalize text-muted-foreground">{camp.channel.replace('_', ' ')}</td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${statusBg}`}>
                           {camp.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right text-slate-600">{camp.total_leads}</td>
-                      <td className="px-6 py-4 text-right text-slate-600">{camp.converted}</td>
+                      <td className="px-6 py-4 text-right text-muted-foreground">{camp.total_leads}</td>
+                      <td className="px-6 py-4 text-right text-muted-foreground">{camp.converted}</td>
                       <td className={`px-6 py-4 text-right ${rateColor}`}>{camp.conversion_rate}%</td>
                     </tr>
                   );
                 })}
                 {campaigns.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-slate-400 text-xs">
+                    <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground text-xs">
                       No campaigns created yet. Click "Create Campaign" to begin tagging incoming traffic.
                     </td>
                   </tr>

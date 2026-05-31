@@ -89,7 +89,7 @@ export function FieldEditor() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-[#94a3b8]" />
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -100,15 +100,15 @@ export function FieldEditor() {
     <div className="space-y-6 max-w-[1000px]">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-[#0f172a]">Custom Fields</h1>
-          <p className="text-sm text-[#64748b] mt-0.5">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Custom Fields</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
             Configure system fields, establish required criteria, and control validation schemas
           </p>
         </div>
         {canManage && (
         <Button
           onClick={() => setShowForm(!showForm)}
-          className="bg-[#0f172a] hover:bg-[#1e293b] text-white h-9 rounded-lg"
+          className="bg-primary hover:bg-[#1e293b] text-white h-9 rounded-lg"
         >
           <Plus size={15} className="mr-1.5" />
           Add Custom Field
@@ -117,7 +117,7 @@ export function FieldEditor() {
       </div>
 
       {/* Tabs navigation */}
-      <div className="grid gap-2 grid-cols-3 border-b border-[#e2e8f0] pb-px">
+      <div className="grid gap-2 grid-cols-3 border-b border-border pb-px">
         {ENTITIES.map((ent) => {
           const isActive = entityType === ent.id;
           return (
@@ -129,15 +129,15 @@ export function FieldEditor() {
               }}
               className={`flex flex-col items-start p-3 border-b-2 transition-all text-left outline-none ${
                 isActive
-                  ? 'border-[#0f172a] text-[#0f172a] bg-[#f8fafc]/30'
-                  : 'border-transparent text-[#64748b] hover:text-[#0f172a]'
+                  ? 'border-[#0f172a] text-foreground bg-background/30'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider">
-                <ent.icon size={13} className={isActive ? 'text-[#0f172a]' : 'text-[#94a3b8]'} />
+                <ent.icon size={13} className={isActive ? 'text-foreground' : 'text-muted-foreground'} />
                 {ent.label}
               </span>
-              <span className="text-[10px] text-[#94a3b8] mt-0.5 font-normal truncate w-full hidden sm:inline-block">
+              <span className="text-[10px] text-muted-foreground mt-0.5 font-normal truncate w-full hidden sm:inline-block">
                 {ent.desc}
               </span>
             </button>
@@ -148,12 +148,12 @@ export function FieldEditor() {
       <div className="grid gap-6 md:grid-cols-3 items-start">
         {/* Fields list column */}
         <div className={cn("space-y-4", canManage ? "md:col-span-2" : "md:col-span-3")}>
-          <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none">
-            <CardHeader className="pb-3 border-b border-[#e2e8f0]">
-              <CardTitle className="text-base font-medium text-[#0f172a]">
+          <Card className="bg-card border-border rounded-xl shadow-none">
+            <CardHeader className="pb-3 border-b border-border">
+              <CardTitle className="text-base font-medium text-foreground">
                 Field Registry: {activeEntity?.label}
               </CardTitle>
-              <CardDescription className="text-xs text-[#94a3b8]">
+              <CardDescription className="text-xs text-muted-foreground">
                 {fields?.length ?? 0} custom fields configured for this entity type
               </CardDescription>
             </CardHeader>
@@ -174,7 +174,7 @@ export function FieldEditor() {
                   />
                 ))}
                 {fields?.length === 0 && (
-                  <div className="p-8 text-center text-sm text-[#64748b]">
+                  <div className="p-8 text-center text-sm text-muted-foreground">
                     No custom fields configured for this entity. {canManage && 'Click "Add Custom Field" to begin.'}
                   </div>
                 )}
@@ -185,58 +185,58 @@ export function FieldEditor() {
 
         {/* Add/Edit field side card */}
         {canManage && showForm && (
-          <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none h-fit">
-            <CardHeader className="pb-3 border-b border-[#e2e8f0]">
+          <Card className="bg-card border-border rounded-xl shadow-none h-fit">
+            <CardHeader className="pb-3 border-b border-border">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-medium text-[#0f172a] flex items-center gap-1.5">
-                  <Sliders size={16} className="text-[#94a3b8]" />
+                <CardTitle className="text-base font-medium text-foreground flex items-center gap-1.5">
+                  <Sliders size={16} className="text-muted-foreground" />
                   New Field Definition
                 </CardTitle>
                 <Button
                   variant="ghost"
                   size="icon-xs"
-                  className="text-[#94a3b8] hover:text-[#0f172a]"
+                  className="text-muted-foreground hover:text-foreground"
                   onClick={() => setShowForm(false)}
                 >
                   <X size={14} />
                 </Button>
               </div>
-              <CardDescription className="text-xs text-[#94a3b8]">
+              <CardDescription className="text-xs text-muted-foreground">
                 Create a custom validation schema node
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-4">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-[#64748b]">Display Label</label>
+                  <label className="text-xs font-medium text-muted-foreground">Display Label</label>
                   <Input
                     type="text"
                     placeholder="e.g. Lead Temperature"
                     value={formData.label}
                     onChange={(e) => setFormData((f) => ({ ...f, label: e.target.value }))}
                     required
-                    className="h-9 border-[#e2e8f0] bg-white text-[#0f172a] placeholder-[#94a3b8]"
+                    className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-[#64748b]">API Key Identifier</label>
+                  <label className="text-xs font-medium text-muted-foreground">API Key Identifier</label>
                   <Input
                     type="text"
                     placeholder="e.g. lead_temperature"
                     value={formData.name}
                     onChange={(e) => setFormData((f) => ({ ...f, name: e.target.value.toLowerCase().replace(/\s+/g, '_') }))}
                     required
-                    className="h-9 border-[#e2e8f0] bg-white text-[#0f172a] placeholder-[#94a3b8] font-mono text-xs"
+                    className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8] font-mono text-xs"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-[#64748b]">Field Type</label>
+                  <label className="text-xs font-medium text-muted-foreground">Field Type</label>
                   <select
                     value={formData.field_type}
                     onChange={(e) => setFormData((f) => ({ ...f, field_type: e.target.value }))}
-                    className="w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#0f172a] outline-none h-9 focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-400/50"
+                    className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground outline-none h-9 focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-400/50"
                   >
                     {FIELD_TYPES.map((ft) => (
                       <option key={ft} value={ft}>{ft}</option>
@@ -246,36 +246,36 @@ export function FieldEditor() {
 
                 {['select', 'multi_select'].includes(formData.field_type) && (
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-[#64748b]">Select Options (Comma-separated)</label>
+                    <label className="text-xs font-medium text-muted-foreground">Select Options (Comma-separated)</label>
                     <Input
                       type="text"
                       placeholder="e.g. Hot, Warm, Cold"
                       value={formData.options}
                       onChange={(e) => setFormData((f) => ({ ...f, options: e.target.value }))}
                       required
-                      className="h-9 border-[#e2e8f0] bg-white text-[#0f172a] placeholder-[#94a3b8]"
+                      className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
                     />
                   </div>
                 )}
 
-                <div className="flex items-center justify-between p-2.5 bg-[#f8fafc] border border-[#e2e8f0] rounded-lg">
-                  <label className="flex items-center gap-2 text-xs font-medium text-[#64748b] cursor-pointer">
+                <div className="flex items-center justify-between p-2.5 bg-background border border-border rounded-lg">
+                  <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground cursor-pointer">
                     <input
                       type="checkbox"
                       checked={formData.required}
                       onChange={(e) => setFormData((f) => ({ ...f, required: e.target.checked }))}
-                      className="h-4 w-4 rounded border-[#cbd5e1] text-[#0f172a] focus:ring-slate-400 cursor-pointer"
+                      className="h-4 w-4 rounded border-[#cbd5e1] text-foreground focus:ring-slate-400 cursor-pointer"
                     />
                     <span>Required Constraint</span>
                   </label>
 
-                  <div className="flex items-center gap-1.5 text-xs text-[#64748b]">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <span>Sort Order:</span>
                     <input
                       type="number"
                       value={formData.order}
                       onChange={(e) => setFormData((f) => ({ ...f, order: parseInt(e.target.value, 10) }))}
-                      className="w-12 h-7 rounded-md border border-[#e2e8f0] bg-white text-center text-xs text-[#0f172a] focus-visible:border-slate-400"
+                      className="w-12 h-7 rounded-md border border-border bg-card text-center text-xs text-foreground focus-visible:border-slate-400"
                     />
                   </div>
                 </div>
@@ -284,7 +284,7 @@ export function FieldEditor() {
                   <Button
                     type="submit"
                     disabled={createMutation.isPending}
-                    className="bg-[#0f172a] hover:bg-[#1e293b] text-white w-full h-9 rounded-lg flex items-center justify-center gap-1.5"
+                    className="bg-primary hover:bg-[#1e293b] text-white w-full h-9 rounded-lg flex items-center justify-center gap-1.5"
                   >
                     {createMutation.isPending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -313,16 +313,16 @@ interface FieldRowProps {
 
 function FieldRow({ field, expanded, onToggleRules, onDelete, canManage }: FieldRowProps) {
   return (
-    <div className="p-4 hover:bg-[#f8fafc]/30 transition-colors group">
+    <div className="p-4 hover:bg-background/30 transition-colors group">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3.5 min-w-0">
-          <div className="p-2 bg-[#f1f5f9] text-[#64748b] border border-[#e2e8f0] rounded-lg">
+          <div className="p-2 bg-[#f1f5f9] text-muted-foreground border border-border rounded-lg">
             <CheckSquare size={15} />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-medium text-[#0f172a]">{field.label}</span>
-              <Badge variant="outline" className="bg-[#f8fafc] text-[#64748b] border-[#e2e8f0] text-[9px] rounded-md font-mono py-0 px-1.5 font-medium">
+              <span className="text-sm font-medium text-foreground">{field.label}</span>
+              <Badge variant="outline" className="bg-background text-muted-foreground border-border text-[9px] rounded-md font-mono py-0 px-1.5 font-medium">
                 {field.field_type}
               </Badge>
               {field.required && (
@@ -331,15 +331,15 @@ function FieldRow({ field, expanded, onToggleRules, onDelete, canManage }: Field
                 </Badge>
               )}
             </div>
-            <p className="text-[10px] font-mono text-[#94a3b8] mt-0.5 truncate">{field.name}</p>
+            <p className="text-[10px] font-mono text-muted-foreground mt-0.5 truncate">{field.name}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2.5">
           {field.options && field.options.length > 0 && (
             <div className="hidden lg:flex items-center gap-1 max-w-[200px] overflow-hidden truncate">
-              <List size={11} className="text-[#94a3b8]" />
-              <span className="text-[11px] text-[#64748b] truncate">{field.options.join(', ')}</span>
+              <List size={11} className="text-muted-foreground" />
+              <span className="text-[11px] text-muted-foreground truncate">{field.options.join(', ')}</span>
             </div>
           )}
 
@@ -348,7 +348,7 @@ function FieldRow({ field, expanded, onToggleRules, onDelete, canManage }: Field
               variant="ghost"
               size="xs"
               onClick={onToggleRules}
-              className="text-xs text-[#64748b] hover:bg-[#f1f5f9] h-7 rounded-md"
+              className="text-xs text-muted-foreground hover:bg-[#f1f5f9] h-7 rounded-md"
             >
               {expanded ? <ChevronDown size={13} className="mr-1" /> : <ChevronRight size={13} className="mr-1" />}
               {field.visibility_rules.length} Rules
@@ -369,8 +369,8 @@ function FieldRow({ field, expanded, onToggleRules, onDelete, canManage }: Field
       </div>
 
       {expanded && field.visibility_rules && field.visibility_rules.length > 0 && (
-        <div className="mt-3 ml-11 p-3 bg-[#f8fafc] border border-[#e2e8f0] rounded-lg space-y-2">
-          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#94a3b8]">
+        <div className="mt-3 ml-11 p-3 bg-background border border-border rounded-lg space-y-2">
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             <AlertCircle size={12} />
             <span>Conditional Visibility Gates</span>
           </div>
@@ -378,9 +378,9 @@ function FieldRow({ field, expanded, onToggleRules, onDelete, canManage }: Field
             {(field.visibility_rules as VisibilityRuleEntry[]).map((rule, i) => (
               <div key={i} className="text-[11px] font-mono text-[#475569] flex items-center gap-1">
                 <span>• Show when </span>
-                <span className="font-semibold text-[#0f172a]">{(rule as any).field ?? 'group'}</span>
-                <span className="text-[#94a3b8]">{(rule as any).operator ?? ''}</span>
-                {(rule as any).value !== undefined && <span className="bg-white px-1 border border-[#e2e8f0] rounded">"{(rule as any).value}"</span>}
+                <span className="font-semibold text-foreground">{(rule as any).field ?? 'group'}</span>
+                <span className="text-muted-foreground">{(rule as any).operator ?? ''}</span>
+                {(rule as any).value !== undefined && <span className="bg-card px-1 border border-border rounded">"{(rule as any).value}"</span>}
               </div>
             ))}
           </div>

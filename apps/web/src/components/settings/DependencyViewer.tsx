@@ -50,18 +50,18 @@ export function DependencyViewer({ objectName, fieldName, fieldLabel }: Dependen
   }, [defaultLayout, fieldName]);
 
   return (
-    <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none overflow-hidden">
-      <CardHeader className="pb-3 border-b border-[#e2e8f0] bg-slate-50/20">
+    <Card className="bg-card border-border rounded-xl shadow-none overflow-hidden">
+      <CardHeader className="pb-3 border-b border-border bg-muted/20">
         <div className="flex items-center gap-2">
           <div className="p-1.5 bg-amber-50 border border-amber-100 rounded-lg text-amber-500">
             <ShieldAlert size={15} />
           </div>
           <div>
-            <CardTitle className="text-sm font-semibold text-[#0f172a]">
+            <CardTitle className="text-sm font-semibold text-foreground">
               Active Field Usage & Safety
             </CardTitle>
-            <CardDescription className="text-[11px] text-[#94a3b8]">
-              Dynamic dependency analysis for <span className="font-mono text-slate-700 font-semibold">{fieldName}</span>
+            <CardDescription className="text-[11px] text-muted-foreground">
+              Dynamic dependency analysis for <span className="font-mono text-foreground/80 font-semibold">{fieldName}</span>
             </CardDescription>
           </div>
         </div>
@@ -97,62 +97,62 @@ export function DependencyViewer({ objectName, fieldName, fieldLabel }: Dependen
 
         {/* Breakdown Matrix */}
         <div className="space-y-3">
-          <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Dependency Checklist</h4>
+          <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Dependency Checklist</h4>
           
           <div className="space-y-2">
             {/* Page Layout Check */}
-            <div className="flex items-center justify-between text-xs p-2 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors">
+            <div className="flex items-center justify-between text-xs p-2 rounded-lg border border-border/50 hover:bg-muted transition-colors">
               <div className="flex items-center gap-2">
-                <FileText size={14} className="text-slate-400" />
-                <span className="font-medium text-slate-700">Page Layout Placement</span>
+                <FileText size={14} className="text-muted-foreground" />
+                <span className="font-medium text-foreground/80">Page Layout Placement</span>
               </div>
               {analysis.layoutReferences.length > 0 ? (
                 <Badge className="bg-amber-50 text-amber-700 border border-amber-250 text-[9px] font-semibold py-0.5 px-2">
                   Used in {analysis.layoutReferences.length} Section
                 </Badge>
               ) : (
-                <Badge className="bg-slate-50 text-slate-400 border border-slate-200 text-[9px] py-0.5 px-2">
+                <Badge className="bg-muted text-muted-foreground border border-border text-[9px] py-0.5 px-2">
                   Unused
                 </Badge>
               )}
             </div>
 
             {analysis.layoutReferences.map((ref, i) => (
-              <p key={i} className="text-[9px] text-slate-500 pl-7 flex items-center gap-1">
+              <p key={i} className="text-[9px] text-muted-foreground pl-7 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
                 {ref}
               </p>
             ))}
 
             {/* Workflow Automations Check */}
-            <div className="flex items-center justify-between text-xs p-2 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors">
+            <div className="flex items-center justify-between text-xs p-2 rounded-lg border border-border/50 hover:bg-muted transition-colors">
               <div className="flex items-center gap-2">
-                <Settings size={14} className="text-slate-400" />
-                <span className="font-medium text-slate-700">Workflow Rules & Actions</span>
+                <Settings size={14} className="text-muted-foreground" />
+                <span className="font-medium text-foreground/80">Workflow Rules & Actions</span>
               </div>
               {analysis.workflowCount > 0 ? (
                 <Badge className="bg-amber-50 text-amber-700 border border-amber-250 text-[9px] font-semibold py-0.5 px-2">
                   1 Action Rule Reference
                 </Badge>
               ) : (
-                <Badge className="bg-slate-50 text-slate-400 border border-slate-200 text-[9px] py-0.5 px-2">
+                <Badge className="bg-muted text-muted-foreground border border-border text-[9px] py-0.5 px-2">
                   Unused
                 </Badge>
               )}
             </div>
 
             {/* Permissions Check */}
-            <div className="flex items-center justify-between text-xs p-2 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors">
+            <div className="flex items-center justify-between text-xs p-2 rounded-lg border border-border/50 hover:bg-muted transition-colors">
               <div className="flex items-center gap-2">
-                <Database size={14} className="text-slate-400" />
-                <span className="font-medium text-slate-700">Access Control Matrices</span>
+                <Database size={14} className="text-muted-foreground" />
+                <span className="font-medium text-foreground/80">Access Control Matrices</span>
               </div>
               {analysis.permissionsCount > 0 ? (
                 <Badge className="bg-amber-50 text-amber-700 border border-amber-250 text-[9px] font-semibold py-0.5 px-2">
                   {analysis.permissionsCount} Field Security Rules
                 </Badge>
               ) : (
-                <Badge className="bg-slate-50 text-slate-400 border border-slate-200 text-[9px] py-0.5 px-2">
+                <Badge className="bg-muted text-muted-foreground border border-border text-[9px] py-0.5 px-2">
                   Unused
                 </Badge>
               )}
@@ -161,7 +161,7 @@ export function DependencyViewer({ objectName, fieldName, fieldLabel }: Dependen
         </div>
 
         {/* Dynamic Warning footnote */}
-        <p className="text-[10px] text-slate-400 leading-normal flex items-start gap-1">
+        <p className="text-[10px] text-muted-foreground leading-normal flex items-start gap-1">
           <HelpCircle size={11} className="shrink-0 mt-0.5 text-slate-350" />
           <span>Before deleting this custom field definitions, ensure that zero workflow formulas or external integration APIs point to this column target.</span>
         </p>

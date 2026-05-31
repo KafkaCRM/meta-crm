@@ -133,7 +133,7 @@ function SortablePlacedField({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "flex items-center justify-between p-3 border border-slate-200 rounded-lg hover:border-slate-350 hover:shadow-xs transition-all bg-white group/field select-none",
+        "flex items-center justify-between p-3 border border-border rounded-lg hover:border-slate-350 hover:shadow-xs transition-all bg-card group/field select-none",
         isDragging && "border-indigo-400 ring-2 ring-indigo-500/10"
       )}
     >
@@ -142,7 +142,7 @@ function SortablePlacedField({
           <div 
             {...attributes} 
             {...listeners} 
-            className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-600 p-1 rounded-sm shrink-0"
+            className="cursor-grab active:cursor-grabbing text-muted-foreground/70 hover:text-muted-foreground p-1 rounded-sm shrink-0"
             title="Drag to reorder"
           >
             <div className="grid grid-cols-2 gap-0.5 w-3">
@@ -157,14 +157,14 @@ function SortablePlacedField({
         )}
         
         <div className="min-w-0 pr-2 space-y-0.5">
-          <div className="text-[11px] font-semibold text-slate-800 flex items-center gap-1.5">
+          <div className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
             {registryInfo?.label || placedField.name}
             {isRequired && <Badge className="bg-red-50 text-red-600 border border-red-100 text-[8px] px-1 py-0 rounded">Req</Badge>}
-            {isReadonly && <Badge className="bg-slate-50 text-slate-500 border border-slate-100 text-[8px] px-1 py-0 rounded">R/O</Badge>}
+            {isReadonly && <Badge className="bg-muted text-muted-foreground border border-border/50 text-[8px] px-1 py-0 rounded">R/O</Badge>}
           </div>
-          <div className="text-[9px] font-mono text-slate-400 truncate flex items-center gap-2">
+          <div className="text-[9px] font-mono text-muted-foreground truncate flex items-center gap-2">
             <span>{placedField.name}</span>
-            <span className="capitalize px-1 bg-slate-50 border border-slate-100 rounded text-slate-500 text-[8px]">
+            <span className="capitalize px-1 bg-muted border border-border/50 rounded text-muted-foreground text-[8px]">
               {registryInfo?.field_type || 'text'}
             </span>
           </div>
@@ -178,7 +178,7 @@ function SortablePlacedField({
             size="icon-xs"
             disabled={fIdx === 0}
             onClick={() => handleMoveField(sIdx, fIdx, 'up')}
-            className="h-6 w-6 text-slate-400 hover:text-slate-600 rounded disabled:opacity-20 pointer-events-auto"
+            className="h-6 w-6 text-muted-foreground hover:text-muted-foreground rounded disabled:opacity-20 pointer-events-auto"
           >
             <ArrowUp size={11} />
           </Button>
@@ -187,7 +187,7 @@ function SortablePlacedField({
             size="icon-xs"
             disabled={fIdx === layoutSections[sIdx].fields.length - 1}
             onClick={() => handleMoveField(sIdx, fIdx, 'down')}
-            className="h-6 w-6 text-slate-400 hover:text-slate-600 rounded disabled:opacity-20 pointer-events-auto"
+            className="h-6 w-6 text-muted-foreground hover:text-muted-foreground rounded disabled:opacity-20 pointer-events-auto"
           >
             <ArrowDown size={11} />
           </Button>
@@ -197,7 +197,7 @@ function SortablePlacedField({
               handleMoveFieldToSection(sIdx, fIdx, parseInt(e.target.value));
             }}
             value={sIdx}
-            className="text-[9px] h-6 border-slate-200 border rounded bg-white text-slate-600 outline-none max-w-[60px]"
+            className="text-[9px] h-6 border-border border rounded bg-card text-muted-foreground outline-none max-w-[60px]"
           >
             {layoutSections.map((sec, i) => (
               <option key={i} value={i}>Sec {i + 1}</option>
@@ -208,19 +208,19 @@ function SortablePlacedField({
             <Button
               variant="outline"
               size="icon-xs"
-              className="h-6 w-6 border-slate-200 rounded text-slate-400 hover:text-indigo-600"
+              className="h-6 w-6 border-border rounded text-muted-foreground hover:text-fin-orange"
             >
               <Settings size={11} />
             </Button>
-            <div className="absolute right-0 bottom-full mb-1 bg-white border border-slate-200 rounded-lg shadow-lg p-2.5 z-10 w-[140px] hidden group-focus-within/pop:block group-hover/pop:block space-y-2">
-              <p className="text-[9px] font-bold text-slate-500 uppercase border-b pb-1">Properties</p>
+            <div className="absolute right-0 bottom-full mb-1 bg-card border border-border rounded-lg shadow-lg p-2.5 z-10 w-[140px] hidden group-focus-within/pop:block group-hover/pop:block space-y-2">
+              <p className="text-[9px] font-bold text-muted-foreground uppercase border-b pb-1">Properties</p>
               <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => handleToggleFieldProp(sIdx, fIdx, 'required')}>
                 <input type="checkbox" checked={isRequired} readOnly className="h-3 w-3" />
-                <span className="text-[10px] text-slate-700 font-medium">Required</span>
+                <span className="text-[10px] text-foreground/80 font-medium">Required</span>
               </div>
               <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => handleToggleFieldProp(sIdx, fIdx, 'readonly')}>
                 <input type="checkbox" checked={isReadonly} readOnly className="h-3 w-3" />
-                <span className="text-[10px] text-slate-700 font-medium">Read-Only</span>
+                <span className="text-[10px] text-foreground/80 font-medium">Read-Only</span>
               </div>
             </div>
           </div>
@@ -678,11 +678,11 @@ export function LayoutBuilder() {
       {/* Top Header Selector & Actions */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-[#0f172a] flex items-center gap-2">
-            <Layers className="h-6 w-6 text-slate-800" />
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+            <Layers className="h-6 w-6 text-foreground" />
             Visual Layout Designer
           </h1>
-          <p className="text-sm text-[#64748b] mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5">
             Construct custom page block sections, arrange multi-column grids, and toggle required schema properties.
           </p>
         </div>
@@ -695,7 +695,7 @@ export function LayoutBuilder() {
                 variant="outline"
                 size="sm"
                 onClick={handleResetLayout}
-                className="h-9 border-[#e2e8f0] bg-white text-xs font-semibold text-slate-700 rounded-lg flex items-center gap-1 hover:bg-slate-50 transition-colors"
+                className="h-9 border-border bg-card text-xs font-semibold text-foreground/80 rounded-lg flex items-center gap-1 hover:bg-muted transition-colors"
               >
                 <Undo className="h-3.5 w-3.5" />
                 Discard
@@ -708,8 +708,8 @@ export function LayoutBuilder() {
               className={cn(
                 "h-9 text-xs font-semibold text-white rounded-lg flex items-center gap-1 shadow-sm transition-all",
                 hasChanges 
-                  ? "bg-[#0f172a] hover:bg-slate-800" 
-                  : "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
+                  ? "bg-primary hover:bg-muted" 
+                  : "bg-slate-200 text-muted-foreground cursor-not-allowed shadow-none"
               )}
             >
               {updateLayoutMutation.isPending ? (
@@ -724,17 +724,17 @@ export function LayoutBuilder() {
       </div>
 
       {/* Target entity selector */}
-      <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <Card className="bg-card border-border rounded-xl shadow-none p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-slate-50 border border-slate-100 rounded-lg text-slate-500">
+          <div className="p-2 bg-muted border border-border/50 rounded-lg text-muted-foreground">
             <Settings size={18} />
           </div>
           <div>
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-[#94a3b8]">Target Object Entity</label>
+            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Target Object Entity</label>
             <select
               value={selectedObject}
               onChange={(e) => setSelectedObject(e.target.value)}
-              className="block w-full sm:w-[280px] h-8 px-2 rounded-lg border border-[#e2e8f0] bg-white text-xs text-[#0f172a] outline-none font-medium focus:border-slate-350"
+              className="block w-full sm:w-[280px] h-8 px-2 rounded-lg border border-border bg-card text-xs text-foreground outline-none font-medium focus:border-slate-350"
             >
               {objectOptions.map(o => (
                 <option key={o.value} value={o.value}>{o.label}</option>
@@ -744,7 +744,7 @@ export function LayoutBuilder() {
         </div>
 
         {/* Dynamic Field Registry Link */}
-        <div className="flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer">
+        <div className="flex items-center gap-1.5 text-xs text-fin-orange hover:text-indigo-800 font-semibold cursor-pointer">
           <Sliders className="h-3.5 w-3.5" />
           <span>Fields schema manager</span>
           <ExternalLink className="h-3 w-3" />
@@ -754,18 +754,18 @@ export function LayoutBuilder() {
       {/* Loading Block */}
       {showLoading ? (
         <div className="flex flex-col items-center justify-center py-24 space-y-3">
-          <Loader2 className="h-7 w-7 animate-spin text-indigo-500" />
-          <p className="text-xs text-slate-500 font-medium">Fetching entity schema and layout matrices...</p>
+          <Loader2 className="h-7 w-7 animate-spin text-fin-orange" />
+          <p className="text-xs text-muted-foreground font-medium">Fetching entity schema and layout matrices...</p>
         </div>
       ) : !layout ? (
         /* Initialization view for objects with no layouts */
-        <Card className="p-10 text-center space-y-4 max-w-lg mx-auto bg-white border-[#e2e8f0] rounded-2xl shadow-sm">
-          <div className="mx-auto w-12 h-12 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500">
+        <Card className="p-10 text-center space-y-4 max-w-lg mx-auto bg-card border-border rounded-2xl shadow-sm">
+          <div className="mx-auto w-12 h-12 rounded-full bg-fin-orange/10 border border-fin-orange/20 flex items-center justify-center text-fin-orange">
             <Layers className="h-6 w-6" />
           </div>
           <div className="space-y-1.5">
-            <h3 className="text-base font-semibold text-slate-800">No layout configured for "{selectedObject}"</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto leading-normal">
+            <h3 className="text-base font-semibold text-foreground">No layout configured for "{selectedObject}"</h3>
+            <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-normal">
               A structured form page is required to construct record views. Click initialize to provision a default empty page layout.
             </p>
           </div>
@@ -773,7 +773,7 @@ export function LayoutBuilder() {
             <Button
               onClick={handleInitializeLayout}
               disabled={initializeLayoutMutation.isPending}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs h-9 px-4 flex items-center gap-1 mx-auto"
+              className="bg-fin-orange hover:bg-fin-orange/90 text-white font-semibold rounded-lg text-xs h-9 px-4 flex items-center gap-1 mx-auto"
             >
               {initializeLayoutMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               Initialize Default Layout
@@ -785,24 +785,24 @@ export function LayoutBuilder() {
         <div className="grid gap-6 lg:grid-cols-4 items-start">
           
           {/* Left panel: Fields Palette */}
-          <Card className="lg:col-span-1 bg-white border-[#e2e8f0] rounded-xl shadow-none self-start max-h-[700px] flex flex-col">
-            <CardHeader className="pb-3 border-b border-[#e2e8f0]">
-              <CardTitle className="text-sm font-semibold text-[#0f172a] flex items-center gap-1.5">
+          <Card className="lg:col-span-1 bg-card border-border rounded-xl shadow-none self-start max-h-[700px] flex flex-col">
+            <CardHeader className="pb-3 border-b border-border">
+              <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-1.5">
                 Available Fields
               </CardTitle>
-              <CardDescription className="text-[11px] text-[#94a3b8] leading-normal">
+              <CardDescription className="text-[11px] text-muted-foreground leading-normal">
                 Double-click or click + to add standard/custom fields into page layout blocks.
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-0 overflow-y-auto max-h-[500px] divide-y divide-slate-100">
+            <CardContent className="p-0 overflow-y-auto max-h-[500px] divide-y divide-border/50">
               {availableFields.map((field) => (
-                <div key={field.name} className="p-3 hover:bg-slate-50 flex items-center justify-between group">
+                <div key={field.name} className="p-3 hover:bg-muted flex items-center justify-between group">
                   <div className="min-w-0 pr-2">
-                    <div className="text-[11px] font-semibold text-slate-800 flex items-center gap-1">
+                    <div className="text-[11px] font-semibold text-foreground flex items-center gap-1">
                       {field.label}
                       {field.required && <span className="text-red-500 font-bold">*</span>}
                     </div>
-                    <div className="text-[9px] font-mono text-slate-400 truncate mt-0.5">
+                    <div className="text-[9px] font-mono text-muted-foreground truncate mt-0.5">
                       {field.name}
                     </div>
                   </div>
@@ -817,7 +817,7 @@ export function LayoutBuilder() {
                             e.target.value = '';
                           }
                         }}
-                        className="text-[9px] h-6 border-slate-200 border rounded bg-white text-slate-600 font-medium px-1 outline-none opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="text-[9px] h-6 border-border border rounded bg-card text-muted-foreground font-medium px-1 outline-none opacity-0 group-hover:opacity-100 transition-opacity"
                         defaultValue=""
                       >
                         <option value="" disabled>+</option>
@@ -831,7 +831,7 @@ export function LayoutBuilder() {
               ))}
 
               {availableFields.length === 0 && (
-                <div className="p-6 text-center text-xs text-slate-400">
+                <div className="p-6 text-center text-xs text-muted-foreground">
                   All defined fields have been placed in layout sections.
                 </div>
               )}
@@ -843,12 +843,12 @@ export function LayoutBuilder() {
             
             {/* Sections canvas list */}
             {layout.layout_json.sections.map((section, sIdx) => (
-              <Card key={sIdx} className="bg-white border-[#e2e8f0] rounded-xl shadow-none overflow-hidden group/section">
+              <Card key={sIdx} className="bg-card border-border rounded-xl shadow-none overflow-hidden group/section">
                 
                 {/* Section Header toolbar */}
-                <CardHeader className="pb-3 border-b border-[#e2e8f0] bg-slate-50/30 flex flex-row items-center justify-between p-4">
+                <CardHeader className="pb-3 border-b border-border bg-muted/30 flex flex-row items-center justify-between p-4">
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="bg-[#f8fafc] text-indigo-600 border-indigo-100 text-[10px] font-bold rounded-md py-0 px-2 select-none">
+                    <Badge variant="outline" className="bg-background text-fin-orange border-fin-orange/20 text-[10px] font-bold rounded-md py-0 px-2 select-none">
                       Section {sIdx + 1}
                     </Badge>
                     <Input 
@@ -862,7 +862,7 @@ export function LayoutBuilder() {
                           layout_json: { ...layout.layout_json, sections: newSections }
                         });
                       }}
-                      className="h-7 text-xs font-semibold text-[#0f172a] border-none bg-transparent hover:bg-slate-100 focus-visible:bg-white rounded px-2 w-[240px] focus-visible:ring-1 focus-visible:ring-indigo-500 py-0"
+                      className="h-7 text-xs font-semibold text-foreground border-none bg-transparent hover:bg-muted/70 focus-visible:bg-card rounded px-2 w-[240px] focus-visible:ring-1 focus-visible:ring-indigo-500 py-0"
                     />
                   </div>
 
@@ -874,9 +874,9 @@ export function LayoutBuilder() {
                         size="icon"
                         onClick={() => handleToggleSectionColumns(sIdx)}
                         title={`Toggle Columns (Active: ${section.columns} Columns)`}
-                        className="h-7 w-7 border-slate-200 text-slate-500 rounded-md hover:bg-slate-50"
+                        className="h-7 w-7 border-border text-muted-foreground rounded-md hover:bg-muted"
                       >
-                        <Columns size={13} className={section.columns === 2 ? "text-indigo-600" : ""} />
+                        <Columns size={13} className={section.columns === 2 ? "text-fin-orange" : ""} />
                       </Button>
 
                       {/* Direction modifiers */}
@@ -885,7 +885,7 @@ export function LayoutBuilder() {
                         size="icon"
                         disabled={sIdx === 0}
                         onClick={() => handleMoveSection(sIdx, 'up')}
-                        className="h-7 w-7 border-slate-200 text-slate-500 rounded-md hover:bg-slate-50 disabled:opacity-30"
+                        className="h-7 w-7 border-border text-muted-foreground rounded-md hover:bg-muted disabled:opacity-30"
                       >
                         <ArrowUp size={13} />
                       </Button>
@@ -895,7 +895,7 @@ export function LayoutBuilder() {
                         size="icon"
                         disabled={sIdx === layout.layout_json.sections.length - 1}
                         onClick={() => handleMoveSection(sIdx, 'down')}
-                        className="h-7 w-7 border-slate-200 text-slate-500 rounded-md hover:bg-slate-50 disabled:opacity-30"
+                        className="h-7 w-7 border-border text-muted-foreground rounded-md hover:bg-muted disabled:opacity-30"
                       >
                         <ArrowDown size={13} />
                       </Button>
@@ -946,7 +946,7 @@ export function LayoutBuilder() {
                   </DndContext>
 
                   {section.fields.length === 0 && (
-                    <div className="col-span-full py-8 text-center text-[11px] text-slate-400 border border-dashed border-slate-200 rounded-lg bg-slate-50/30">
+                    <div className="col-span-full py-8 text-center text-[11px] text-muted-foreground border border-dashed border-border rounded-lg bg-muted/30">
                       Empty Section. Select fields from the left palette to add them here.
                     </div>
                   )}
@@ -958,25 +958,25 @@ export function LayoutBuilder() {
             {canManage && (
               <div>
                 {showAddSection ? (
-                  <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none p-4">
+                  <Card className="bg-card border-border rounded-xl shadow-none p-4">
                     <form onSubmit={handleAddSection} className="space-y-4">
                       <div className="flex flex-col sm:flex-row gap-4">
                         <div className="flex-1 space-y-1">
-                          <label className="text-xs font-semibold text-slate-600">New Section Title</label>
+                          <label className="text-xs font-semibold text-muted-foreground">New Section Title</label>
                           <Input 
                             placeholder="e.g. Sales Metrics, Address Info"
                             value={newSectionName}
                             onChange={(e) => setNewSectionName(e.target.value)}
                             required
-                            className="h-8 text-xs border-[#e2e8f0]"
+                            className="h-8 text-xs border-border"
                           />
                         </div>
                         <div className="space-y-1 sm:w-[150px]">
-                          <label className="text-xs font-semibold text-slate-600">Column Layout</label>
+                          <label className="text-xs font-semibold text-muted-foreground">Column Layout</label>
                           <select
                             value={newSectionColumns}
                             onChange={(e) => setNewSectionColumns(parseInt(e.target.value))}
-                            className="block w-full h-8 px-2 rounded-lg border border-[#e2e8f0] bg-white text-xs text-[#0f172a] outline-none"
+                            className="block w-full h-8 px-2 rounded-lg border border-border bg-card text-xs text-foreground outline-none"
                           >
                             <option value={1}>1 Column</option>
                             <option value={2}>2 Columns</option>
@@ -984,7 +984,7 @@ export function LayoutBuilder() {
                         </div>
                       </div>
                       
-                      <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                      <div className="flex justify-end gap-2 pt-2 border-t border-border/50">
                         <Button
                           type="button"
                           variant="ghost"
@@ -995,7 +995,7 @@ export function LayoutBuilder() {
                         </Button>
                         <Button
                           type="submit"
-                          className="bg-[#0f172a] hover:bg-slate-800 text-white h-8 text-xs rounded-lg px-3 flex items-center gap-1"
+                          className="bg-primary hover:bg-muted text-white h-8 text-xs rounded-lg px-3 flex items-center gap-1"
                         >
                           <Plus size={13} />
                           Add Section
@@ -1007,7 +1007,7 @@ export function LayoutBuilder() {
                   <Button
                     variant="outline"
                     onClick={() => setShowAddSection(true)}
-                    className="w-full h-11 border-dashed border-[#cbd5e1] text-slate-500 hover:text-[#0f172a] hover:border-slate-350 hover:bg-slate-50 bg-white/50 rounded-xl flex items-center justify-center gap-1.5 text-xs font-semibold transition-all"
+                    className="w-full h-11 border-dashed border-[#cbd5e1] text-muted-foreground hover:text-foreground hover:border-slate-350 hover:bg-muted bg-card/50 rounded-xl flex items-center justify-center gap-1.5 text-xs font-semibold transition-all"
                   >
                     <Plus size={15} />
                     Add Layout Section Block

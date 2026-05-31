@@ -4,6 +4,7 @@ import { useRouter, Link, useLocation } from '@tanstack/react-router';
 import { useAuth } from '@/contexts/auth.context';
 import { AbilityProvider } from '@/contexts/permissions.context';
 import { LabelsProvider } from '@/contexts/labels.context';
+import { useLabels } from '@/hooks/useLabels';
 import { Dashboard } from '@/components/dashboard';
 import {
   Sidebar,
@@ -84,6 +85,7 @@ function AppSidebar() {
   const { user, ability, logout } = useAuth();
   const location = useLocation();
   const { isEnabled } = useCapabilities();
+  const { t } = useLabels();
 
   const initials = user?.name
     ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
@@ -91,8 +93,8 @@ function AppSidebar() {
 
   const mainItems = [
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
-    { label: 'Contacts', path: '/parties', icon: Users },
-    { label: 'Cases', path: '/cases', icon: Workflow },
+    { label: t('party.plural') ?? 'Contacts', path: '/parties', icon: Users },
+    { label: t('case.plural') ?? 'Cases', path: '/cases', icon: Workflow },
     { label: 'Campaigns', path: '/campaigns', icon: Megaphone },
     ...(isEnabled('capability/appointment')
       ? [{ label: 'Appointments', path: '/appointments', icon: Calendar }]
@@ -119,6 +121,7 @@ function AppSidebar() {
     '/settings/assignments': ['manage', 'Branch'],
     '/settings/workflows': ['manage', 'Workflow'],
     '/settings/fields': ['manage', 'FieldDefinition'],
+    '/settings/industry': ['manage', 'FieldDefinition'],
     '/settings/labels': ['manage', 'LabelOverride'],
     '/settings/capabilities': ['manage', 'Plugin'],
     '/settings/plugins': ['manage', 'Plugin'],
@@ -130,6 +133,7 @@ function AppSidebar() {
     { label: 'Roles', path: '/settings/roles', icon: Shield },
     { label: 'Branches', path: '/settings/branches', icon: GitBranch },
     { label: 'Brands', path: '/settings/brands', icon: Building2 },
+    { label: 'Industry Vertical', path: '/settings/industry', icon: Globe },
     { label: 'Assignments', path: '/settings/assignments', icon: UserCog },
     { label: 'Workflows', path: '/settings/workflows', icon: Workflow },
     { label: 'Fields', path: '/settings/fields', icon: Sliders },
@@ -152,23 +156,23 @@ function AppSidebar() {
   const isSettingsActive = location.pathname.startsWith('/settings');
 
   return (
-    <Sidebar className="border-r border-slate-800 bg-[#0b0f19]">
-      <SidebarHeader className="px-4 py-4 border-b border-slate-800 bg-[#0b0f19]">
+    <Sidebar className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+      <SidebarHeader className="px-4 py-4 border-b border-sidebar-border bg-sidebar">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-md bg-[#4f46e5] flex items-center justify-center flex-shrink-0 shadow-sm shadow-indigo-500/20 animate-pulse">
+          <div className="w-7 h-7 rounded-md bg-fin-orange flex items-center justify-center flex-shrink-0 shadow-sm shadow-orange-500/20">
             <span className="text-white text-xs font-bold font-mono">M</span>
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-white leading-none tracking-tight">Meta CRM</p>
-            <p className="text-[10px] text-slate-400 mt-0.5 font-medium">Workspace Console</p>
+            <p className="text-sm font-semibold text-sidebar-primary leading-none tracking-tight">Meta CRM</p>
+            <p className="text-[10px] text-sidebar-foreground/70 mt-0.5 font-medium">Workspace Console</p>
           </div>
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-2 py-3 bg-[#0b0f19]">
+      <SidebarContent className="px-2 py-3 bg-sidebar">
         {/* Main Section */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-slate-500 text-[10px] font-bold uppercase tracking-wider px-2 mb-1">
+          <SidebarGroupLabel className="text-sidebar-foreground/50 text-[10px] font-bold uppercase tracking-wider px-2 mb-1">
             Main
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -183,11 +187,11 @@ function AppSidebar() {
                         to={item.path}
                         className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-all duration-150 ${
                           isActive
-                            ? 'bg-slate-800/80 text-white font-medium shadow-sm border border-slate-700/50'
-                            : 'text-slate-300 hover:bg-slate-800/40 hover:text-white'
+                            ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-xs border border-sidebar-border/60'
+                            : 'text-sidebar-foreground hover:bg-sidebar-accent/55 hover:text-sidebar-accent-foreground'
                         }`}
                       >
-                        <item.icon size={15} strokeWidth={isActive ? 2 : 1.75} className={isActive ? 'text-indigo-400' : 'text-slate-400'} />
+                        <item.icon size={15} strokeWidth={isActive ? 2 : 1.75} className={isActive ? 'text-fin-orange' : 'text-sidebar-foreground/60'} />
                         <span className="flex-1">{item.label}</span>
                       </Link>
                     </SidebarMenuButton>
@@ -198,12 +202,12 @@ function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <Separator className="my-2 bg-slate-800/50" />
+        <Separator className="my-2 bg-sidebar-border/40" />
 
         {/* Settings/Configuration Section */}
         {visibleSettingsItems.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel className="text-slate-500 text-[10px] font-bold uppercase tracking-wider px-2 mb-1">
+            <SidebarGroupLabel className="text-sidebar-foreground/50 text-[10px] font-bold uppercase tracking-wider px-2 mb-1">
               Configuration
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -214,11 +218,11 @@ function AppSidebar() {
                       to="/settings"
                       className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm w-full transition-all duration-150 ${
                         isSettingsActive
-                          ? 'bg-slate-800/80 text-white font-medium shadow-sm border border-slate-700/50'
-                          : 'text-slate-300 hover:bg-slate-800/40 hover:text-white'
+                          ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-xs border border-sidebar-border/60'
+                          : 'text-sidebar-foreground hover:bg-sidebar-accent/55 hover:text-sidebar-accent-foreground'
                       }`}
                     >
-                      <Settings size={15} strokeWidth={isSettingsActive ? 2 : 1.75} className={isSettingsActive ? 'text-indigo-400' : 'text-slate-400'} />
+                      <Settings size={15} strokeWidth={isSettingsActive ? 2 : 1.75} className={isSettingsActive ? 'text-fin-orange' : 'text-sidebar-foreground/60'} />
                       <span className="flex-1">Settings</span>
                     </Link>
                   </SidebarMenuButton>
@@ -229,28 +233,28 @@ function AppSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-slate-800 p-3 bg-[#0b0f19]">
+      <SidebarFooter className="border-t border-sidebar-border p-3 bg-sidebar">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2.5 w-full px-2 py-2 rounded-lg hover:bg-slate-800/40 transition-colors text-left text-slate-300">
+            <button className="flex items-center gap-2.5 w-full px-2 py-2 rounded-lg hover:bg-sidebar-accent/55 transition-colors text-left text-sidebar-foreground cursor-pointer">
               <Avatar className="w-7 h-7 flex-shrink-0">
-                <AvatarFallback className="bg-[#4f46e5] text-white text-xs font-semibold shadow-sm">
+                <AvatarFallback className="bg-fin-orange text-white text-xs font-semibold shadow-sm">
                   {initials}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-white truncate leading-tight">{user?.name ?? 'User'}</p>
-                <p className="text-[10px] text-slate-400 truncate mt-0.5">{user?.email ?? ''}</p>
+                <p className="text-xs font-semibold text-sidebar-primary truncate leading-tight">{user?.name ?? 'User'}</p>
+                <p className="text-[10px] text-sidebar-foreground/70 truncate mt-0.5">{user?.email ?? ''}</p>
               </div>
-              <ChevronDown size={13} className="text-slate-400" />
+              <ChevronDown size={13} className="text-sidebar-foreground/60" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 bg-[#0b0f19] border-slate-850 text-slate-100 shadow-md">
-            <DropdownMenuLabel className="text-[10px] uppercase font-bold tracking-wider text-slate-500">My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator className="bg-slate-800" />
+          <DropdownMenuContent align="end" className="w-48 bg-popover border-border text-popover-foreground shadow-md">
+            <DropdownMenuLabel className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">My Account</DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-border" />
             <DropdownMenuItem
               onClick={logout}
-              className="text-sm text-rose-400 focus:text-rose-400 focus:bg-slate-800/50 cursor-pointer"
+              className="text-sm text-destructive focus:text-destructive focus:bg-accent cursor-pointer"
             >
               <LogOut size={14} className="mr-2" />
               Sign out
@@ -285,9 +289,9 @@ function RootLayout() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f8fafc]">
-        <div className="flex items-center gap-2 text-sm text-[#94a3b8]">
-          <div className="w-4 h-4 border-2 border-[#e2e8f0] border-t-[#0f172a] rounded-full animate-spin" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="w-4 h-4 border-2 border-border border-t-[#0f172a] rounded-full animate-spin" />
           Loading…
         </div>
       </div>
@@ -302,14 +306,14 @@ function RootLayout() {
     <AbilityProvider ability={ability}>
       <LabelsProvider>
         <SidebarProvider>
-          <div className="flex min-h-screen w-full bg-[#f8fafc]">
+          <div className="flex min-h-screen w-full bg-background text-foreground">
             <AppSidebar />
             <div className="flex-1 flex flex-col min-w-0">
               {/* Top bar */}
-              <header className="h-14 bg-[#f8fafc] border-b border-[#e2e8f0]/60 flex items-center justify-between px-4 sticky top-0 z-10">
+              <header className="h-14 bg-background border-b border-border flex items-center justify-between px-4 sticky top-0 z-10">
                 <div className="flex items-center gap-3">
-                  <SidebarTrigger className="text-[#64748b] hover:text-[#0f172a]" />
-                  <Separator orientation="vertical" className="h-4 bg-[#e2e8f0]" />
+                  <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
+                  <Separator orientation="vertical" className="h-4 bg-border" />
                   <Breadcrumbs />
                 </div>
                 
@@ -317,13 +321,13 @@ function RootLayout() {
                   {/* Command search launcher trigger */}
                   <button
                     onClick={() => setCommandPaletteOpen(true)}
-                    className="relative w-full sm:w-[240px] h-8 bg-white border border-[#e2e8f0] hover:border-slate-350 rounded-lg flex items-center justify-between px-3 text-slate-400 text-xs font-semibold select-none cursor-pointer transition-all shadow-xs"
+                    className="relative w-full sm:w-[240px] h-8 bg-card border border-border hover:border-border/80 rounded-lg flex items-center justify-between px-3 text-muted-foreground text-xs font-medium select-none cursor-pointer transition-all shadow-xs"
                   >
                     <span className="flex items-center gap-2">
-                      <Search size={13} className="text-slate-400" />
+                      <Search size={13} className="text-muted-foreground" />
                       Search console...
                     </span>
-                    <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded border border-slate-200 bg-slate-50 px-1.5 font-mono text-[9px] font-bold text-slate-400 leading-none">
+                    <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded border border-border bg-muted px-1.5 font-mono text-[9px] font-bold text-muted-foreground leading-none">
                       <span>⌘</span>K
                     </kbd>
                   </button>
@@ -335,7 +339,7 @@ function RootLayout() {
                   </div>
 
                   {/* Tenant Workspace Selector */}
-                  <div className="text-xs font-bold text-slate-600 border border-[#e2e8f0] px-2.5 py-1 rounded-lg bg-white select-none shadow-xs">
+                  <div className="text-xs font-semibold text-foreground border border-border px-2.5 py-1 rounded-lg bg-card select-none shadow-xs">
                     Workspace: Acme Corp
                   </div>
                 </div>
@@ -444,71 +448,67 @@ function LoginPage() {
   `;
 
   return (
-    <div className="flex min-h-screen w-full bg-white select-none">
-      <style dangerouslySetInnerHTML={{ __html: loginStyles }} />
-      
+    <div className="flex min-h-screen w-full bg-[#f5f1ec] text-foreground select-none font-sans">
       <div className="grid w-full lg:grid-cols-12">
         {/* Left Column: Form Panel */}
-        <div className="lg:col-span-5 flex flex-col justify-between p-6 sm:p-10 md:p-14 bg-slate-50/50">
+        <div className="lg:col-span-5 flex flex-col justify-between p-8 sm:p-12 bg-[#f5f1ec]">
           {/* Logo Branding */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 shadow-md shadow-indigo-500/25">
-              <span className="text-white font-bold font-mono text-lg">M</span>
+            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-[#ff5600] shadow-sm shadow-orange-500/10">
+              <span className="text-white font-bold text-base">M</span>
             </div>
             <div>
-              <span className="text-base font-bold text-slate-900 tracking-tight block">Meta CRM</span>
-              <span className="text-[10px] text-slate-400 font-medium tracking-wide uppercase">Workspace Portal</span>
+              <span className="text-sm font-semibold tracking-tight text-foreground block">Meta CRM</span>
+              <span className="text-[10px] text-muted-foreground font-medium tracking-wide uppercase">Workspace Portal</span>
             </div>
           </div>
-
-          {/* Form Container */}
-          <div className="my-auto max-w-sm w-full mx-auto py-10">
-            <div className="mb-8">
-              <h1 className="text-3xl font-extrabold text-slate-950 tracking-tight">
-                Welcome back
+ 
+          {/* Form Container (Enclosed in a beautiful white card with hairline border) */}
+          <div className="my-auto max-w-sm w-full mx-auto bg-card border border-border rounded-xl p-6 sm:p-8 shadow-sm">
+            <div className="mb-6">
+              <h1 className="text-2xl font-semibold text-foreground tracking-tight">
+                Sign in to workspace
               </h1>
-              <p className="text-sm text-slate-500 mt-2 font-medium">
-                Sign in to manage your customer relations and campaigns.
+              <p className="text-xs text-muted-foreground mt-1.5 font-normal leading-relaxed">
+                Enter your credentials to access your CRM console and campaigns.
               </p>
             </div>
-
+ 
             {error && (
-              <div className="mb-5 rounded-xl bg-rose-50/70 border border-rose-200/50 p-4 text-sm text-rose-700 font-medium flex items-start gap-2.5 animate-fadeIn">
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-600 mt-1.5 shrink-0" />
+              <div className="mb-4 rounded-lg bg-rose-50 border border-rose-200/40 p-3 text-xs text-rose-700 font-medium flex items-start gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-600 mt-1 shrink-0" />
                 <p>{error}</p>
               </div>
             )}
-
+ 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <label htmlFor="email" className="text-xs font-semibold text-slate-700 uppercase tracking-wider block">
+              <div className="space-y-1">
+                <label htmlFor="email" className="text-[10px] font-semibold text-foreground uppercase tracking-wider block">
                   Email Address
                 </label>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
-                    <Mail className="w-4 h-4" />
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-muted-foreground">
+                    <Mail className="w-3.5 h-3.5" />
                   </span>
                   <Input
                     id="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@company.com"
-                    className="bg-white border-slate-200 pl-10 placeholder:text-slate-400 focus-visible:ring-indigo-600 focus-visible:border-indigo-600 h-11 rounded-lg"
+                    placeholder="name@company.com"
+                    className="bg-card border-border pl-9 placeholder:text-[#9c9fa5] focus-visible:ring-[#111111] focus-visible:border-[#111111] h-10 rounded-md text-sm text-foreground"
                     required
                   />
                 </div>
               </div>
-
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label htmlFor="password" className="text-xs font-semibold text-slate-700 uppercase tracking-wider block">
-                    Password
-                  </label>
-                </div>
+ 
+              <div className="space-y-1">
+                <label htmlFor="password" className="text-[10px] font-semibold text-foreground uppercase tracking-wider block">
+                  Password
+                </label>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
-                    <Lock className="w-4 h-4" />
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-muted-foreground">
+                    <Lock className="w-3.5 h-3.5" />
                   </span>
                   <Input
                     id="password"
@@ -516,190 +516,179 @@ function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="bg-white border-slate-200 pl-10 pr-10 focus-visible:ring-indigo-600 focus-visible:border-indigo-600 h-11 rounded-lg"
+                    className="bg-card border-border pl-9 pr-9 focus-visible:ring-[#111111] focus-visible:border-[#111111] h-10 rounded-md text-sm text-foreground"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground cursor-pointer"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               </div>
-
-              {/* Workspace ID Selector Toggle */}
-              <div className="pt-1.5">
+ 
+              {/* Workspace ID Option */}
+              <div className="pt-0.5">
                 <button
                   type="button"
                   onClick={() => setShowTenantSlug(!showTenantSlug)}
-                  className="text-xs font-medium text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1 cursor-pointer"
+                  className="text-xs font-semibold text-[#ff5600] hover:underline transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <Globe className="w-3.5 h-3.5" />
-                  {showTenantSlug ? 'Hide workspace ID option' : 'Log into specific workspace ID'}
+                  {showTenantSlug ? 'Use default workspace' : 'Log into specific workspace'}
                 </button>
                 
                 {showTenantSlug && (
-                  <div className="mt-2.5 space-y-1.5 transition-all duration-300">
-                    <label htmlFor="tenantSlug" className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                      Workspace ID / Slug
+                  <div className="mt-2 space-y-1 transition-all">
+                    <label htmlFor="tenantSlug" className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block">
+                      Workspace Domain / Slug
                     </label>
                     <div className="relative">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
-                        <Building2 className="w-4 h-4" />
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-muted-foreground">
+                        <Building2 className="w-3.5 h-3.5" />
                       </span>
                       <Input
                         id="tenantSlug"
                         type="text"
                         value={tenantSlug}
                         onChange={(e) => setTenantSlug(e.target.value)}
-                        placeholder="my-company"
-                        className="bg-white border-slate-200 pl-10 focus-visible:ring-indigo-600 focus-visible:border-indigo-600 h-10 rounded-lg text-sm"
+                        placeholder="acme-corp"
+                        className="bg-card border-border pl-9 focus-visible:ring-[#111111] focus-visible:border-[#111111] h-9 rounded-md text-xs text-foreground"
                         required={showTenantSlug}
                       />
                     </div>
                   </div>
                 )}
               </div>
-
-              {/* Remember Me */}
-              <div className="flex items-center gap-2 pt-1">
+ 
+              <div className="flex items-center gap-2 pt-0.5">
                 <input
                   id="remember-me"
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer"
+                  className="w-3.5 h-3.5 border-border rounded accent-[#111111] cursor-pointer"
                 />
-                <label htmlFor="remember-me" className="text-xs font-medium text-slate-600 cursor-pointer select-none">
-                  Remember this email
+                <label htmlFor="remember-me" className="text-xs text-muted-foreground font-medium cursor-pointer select-none">
+                  Remember my email
                 </label>
               </div>
-
+ 
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg h-11 mt-3 shadow-md shadow-indigo-500/10 hover:shadow-indigo-500/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full bg-[#111111] hover:bg-[#000000] text-white font-semibold rounded-md h-10 mt-2 hover:scale-[1.005] active:scale-[0.995] transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs"
               >
                 {isLoading ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                     Signing in...
                   </>
                 ) : (
                   <>
-                    Sign in
-                    <ArrowRight className="w-4 h-4" />
+                    Sign in to workspace
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </>
                 )}
               </Button>
             </form>
           </div>
-
-          {/* Localized Footer */}
-          <div className="flex items-center justify-between text-xs text-slate-400 border-t border-slate-200/60 pt-4">
-            <span className="flex items-center gap-1">
-              <span className="text-slate-600 font-medium">🇮🇳 Localized</span> for Indian SMEs
-            </span>
-            <span>Secure Vault active</span>
+ 
+          {/* Flat, Clean Footer */}
+          <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/60 pt-4">
+            <span className="font-medium">Meta CRM Suite</span>
+            <span>Secured Session</span>
           </div>
         </div>
-
-        {/* Right Column: Visual Showcase Panel */}
-        <div className="hidden lg:col-span-7 lg:flex relative overflow-hidden bg-[#060814] flex-col justify-between p-12 text-white border-l border-slate-900 select-none">
-          {/* Background patterns */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(79,70,229,0.18)_0%,rgba(139,92,246,0.06)_50%,transparent_100%)]" />
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:32px_32px]" />
-          
-          {/* Decorative Orbs */}
-          <div className="absolute top-1/4 -right-20 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px] animate-pulse-glow" />
-          <div className="absolute bottom-1/4 -left-20 w-80 h-80 bg-violet-600/10 rounded-full blur-[90px] animate-pulse-glow" style={{ animationDelay: '2s' }} />
-
-          {/* Header Info */}
-          <div className="relative z-10 flex items-center gap-3">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 backdrop-blur-md border border-white/20">
-              <Sparkles className="w-4 h-4 text-indigo-400" />
+ 
+        {/* Right Column: Visual Showcase Panel (Premium warm canvas with crisp mockup cards) */}
+        <div className="hidden lg:col-span-7 lg:flex relative overflow-hidden bg-[#ebe7e1] flex-col justify-between p-12 border-l border-border select-none">
+          {/* Quiet branding top bar */}
+          <div className="relative z-10 flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-[#ff5600] flex items-center justify-center">
+              <Sparkles className="w-2.5 h-2.5 text-white" />
             </div>
-            <span className="text-xs font-semibold tracking-wider text-slate-400 uppercase">System Status Console</span>
+            <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">Inbox & Operations Live Console</span>
           </div>
-
-          {/* Showcase Cards Container */}
-          <div className="relative z-10 my-auto flex flex-col gap-6 max-w-md mx-auto w-full">
-            
-            {/* Pipeline Card */}
-            <div className="bg-slate-950/40 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl shadow-indigo-950/20 animate-float-1">
-              <div className="flex items-center justify-between mb-4">
+ 
+          {/* Editorial mockups without float/neon animations */}
+          <div className="relative z-10 my-auto max-w-md w-full mx-auto space-y-6">
+            <div className="space-y-2 text-center lg:text-left mb-6">
+              <h2 className="text-3xl font-semibold tracking-tight text-foreground leading-tight">
+                Designed to let your product be the protagonist.
+              </h2>
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
+                A clean, warm-cream ground and modest hairline frames. No SaaS noise, just editorial clarity.
+              </p>
+            </div>
+ 
+            {/* Crisp Inbox Mockup Card */}
+            <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-[#ebe7e1]">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Leads Pipeline Overview</span>
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#0bdf50]" />
+                  <span className="text-[10px] font-bold text-foreground uppercase tracking-wider">Customer Helpdesk Desk</span>
                 </div>
-                <span className="text-xs font-bold text-indigo-400 tracking-tight">₹48.6 Lakhs active</span>
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#ff5600]/10 border border-[#ff5600]/20 text-[9px] font-bold text-[#ff5600] uppercase tracking-wider">
+                  Fin AI Agent Active
+                </span>
               </div>
-              
-              <div className="space-y-3.5">
-                <div>
-                  <div className="flex justify-between text-xs text-slate-400 mb-1">
-                    <span>Direct Site Visits</span>
-                    <span className="font-semibold text-slate-200">72% completed</span>
+ 
+              <div className="space-y-3">
+                {/* Mock Row 1 */}
+                <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-[#ebe7e1]/20 transition-colors">
+                  <div className="w-7 h-7 rounded-full bg-[#ff5600] flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                    KM
                   </div>
-                  <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full" style={{ width: '72%' }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold text-foreground truncate">Karan Malhotra</p>
+                      <span className="text-[9px] text-[#9c9fa5]">2m ago</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground truncate mt-0.5">Interested in unit A-402, auto-routed to Mumbai Desk.</p>
                   </div>
                 </div>
-
-                <div>
-                  <div className="flex justify-between text-xs text-slate-400 mb-1">
-                    <span>WhatsApp Nurturing Campaigns</span>
-                    <span className="font-semibold text-slate-200">48% running</span>
+ 
+                {/* Mock Row 2 */}
+                <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-[#ebe7e1]/20 transition-colors">
+                  <div className="w-7 h-7 rounded-full bg-[#65b5ff] flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                    AS
                   </div>
-                  <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-cyan-500 to-indigo-500 rounded-full" style={{ width: '48%' }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold text-foreground truncate">Aarav Sharma</p>
+                      <span className="text-[9px] text-[#9c9fa5]">18m ago</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground truncate mt-0.5">Token payment of ₹50,000 received via Razorpay.</p>
                   </div>
                 </div>
               </div>
             </div>
-
-            {/* Live Activity Feed Card */}
-            <div className="bg-slate-950/40 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl shadow-indigo-950/20 animate-float-2">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Live Activity Feed</span>
-                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-extrabold text-emerald-400 uppercase tracking-wider">
-                  Live Stream
-                </div>
+ 
+            {/* Crisp Stats Mockup Card */}
+            <div className="bg-card border border-border rounded-xl p-4 shadow-sm flex items-center justify-between gap-4">
+              <div>
+                <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block">Campaign Outreach</span>
+                <span className="text-xl font-bold text-foreground block mt-0.5">₹48.6 Lakhs</span>
               </div>
-
-              <div className="space-y-3">
-                <div className="flex gap-3 text-xs">
-                  <div className="w-6 h-6 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
-                    <MessageSquare className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-slate-200">IndiaMART Lead: Karan Malhotra</p>
-                    <p className="text-slate-400 text-[11px] mt-0.5">Interested in unit A-402, auto-routed round-robin to Mumbai Desk.</p>
-                  </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <div className="text-right">
+                  <span className="text-[9px] text-[#0bdf50] font-semibold block">72% Completed</span>
+                  <span className="text-[9px] text-muted-foreground block">Direct visits</span>
                 </div>
-
-                <div className="flex gap-3 text-xs">
-                  <div className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
-                    <Check className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-slate-200">Token Amount Confirmed</p>
-                    <p className="text-slate-400 text-[11px] mt-0.5">₹50,000 received via Razorpay webhook from user "Aarav Sharma".</p>
-                  </div>
+                <div className="w-12 h-1.5 bg-[#ebe7e1] rounded-full overflow-hidden">
+                  <div className="h-full bg-[#111111] rounded-full" style={{ width: '72%' }} />
                 </div>
               </div>
             </div>
           </div>
-
-          {/* Footer Info */}
-          <div className="relative z-10 flex items-center justify-between text-xs text-slate-400">
-            <div className="flex items-center gap-1.5">
-              <Globe className="w-3.5 h-3.5 text-indigo-400 animate-spin" style={{ animationDuration: '8s' }} />
-              <span>Active Node: ap-south-1 (Mumbai)</span>
-            </div>
-            <span>AES-256 encrypted</span>
+ 
+          {/* Fine Print Footer */}
+          <div className="relative z-10 flex items-center justify-between text-[10px] text-muted-foreground">
+            <span>Active Instance: ap-south-1</span>
+            <span>Vault Encrypted</span>
           </div>
         </div>
       </div>
@@ -756,6 +745,7 @@ import {
   settingsObjectsRoute,
   settingsAuditTrailRoute,
   settingsLayoutBuilderRoute,
+  settingsIndustryRoute,
 } from './routes/settings';
 
 import { appointmentsRoute } from './routes/appointments';
@@ -800,6 +790,7 @@ export const routeTree = rootRoute.addChildren([
   settingsObjectsRoute,
   settingsAuditTrailRoute,
   settingsLayoutBuilderRoute,
+  settingsIndustryRoute,
 ]);
 
 export const router = createRouter({ routeTree });

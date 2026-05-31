@@ -39,7 +39,7 @@ export function CapabilityToggle() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-[#94a3b8]" />
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -63,8 +63,8 @@ export function CapabilityToggle() {
   return (
     <div className="space-y-6 max-w-[1000px]">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-[#0f172a]">Capabilities</h1>
-        <p className="text-sm text-[#64748b] mt-0.5">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Capabilities</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
           Enable or disable optional system integrations, platform scopes, and telemetry features
         </p>
       </div>
@@ -77,8 +77,8 @@ export function CapabilityToggle() {
           return (
             <Card
               key={cap.id}
-              className={`bg-white border transition-all rounded-xl shadow-none overflow-hidden flex flex-col justify-between ${
-                cap.enabled ? 'border-[#e2e8f0]' : 'border-[#e2e8f0] opacity-80'
+              className={`bg-card border transition-all rounded-xl shadow-none overflow-hidden flex flex-col justify-between ${
+                cap.enabled ? 'border-border' : 'border-border opacity-80'
               }`}
             >
               <CardContent className="p-4 flex-1">
@@ -86,14 +86,14 @@ export function CapabilityToggle() {
                   <div className="flex items-start gap-3 min-w-0">
                     <div className={`p-2.5 rounded-lg border flex items-center justify-center flex-shrink-0 transition-colors ${
                       cap.enabled
-                        ? 'bg-indigo-50/50 text-indigo-600 border-indigo-100'
-                        : 'bg-[#f1f5f9] text-[#64748b] border-[#e2e8f0]'
+                        ? 'bg-fin-orange/10/50 text-fin-orange border-fin-orange/20'
+                        : 'bg-[#f1f5f9] text-muted-foreground border-border'
                     }`}>
                       <Icon size={18} />
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-sm font-medium text-[#0f172a]">{cap.name}</span>
+                        <span className="text-sm font-medium text-foreground">{cap.name}</span>
                         {cap.enabled && (
                           <Badge variant="outline" className="bg-emerald-50 text-emerald-600 border-emerald-100 text-[8px] rounded-md font-bold py-0 px-1 flex items-center gap-0.5">
                             <Check size={8} strokeWidth={3} />
@@ -101,7 +101,7 @@ export function CapabilityToggle() {
                           </Badge>
                         )}
                       </div>
-                      <p className="text-xs text-[#64748b] mt-1 line-clamp-2 leading-relaxed">
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
                         {cap.description}
                       </p>
                     </div>
@@ -112,11 +112,11 @@ export function CapabilityToggle() {
                     disabled={isToggling || !canManage}
                     onClick={() => handleToggle(cap.id, cap.enabled)}
                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0 outline-none ${
-                      cap.enabled ? 'bg-[#0f172a]' : 'bg-[#e2e8f0]'
+                      cap.enabled ? 'bg-primary' : 'bg-[#e2e8f0]'
                     } ${isToggling || !canManage ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
                   >
                     <span
-                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-card transition-transform ${
                         cap.enabled ? 'translate-x-4.5' : 'translate-x-0.5'
                       }`}
                     />
@@ -124,15 +124,15 @@ export function CapabilityToggle() {
                 </div>
               </CardContent>
 
-              <div className="bg-[#f8fafc] border-t border-[#e2e8f0] px-4 py-2 flex items-center justify-between text-[9px] font-mono text-[#94a3b8]">
+              <div className="bg-background border-t border-border px-4 py-2 flex items-center justify-between text-[9px] font-mono text-muted-foreground">
                 <span>{cap.id}</span>
-                {isToggling && <span className="animate-pulse text-[#64748b]">Updating...</span>}
+                {isToggling && <span className="animate-pulse text-muted-foreground">Updating...</span>}
               </div>
             </Card>
           );
         })}
         {capabilities?.length === 0 && (
-          <div className="col-span-full py-8 text-center text-sm text-[#64748b]">
+          <div className="col-span-full py-8 text-center text-sm text-muted-foreground">
             No optional capabilities registered for this tenant.
           </div>
         )}

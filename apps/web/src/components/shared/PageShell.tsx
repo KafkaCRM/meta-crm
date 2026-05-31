@@ -20,11 +20,11 @@ export function PageShell({
       {/* Header section */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div className="space-y-1">
-          <h1 className="text-2xl font-medium tracking-tight text-slate-900 leading-none">
+          <h1 className="text-2xl font-medium tracking-tight text-foreground leading-none">
             {title}
           </h1>
           {description && (
-            <p className="text-sm text-slate-400 mt-0.5 leading-normal font-medium">
+            <p className="text-sm text-muted-foreground mt-0.5 leading-normal font-medium">
               {description}
             </p>
           )}

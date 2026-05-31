@@ -54,7 +54,7 @@ export function PluginStore() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-[#94a3b8]" />
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -66,8 +66,8 @@ export function PluginStore() {
     <div className="space-y-6 max-w-[1100px]">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-[#0f172a]">Plugin Store</h1>
-          <p className="text-sm text-[#64748b] mt-0.5">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Plugin Store</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
             Discover utility add-ons, connect developer hooks, and scale your workspace capability
           </p>
         </div>
@@ -87,7 +87,7 @@ export function PluginStore() {
           />
         ))}
         {plugins?.length === 0 && (
-          <div className="col-span-full py-12 text-center text-sm text-[#64748b]">
+          <div className="col-span-full py-12 text-center text-sm text-muted-foreground">
             No plugins currently available in the marketplace registry.
           </div>
         )}
@@ -109,20 +109,20 @@ function PluginCard({ plugin, onInstall, onUninstall, isInstalling, isUninstalli
   const isPlanLocked = plugin.requires_plan && !plugin.installed;
 
   return (
-    <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none overflow-hidden hover:shadow-md hover:border-slate-300 transition-all flex flex-col justify-between group">
+    <Card className="bg-card border-border rounded-xl shadow-none overflow-hidden hover:shadow-md hover:border-slate-300 transition-all flex flex-col justify-between group">
       <CardContent className="p-4 flex-1">
         <div className="flex items-start justify-between gap-3">
-          <div className="p-2.5 bg-gradient-to-br from-indigo-50/80 to-purple-50/80 text-indigo-600 border border-indigo-100 rounded-lg group-hover:scale-105 transition-transform">
+          <div className="p-2.5 bg-gradient-to-br from-indigo-50/80 to-purple-50/80 text-fin-orange border border-fin-orange/20 rounded-lg group-hover:scale-105 transition-transform">
             <Puzzle size={18} />
           </div>
-          <Badge variant="outline" className="font-mono text-[9px] text-[#94a3b8] py-0 px-1 border-[#e2e8f0]">
+          <Badge variant="outline" className="font-mono text-[9px] text-muted-foreground py-0 px-1 border-border">
             v{plugin.version}
           </Badge>
         </div>
 
         <div className="mt-3.5 space-y-1">
-          <h3 className="text-sm font-semibold text-[#0f172a]">{plugin.name}</h3>
-          <p className="text-xs text-[#64748b] leading-relaxed line-clamp-3 min-h-[48px]">
+          <h3 className="text-sm font-semibold text-foreground">{plugin.name}</h3>
+          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3 min-h-[48px]">
             {plugin.description}
           </p>
         </div>
@@ -135,7 +135,7 @@ function PluginCard({ plugin, onInstall, onUninstall, isInstalling, isUninstalli
         )}
       </CardContent>
 
-      <div className="bg-[#f8fafc] border-t border-[#e2e8f0] px-4 py-3 flex items-center justify-between">
+      <div className="bg-background border-t border-border px-4 py-3 flex items-center justify-between">
         {plugin.installed ? (
           <>
             <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
@@ -175,13 +175,13 @@ function PluginCard({ plugin, onInstall, onUninstall, isInstalling, isUninstalli
           </>
         ) : (
           <>
-            <span className="text-[11px] text-[#94a3b8]">Ready to deploy</span>
+            <span className="text-[11px] text-muted-foreground">Ready to deploy</span>
             {canManage && (
               <Button
                 onClick={onInstall}
                 disabled={isInstalling}
                 size="xs"
-                className="bg-[#0f172a] hover:bg-[#1e293b] text-white text-[11px] font-semibold h-7 rounded-md"
+                className="bg-primary hover:bg-[#1e293b] text-white text-[11px] font-semibold h-7 rounded-md"
               >
                 {isInstalling ? (
                   <Loader2 className="h-3 w-3 animate-spin mr-1" />

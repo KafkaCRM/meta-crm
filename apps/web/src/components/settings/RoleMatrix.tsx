@@ -103,7 +103,7 @@ export function RoleMatrix() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-[#94a3b8]" />
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -111,8 +111,8 @@ export function RoleMatrix() {
   return (
     <div className="space-y-6 max-w-[1200px]">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-[#0f172a]">Roles & Permissions</h1>
-        <p className="text-sm text-[#64748b] mt-0.5">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Roles & Permissions</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
           Design custom security policies, configure permission matrices, and enforce access control
         </p>
       </div>
@@ -138,49 +138,49 @@ export function RoleMatrix() {
 
         {/* Create custom role card */}
         {canManage && (
-        <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none h-fit">
-          <CardHeader className="pb-3 border-b border-[#e2e8f0]">
-            <CardTitle className="text-base font-medium text-[#0f172a] flex items-center gap-1.5">
-              <Shield size={16} className="text-[#94a3b8]" />
+        <Card className="bg-card border-border rounded-xl shadow-none h-fit">
+          <CardHeader className="pb-3 border-b border-border">
+            <CardTitle className="text-base font-medium text-foreground flex items-center gap-1.5">
+              <Shield size={16} className="text-muted-foreground" />
               Custom Role
             </CardTitle>
-            <CardDescription className="text-xs text-[#94a3b8]">
+            <CardDescription className="text-xs text-muted-foreground">
               Create a custom permission profile for your team
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[#64748b]">Role Title</label>
+                <label className="text-xs font-medium text-muted-foreground">Role Title</label>
                 <Input
                   type="text"
                   placeholder="e.g. Finance Analyst"
                   value={newRole.name}
                   onChange={(e) => setNewRole((f) => ({ ...f, name: e.target.value }))}
                   required
-                  className="h-9 border-[#e2e8f0] bg-white text-[#0f172a] placeholder-[#94a3b8]"
+                  className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[#64748b]">Unique Identifier (Slug)</label>
+                <label className="text-xs font-medium text-muted-foreground">Unique Identifier (Slug)</label>
                 <Input
                   type="text"
                   placeholder="e.g. finance_analyst"
                   value={newRole.slug}
                   onChange={(e) => setNewRole((f) => ({ ...f, slug: e.target.value.toLowerCase().replace(/\s+/g, '_') }))}
                   required
-                  className="h-9 border-[#e2e8f0] bg-white text-[#0f172a] placeholder-[#94a3b8] font-mono text-xs"
+                  className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8] font-mono text-xs"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[#64748b]">Description</label>
+                <label className="text-xs font-medium text-muted-foreground">Description</label>
                 <textarea
                   placeholder="Summarise access parameters..."
                   value={newRole.description}
                   onChange={(e) => setNewRole((f) => ({ ...f, description: e.target.value }))}
-                  className="min-h-[70px] w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#0f172a] placeholder-[#94a3b8] outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-400/50"
+                  className="min-h-[70px] w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder-[#94a3b8] outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-400/50"
                 />
               </div>
 
@@ -188,7 +188,7 @@ export function RoleMatrix() {
                 <Button
                   type="submit"
                   disabled={createMutation.isPending}
-                  className="bg-[#0f172a] hover:bg-[#1e293b] text-white w-full h-9 rounded-lg flex items-center justify-center gap-1.5"
+                  className="bg-primary hover:bg-[#1e293b] text-white w-full h-9 rounded-lg flex items-center justify-center gap-1.5"
                 >
                   {createMutation.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -224,33 +224,33 @@ function RolePermissionGrid({ role, onToggle, onDelete, isSaving, canManage }: R
   );
 
   return (
-    <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none overflow-hidden hover:border-slate-300 transition-all">
+    <Card className="bg-card border-border rounded-xl shadow-none overflow-hidden hover:border-slate-300 transition-all">
       <div
-        className="flex items-center justify-between px-4 py-3.5 hover:bg-[#f8fafc]/50 transition-colors cursor-pointer select-none"
+        className="flex items-center justify-between px-4 py-3.5 hover:bg-background/50 transition-colors cursor-pointer select-none"
         onClick={() => setExpanded(!expanded)}
       >
         <div className="flex items-center gap-3.5 min-w-0">
-          <div className="p-2 bg-[#f1f5f9] text-[#64748b] border border-[#e2e8f0] rounded-lg">
+          <div className="p-2 bg-[#f1f5f9] text-muted-foreground border border-border rounded-lg">
             <Shield size={16} />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-medium text-[#0f172a]">{role.name}</span>
+              <span className="text-sm font-medium text-foreground">{role.name}</span>
               {role.is_system_role ? (
-                <Badge variant="outline" className="bg-[#f8fafc] text-[#64748b] border-[#e2e8f0] text-[9px] rounded-md font-semibold py-0 px-1.5 flex items-center gap-1">
+                <Badge variant="outline" className="bg-background text-muted-foreground border-border text-[9px] rounded-md font-semibold py-0 px-1.5 flex items-center gap-1">
                   <Lock size={9} />
                   System Role
                 </Badge>
               ) : (
-                <Badge variant="outline" className="bg-indigo-50/50 text-indigo-600 border-indigo-100 text-[9px] rounded-md font-semibold py-0 px-1.5">
+                <Badge variant="outline" className="bg-fin-orange/10/50 text-fin-orange border-fin-orange/20 text-[9px] rounded-md font-semibold py-0 px-1.5">
                   Custom
                 </Badge>
               )}
             </div>
             {role.description ? (
-              <p className="text-xs text-[#64748b] mt-0.5 truncate max-w-sm lg:max-w-md">{role.description}</p>
+              <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-sm lg:max-w-md">{role.description}</p>
             ) : (
-              <p className="text-[10px] text-[#94a3b8] mt-0.5 truncate">
+              <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
                 {role.is_system_role ? 'System security profile' : 'Custom security profile'}
               </p>
             )}
@@ -258,19 +258,19 @@ function RolePermissionGrid({ role, onToggle, onDelete, isSaving, canManage }: R
         </div>
 
         <div className="flex items-center gap-3">
-          <span className="text-xs text-[#94a3b8] font-mono bg-[#f8fafc] px-2 py-0.5 border border-[#e2e8f0] rounded">
+          <span className="text-xs text-muted-foreground font-mono bg-background px-2 py-0.5 border border-border rounded">
             {role.permissions.length} nodes
           </span>
-          {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin text-[#64748b]" />}
-          {expanded ? <ChevronUp size={16} className="text-[#94a3b8]" /> : <ChevronDown size={16} className="text-[#94a3b8]" />}
+          {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+          {expanded ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
         </div>
       </div>
 
       {expanded && (
-        <div className="border-t border-[#e2e8f0] overflow-x-auto">
+        <div className="border-t border-border overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+              <tr className="bg-background border-b border-border">
                 <th className="px-4 py-2 font-medium text-[#475569] w-32">Resource Node</th>
                 {ACTIONS.map((action) => (
                   <th key={action} className="px-2 py-2 text-center font-medium text-[#475569] capitalize">
@@ -281,8 +281,8 @@ function RolePermissionGrid({ role, onToggle, onDelete, isSaving, canManage }: R
             </thead>
             <tbody className="divide-y divide-[#e2e8f0]">
               {RESOURCES.map((resource) => (
-                <tr key={resource} className="hover:bg-[#f8fafc]/30">
-                  <td className="px-4 py-2 font-medium text-[#0f172a]">{resource}</td>
+                <tr key={resource} className="hover:bg-background/30">
+                  <td className="px-4 py-2 font-medium text-foreground">{resource}</td>
                   {ACTIONS.map((action) => {
                     const key = `${resource}:${action}`;
                     const checked = permissionSet.has(key);
@@ -300,7 +300,7 @@ function RolePermissionGrid({ role, onToggle, onDelete, isSaving, canManage }: R
                               role.permissions as { resource: string; action: string }[],
                             )
                           }
-                          className="h-3.5 w-3.5 rounded border-[#cbd5e1] text-[#0f172a] focus:ring-slate-400 cursor-pointer disabled:cursor-not-allowed transition-all"
+                          className="h-3.5 w-3.5 rounded border-[#cbd5e1] text-foreground focus:ring-slate-400 cursor-pointer disabled:cursor-not-allowed transition-all"
                         />
                       </td>
                     );
@@ -311,18 +311,18 @@ function RolePermissionGrid({ role, onToggle, onDelete, isSaving, canManage }: R
           </table>
 
           {role.is_system_role ? (
-            <div className="px-4 py-2.5 bg-[#f8fafc] border-t border-[#e2e8f0] flex items-center gap-1.5 text-[10px] text-[#64748b]">
-              <Info size={12} className="text-[#94a3b8]" />
+            <div className="px-4 py-2.5 bg-background border-t border-border flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <Info size={12} className="text-muted-foreground" />
               <span>System roles are managed by platform specifications and cannot be modified.</span>
             </div>
           ) : !canManage ? (
-            <div className="px-4 py-2.5 bg-[#f8fafc] border-t border-[#e2e8f0] flex items-center gap-1.5 text-[10px] text-[#64748b]">
-              <Lock size={12} className="text-[#94a3b8]" />
+            <div className="px-4 py-2.5 bg-background border-t border-border flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <Lock size={12} className="text-muted-foreground" />
               <span>You do not have permission to modify custom roles.</span>
             </div>
           ) : (
-            <div className="px-4 py-2.5 border-t border-[#e2e8f0] flex items-center justify-between">
-              <span className="text-[10px] text-[#94a3b8]">Changes save automatically</span>
+            <div className="px-4 py-2.5 border-t border-border flex items-center justify-between">
+              <span className="text-[10px] text-muted-foreground">Changes save automatically</span>
               <Button
                 variant="ghost"
                 size="xs"

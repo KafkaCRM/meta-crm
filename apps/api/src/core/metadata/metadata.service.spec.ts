@@ -16,7 +16,7 @@ function mockDb() {
     $transaction: vi.fn(),
     fieldDefinition: { findMany: vi.fn(), findUnique: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn(), findFirst: vi.fn() },
     labelOverride: { findMany: vi.fn(), findUnique: vi.fn(), upsert: vi.fn() },
-    tenant: { findUnique: vi.fn() },
+    tenant: { findUnique: vi.fn(), update: vi.fn() },
     workflowDefinition: { findFirst: vi.fn(), create: vi.fn() },
     workflowStage: { findFirst: vi.fn(), create: vi.fn() },
     workflowTransition: { findFirst: vi.fn(), create: vi.fn() },

@@ -118,61 +118,61 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         {/* Persistent Support Impersonation Header */}
         <SupportImpersonationBanner />
 
-        <div className="flex-1 flex min-h-screen w-full bg-[#f8fafc]">
+        <div className="flex-1 flex min-h-screen w-full bg-background text-foreground">
           {/* Sidebar */}
-          <Sidebar className="border-r border-slate-800 bg-[#0b0f19]">
-            <SidebarHeader className="px-4 py-4 border-b border-slate-800">
+          <Sidebar className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+            <SidebarHeader className="px-4 py-4 border-b border-sidebar-border bg-sidebar">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-md bg-[#4f46e5] flex items-center justify-center flex-shrink-0 shadow-sm shadow-indigo-500/20 animate-pulse">
+                <div className="w-7 h-7 rounded-md bg-fin-orange flex items-center justify-center flex-shrink-0 shadow-sm shadow-orange-500/10">
                   <Shield size={14} className="text-white" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-white leading-none tracking-tight">Meta CRM</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5 font-medium">Admin Console</p>
+                  <p className="text-sm font-semibold text-sidebar-primary leading-none tracking-tight">Meta CRM</p>
+                  <p className="text-[10px] text-sidebar-foreground/75 mt-0.5 font-medium">Admin Console</p>
                 </div>
               </div>
             </SidebarHeader>
-
-            <SidebarContent className="px-2 py-3 bg-[#0b0f19]">
+ 
+            <SidebarContent className="px-2 py-3 bg-sidebar">
               {/* Command Palette Trigger & Search */}
               <div className="px-2 mb-4">
                 <button
                   type="button"
                   onClick={() => setCmdkOpen(true)}
-                  className="flex items-center justify-between w-full bg-slate-900 hover:bg-slate-850 border border-slate-800/80 rounded-lg px-2.5 py-1.5 transition-colors cursor-pointer text-left group"
+                  className="flex items-center justify-between w-full bg-card hover:bg-muted border border-border rounded-lg px-2.5 py-1.5 transition-colors cursor-pointer text-left group"
                 >
                   <div className="flex items-center gap-2">
-                    <Search size={12} className="text-slate-500 group-hover:text-slate-400 flex-shrink-0" />
-                    <span className="text-slate-400 group-hover:text-slate-300 text-xs font-medium placeholder-slate-500 py-0.5">Quick Search...</span>
+                    <Search size={12} className="text-muted-foreground group-hover:text-foreground flex-shrink-0" />
+                    <span className="text-muted-foreground group-hover:text-foreground text-xs font-medium py-0.5">Quick Search...</span>
                   </div>
-                  <div className="flex items-center gap-0.5 bg-slate-800 border border-slate-700/50 rounded px-1.5 py-0.5 text-[9px] text-slate-400 font-semibold tracking-wider">
+                  <div className="flex items-center gap-0.5 bg-muted border border-border rounded px-1.5 py-0.5 text-[9px] text-muted-foreground font-semibold tracking-wider">
                     <span>Ctrl</span>
                     <span>K</span>
                   </div>
                 </button>
               </div>
-
+ 
               {/* Sidebar Quick Find (Fallback Sidebar Filter) */}
               <div className="px-2 mb-4">
-                <div className="flex items-center gap-2 bg-slate-900 border border-slate-800/80 rounded-lg px-2.5 py-1">
-                  <Search size={12} className="text-slate-500 flex-shrink-0" />
+                <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-2.5 py-1">
+                  <Search size={12} className="text-muted-foreground flex-shrink-0" />
                   <input 
                     type="text" 
                     placeholder="Filter menu..." 
                     value={quickFind}
                     onChange={e => setQuickFind(e.target.value)}
-                    className="bg-transparent border-none outline-none text-slate-200 text-xs w-full placeholder-slate-500 py-0.5"
+                    className="bg-transparent border-none outline-none text-foreground text-xs w-full placeholder:text-muted-foreground py-0.5"
                   />
                   {quickFind && (
-                    <button onClick={() => setQuickFind('')} className="text-slate-500 hover:text-slate-300">
+                    <button onClick={() => setQuickFind('')} className="text-muted-foreground hover:text-foreground">
                       <X size={11} />
                     </button>
                   )}
                 </div>
               </div>
-
+ 
               <SidebarGroup>
-                <SidebarGroupLabel className="text-slate-500 text-[10px] font-bold uppercase tracking-wider px-2 mb-1">
+                <SidebarGroupLabel className="text-sidebar-foreground/50 text-[10px] font-bold uppercase tracking-wider px-2 mb-1">
                   Platform
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
@@ -188,14 +188,14 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                               to={item.path}
                               className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-all duration-150 ${
                                 isActive
-                                  ? 'bg-slate-800/80 text-white font-medium shadow-sm border border-slate-700/50'
-                                  : 'text-slate-300 hover:bg-slate-800/40 hover:text-white'
+                                  ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-xs border border-sidebar-border/60'
+                                  : 'text-sidebar-foreground hover:bg-sidebar-accent/55 hover:text-sidebar-accent-foreground'
                               }`}
                             >
-                              <item.icon size={15} strokeWidth={isActive ? 2 : 1.75} className={isActive ? 'text-indigo-400' : 'text-slate-400'} />
+                              <item.icon size={15} strokeWidth={isActive ? 2 : 1.75} className={isActive ? 'text-fin-orange' : 'text-sidebar-foreground/65'} />
                               <span className="flex-1">{item.label}</span>
                               {item.badge && (
-                                <Badge className="bg-indigo-600 text-white text-[10px] px-1.5 py-0 rounded-md border-0">
+                                <Badge className="bg-fin-orange text-white text-[10px] px-1.5 py-0 rounded-md border-0">
                                   {item.badge}
                                 </Badge>
                               )}
@@ -208,29 +208,29 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                 </SidebarGroupContent>
               </SidebarGroup>
             </SidebarContent>
-
-            <SidebarFooter className="border-t border-slate-800 p-3 bg-[#0b0f19]">
+ 
+            <SidebarFooter className="border-t border-sidebar-border p-3 bg-sidebar">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2.5 w-full px-2 py-2 rounded-lg hover:bg-slate-800/40 transition-colors text-left group">
+                  <button className="flex items-center gap-2.5 w-full px-2 py-2 rounded-lg hover:bg-sidebar-accent/55 transition-colors text-left group cursor-pointer text-sidebar-foreground">
                     <Avatar className="w-7 h-7 flex-shrink-0">
-                      <AvatarFallback className="bg-[#4f46e5] text-white text-xs font-semibold shadow-sm">
+                      <AvatarFallback className="bg-fin-orange text-white text-xs font-semibold shadow-sm">
                         {initials}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-slate-200 truncate group-hover:text-white transition-colors">{user.email}</p>
-                      <p className="text-[10px] text-slate-400 truncate">{user.platform_role}</p>
+                      <p className="text-xs font-semibold text-sidebar-primary truncate transition-colors">{user.email}</p>
+                      <p className="text-[10px] text-sidebar-foreground/70 truncate">{user.platform_role}</p>
                     </div>
-                    <ChevronDown size={12} className="text-slate-400 flex-shrink-0 group-hover:text-slate-300 transition-colors" />
+                    <ChevronDown size={12} className="text-sidebar-foreground/60 flex-shrink-0 transition-colors" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-slate-900 border-slate-800 text-slate-200">
-                  <DropdownMenuLabel className="text-xs text-slate-400">Admin Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-slate-800" />
+                <DropdownMenuContent align="end" className="w-48 bg-popover border-border text-popover-foreground">
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">Admin Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-border" />
                   <DropdownMenuItem
                     onClick={logout}
-                    className="text-sm text-red-400 focus:text-red-400 focus:bg-slate-800/50 cursor-pointer"
+                    className="text-sm text-destructive focus:text-destructive focus:bg-accent cursor-pointer"
                   >
                     <LogOut size={14} className="mr-2" />
                     Sign out
@@ -243,11 +243,11 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           {/* Main content area */}
           <div className="flex-1 flex flex-col min-w-0">
             {/* Top bar */}
-            <header className="h-14 bg-[#f8fafc] border-b border-slate-200 flex items-center gap-3 px-4 sticky top-0 z-10">
-              <SidebarTrigger className="text-slate-500 hover:text-slate-900" />
-              <Separator orientation="vertical" className="h-4 bg-slate-200" />
-              <h2 className="text-sm font-semibold text-slate-900 tracking-tight">{currentLabel}</h2>
-
+            <header className="h-14 bg-background border-b border-border flex items-center gap-3 px-4 sticky top-0 z-10">
+              <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
+              <Separator orientation="vertical" className="h-4 bg-border" />
+              <h2 className="text-sm font-semibold text-foreground tracking-tight">{currentLabel}</h2>
+ 
               {/* Environment Indicator Badge */}
               <div className="ml-auto flex items-center gap-2">
                 <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${env.style} shadow-sm`}>

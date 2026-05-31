@@ -168,31 +168,31 @@ export function Orders() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#0f172a]">Order Management</h1>
-          <p className="text-sm text-[#64748b] mt-0.5">Track customer orders, process fulfillment status and record payments</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Order Management</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Track customer orders, process fulfillment status and record payments</p>
         </div>
 
         <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if(!open) resetCreateForm(); }}>
           <DialogTrigger asChild>
-            <Button className="bg-[#0f172a] hover:bg-[#1e293b] text-white rounded-lg text-sm font-medium h-9 px-4">
+            <Button className="bg-primary hover:bg-[#1e293b] text-white rounded-lg text-sm font-medium h-9 px-4">
               <Plus size={16} className="mr-1.5" />
               New Order
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-xl bg-white border border-[#e2e8f0] rounded-xl shadow-lg p-6">
+          <DialogContent className="max-w-xl bg-card border border-border rounded-xl shadow-lg p-6">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-[#0f172a]">Place New Order</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-foreground">Place New Order</DialogTitle>
             </DialogHeader>
 
             <div className="space-y-4 py-3">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <Label htmlFor="party" className="text-xs font-semibold text-[#64748b]">Customer *</Label>
+                  <Label htmlFor="party" className="text-xs font-semibold text-muted-foreground">Customer *</Label>
                   <select
                     id="party"
                     value={partyId}
                     onChange={(e) => setPartyId(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-md bg-[#f8fafc] border border-[#e2e8f0] text-[#0f172a] focus:outline-none focus:ring-1 focus:ring-[#0f172a]"
+                    className="w-full px-3 py-2 text-sm rounded-md bg-background border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-[#0f172a]"
                   >
                     <option value="">Select Customer</option>
                     {contacts.map((c) => (
@@ -201,12 +201,12 @@ export function Orders() {
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="payment_method" className="text-xs font-semibold text-[#64748b]">Payment Method</Label>
+                  <Label htmlFor="payment_method" className="text-xs font-semibold text-muted-foreground">Payment Method</Label>
                   <select
                     id="payment_method"
                     value={paymentMethod}
                     onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-md bg-[#f8fafc] border border-[#e2e8f0] text-[#0f172a] focus:outline-none focus:ring-1 focus:ring-[#0f172a]"
+                    className="w-full px-3 py-2 text-sm rounded-md bg-background border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-[#0f172a]"
                   >
                     <option value="credit_card">Credit Card</option>
                     <option value="paypal">PayPal</option>
@@ -218,25 +218,25 @@ export function Orders() {
 
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <Label className="text-xs font-semibold text-[#64748b]">Product Items</Label>
+                  <Label className="text-xs font-semibold text-muted-foreground">Product Items</Label>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={handleAddItem}
-                    className="h-7 text-xs border-[#e2e8f0] text-[#64748b]"
+                    className="h-7 text-xs border-border text-muted-foreground"
                   >
                     Add Product
                   </Button>
                 </div>
 
-                <div className="max-h-56 overflow-y-auto space-y-2 border border-[#e2e8f0] rounded-lg p-2 bg-[#f8fafc]">
+                <div className="max-h-56 overflow-y-auto space-y-2 border border-border rounded-lg p-2 bg-background">
                   {items.map((item, idx) => (
                     <div key={idx} className="flex gap-2 items-center">
                       <Input
                         placeholder="Product Name"
                         value={item.product_name}
                         onChange={(e) => handleItemChange(idx, 'product_name', e.target.value)}
-                        className="bg-white border-[#e2e8f0] h-8 text-xs flex-grow focus-visible:ring-[#0f172a]"
+                        className="bg-card border-border h-8 text-xs flex-grow focus-visible:ring-[#0f172a]"
                       />
                       <Input
                         type="number"
@@ -244,7 +244,7 @@ export function Orders() {
                         min="1"
                         value={item.quantity}
                         onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
-                        className="bg-white border-[#e2e8f0] h-8 w-16 text-xs text-center focus-visible:ring-[#0f172a]"
+                        className="bg-card border-border h-8 w-16 text-xs text-center focus-visible:ring-[#0f172a]"
                       />
                       <Input
                         type="number"
@@ -252,7 +252,7 @@ export function Orders() {
                         min="0"
                         value={item.unit_price}
                         onChange={(e) => handleItemChange(idx, 'unit_price', e.target.value)}
-                        className="bg-white border-[#e2e8f0] h-8 w-24 text-xs text-center focus-visible:ring-[#0f172a]"
+                        className="bg-card border-border h-8 w-24 text-xs text-center focus-visible:ring-[#0f172a]"
                       />
                       <Button
                         size="icon"
@@ -268,9 +268,9 @@ export function Orders() {
                 </div>
               </div>
 
-              <div className="flex justify-between items-center text-sm font-semibold p-2.5 bg-[#f8fafc] rounded-lg border border-[#e2e8f0]">
-                <span className="text-[#64748b]">Total Order Price:</span>
-                <span className="text-[#0f172a] font-mono text-base">${calculateTotal().toFixed(2)}</span>
+              <div className="flex justify-between items-center text-sm font-semibold p-2.5 bg-background rounded-lg border border-border">
+                <span className="text-muted-foreground">Total Order Price:</span>
+                <span className="text-foreground font-mono text-base">${calculateTotal().toFixed(2)}</span>
               </div>
             </div>
 
@@ -278,14 +278,14 @@ export function Orders() {
               <Button
                 variant="outline"
                 onClick={() => setIsCreateOpen(false)}
-                className="border-[#e2e8f0] text-[#64748b] hover:bg-[#f8fafc]"
+                className="border-border text-muted-foreground hover:bg-background"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleCreateOrder}
                 disabled={createMutation.isPending}
-                className="bg-[#0f172a] hover:bg-[#1e293b] text-white"
+                className="bg-primary hover:bg-[#1e293b] text-white"
               >
                 {createMutation.isPending ? 'Placing...' : 'Place Order'}
               </Button>
@@ -295,14 +295,14 @@ export function Orders() {
       </div>
 
       {/* Orders List */}
-      <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none">
+      <Card className="bg-card border-border rounded-xl shadow-none">
         <CardHeader className="pb-3 flex flex-row items-center justify-between gap-4 flex-wrap">
-          <CardTitle className="text-base font-semibold text-[#0f172a]">Recent Orders</CardTitle>
+          <CardTitle className="text-base font-semibold text-foreground">Recent Orders</CardTitle>
           <div className="flex items-center gap-2">
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-2 py-1 text-xs rounded-md bg-[#f8fafc] border border-[#e2e8f0] text-[#64748b]"
+              className="px-2 py-1 text-xs rounded-md bg-background border border-border text-muted-foreground"
             >
               <option value="">All Statuses</option>
               <option value="pending">Pending</option>
@@ -314,26 +314,26 @@ export function Orders() {
         </CardHeader>
         <CardContent className="p-0">
           {loadingOrders ? (
-            <div className="text-center py-8 text-[#94a3b8]">Loading order details...</div>
+            <div className="text-center py-8 text-muted-foreground">Loading order details...</div>
           ) : orders.length === 0 ? (
-            <div className="text-center py-12 text-[#94a3b8]">No orders found matching criteria.</div>
+            <div className="text-center py-12 text-muted-foreground">No orders found matching criteria.</div>
           ) : (
             <Table>
-              <TableHeader className="bg-[#f8fafc]">
-                <TableRow className="hover:bg-transparent border-b border-[#e2e8f0]">
-                  <TableHead className="text-xs font-semibold text-[#64748b]">Customer</TableHead>
-                  <TableHead className="text-xs font-semibold text-[#64748b]">Order Date</TableHead>
-                  <TableHead className="text-xs font-semibold text-[#64748b]">Payment</TableHead>
-                  <TableHead className="text-xs font-semibold text-[#64748b] text-right">Total Amount</TableHead>
-                  <TableHead className="text-xs font-semibold text-[#64748b] text-center">Order Status</TableHead>
-                  <TableHead className="text-xs font-semibold text-[#64748b] text-right">Actions</TableHead>
+              <TableHeader className="bg-background">
+                <TableRow className="hover:bg-transparent border-b border-border">
+                  <TableHead className="text-xs font-semibold text-muted-foreground">Customer</TableHead>
+                  <TableHead className="text-xs font-semibold text-muted-foreground">Order Date</TableHead>
+                  <TableHead className="text-xs font-semibold text-muted-foreground">Payment</TableHead>
+                  <TableHead className="text-xs font-semibold text-muted-foreground text-right">Total Amount</TableHead>
+                  <TableHead className="text-xs font-semibold text-muted-foreground text-center">Order Status</TableHead>
+                  <TableHead className="text-xs font-semibold text-muted-foreground text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {orders.map((ord: Order) => (
-                  <TableRow key={ord.id} className="border-b border-[#e2e8f0] hover:bg-[#f8fafc]/30">
-                    <TableCell className="font-medium text-[#0f172a]">{ord.party?.name}</TableCell>
-                    <TableCell className="text-xs text-[#64748b]">
+                  <TableRow key={ord.id} className="border-b border-border hover:bg-background/30">
+                    <TableCell className="font-medium text-foreground">{ord.party?.name}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
                       {dayjs(ord.created_at).format('DD MMM YYYY HH:mm')}
                     </TableCell>
                     <TableCell>
@@ -341,7 +341,7 @@ export function Orders() {
                         {ord.payment_status}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right font-mono text-sm text-[#0f172a]">
+                    <TableCell className="text-right font-mono text-sm text-foreground">
                       ${ord.total_amount.toFixed(2)}
                     </TableCell>
                     <TableCell className="text-center">
@@ -354,7 +354,7 @@ export function Orders() {
                         size="sm"
                         variant="ghost"
                         onClick={() => handleOrderDetail(ord.id)}
-                        className="h-7 text-xs text-[#0f172a] hover:bg-[#f8fafc]"
+                        className="h-7 text-xs text-foreground hover:bg-background"
                       >
                         Details
                         <ChevronRight size={14} className="ml-1" />
@@ -370,22 +370,22 @@ export function Orders() {
 
       {/* Detail Dialog */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="max-w-md bg-white border border-[#e2e8f0] rounded-xl shadow-lg p-6">
+        <DialogContent className="max-w-md bg-card border border-border rounded-xl shadow-lg p-6">
           <DialogHeader>
-            <DialogTitle className="text-lg font-semibold text-[#0f172a]">Order Details</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-foreground">Order Details</DialogTitle>
           </DialogHeader>
 
           {selectedOrder && (
             <div className="space-y-4 py-2">
               <div className="grid grid-cols-2 gap-4 text-xs">
                 <div>
-                  <p className="font-semibold text-[#94a3b8]">Customer:</p>
-                  <p className="font-medium text-[#0f172a] mt-0.5">{selectedOrder.party?.name}</p>
-                  <p className="text-[#64748b] mt-0.5">{selectedOrder.party?.email || ''}</p>
+                  <p className="font-semibold text-muted-foreground">Customer:</p>
+                  <p className="font-medium text-foreground mt-0.5">{selectedOrder.party?.name}</p>
+                  <p className="text-muted-foreground mt-0.5">{selectedOrder.party?.email || ''}</p>
                 </div>
                 <div>
-                  <p className="font-semibold text-[#94a3b8] text-right">Order Date:</p>
-                  <p className="font-medium text-[#0f172a] mt-0.5 text-right">{dayjs(selectedOrder.created_at).format('DD MMM YYYY HH:mm')}</p>
+                  <p className="font-semibold text-muted-foreground text-right">Order Date:</p>
+                  <p className="font-medium text-foreground mt-0.5 text-right">{dayjs(selectedOrder.created_at).format('DD MMM YYYY HH:mm')}</p>
                 </div>
               </div>
 
@@ -393,11 +393,11 @@ export function Orders() {
 
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <Label className="text-2xs font-semibold text-[#64748b] uppercase">Update Order Status</Label>
+                  <Label className="text-2xs font-semibold text-muted-foreground uppercase">Update Order Status</Label>
                   <select
                     value={selectedOrder.status}
                     onChange={(e) => handleStatusChange(selectedOrder.id, e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-xs rounded-md bg-[#f8fafc] border border-[#e2e8f0] text-[#0f172a]"
+                    className="w-full px-2.5 py-1.5 text-xs rounded-md bg-background border border-border text-foreground"
                   >
                     <option value="pending">Pending</option>
                     <option value="shipped">Shipped</option>
@@ -406,11 +406,11 @@ export function Orders() {
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-2xs font-semibold text-[#64748b] uppercase">Update Payment Status</Label>
+                  <Label className="text-2xs font-semibold text-muted-foreground uppercase">Update Payment Status</Label>
                   <select
                     value={selectedOrder.payment_status}
                     onChange={(e) => handlePaymentStatusChange(selectedOrder.id, e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-xs rounded-md bg-[#f8fafc] border border-[#e2e8f0] text-[#0f172a]"
+                    className="w-full px-2.5 py-1.5 text-xs rounded-md bg-background border border-border text-foreground"
                   >
                     <option value="unpaid">Unpaid</option>
                     <option value="paid">Paid</option>
@@ -421,19 +421,19 @@ export function Orders() {
               <Separator className="bg-[#e2e8f0]" />
 
               <div>
-                <p className="text-xs font-semibold text-[#64748b] mb-1.5">Product Summary</p>
-                <div className="border border-[#e2e8f0] rounded-lg overflow-hidden">
+                <p className="text-xs font-semibold text-muted-foreground mb-1.5">Product Summary</p>
+                <div className="border border-border rounded-lg overflow-hidden">
                   <Table>
-                    <TableHeader className="bg-[#f8fafc]">
-                      <TableRow className="border-b border-[#e2e8f0]">
-                        <TableHead className="text-2xs font-semibold text-[#64748b] h-7 py-1">Item</TableHead>
-                        <TableHead className="text-2xs font-semibold text-[#64748b] h-7 py-1 text-center">Qty</TableHead>
-                        <TableHead className="text-2xs font-semibold text-[#64748b] h-7 py-1 text-right">Total</TableHead>
+                    <TableHeader className="bg-background">
+                      <TableRow className="border-b border-border">
+                        <TableHead className="text-2xs font-semibold text-muted-foreground h-7 py-1">Item</TableHead>
+                        <TableHead className="text-2xs font-semibold text-muted-foreground h-7 py-1 text-center">Qty</TableHead>
+                        <TableHead className="text-2xs font-semibold text-muted-foreground h-7 py-1 text-right">Total</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {selectedOrder.items?.map((item) => (
-                        <TableRow key={item.id} className="border-b border-[#e2e8f0] hover:bg-transparent">
+                        <TableRow key={item.id} className="border-b border-border hover:bg-transparent">
                           <TableCell className="text-xs py-1.5">{item.product_name}</TableCell>
                           <TableCell className="text-xs text-center py-1.5">{item.quantity} x ${item.unit_price}</TableCell>
                           <TableCell className="text-right text-xs py-1.5 font-mono">${item.amount.toFixed(2)}</TableCell>
@@ -444,15 +444,15 @@ export function Orders() {
                 </div>
               </div>
 
-              <div className="flex justify-between items-center text-sm font-semibold p-2 bg-[#f8fafc] border border-[#e2e8f0] rounded-lg">
-                <span className="text-[#64748b]">Grand Total:</span>
-                <span className="text-[#0f172a] font-mono">${selectedOrder.total_amount.toFixed(2)}</span>
+              <div className="flex justify-between items-center text-sm font-semibold p-2 bg-background border border-border rounded-lg">
+                <span className="text-muted-foreground">Grand Total:</span>
+                <span className="text-foreground font-mono">${selectedOrder.total_amount.toFixed(2)}</span>
               </div>
             </div>
           )}
 
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setIsDetailOpen(false)} className="border-[#e2e8f0] text-[#64748b] w-full">
+            <Button variant="outline" onClick={() => setIsDetailOpen(false)} className="border-border text-muted-foreground w-full">
               Close Detail
             </Button>
           </DialogFooter>

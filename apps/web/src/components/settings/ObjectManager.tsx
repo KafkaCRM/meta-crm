@@ -136,7 +136,7 @@ export function ObjectManager() {
   if (isLoadingObjects) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-[#94a3b8]" />
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -155,18 +155,18 @@ export function ObjectManager() {
                 setSelectedObjectId(null);
                 setSelectedFieldId(null);
               }}
-              className="h-8 w-8 rounded-lg border-[#e2e8f0]"
+              className="h-8 w-8 rounded-lg border-border"
             >
-              <ArrowLeft size={15} className="text-[#64748b]" />
+              <ArrowLeft size={15} className="text-muted-foreground" />
             </Button>
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-[#0f172a] flex items-center gap-2">
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
                 {selectedObject.singular_label}
-                <Badge variant="outline" className="bg-[#f8fafc] text-indigo-600 border-indigo-100 text-[10px] rounded-md font-mono py-0.5 px-2">
+                <Badge variant="outline" className="bg-background text-fin-orange border-fin-orange/20 text-[10px] rounded-md font-mono py-0.5 px-2">
                   {selectedObject.api_name}
                 </Badge>
               </h1>
-              <p className="text-xs text-[#64748b] mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {selectedObject.description || 'Custom Object Schema Definition'}
               </p>
             </div>
@@ -190,13 +190,13 @@ export function ObjectManager() {
 
         <div className="grid gap-6 lg:grid-cols-3 items-start">
           {/* Fields list column */}
-          <Card className="lg:col-span-2 bg-white border-[#e2e8f0] rounded-xl shadow-none">
-            <CardHeader className="pb-3 border-b border-[#e2e8f0] flex flex-row items-center justify-between">
+          <Card className="lg:col-span-2 bg-card border-border rounded-xl shadow-none">
+            <CardHeader className="pb-3 border-b border-border flex flex-row items-center justify-between">
               <div>
-                <CardTitle className="text-sm font-medium text-[#0f172a]">
+                <CardTitle className="text-sm font-medium text-foreground">
                   Schema Fields
                 </CardTitle>
-                <CardDescription className="text-xs text-[#94a3b8]">
+                <CardDescription className="text-xs text-muted-foreground">
                   Custom properties configured for this custom object record payload
                 </CardDescription>
               </div>
@@ -206,7 +206,7 @@ export function ObjectManager() {
                     setShowFieldForm(true);
                     setSelectedFieldId(null);
                   }}
-                  className="bg-[#0f172a] hover:bg-[#1e293b] text-white h-7 text-xs rounded-md flex items-center gap-1 px-2.5"
+                  className="bg-primary hover:bg-[#1e293b] text-white h-7 text-xs rounded-md flex items-center gap-1 px-2.5"
                 >
                   <Plus size={13} />
                   Add Field
@@ -216,7 +216,7 @@ export function ObjectManager() {
             <CardContent className="p-0">
               {isLoadingFields ? (
                 <div className="flex justify-center py-8">
-                  <Loader2 className="h-5 w-5 animate-spin text-[#94a3b8]" />
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
               ) : (
                 <div className="divide-y divide-[#e2e8f0]">
@@ -228,27 +228,27 @@ export function ObjectManager() {
                         setShowFieldForm(false);
                       }}
                       className={cn(
-                        "flex items-center justify-between p-4 hover:bg-slate-50/50 cursor-pointer group transition-all",
-                        selectedFieldId === field.id && "bg-slate-50 border-l-2 border-indigo-500 pl-3"
+                        "flex items-center justify-between p-4 hover:bg-muted/50 cursor-pointer group transition-all",
+                        selectedFieldId === field.id && "bg-muted border-l-2 border-indigo-500 pl-3"
                       )}
                     >
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-[#0f172a]">{field.label}</span>
-                          <span className="text-[10px] font-mono text-[#94a3b8]">{field.name}</span>
+                          <span className="text-xs font-semibold text-foreground">{field.label}</span>
+                          <span className="text-[10px] font-mono text-muted-foreground">{field.name}</span>
                           {field.required && (
                             <Badge variant="outline" className="bg-red-50 text-red-600 border-red-100 text-[8px] font-medium py-0 px-1">
                               Required
                             </Badge>
                           )}
                         </div>
-                        <p className="text-[10px] text-[#64748b] mt-0.5 capitalize flex items-center gap-1.5">
-                          Type: <span className="font-semibold text-slate-800">{field.field_type.replace('_', ' ')}</span>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 capitalize flex items-center gap-1.5">
+                          Type: <span className="font-semibold text-foreground">{field.field_type.replace('_', ' ')}</span>
                           {field.field_type === 'lookup' && (
-                            <span className="text-[#94a3b8] font-mono">({field.related_to})</span>
+                            <span className="text-muted-foreground font-mono">({field.related_to})</span>
                           )}
                           {field.options && field.options.length > 0 && (
-                            <span className="text-slate-400 font-mono truncate max-w-[250px]">
+                            <span className="text-muted-foreground font-mono truncate max-w-[250px]">
                               Options: [{field.options.join(', ')}]
                             </span>
                           )}
@@ -277,7 +277,7 @@ export function ObjectManager() {
                   ))}
 
                   {fields?.length === 0 && (
-                    <div className="p-8 text-center text-xs text-[#64748b]">
+                    <div className="p-8 text-center text-xs text-muted-foreground">
                       No custom fields provisioned. Click "Add Field" to declare your first custom property.
                     </div>
                   )}
@@ -289,14 +289,14 @@ export function ObjectManager() {
           {/* Field Form, Dependency Viewer or Schema Graph Column */}
           <div className="lg:col-span-1 space-y-6">
             {showFieldForm && canManage ? (
-              <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none">
-                <CardHeader className="pb-3 border-b border-[#e2e8f0] flex flex-row items-center justify-between">
+              <Card className="bg-card border-border rounded-xl shadow-none">
+                <CardHeader className="pb-3 border-b border-border flex flex-row items-center justify-between">
                   <div>
-                    <CardTitle className="text-sm font-medium text-[#0f172a] flex items-center gap-1.5">
-                      <Sliders size={14} className="text-[#94a3b8]" />
+                    <CardTitle className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                      <Sliders size={14} className="text-muted-foreground" />
                       New Field
                     </CardTitle>
-                    <CardDescription className="text-xs text-[#94a3b8]">
+                    <CardDescription className="text-xs text-muted-foreground">
                       Declare a new database field column
                     </CardDescription>
                   </div>
@@ -304,41 +304,41 @@ export function ObjectManager() {
                     variant="ghost"
                     size="icon-sm"
                     onClick={() => setShowFieldForm(false)}
-                    className="h-6 w-6 rounded-md hover:bg-slate-100"
+                    className="h-6 w-6 rounded-md hover:bg-muted/70"
                   >
-                    <X size={14} className="text-slate-400" />
+                    <X size={14} className="text-muted-foreground" />
                   </Button>
                 </CardHeader>
                 <CardContent className="pt-4">
                   <form onSubmit={handleCreateField} className="space-y-4">
                     <div className="space-y-1">
-                      <label className="text-xs font-medium text-[#64748b]">Field Label (UI Display)</label>
+                      <label className="text-xs font-medium text-muted-foreground">Field Label (UI Display)</label>
                       <Input
                         placeholder="e.g. Valuation Amount"
                         value={fieldForm.label}
                         onChange={(e) => setFieldForm(f => ({ ...f, label: e.target.value }))}
                         required
-                        className="h-8 text-xs border-[#e2e8f0] bg-white text-[#0f172a] placeholder-[#94a3b8]"
+                        className="h-8 text-xs border-border bg-card text-foreground placeholder-[#94a3b8]"
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-medium text-[#64748b]">API Name (API Slug)</label>
+                      <label className="text-xs font-medium text-muted-foreground">API Name (API Slug)</label>
                       <Input
                         placeholder="e.g. valuation_amount"
                         value={fieldForm.name}
                         onChange={(e) => setFieldForm(f => ({ ...f, name: e.target.value }))}
                         required
-                        className="h-8 text-xs border-[#e2e8f0] bg-white text-[#0f172a] placeholder-[#94a3b8] font-mono"
+                        className="h-8 text-xs border-border bg-card text-foreground placeholder-[#94a3b8] font-mono"
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-medium text-[#64748b]">Field Data Type</label>
+                      <label className="text-xs font-medium text-muted-foreground">Field Data Type</label>
                       <select
                         value={fieldForm.field_type}
                         onChange={(e) => setFieldForm(f => ({ ...f, field_type: e.target.value }))}
-                        className="w-full h-8 px-2.5 rounded-lg border border-[#e2e8f0] bg-white text-xs text-[#0f172a] outline-none"
+                        className="w-full h-8 px-2.5 rounded-lg border border-border bg-card text-xs text-foreground outline-none"
                       >
                         {FIELD_TYPES.map(t => (
                           <option key={t} value={t}>{t.replace('_', ' ')}</option>
@@ -348,23 +348,23 @@ export function ObjectManager() {
 
                     {fieldForm.field_type === 'lookup' && (
                       <div className="space-y-1">
-                        <label className="text-xs font-medium text-[#64748b]">Related To (Target Object)</label>
+                        <label className="text-xs font-medium text-muted-foreground">Related To (Target Object)</label>
                         <Input
                           placeholder="e.g. Party, Case, or custom name"
                           value={fieldForm.related_to}
                           onChange={(e) => setFieldForm(f => ({ ...f, related_to: e.target.value }))}
                           required
-                          className="h-8 text-xs border-[#e2e8f0] bg-white text-[#0f172a] placeholder-[#94a3b8]"
+                          className="h-8 text-xs border-border bg-card text-foreground placeholder-[#94a3b8]"
                         />
                       </div>
                     )}
 
                     {(fieldForm.field_type === 'select' || fieldForm.field_type === 'multi_select') && (
                       <div className="space-y-1">
-                        <label className="text-xs font-medium text-[#64748b] flex items-center gap-1">
+                        <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                           Picklist Options
                           <span title="Comma separated options list">
-                            <HelpCircle size={12} className="text-slate-400" />
+                            <HelpCircle size={12} className="text-muted-foreground" />
                           </span>
                         </label>
                         <textarea
@@ -372,7 +372,7 @@ export function ObjectManager() {
                           value={fieldForm.options}
                           onChange={(e) => setFieldForm(f => ({ ...f, options: e.target.value }))}
                           required
-                          className="w-full min-h-[60px] rounded-lg border border-[#e2e8f0] bg-white px-2.5 py-1.5 text-xs text-[#0f172a] placeholder-[#94a3b8] outline-none"
+                          className="w-full min-h-[60px] rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground placeholder-[#94a3b8] outline-none"
                         />
                       </div>
                     )}
@@ -383,7 +383,7 @@ export function ObjectManager() {
                         id="required_field"
                         checked={fieldForm.required}
                         onChange={(e) => setFieldForm(f => ({ ...f, required: e.target.checked }))}
-                        className="h-3.5 w-3.5 rounded border-[#cbd5e1] text-[#0f172a]"
+                        className="h-3.5 w-3.5 rounded border-[#cbd5e1] text-foreground"
                       />
                       <label htmlFor="required_field" className="text-xs text-[#475569] font-medium select-none cursor-pointer">
                         Mark as Required Field
@@ -394,7 +394,7 @@ export function ObjectManager() {
                       <Button
                         type="submit"
                         disabled={createFieldMutation.isPending}
-                        className="w-full h-8 text-xs bg-[#0f172a] hover:bg-[#1e293b] text-white flex items-center justify-center gap-1"
+                        className="w-full h-8 text-xs bg-primary hover:bg-[#1e293b] text-white flex items-center justify-center gap-1"
                       >
                         {createFieldMutation.isPending ? (
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -438,8 +438,8 @@ export function ObjectManager() {
     <div className="space-y-6 max-w-[1200px]">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-[#0f172a]">Object Manager</h1>
-          <p className="text-sm text-[#64748b] mt-0.5">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Object Manager</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
             Model custom database entities, define custom field attributes, and construct platform schema graphs
           </p>
         </div>
@@ -447,7 +447,7 @@ export function ObjectManager() {
         {canManage && (
           <Button
             onClick={() => setShowCreateDialog(true)}
-            className="bg-[#0f172a] hover:bg-[#1e293b] text-white h-9 rounded-lg flex items-center gap-1 px-4 text-xs font-semibold"
+            className="bg-primary hover:bg-[#1e293b] text-white h-9 rounded-lg flex items-center gap-1 px-4 text-xs font-semibold"
           >
             <Plus size={15} />
             Create Custom Object
@@ -461,25 +461,25 @@ export function ObjectManager() {
           <Card
             key={obj.id}
             onClick={() => setSelectedObjectId(obj.id)}
-            className="bg-white border-[#e2e8f0] rounded-xl shadow-none hover:border-slate-350 cursor-pointer transition-all flex flex-col justify-between hover:shadow-sm"
+            className="bg-card border-border rounded-xl shadow-none hover:border-slate-350 cursor-pointer transition-all flex flex-col justify-between hover:shadow-sm"
           >
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
-                <div className="p-2 bg-[#f1f5f9] text-[#64748b] border border-[#e2e8f0] rounded-lg">
+                <div className="p-2 bg-[#f1f5f9] text-muted-foreground border border-border rounded-lg">
                   <Settings2 size={16} />
                 </div>
-                <Badge variant="outline" className="bg-[#f8fafc] text-indigo-600 border-indigo-100 text-[9px] font-mono rounded-md py-0 px-1.5 font-semibold">
+                <Badge variant="outline" className="bg-background text-fin-orange border-fin-orange/20 text-[9px] font-mono rounded-md py-0 px-1.5 font-semibold">
                   {obj.api_name}
                 </Badge>
               </div>
-              <CardTitle className="text-base font-semibold text-[#0f172a] pt-2">
+              <CardTitle className="text-base font-semibold text-foreground pt-2">
                 {obj.singular_label}
               </CardTitle>
-              <CardDescription className="text-xs text-[#64748b] line-clamp-2 min-h-[32px] mt-1">
+              <CardDescription className="text-xs text-muted-foreground line-clamp-2 min-h-[32px] mt-1">
                 {obj.description || 'No description provided.'}
               </CardDescription>
             </CardHeader>
-            <CardContent className="pt-2 border-t border-[#e2e8f0]/60 pb-3 flex items-center justify-between text-[10px] text-[#94a3b8] font-medium">
+            <CardContent className="pt-2 border-t border-border pb-3 flex items-center justify-between text-[10px] text-muted-foreground font-medium">
               <span>Plural: {obj.plural_label}</span>
               <span>Updated {new Date(obj.updated_at).toLocaleDateString()}</span>
             </CardContent>
@@ -487,13 +487,13 @@ export function ObjectManager() {
         ))}
 
         {objects?.length === 0 && (
-          <div className="col-span-full py-12 flex flex-col items-center justify-center text-center space-y-3 p-6 border border-dashed border-slate-300 rounded-2xl bg-white">
-            <div className="p-3 bg-slate-50 text-slate-400 border border-slate-100 rounded-full">
+          <div className="col-span-full py-12 flex flex-col items-center justify-center text-center space-y-3 p-6 border border-dashed border-slate-300 rounded-2xl bg-card">
+            <div className="p-3 bg-muted text-muted-foreground border border-border/50 rounded-full">
               <Settings2 size={24} />
             </div>
             <div className="space-y-1">
-              <h3 className="text-sm font-semibold text-slate-800">No Custom Objects</h3>
-              <p className="text-xs text-slate-500 max-w-sm">
+              <h3 className="text-sm font-semibold text-foreground">No Custom Objects</h3>
+              <p className="text-xs text-muted-foreground max-w-sm">
                 Get started by defining a custom object registry like a Property Listing, Vehicle, or Loan record.
               </p>
             </div>
@@ -501,7 +501,7 @@ export function ObjectManager() {
               <Button
                 onClick={() => setShowCreateDialog(true)}
                 size="sm"
-                className="bg-[#0f172a] hover:bg-slate-800 text-white rounded-lg px-3 h-8 text-xs"
+                className="bg-primary hover:bg-muted text-white rounded-lg px-3 h-8 text-xs"
               >
                 Create Custom Object
               </Button>
@@ -513,26 +513,26 @@ export function ObjectManager() {
       {/* Creation Modal dialog */}
       {showCreateDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md bg-white border border-[#e2e8f0] rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 border-b border-[#e2e8f0] flex items-center justify-between bg-slate-50/50">
+          <div className="w-full max-w-md bg-card border border-border rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-muted/50">
               <div>
-                <h3 className="text-base font-semibold text-slate-900">Create Custom Object</h3>
-                <p className="text-[11px] text-slate-500">Define a new database table and record type</p>
+                <h3 className="text-base font-semibold text-foreground">Create Custom Object</h3>
+                <p className="text-[11px] text-muted-foreground">Define a new database table and record type</p>
               </div>
               <Button
                 variant="ghost"
                 size="icon-sm"
                 onClick={() => setShowCreateDialog(false)}
-                className="h-6 w-6 rounded-md hover:bg-slate-100"
+                className="h-6 w-6 rounded-md hover:bg-muted/70"
               >
-                <X size={14} className="text-slate-400" />
+                <X size={14} className="text-muted-foreground" />
               </Button>
             </div>
 
             <form onSubmit={handleCreateObject} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-600">Singular Label</label>
+                  <label className="text-xs font-medium text-muted-foreground">Singular Label</label>
                   <Input
                     placeholder="e.g. Property"
                     value={objectForm.singular_label}
@@ -543,26 +543,26 @@ export function ObjectManager() {
                       api_name: f.api_name || e.target.value.replace(/\s+/g, '') + '__c'
                     }))}
                     required
-                    className="h-9 text-xs border-[#e2e8f0] bg-white text-[#0f172a] placeholder-[#94a3b8]"
+                    className="h-9 text-xs border-border bg-card text-foreground placeholder-[#94a3b8]"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-600">Plural Label</label>
+                  <label className="text-xs font-medium text-muted-foreground">Plural Label</label>
                   <Input
                     placeholder="e.g. Properties"
                     value={objectForm.plural_label}
                     onChange={(e) => setObjectForm(f => ({ ...f, plural_label: e.target.value }))}
                     required
-                    className="h-9 text-xs border-[#e2e8f0] bg-white text-[#0f172a] placeholder-[#94a3b8]"
+                    className="h-9 text-xs border-border bg-card text-foreground placeholder-[#94a3b8]"
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-600 flex items-center gap-1">
+                <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                   API Object Name
                   <span title="API slug identifier. Will automatically end with __c.">
-                    <HelpCircle size={12} className="text-slate-400" />
+                    <HelpCircle size={12} className="text-muted-foreground" />
                   </span>
                 </label>
                 <Input
@@ -570,33 +570,33 @@ export function ObjectManager() {
                   value={objectForm.api_name}
                   onChange={(e) => setObjectForm(f => ({ ...f, api_name: e.target.value }))}
                   required
-                  className="h-9 text-xs border-[#e2e8f0] bg-white text-[#0f172a] placeholder-[#94a3b8] font-mono"
+                  className="h-9 text-xs border-border bg-card text-foreground placeholder-[#94a3b8] font-mono"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-600">Description</label>
+                <label className="text-xs font-medium text-muted-foreground">Description</label>
                 <textarea
                   placeholder="Outline context of custom records storage..."
                   value={objectForm.description}
                   onChange={(e) => setObjectForm(f => ({ ...f, description: e.target.value }))}
-                  className="min-h-[70px] w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-xs text-[#0f172a] placeholder-[#94a3b8] outline-none"
+                  className="min-h-[70px] w-full rounded-lg border border-border bg-card px-3 py-2 text-xs text-foreground placeholder-[#94a3b8] outline-none"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-[#e2e8f0] -mx-6 -mb-6 p-4 bg-slate-50/50">
+              <div className="flex justify-end gap-2 pt-2 border-t border-border -mx-6 -mb-6 p-4 bg-muted/50">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setShowCreateDialog(false)}
-                  className="h-8 text-xs border-slate-200"
+                  className="h-8 text-xs border-border"
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
                   disabled={createObjectMutation.isPending}
-                  className="h-8 text-xs bg-[#0f172a] hover:bg-[#1e293b] text-white flex items-center gap-1"
+                  className="h-8 text-xs bg-primary hover:bg-[#1e293b] text-white flex items-center gap-1"
                 >
                   {createObjectMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                   Deploy Custom Object

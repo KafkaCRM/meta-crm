@@ -186,14 +186,14 @@ export function PlatformBilling() {
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* KPI block */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm">
+        <Card className="bg-card border-border rounded-xl shadow-sm">
           <CardContent className="p-5 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 flex-shrink-0">
+            <div className="w-12 h-12 rounded-lg bg-fin-orange/10 flex items-center justify-center text-fin-orange flex-shrink-0">
               <TrendingUp size={22} />
             </div>
             <div>
-              <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Monthly Recurring Revenue</p>
-              <p className="text-2xl font-bold text-slate-900 mt-0.5">${mrr.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Monthly Recurring Revenue</p>
+              <p className="text-2xl font-bold text-foreground mt-0.5">${mrr.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
               <span className="inline-flex items-center text-xs text-emerald-600 font-medium mt-1">
                 <ArrowUpRight size={12} className="mr-0.5" /> +14.2% from last month
               </span>
@@ -201,14 +201,14 @@ export function PlatformBilling() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm">
+        <Card className="bg-card border-border rounded-xl shadow-sm">
           <CardContent className="p-5 flex items-center gap-4">
             <div className="w-12 h-12 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 flex-shrink-0">
               <Users size={22} />
             </div>
             <div>
-              <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Active Subscription Tiers</p>
-              <p className="text-2xl font-bold text-slate-900 mt-0.5">{activeSubscribers} Workspaces</p>
+              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Active Subscription Tiers</p>
+              <p className="text-2xl font-bold text-foreground mt-0.5">{activeSubscribers} Workspaces</p>
               <span className="inline-flex items-center text-xs text-emerald-600 font-medium mt-1">
                 <ArrowUpRight size={12} className="mr-0.5" /> +2 new this week
               </span>
@@ -216,29 +216,29 @@ export function PlatformBilling() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm">
+        <Card className="bg-card border-border rounded-xl shadow-sm">
           <CardContent className="p-5 flex items-center gap-4">
             <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0">
               <DollarSign size={22} />
             </div>
             <div>
-              <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Total Invoiced (YTD)</p>
-              <p className="text-2xl font-bold text-slate-900 mt-0.5">$245,200.00</p>
-              <span className="inline-flex items-center text-xs text-slate-500 font-medium mt-1">
+              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Total Invoiced (YTD)</p>
+              <p className="text-2xl font-bold text-foreground mt-0.5">$245,200.00</p>
+              <span className="inline-flex items-center text-xs text-muted-foreground font-medium mt-1">
                 98.6% collection rate
               </span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-slate-200 rounded-xl shadow-sm">
+        <Card className="bg-card border-border rounded-xl shadow-sm">
           <CardContent className="p-5 flex items-center gap-4">
             <div className="w-12 h-12 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 flex-shrink-0">
               <AlertCircle size={22} />
             </div>
             <div>
-              <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Dunning / Retries Active</p>
-              <p className="text-2xl font-bold text-slate-900 mt-0.5">1 Workspace</p>
+              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Dunning / Retries Active</p>
+              <p className="text-2xl font-bold text-foreground mt-0.5">1 Workspace</p>
               <span className="inline-flex items-center text-xs text-amber-600 font-medium mt-1">
                 <Sliders size={12} className="mr-0.5" /> Auto-retry set for May 25
               </span>
@@ -250,15 +250,15 @@ export function PlatformBilling() {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left 2 columns - Transaction List */}
         <div className="lg:col-span-2 space-y-4">
-          <Card className="bg-white border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            <CardHeader className="pb-3 border-b border-slate-100 bg-slate-50/50">
+          <Card className="bg-card border-border rounded-xl shadow-sm overflow-hidden">
+            <CardHeader className="pb-3 border-b border-border/50 bg-muted/50">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                  <CardTitle className="text-base font-semibold text-slate-900">Invoices & Platform Ledger</CardTitle>
-                  <CardDescription className="text-xs text-slate-400">Super User Platform Invoice Overrides</CardDescription>
+                  <CardTitle className="text-base font-semibold text-foreground">Invoices & Platform Ledger</CardTitle>
+                  <CardDescription className="text-xs text-muted-foreground">Super User Platform Invoice Overrides</CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="h-8 text-xs gap-1 border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50" onClick={() => {
+                  <Button variant="outline" size="sm" className="h-8 text-xs gap-1 border-border text-muted-foreground rounded-lg hover:bg-muted" onClick={() => {
                     setTransactions(INITIAL_TRANSACTIONS);
                     toast.info('Billing ledger reset to baseline');
                   }}>
@@ -270,23 +270,23 @@ export function PlatformBilling() {
             </CardHeader>
             <CardContent className="p-0">
               {/* Search & Filter Header */}
-              <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="p-4 border-b border-border/50 flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                   <input
                     type="text"
                     placeholder="Search by tenant name, plan, invoice..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 placeholder:text-slate-400 text-slate-900"
+                    className="w-full pl-9 pr-4 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 placeholder:text-muted-foreground text-foreground"
                   />
                 </div>
                 <div className="flex items-center gap-2">
-                  <Filter size={14} className="text-slate-400" />
+                  <Filter size={14} className="text-muted-foreground" />
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="text-xs font-semibold py-1.5 px-3 border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="text-xs font-semibold py-1.5 px-3 border border-border rounded-lg bg-card text-foreground/80 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   >
                     <option value="All">All Invoices</option>
                     <option value="Paid">Paid</option>
@@ -300,7 +300,7 @@ export function PlatformBilling() {
               {/* Grid */}
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-slate-50 text-slate-500 border-b border-slate-100">
+                  <thead className="bg-muted text-muted-foreground border-b border-border/50">
                     <tr>
                       <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wider">Tenant</th>
                       <th className="px-5 py-3 text-left font-medium text-xs uppercase tracking-wider">Invoice</th>
@@ -310,10 +310,10 @@ export function PlatformBilling() {
                       <th className="px-5 py-3 text-right font-medium text-xs uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 bg-white">
+                  <tbody className="divide-y divide-border/50 bg-card">
                     {filteredTransactions.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="text-center py-12 text-slate-400 text-sm">
+                        <td colSpan={6} className="text-center py-12 text-muted-foreground text-sm">
                           No matching platform transactions found.
                         </td>
                       </tr>
@@ -325,25 +325,25 @@ export function PlatformBilling() {
                         const isRefunded = tx.status === 'Refunded';
 
                         return (
-                          <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors">
+                          <tr key={tx.id} className="hover:bg-muted/50 transition-colors">
                             <td className="px-5 py-3.5">
                               <div className="flex flex-col">
-                                <span className="font-semibold text-slate-900">{tx.tenantName}</span>
-                                <span className="text-xs text-slate-400 font-mono">{tx.planName}</span>
+                                <span className="font-semibold text-foreground">{tx.tenantName}</span>
+                                <span className="text-xs text-muted-foreground font-mono">{tx.planName}</span>
                               </div>
                             </td>
                             <td className="px-5 py-3.5">
-                              <span className="text-xs font-semibold text-slate-500 font-mono">{tx.invoiceNumber}</span>
+                              <span className="text-xs font-semibold text-muted-foreground font-mono">{tx.invoiceNumber}</span>
                             </td>
                             <td className="px-5 py-3.5">
-                              <span className="font-medium text-slate-900">${tx.amount.toFixed(2)}</span>
+                              <span className="font-medium text-foreground">${tx.amount.toFixed(2)}</span>
                             </td>
                             <td className="px-5 py-3.5">
                               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
                                 isPaid ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
                                 isPending ? 'bg-amber-50 text-amber-700 border border-amber-100' :
                                 isFailed ? 'bg-rose-50 text-rose-700 border border-rose-100 animate-pulse' :
-                                'bg-slate-100 text-slate-600 border border-slate-200'
+                                'bg-slate-100 text-muted-foreground border border-border'
                               }`}>
                                 <span className={`w-1 h-1 rounded-full ${
                                   isPaid ? 'bg-emerald-500' :
@@ -355,13 +355,13 @@ export function PlatformBilling() {
                               </span>
                             </td>
                             <td className="px-5 py-3.5">
-                              <span className="text-xs text-slate-400">{new Date(tx.date).toLocaleDateString()}</span>
+                              <span className="text-xs text-muted-foreground">{new Date(tx.date).toLocaleDateString()}</span>
                             </td>
                             <td className="px-5 py-3.5 text-right space-x-1">
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-7 px-2.5 text-xs text-slate-600 hover:bg-slate-100 rounded-md"
+                                className="h-7 px-2.5 text-xs text-muted-foreground hover:bg-muted/70 rounded-md"
                                 onClick={() => setSelectedTx(tx)}
                               >
                                 View
@@ -380,7 +380,7 @@ export function PlatformBilling() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-7 px-2.5 text-xs text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-md"
+                                  className="h-7 px-2.5 text-xs text-fin-orange hover:bg-fin-orange/10 hover:text-fin-orange rounded-md"
                                   onClick={() => {
                                     setAdjustingTx(tx);
                                     setAdjustAmount(tx.amount.toString());
@@ -409,12 +409,12 @@ export function PlatformBilling() {
               <CardHeader className="border-b border-slate-800 pb-3 bg-slate-900/40">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-[9px] uppercase font-mono tracking-widest text-indigo-400">Platform Diagnostic Console</span>
+                    <span className="text-[9px] uppercase font-mono tracking-widest text-fin-orange">Platform Diagnostic Console</span>
                     <CardTitle className="text-base font-bold font-mono text-white mt-1">Invoice Inspector</CardTitle>
                   </div>
                   <button
                     onClick={() => setSelectedTx(null)}
-                    className="text-slate-400 hover:text-white text-xs font-semibold px-2 py-0.5 rounded-md hover:bg-slate-800"
+                    className="text-muted-foreground hover:text-white text-xs font-semibold px-2 py-0.5 rounded-md hover:bg-muted"
                   >
                     Close
                   </button>
@@ -423,51 +423,51 @@ export function PlatformBilling() {
               <CardContent className="pt-4 space-y-4 text-sm">
                 <div className="bg-slate-900/60 p-3 rounded-lg border border-slate-800 space-y-3 font-mono text-xs">
                   <div className="flex justify-between">
-                    <span className="text-slate-500">TXREF_ID:</span>
-                    <span className="text-indigo-400">{selectedTx.id}</span>
+                    <span className="text-muted-foreground">TXREF_ID:</span>
+                    <span className="text-fin-orange">{selectedTx.id}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">INVOICE_NUM:</span>
+                    <span className="text-muted-foreground">INVOICE_NUM:</span>
                     <span className="text-slate-200 font-semibold">{selectedTx.invoiceNumber}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">TENANT_SLUG:</span>
+                    <span className="text-muted-foreground">TENANT_SLUG:</span>
                     <span className="text-slate-200">{selectedTx.tenantSlug}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">BILLING_PLAN:</span>
+                    <span className="text-muted-foreground">BILLING_PLAN:</span>
                     <span className="text-slate-200">{selectedTx.planName}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">CYCLE_RATE:</span>
+                    <span className="text-muted-foreground">CYCLE_RATE:</span>
                     <span className="text-slate-200">{selectedTx.billingCycle}</span>
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <p className="text-xs text-slate-400">Total Invoice Amount</p>
+                  <p className="text-xs text-muted-foreground">Total Invoice Amount</p>
                   <p className="text-3xl font-extrabold text-white tracking-tight">${selectedTx.amount.toFixed(2)}</p>
                 </div>
 
                 <div className="border-t border-slate-800 pt-4 space-y-3">
                   <div className="flex items-center gap-2">
-                    <Calendar size={14} className="text-slate-400" />
-                    <span className="text-xs text-slate-300">Generated: {new Date(selectedTx.date).toLocaleString()}</span>
+                    <Calendar size={14} className="text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground/70">Generated: {new Date(selectedTx.date).toLocaleString()}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Building size={14} className="text-slate-400" />
-                    <span className="text-xs text-slate-300">Workspace: {selectedTx.tenantName}</span>
+                    <Building size={14} className="text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground/70">Workspace: {selectedTx.tenantName}</span>
                   </div>
                 </div>
 
                 {/* Simulated Ledger Log */}
                 <div className="border-t border-slate-800 pt-4 space-y-2">
-                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Gateway Transaction Event Logs</p>
-                  <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-900 font-mono text-[10px] text-slate-400 space-y-1 overflow-auto max-h-[140px] leading-tight">
-                    <p className="text-slate-500">[2026-05-22T14:30:00Z] INITIALIZE_CHARGE</p>
-                    <p className="text-slate-500">[2026-05-22T14:30:05Z] GATEWAY_PINGED: Stripe_v3</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Gateway Transaction Event Logs</p>
+                  <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-900 font-mono text-[10px] text-muted-foreground space-y-1 overflow-auto max-h-[140px] leading-tight">
+                    <p className="text-muted-foreground">[2026-05-22T14:30:00Z] INITIALIZE_CHARGE</p>
+                    <p className="text-muted-foreground">[2026-05-22T14:30:05Z] GATEWAY_PINGED: Stripe_v3</p>
                     <p className="text-emerald-500">[2026-05-22T14:32:00Z] SUCCESS: Charge authorized (ch_3M4e81)</p>
-                    <p className="text-slate-300">[2026-05-22T14:32:10Z] SYSTEM_PROVISIONS: Extended plan terms verified</p>
+                    <p className="text-muted-foreground/70">[2026-05-22T14:32:10Z] SYSTEM_PROVISIONS: Extended plan terms verified</p>
                     {selectedTx.status === 'Refunded' && (
                       <p className="text-rose-400">[2026-05-23T02:20:00Z] OVERRIDE: Platform Owner requested refund (rf_1A2b3c)</p>
                     )}
@@ -482,7 +482,7 @@ export function PlatformBilling() {
                       toast.info(`Invoice ${selectedTx.invoiceNumber} PDF downloaded successfully (Simulated)`);
                     }}
                   >
-                    <Download size={13} className="mr-1.5 text-slate-300" /> Download PDF
+                    <Download size={13} className="mr-1.5 text-muted-foreground/70" /> Download PDF
                   </Button>
                   {selectedTx.status === 'Paid' && (
                     <Button
@@ -498,36 +498,36 @@ export function PlatformBilling() {
             </Card>
           ) : (
             /* Standard Plan Distribution Overview */
-            <Card className="bg-white border-slate-200 rounded-xl shadow-sm">
-              <CardHeader className="pb-3 border-b border-slate-100">
-                <CardTitle className="text-sm font-bold text-slate-900 uppercase tracking-wide">Plan Tier Share</CardTitle>
-                <CardDescription className="text-xs text-slate-400">Subscriber Distribution Overview</CardDescription>
+            <Card className="bg-card border-border rounded-xl shadow-sm">
+              <CardHeader className="pb-3 border-b border-border/50">
+                <CardTitle className="text-sm font-bold text-foreground uppercase tracking-wide">Plan Tier Share</CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">Subscriber Distribution Overview</CardDescription>
               </CardHeader>
               <CardContent className="pt-4 space-y-4">
                 {[
-                  { name: 'Enterprise Plan', count: 6, percentage: 25, mrr: 15000, color: 'bg-indigo-600' },
+                  { name: 'Enterprise Plan', count: 6, percentage: 25, mrr: 15000, color: 'bg-fin-orange' },
                   { name: 'Professional Plan', count: 12, percentage: 50, mrr: 5400, color: 'bg-emerald-500' },
                   { name: 'Starter Plan', count: 6, percentage: 25, mrr: 900, color: 'bg-amber-500' },
                 ].map((tier) => (
                   <div key={tier.name} className="space-y-1.5">
                     <div className="flex justify-between items-center text-xs">
-                      <span className="font-semibold text-slate-700">{tier.name}</span>
-                      <span className="font-mono text-slate-400 font-medium">
+                      <span className="font-semibold text-foreground/80">{tier.name}</span>
+                      <span className="font-mono text-muted-foreground font-medium">
                         {tier.count} ({tier.percentage}%)
                       </span>
                     </div>
                     <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                       <div className={`h-full rounded-full ${tier.color}`} style={{ width: `${tier.percentage}%` }} />
                     </div>
-                    <div className="flex justify-between text-[10px] text-slate-400 font-semibold font-mono">
+                    <div className="flex justify-between text-[10px] text-muted-foreground font-semibold font-mono">
                       <span>Est. MRR:</span>
-                      <span className="text-slate-600">${tier.mrr.toLocaleString()}</span>
+                      <span className="text-muted-foreground">${tier.mrr.toLocaleString()}</span>
                     </div>
                   </div>
                 ))}
 
-                <div className="border-t border-slate-100 pt-4 bg-slate-50/50 -mx-6 -mb-6 p-4">
-                  <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+                <div className="border-t border-border/50 pt-4 bg-muted/50 -mx-6 -mb-6 p-4">
+                  <div className="flex items-center justify-between text-xs font-semibold text-foreground/80">
                     <span>Average Platform ACV:</span>
                     <span className="font-mono font-bold text-slate-950">$24,250.00</span>
                   </div>
@@ -541,38 +541,38 @@ export function PlatformBilling() {
       {/* Adjust Balance Modal Overlays */}
       {adjustingTx && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <Card className="bg-white border-slate-200 max-w-sm w-full mx-4 shadow-xl rounded-xl overflow-hidden animate-in zoom-in-95 duration-150">
-            <CardHeader className="pb-3 border-b border-slate-100">
-              <CardTitle className="text-base font-semibold text-slate-900">Adjust Invoice Balance</CardTitle>
-              <CardDescription className="text-xs text-slate-400">Override billing charge for {adjustingTx.tenantName}</CardDescription>
+          <Card className="bg-card border-border max-w-sm w-full mx-4 shadow-xl rounded-xl overflow-hidden animate-in zoom-in-95 duration-150">
+            <CardHeader className="pb-3 border-b border-border/50">
+              <CardTitle className="text-base font-semibold text-foreground">Adjust Invoice Balance</CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">Override billing charge for {adjustingTx.tenantName}</CardDescription>
             </CardHeader>
             <form onSubmit={handleAdjustBalance}>
               <CardContent className="pt-4 space-y-4">
                 <div>
-                  <label htmlFor="adjust-amount" className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                  <label htmlFor="adjust-amount" className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
                     Invoice Amount ($ USD)
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-2 text-sm text-slate-400">$</span>
+                    <span className="absolute left-3 top-2 text-sm text-muted-foreground">$</span>
                     <input
                       id="adjust-amount"
                       type="number"
                       value={adjustAmount}
                       onChange={(e) => setAdjustAmount(e.target.value)}
-                      className="w-full pl-7 pr-4 py-1.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 placeholder:text-slate-400 text-slate-900 font-mono"
+                      className="w-full pl-7 pr-4 py-1.5 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 placeholder:text-muted-foreground text-foreground font-mono"
                       step="any"
                       required
                     />
                   </div>
-                  <p className="mt-1.5 text-[10px] text-slate-400">Original invoice amount: <strong className="font-mono text-slate-600">${adjustingTx.amount.toFixed(2)}</strong></p>
+                  <p className="mt-1.5 text-[10px] text-muted-foreground">Original invoice amount: <strong className="font-mono text-muted-foreground">${adjustingTx.amount.toFixed(2)}</strong></p>
                 </div>
               </CardContent>
-              <div className="p-4 bg-slate-50 flex justify-end gap-2 border-t border-slate-100">
+              <div className="p-4 bg-muted flex justify-end gap-2 border-t border-border/50">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-8 text-xs border-slate-200 rounded-lg hover:bg-slate-100 text-slate-700"
+                  className="h-8 text-xs border-border rounded-lg hover:bg-muted/70 text-foreground/80"
                   onClick={() => setAdjustingTx(null)}
                 >
                   Cancel
@@ -580,7 +580,7 @@ export function PlatformBilling() {
                 <Button
                   type="submit"
                   size="sm"
-                  className="h-8 text-xs bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg"
+                  className="h-8 text-xs bg-fin-orange hover:bg-fin-orange/90 text-white rounded-lg"
                 >
                   Apply Adjustment
                 </Button>

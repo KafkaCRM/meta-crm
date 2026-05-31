@@ -105,10 +105,6 @@ export function LabelsProvider({ children }: { children: ReactNode }) {
     [labels, industry],
   );
 
-  if (isLoading) {
-    return null;
-  }
-
   return (
     <LabelsContext.Provider value={{ labels, t, isLoading }}>
       {children}

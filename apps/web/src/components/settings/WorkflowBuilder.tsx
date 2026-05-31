@@ -100,7 +100,7 @@ export function WorkflowBuilder() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-[#94a3b8]" />
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -109,8 +109,8 @@ export function WorkflowBuilder() {
     <div className="space-y-6 max-w-[1000px]">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-[#0f172a]">Workflows</h1>
-          <p className="text-sm text-[#64748b] mt-0.5">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Workflows</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
             Design lead pipelines, enforce transition criteria, and regulate timing thresholds
           </p>
         </div>
@@ -118,7 +118,7 @@ export function WorkflowBuilder() {
         <Button
           onClick={() => saveMutation.mutate()}
           disabled={saveMutation.isPending}
-          className="bg-[#0f172a] hover:bg-[#1e293b] text-white h-9 rounded-lg"
+          className="bg-primary hover:bg-[#1e293b] text-white h-9 rounded-lg"
         >
           {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />}
           Publish Pipeline
@@ -136,8 +136,8 @@ export function WorkflowBuilder() {
             <div key={stage.id} className="relative flex items-start gap-6">
               {/* Timeline circle node */}
               <div className={cn(
-                "h-12 w-12 rounded-full border-2 flex items-center justify-center font-bold text-sm bg-white shadow-sm flex-shrink-0 z-10",
-                index === 0 ? "border-emerald-500 text-emerald-500" : "border-slate-300 text-slate-500"
+                "h-12 w-12 rounded-full border-2 flex items-center justify-center font-bold text-sm bg-card shadow-sm flex-shrink-0 z-10",
+                index === 0 ? "border-emerald-500 text-emerald-500" : "border-slate-300 text-muted-foreground"
               )}>
                 {index === 0 ? <Play size={13} className="fill-emerald-500 translate-x-0.5" /> : index + 1}
               </div>
@@ -158,11 +158,11 @@ export function WorkflowBuilder() {
           ))}
 
           {stages.length === 0 && (
-            <Card className="bg-[#f8fafc]/50 border-dashed border-2 border-[#e2e8f0] rounded-xl py-12 text-center shadow-none">
+            <Card className="bg-background/50 border-dashed border-2 border-border rounded-xl py-12 text-center shadow-none">
               <CardContent className="flex flex-col items-center justify-center p-6">
-                <AlertCircle className="h-8 w-8 text-[#94a3b8] mb-3" />
-                <p className="text-sm font-medium text-[#0f172a]">No workflow pipeline stages deployed</p>
-                <p className="text-xs text-[#64748b] mt-1">Configure your first stage using the builder panel.</p>
+                <AlertCircle className="h-8 w-8 text-muted-foreground mb-3" />
+                <p className="text-sm font-medium text-foreground">No workflow pipeline stages deployed</p>
+                <p className="text-xs text-muted-foreground mt-1">Configure your first stage using the builder panel.</p>
               </CardContent>
             </Card>
           )}
@@ -170,33 +170,33 @@ export function WorkflowBuilder() {
 
         {/* Builder Add Stage Column */}
         {canManage && (
-        <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none h-fit">
-          <CardHeader className="pb-3 border-b border-[#e2e8f0]">
-            <CardTitle className="text-base font-medium text-[#0f172a] flex items-center gap-1.5">
-              <Settings size={16} className="text-[#94a3b8]" />
+        <Card className="bg-card border-border rounded-xl shadow-none h-fit">
+          <CardHeader className="pb-3 border-b border-border">
+            <CardTitle className="text-base font-medium text-foreground flex items-center gap-1.5">
+              <Settings size={16} className="text-muted-foreground" />
               Pipeline Builder
             </CardTitle>
-            <CardDescription className="text-xs text-[#94a3b8]">
+            <CardDescription className="text-xs text-muted-foreground">
               Insert a new workflow milestone stage
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
             <form onSubmit={(e) => { e.preventDefault(); addStage(); }} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[#64748b]">Stage Title</label>
+                <label className="text-xs font-medium text-muted-foreground">Stage Title</label>
                 <Input
                   type="text"
                   placeholder="e.g. Initial Interview"
                   value={newStage.name}
                   onChange={(e) => setNewStage((f) => ({ ...f, name: e.target.value }))}
                   required
-                  className="h-9 border-[#e2e8f0] bg-white text-[#0f172a] placeholder-[#94a3b8]"
+                  className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[#64748b] flex items-center gap-1">
-                  <Clock size={12} className="text-[#94a3b8]" />
+                <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                  <Clock size={12} className="text-muted-foreground" />
                   SLA Threshold (Hours)
                 </label>
                 <Input
@@ -204,14 +204,14 @@ export function WorkflowBuilder() {
                   placeholder="e.g. 24"
                   value={newStage.sla_hours}
                   onChange={(e) => setNewStage((f) => ({ ...f, sla_hours: e.target.value }))}
-                  className="h-9 border-[#e2e8f0] bg-white text-[#0f172a] placeholder-[#94a3b8]"
+                  className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
                 />
               </div>
 
               <div className="pt-2">
                 <Button
                   type="submit"
-                  className="bg-[#0f172a] hover:bg-[#1e293b] text-white w-full h-9 rounded-lg flex items-center justify-center gap-1"
+                  className="bg-primary hover:bg-[#1e293b] text-white w-full h-9 rounded-lg flex items-center justify-center gap-1"
                 >
                   <Plus size={15} />
                   Add Stage Node
@@ -264,25 +264,25 @@ function StageRow({ stage, index, allStages, transitions, onRemove, onUpdateCrit
   );
 
   return (
-    <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none flex-1 overflow-hidden hover:border-slate-300 transition-all">
+    <Card className="bg-card border-border rounded-xl shadow-none flex-1 overflow-hidden hover:border-slate-300 transition-all">
       <div className="flex items-center justify-between p-4 group select-none">
         <div className="flex items-center gap-3.5 min-w-0">
           {canManage && (
-            <div className="p-1.5 bg-[#f8fafc] border border-[#e2e8f0] text-[#94a3b8] rounded-md cursor-grab active:cursor-grabbing">
+            <div className="p-1.5 bg-background border border-border text-muted-foreground rounded-md cursor-grab active:cursor-grabbing">
               <GripVertical size={13} />
             </div>
           )}
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-[#0f172a]">{stage.name}</span>
+              <span className="text-sm font-medium text-foreground">{stage.name}</span>
               {stage.sla_hours && (
-                <Badge variant="outline" className="bg-[#f8fafc] text-[#64748b] border-[#e2e8f0] text-[9px] rounded-md py-0 px-1.5 font-mono flex items-center gap-1 font-semibold">
+                <Badge variant="outline" className="bg-background text-muted-foreground border-border text-[9px] rounded-md py-0 px-1.5 font-mono flex items-center gap-1 font-semibold">
                   <Clock size={9} />
                   SLA {stage.sla_hours}h
                 </Badge>
               )}
             </div>
-            <p className="text-[10px] text-[#94a3b8] mt-0.5 font-mono">{stage.id}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">{stage.id}</p>
           </div>
         </div>
 
@@ -295,8 +295,8 @@ function StageRow({ stage, index, allStages, transitions, onRemove, onUpdateCrit
             className={cn(
               "text-xs h-7 rounded-md",
               stage.entry_criteria.length > 0
-                ? "bg-indigo-50/50 text-indigo-600 border-indigo-100 hover:bg-indigo-100"
-                : "text-[#64748b] hover:bg-[#f1f5f9]"
+                ? "bg-fin-orange/10/50 text-fin-orange border-fin-orange/20 hover:bg-indigo-100"
+                : "text-muted-foreground hover:bg-[#f1f5f9]"
             )}
           >
             Criteria ({stage.entry_criteria.length})
@@ -307,7 +307,7 @@ function StageRow({ stage, index, allStages, transitions, onRemove, onUpdateCrit
             variant="ghost"
             size="sm"
             onClick={() => setExpanded(!expanded)}
-            className="text-xs text-[#64748b] hover:bg-[#f1f5f9] h-7 rounded-md flex items-center gap-1"
+            className="text-xs text-muted-foreground hover:bg-[#f1f5f9] h-7 rounded-md flex items-center gap-1"
           >
             Transitions ({outgoingTransitions.length})
             {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
@@ -329,22 +329,22 @@ function StageRow({ stage, index, allStages, transitions, onRemove, onUpdateCrit
 
       {/* Criteria Config Panel */}
       {showCriteria && (
-        <div className="bg-[#f8fafc] border-t border-[#e2e8f0] p-4 space-y-3">
-          <div className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-[#94a3b8]">
+        <div className="bg-background border-t border-border p-4 space-y-3">
+          <div className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             <ShieldAlert size={12} />
             <span>Entry Gate Criteria</span>
           </div>
 
           {stage.entry_criteria.length === 0 && !canManage && (
-            <p className="text-xs text-[#64748b]">No entry criteria configured for this stage.</p>
+            <p className="text-xs text-muted-foreground">No entry criteria configured for this stage.</p>
           )}
 
           <div className="space-y-1.5">
             {stage.entry_criteria.map((rule, idx) => (
-              <div key={idx} className="flex items-center justify-between p-2 bg-white border border-[#e2e8f0] rounded-lg text-xs font-mono">
-                <div className="flex items-center gap-1.5 text-[#0f172a]">
+              <div key={idx} className="flex items-center justify-between p-2 bg-card border border-border rounded-lg text-xs font-mono">
+                <div className="flex items-center gap-1.5 text-foreground">
                   <span className="font-semibold">{(rule as any).field ?? 'unknown'}</span>
-                  <span className="text-[#94a3b8]">{(rule as any).operator ?? ''}</span>
+                  <span className="text-muted-foreground">{(rule as any).operator ?? ''}</span>
                   {(rule as any).value !== undefined && <span className="bg-[#f1f5f9] text-[#475569] px-1 rounded">"{(rule as any).value}"</span>}
                 </div>
                 {canManage && (
@@ -368,12 +368,12 @@ function StageRow({ stage, index, allStages, transitions, onRemove, onUpdateCrit
                 placeholder="Field API identifier"
                 value={criteriaField.field}
                 onChange={(e) => setCriteriaField((f) => ({ ...f, field: e.target.value }))}
-                className="h-8 text-xs bg-white border-[#e2e8f0] flex-1 text-[#0f172a]"
+                className="h-8 text-xs bg-card border-border flex-1 text-foreground"
               />
               <select
                 value={criteriaField.operator}
                 onChange={(e) => setCriteriaField((f) => ({ ...f, operator: e.target.value }))}
-                className="rounded-lg border border-[#e2e8f0] bg-white px-2 py-0.5 text-xs text-[#0f172a] outline-none h-8 w-32 focus-visible:border-slate-400"
+                className="rounded-lg border border-border bg-card px-2 py-0.5 text-xs text-foreground outline-none h-8 w-32 focus-visible:border-slate-400"
               >
                 <option value="is_not_empty">is not empty</option>
                 <option value="is_empty">is empty</option>
@@ -386,14 +386,14 @@ function StageRow({ stage, index, allStages, transitions, onRemove, onUpdateCrit
                   placeholder="Value"
                   value={criteriaField.value}
                   onChange={(e) => setCriteriaField((f) => ({ ...f, value: e.target.value }))}
-                  className="h-8 text-xs bg-white border-[#e2e8f0] w-28 text-[#0f172a]"
+                  className="h-8 text-xs bg-card border-border w-28 text-foreground"
                 />
               )}
               <Button
                 type="button"
                 onClick={addCriterion}
                 size="sm"
-                className="bg-[#0f172a] hover:bg-[#1e293b] text-white h-8"
+                className="bg-primary hover:bg-[#1e293b] text-white h-8"
               >
                 Add Gate
               </Button>
@@ -404,10 +404,10 @@ function StageRow({ stage, index, allStages, transitions, onRemove, onUpdateCrit
 
       {/* Transitions Config Panel */}
       {expanded && (
-        <div className="bg-[#f8fafc] border-t border-[#e2e8f0] p-4 space-y-4">
+        <div className="bg-background border-t border-border p-4 space-y-4">
           {canManage && (
             <div>
-              <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#94a3b8] mb-2">Configure Routing Paths</label>
+              <label className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Configure Routing Paths</label>
               <div className="flex gap-1.5 flex-wrap">
                 {allStages
                   .filter((s) => s.id !== stage.id && !outgoingTransitions.some((t) => t.to_stage_id === s.id))
@@ -416,13 +416,13 @@ function StageRow({ stage, index, allStages, transitions, onRemove, onUpdateCrit
                       key={s.id}
                       type="button"
                       onClick={() => onAddTransition(s.id)}
-                      className="text-xs bg-white border border-[#e2e8f0] rounded-full px-3 py-1 text-[#64748b] hover:border-slate-400 hover:text-[#0f172a] transition-colors"
+                      className="text-xs bg-card border border-border rounded-full px-3 py-1 text-muted-foreground hover:border-slate-400 hover:text-foreground transition-colors"
                     >
                       → {s.name}
                     </button>
                   ))}
                 {allStages.filter((s) => s.id !== stage.id && !outgoingTransitions.some((t) => t.to_stage_id === s.id)).length === 0 && (
-                  <span className="text-[11px] text-[#94a3b8]">No further stages available to transition to</span>
+                  <span className="text-[11px] text-muted-foreground">No further stages available to transition to</span>
                 )}
               </div>
             </div>
@@ -430,21 +430,21 @@ function StageRow({ stage, index, allStages, transitions, onRemove, onUpdateCrit
 
           {outgoingTransitions.length > 0 ? (
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#94a3b8] mb-2">Connected Target Pipelines</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Connected Target Pipelines</p>
               <div className="flex gap-2 flex-wrap">
                 {outgoingTransitions.map((t) => {
                   const target = allStages.find((s) => s.id === t.to_stage_id);
                   return (
                     <div
                       key={t.id}
-                      className="flex items-center gap-1 text-xs bg-white border border-indigo-100 text-indigo-600 px-3 py-1 rounded-full shadow-sm"
+                      className="flex items-center gap-1 text-xs bg-card border border-fin-orange/20 text-fin-orange px-3 py-1 rounded-full shadow-sm"
                     >
                       <span>→ {target?.name ?? t.to_stage_id}</span>
                       {canManage && (
                         <button
                           type="button"
                           onClick={() => onRemoveTransition(t.id)}
-                          className="text-indigo-400 hover:text-indigo-600 ml-1.5 rounded-full"
+                          className="text-fin-orange hover:text-fin-orange ml-1.5 rounded-full"
                         >
                           <X size={10} className="stroke-[3px]" />
                         </button>
@@ -456,7 +456,7 @@ function StageRow({ stage, index, allStages, transitions, onRemove, onUpdateCrit
             </div>
           ) : (
             !canManage && (
-              <span className="text-[11px] text-[#94a3b8]">No outbound transitions configured for this stage.</span>
+              <span className="text-[11px] text-muted-foreground">No outbound transitions configured for this stage.</span>
             )
           )}
         </div>

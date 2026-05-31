@@ -448,27 +448,27 @@ export function PublishPlugin() {
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Tab bar */}
-      <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit border border-slate-200">
+      <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit border border-border">
         <button
           onClick={() => setTab('discover')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
             tab === 'discover'
-              ? 'bg-white text-slate-900 shadow-sm border border-slate-200/50'
-              : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+              ? 'bg-card text-foreground shadow-sm border border-border/50'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
           }`}
         >
-          <Zap size={14} className={tab === 'discover' ? 'text-indigo-600' : 'text-slate-400'} />
+          <Zap size={14} className={tab === 'discover' ? 'text-fin-orange' : 'text-muted-foreground'} />
           Discover Plugins
         </button>
         <button
           onClick={() => setTab('custom')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
             tab === 'custom'
-              ? 'bg-white text-slate-900 shadow-sm border border-slate-200/50'
-              : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+              ? 'bg-card text-foreground shadow-sm border border-border/50'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
           }`}
         >
-          <Code2 size={14} className={tab === 'custom' ? 'text-indigo-600' : 'text-slate-400'} />
+          <Code2 size={14} className={tab === 'custom' ? 'text-fin-orange' : 'text-muted-foreground'} />
           Custom Manifest
         </button>
       </div>
@@ -479,12 +479,12 @@ export function PublishPlugin() {
           {/* Search + category filter */}
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search plugins…"
-                className="pl-9 h-9 bg-white border-slate-200 text-slate-900 text-sm placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all"
+                className="pl-9 h-9 bg-card border-border text-foreground text-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all"
               />
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -494,8 +494,8 @@ export function PublishPlugin() {
                   onClick={() => setSelectedCategory(cat)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                     selectedCategory === cat
-                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-100'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-500 hover:text-indigo-600'
+                      ? 'bg-fin-orange text-white border-indigo-600 shadow-sm shadow-indigo-100'
+                      : 'bg-card text-muted-foreground border-border hover:border-indigo-500 hover:text-fin-orange'
                   }`}
                 >
                   {cat}
@@ -506,7 +506,7 @@ export function PublishPlugin() {
 
           {/* Plugin cards */}
           {filteredCatalogue.length === 0 ? (
-            <div className="text-center py-12 text-slate-400 text-sm border border-dashed border-slate-200 rounded-xl bg-slate-50">
+            <div className="text-center py-12 text-muted-foreground text-sm border border-dashed border-border rounded-xl bg-muted">
               No plugins match your search.
             </div>
           ) : (
@@ -514,15 +514,15 @@ export function PublishPlugin() {
               {filteredCatalogue.map((entry) => {
                 const isRegistered = registeredIds.has(entry.manifest.id) || justRegistered.has(entry.manifest.id);
                 const isRegistering = registeringId === entry.manifest.id;
-                const catColour = INDUSTRY_COLOURS[entry.category] ?? 'bg-slate-50 text-slate-700 border-slate-200';
+                const catColour = INDUSTRY_COLOURS[entry.category] ?? 'bg-muted text-foreground/80 border-border';
 
                 return (
                   <div
                     key={entry.manifest.id}
-                    className={`relative flex flex-col bg-white border rounded-xl p-4 transition-all duration-300 hover:scale-[1.01] ${
+                    className={`relative flex flex-col bg-card border rounded-xl p-4 transition-all duration-300 hover:scale-[1.01] ${
                       isRegistered
                         ? 'border-emerald-500/30 bg-emerald-50/[0.01] shadow-xs'
-                        : 'border-slate-200 hover:border-indigo-500/20 hover:shadow-md'
+                        : 'border-border hover:border-indigo-500/20 hover:shadow-md'
                     }`}
                   >
                     {/* Header */}
@@ -530,7 +530,7 @@ export function PublishPlugin() {
                       <div className="text-2xl leading-none mt-0.5 filter drop-shadow-sm">{entry.icon}</div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-semibold text-slate-900 leading-tight">
+                          <span className="text-sm font-semibold text-foreground leading-tight">
                             {entry.manifest.name}
                           </span>
                           {isRegistered && (
@@ -551,7 +551,7 @@ export function PublishPlugin() {
                     </div>
 
                     {/* Description */}
-                    <p className="text-xs text-slate-500 leading-relaxed flex-1 mb-3">
+                    <p className="text-xs text-muted-foreground leading-relaxed flex-1 mb-3">
                       {entry.manifest.description}
                     </p>
 
@@ -561,13 +561,13 @@ export function PublishPlugin() {
                         {entry.manifest.hooks.slice(0, 3).map((hook) => (
                           <span
                             key={hook}
-                            className="text-[10px] font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200/50"
+                            className="text-[10px] font-mono bg-slate-100 text-muted-foreground px-1.5 py-0.5 rounded border border-border/50"
                           >
                             {hook}
                           </span>
                         ))}
                         {entry.manifest.hooks.length > 3 && (
-                          <span className="text-[10px] text-slate-400">
+                          <span className="text-[10px] text-muted-foreground">
                             +{entry.manifest.hooks.length - 3} more
                           </span>
                         )}
@@ -575,11 +575,11 @@ export function PublishPlugin() {
                     )}
 
                     {/* Industry compatibility */}
-                    <div className="flex flex-wrap gap-1 mb-4 border-t border-slate-100 pt-3">
+                    <div className="flex flex-wrap gap-1 mb-4 border-t border-border/50 pt-3">
                       {entry.manifest.compatible_industries.map((ind) => (
                         <span
                           key={ind}
-                          className="text-[10px] text-slate-400 bg-slate-50 border border-slate-200/60 px-1.5 py-0.5 rounded"
+                          className="text-[10px] text-muted-foreground bg-muted border border-border/60 px-1.5 py-0.5 rounded"
                         >
                           {ind === '*' ? 'All industries' : ind}
                         </span>
@@ -594,7 +594,7 @@ export function PublishPlugin() {
                       className={`w-full h-8 text-xs font-medium rounded-lg transition-all duration-200 ${
                         isRegistered
                           ? 'bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 hover:bg-emerald-500/10 cursor-default shadow-none'
-                          : 'bg-indigo-600 hover:bg-indigo-700 text-white hover:shadow-sm hover:shadow-indigo-100'
+                          : 'bg-fin-orange hover:bg-fin-orange/90 text-white hover:shadow-sm hover:shadow-indigo-100'
                       }`}
                     >
                       {isRegistered ? (
@@ -625,15 +625,15 @@ export function PublishPlugin() {
       {/* ── Custom manifest tab ──────────────────────────────────── */}
       {tab === 'custom' && (
         <div className="max-w-2xl space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted-foreground">
             Manually register a plugin by providing its npm package details and manifest JSON.
           </p>
           <form onSubmit={handleCustomSubmit} className="space-y-4">
-            <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-xs">
-              <h3 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">Package Details</h3>
+            <div className="bg-card border border-border rounded-xl p-5 space-y-4 shadow-xs">
+              <h3 className="text-sm font-semibold text-foreground border-b border-border/50 pb-2">Package Details</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label htmlFor="packageName" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  <label htmlFor="packageName" className="text-xs font-semibold text-foreground/80 uppercase tracking-wider">
                     Package Name
                   </label>
                   <Input
@@ -641,12 +641,12 @@ export function PublishPlugin() {
                     value={packageName}
                     onChange={(e) => setPackageName(e.target.value)}
                     placeholder="@meta-crm/plugin-example"
-                    className="bg-slate-50 border-slate-200 h-9 text-sm text-slate-900 focus-visible:ring-1 focus-visible:ring-indigo-500 focus-visible:border-indigo-500"
+                    className="bg-muted border-border h-9 text-sm text-foreground focus-visible:ring-1 focus-visible:ring-indigo-500 focus-visible:border-indigo-500"
                     required
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label htmlFor="version" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  <label htmlFor="version" className="text-xs font-semibold text-foreground/80 uppercase tracking-wider">
                     Version
                   </label>
                   <Input
@@ -654,20 +654,20 @@ export function PublishPlugin() {
                     value={version}
                     onChange={(e) => setVersion(e.target.value)}
                     placeholder="1.0.0"
-                    className="bg-slate-50 border-slate-200 h-9 text-sm text-slate-900 focus-visible:ring-1 focus-visible:ring-indigo-500 focus-visible:border-indigo-500"
+                    className="bg-muted border-border h-9 text-sm text-foreground focus-visible:ring-1 focus-visible:ring-indigo-500 focus-visible:border-indigo-500"
                     required
                   />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-3 shadow-xs">
-              <h3 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">Manifest JSON</h3>
+            <div className="bg-card border border-border rounded-xl p-5 space-y-3 shadow-xs">
+              <h3 className="text-sm font-semibold text-foreground border-b border-border/50 pb-2">Manifest JSON</h3>
               <textarea
                 value={manifestJson}
                 onChange={(e) => setManifestJson(e.target.value)}
                 rows={14}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 font-mono text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 resize-none transition-all duration-200"
+                className="w-full rounded-lg border border-border bg-muted px-3 py-2.5 font-mono text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 resize-none transition-all duration-200"
               />
               {customValidation.parseError && (
                 <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-xs text-red-700 animate-in shake duration-200">
@@ -702,7 +702,7 @@ export function PublishPlugin() {
             <Button
               type="submit"
               disabled={!customValidation.valid || customMutation.isPending}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg h-10 transition-all duration-200 shadow-sm shadow-indigo-100"
+              className="w-full bg-fin-orange hover:bg-fin-orange/90 text-white font-medium rounded-lg h-10 transition-all duration-200 shadow-sm shadow-indigo-100"
             >
               {customMutation.isPending ? 'Registering…' : 'Register Plugin'}
             </Button>

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 const AVATAR_COLORS = [
-  'bg-indigo-100 text-indigo-700',
+  'bg-indigo-100 text-fin-orange',
   'bg-emerald-100 text-emerald-700',
   'bg-purple-100 text-purple-700',
   'bg-amber-100 text-amber-700',
@@ -38,8 +38,8 @@ export function PlatformUserList() {
 
   if (isLoading) {
     return (
-      <div className="py-12 flex flex-col items-center justify-center gap-2 text-slate-400 text-sm">
-        <div className="w-5 h-5 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin" />
+      <div className="py-12 flex flex-col items-center justify-center gap-2 text-muted-foreground text-sm">
+        <div className="w-5 h-5 border-2 border-border border-t-indigo-600 rounded-full animate-spin" />
         Loading system operators directory...
       </div>
     );
@@ -47,17 +47,17 @@ export function PlatformUserList() {
 
   if (!users || users.length === 0) {
     return (
-      <div className="py-12 text-center text-slate-400 text-sm">
-        <ShieldAlert size={28} className="mx-auto mb-2 text-slate-300" />
+      <div className="py-12 text-center text-muted-foreground text-sm">
+        <ShieldAlert size={28} className="mx-auto mb-2 text-muted-foreground/70" />
         No platform operator users registered in this environment.
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-slate-200">
+    <div className="overflow-x-auto rounded-lg border border-border">
       <table className="w-full text-sm">
-        <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+        <thead className="bg-muted text-muted-foreground font-semibold border-b border-border">
           <tr>
             <th className="px-4 py-3 text-left text-xs uppercase tracking-wider">Operator Info</th>
             <th className="px-4 py-3 text-left text-xs uppercase tracking-wider">Platform Role</th>
@@ -66,7 +66,7 @@ export function PlatformUserList() {
             {canDelete && <th className="px-4 py-3 text-right text-xs uppercase tracking-wider">Actions</th>}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100 bg-white">
+        <tbody className="divide-y divide-border/50 bg-card">
           {users.map((user: PlatformUser, index) => {
             const isActive = user.status === 'active';
             const initials = user.name
@@ -76,7 +76,7 @@ export function PlatformUserList() {
             const colorClass = AVATAR_COLORS[index % AVATAR_COLORS.length];
 
             return (
-              <tr key={user.id} className="hover:bg-slate-50/50 transition-colors">
+              <tr key={user.id} className="hover:bg-muted/50 transition-colors">
                 {/* Operator info */}
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
@@ -84,15 +84,15 @@ export function PlatformUserList() {
                       {initials}
                     </div>
                     <div className="flex flex-col">
-                      <span className="font-semibold text-slate-900 leading-tight">{user.name}</span>
-                      <span className="text-xs text-slate-400 mt-0.5">{user.email}</span>
+                      <span className="font-semibold text-foreground leading-tight">{user.name}</span>
+                      <span className="text-xs text-muted-foreground mt-0.5">{user.email}</span>
                     </div>
                   </div>
                 </td>
 
                 {/* Role */}
                 <td className="px-4 py-3">
-                  <Badge className="bg-indigo-50 hover:bg-indigo-100 border-transparent text-indigo-700 text-[10px] font-semibold px-2 py-0.5 rounded">
+                  <Badge className="bg-fin-orange/10 hover:bg-indigo-100 border-transparent text-fin-orange text-[10px] font-semibold px-2 py-0.5 rounded">
                     {user.role?.replace('Platform', '') ?? 'Support'}
                   </Badge>
                 </td>
@@ -102,7 +102,7 @@ export function PlatformUserList() {
                   <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                     isActive
                       ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                      : 'bg-slate-100 text-slate-600 border border-slate-200'
+                      : 'bg-slate-100 text-muted-foreground border border-border'
                   }`}>
                     {isActive ? (
                       <span className="relative flex h-1.5 w-1.5">
@@ -117,9 +117,9 @@ export function PlatformUserList() {
                 </td>
 
                 {/* Date */}
-                <td className="px-4 py-3 text-slate-500 font-mono text-xs">
+                <td className="px-4 py-3 text-muted-foreground font-mono text-xs">
                   <div className="flex items-center gap-1.5">
-                    <Calendar size={13} className="text-slate-400" />
+                    <Calendar size={13} className="text-muted-foreground" />
                     {new Date(user.created_at).toLocaleDateString()}
                   </div>
                 </td>
@@ -139,7 +139,7 @@ export function PlatformUserList() {
                         Deactivate
                       </Button>
                     ) : (
-                      <span className="text-xs text-slate-400 font-medium">Deactivated</span>
+                      <span className="text-xs text-muted-foreground font-medium">Deactivated</span>
                     )}
                   </td>
                 )}

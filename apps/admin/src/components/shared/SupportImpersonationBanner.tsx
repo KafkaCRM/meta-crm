@@ -41,7 +41,7 @@ export function SupportImpersonationBanner() {
       <Button
         onClick={handleExit}
         size="xs"
-        className="bg-white/10 hover:bg-white/20 text-white border border-white/20 hover:border-white/40 h-7 rounded px-3 transition-all flex items-center gap-1.5 shadow-sm"
+        className="bg-card/10 hover:bg-card/20 text-white border border-white/20 hover:border-white/40 h-7 rounded px-3 transition-all flex items-center gap-1.5 shadow-sm"
       >
         <LogOut size={12} />
         <span>Exit Portal</span>

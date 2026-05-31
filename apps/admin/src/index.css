@@ -59,79 +59,79 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Intercom custom tokens overridden with Titanium Slate */
-  --color-canvas: #f8fafc;
+  /* Intercom custom tokens - Editorial Cream-White ground & Charcoal ink */
+  --color-canvas: #f5f1ec;
   --color-surface-1: #ffffff;
-  --color-surface-2: #f1f5f9;
-  --color-hairline: #e2e8f0;
-  --color-hairline-soft: #f1f5f9;
-  --color-ink: #0f172a;
-  --color-ink-muted: #64748b;
-  --color-ink-subtle: #94a3b8;
-  --color-ink-tertiary: #cbd5e1;
-  --color-fin-orange: #4f46e5;
-  --color-report-blue: #3b82f6;
-  --color-report-green: #10b981;
-  --color-report-pink: #ec4899;
-  --color-report-lime: #84cc16;
-  --color-report-cyan: #06b6d4;
-  --color-brand-blue: #4f46e5;
+  --color-surface-2: #ebe7e1;
+  --color-hairline: #d3cec6;
+  --color-hairline-soft: #ebe7e1;
+  --color-ink: #111111;
+  --color-ink-muted: #626260;
+  --color-ink-subtle: #7b7b78;
+  --color-ink-tertiary: #9c9fa5;
+  --color-fin-orange: #ff5600;
+  --color-report-blue: #65b5ff;
+  --color-report-green: #0bdf50;
+  --color-report-pink: #ff2067;
+  --color-report-lime: #b3e01c;
+  --color-report-cyan: #03b2cb;
+  --color-brand-blue: #0007cb;
 }
 
 :root {
-  /* Slate & Cool Tech Console Theme definitions */
-  --background: oklch(0.985 0.004 240);        /* #f8fafc slate-50 canvas */
-  --foreground: oklch(0.205 0.021 255);        /* #0f172a slate-900 foreground */
+  /* Intercom Editorial Cream-White ground Theme definitions */
+  --background: oklch(0.96 0.007 80);           /* #f5f1ec canvas */
+  --foreground: oklch(0.18 0 0);               /* #111111 ink */
 
   /* Cards = pure white */
   --card: oklch(1 0 0);                        /* #ffffff */
-  --card-foreground: oklch(0.205 0.021 255);   /* #0f172a */
+  --card-foreground: oklch(0.18 0 0);          /* #111111 */
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.205 0.021 255);
+  --popover-foreground: oklch(0.18 0 0);
 
-  /* Primary = slate-900 console */
-  --primary: oklch(0.205 0.021 255);           /* #0f172a */
+  /* Primary = charcoal ink */
+  --primary: oklch(0.18 0 0);                  /* #111111 */
   --primary-foreground: oklch(1 0 0);          /* #ffffff */
 
-  /* Secondary = surface-2 slate-100 */
-  --secondary: oklch(0.961 0.008 240);          /* #f1f5f9 */
-  --secondary-foreground: oklch(0.205 0.021 255);
+  /* Secondary = surface-2 cream */
+  --secondary: oklch(0.92 0.006 80);           /* #ebe7e1 */
+  --secondary-foreground: oklch(0.18 0 0);
 
   /* Muted */
-  --muted: oklch(0.961 0.008 240);              /* #f1f5f9 */
-  --muted-foreground: oklch(0.556 0.014 240);   /* #64748b slate-500 */
+  --muted: oklch(0.92 0.006 80);               /* #ebe7e1 */
+  --muted-foreground: oklch(0.48 0.005 80);    /* #626260 ink-muted */
 
   /* Accent */
-  --accent: oklch(0.961 0.008 240);
-  --accent-foreground: oklch(0.205 0.021 255);
+  --accent: oklch(0.92 0.006 80);
+  --accent-foreground: oklch(0.18 0 0);
 
   /* Destructive */
-  --destructive: oklch(0.577 0.228 20);        /* #ef4444 */
+  --destructive: oklch(0.45 0.18 20);          /* #c41c1c */
 
-  /* Borders — slate-200 */
-  --border: oklch(0.928 0.006 240);             /* #e2e8f0 */
-  --input: oklch(0.928 0.006 240);
-  --ring: oklch(0.556 0.014 240);               /* slate-500 */
+  /* Borders — hairline warm gray */
+  --border: oklch(0.85 0.006 80);              /* #d3cec6 */
+  --input: oklch(0.85 0.006 80);
+  --ring: oklch(0.48 0.005 80);                /* ink-muted */
 
   /* Border radius */
-  --radius: 0.5rem;
+  --radius: 0.75rem;                           /* 12px for cards */
 
-  /* Chart colors */
-  --chart-1: #4f46e5;
-  --chart-2: #10b981;
-  --chart-3: #f59e0b;
-  --chart-4: #3b82f6;
-  --chart-5: #ec4899;
+  /* Chart colors - Intercom report palette */
+  --chart-1: #fe4c02;
+  --chart-2: #65b5ff;
+  --chart-3: #0bdf50;
+  --chart-4: #ff2067;
+  --chart-5: #b3e01c;
 
-  /* Sidebar — deep dark space blue background, slate nav items */
-  --sidebar: oklch(0.124 0.019 255);            /* #0b0f19 deep slate */
-  --sidebar-foreground: oklch(0.817 0.012 240);  /* #cbd5e1 slate-300 */
-  --sidebar-primary: oklch(1 0 0);              /* #ffffff */
-  --sidebar-primary-foreground: oklch(0.124 0.019 255);
-  --sidebar-accent: oklch(0.21 0.016 255);      /* #1e293b slate-800 */
-  --sidebar-accent-foreground: oklch(0.985 0.004 240); /* slate-50 */
-  --sidebar-border: oklch(0.21 0.016 255);      /* #1e293b slate-800 */
-  --sidebar-ring: oklch(0.556 0.014 240);
+  /* Sidebar — beautiful warm cream canvas with charcoal text, matching the editorial styling */
+  --sidebar: oklch(0.96 0.007 80);             /* #f5f1ec canvas */
+  --sidebar-foreground: oklch(0.48 0.005 80);   /* #626260 */
+  --sidebar-primary: oklch(0.18 0 0);          /* #111111 */
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.92 0.006 80);      /* #ebe7e1 */
+  --sidebar-accent-foreground: oklch(0.18 0 0);
+  --sidebar-border: oklch(0.85 0.006 80);      /* #d3cec6 */
+  --sidebar-ring: oklch(0.48 0.005 80);
 }
 
 @layer base {

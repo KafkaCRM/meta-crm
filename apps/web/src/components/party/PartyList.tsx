@@ -213,7 +213,7 @@ export function PartyList() {
     >
 
       {/* Filters bar */}
-      <Card className="bg-white border-border rounded-xl shadow-none">
+      <Card className="bg-card border-border rounded-xl shadow-none">
         <CardContent className="p-4">
           <div className="flex items-center gap-2 flex-wrap">
             <div className="relative flex-1 min-w-[200px]">
@@ -286,7 +286,7 @@ export function PartyList() {
       </Card>
 
       {/* Table card */}
-      <Card className="bg-white border-border rounded-xl shadow-none overflow-hidden">
+      <Card className="bg-card border-border rounded-xl shadow-none overflow-hidden">
         <VirtualTable<PartyResponse>
           data={parties}
           columns={columns}

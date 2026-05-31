@@ -51,7 +51,7 @@ export function IntegrationSettings() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-[#94a3b8]" />
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -59,8 +59,8 @@ export function IntegrationSettings() {
   return (
     <div className="space-y-6 max-w-[1000px]">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-[#0f172a]">Integrations</h1>
-        <p className="text-sm text-[#64748b] mt-0.5">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Integrations</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
           Connect your workspace with third-party services. Credentials are encrypted using AES-256-GCM and never stored in plaintext.
         </p>
       </div>
@@ -135,19 +135,19 @@ function IntegrationCard({ integration, canManage, onConfigured, onDisconnected 
   const ProviderIcon = resolveIcon(integration.icon);
 
   return (
-    <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none overflow-hidden">
+    <Card className="bg-card border-border rounded-xl shadow-none overflow-hidden">
       <div className="flex items-center justify-between px-4 py-4 group select-none flex-wrap gap-4">
         <div className="flex items-center gap-3.5 min-w-0">
           <div className={`p-2.5 rounded-lg border flex items-center justify-center flex-shrink-0 ${
             isConnected
               ? 'bg-emerald-50/50 text-emerald-600 border-emerald-100'
-              : 'bg-[#f8fafc] text-[#64748b] border-[#e2e8f0]'
+              : 'bg-background text-muted-foreground border-border'
           }`}>
             <ProviderIcon size={18} />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-semibold text-[#0f172a]">{integration.name}</span>
+              <span className="text-sm font-semibold text-foreground">{integration.name}</span>
               {isConnected && (
                 <Badge variant="outline" className="bg-emerald-50 text-emerald-600 border-emerald-100 text-[8px] rounded-md font-bold py-0 px-1.5 flex items-center gap-0.5">
                   <CheckCircle2 size={8} />
@@ -161,7 +161,7 @@ function IntegrationCard({ integration, canManage, onConfigured, onDisconnected 
                 </Badge>
               )}
             </div>
-            <p className="text-xs text-[#64748b] mt-0.5 leading-relaxed">{integration.description}</p>
+            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{integration.description}</p>
           </div>
         </div>
 
@@ -172,7 +172,7 @@ function IntegrationCard({ integration, canManage, onConfigured, onDisconnected 
                 variant="outline"
                 size="sm"
                 onClick={() => setShowForm(!showForm)}
-                className="border-[#e2e8f0] text-[#0f172a] hover:bg-[#f8fafc] h-8 rounded-lg font-semibold"
+                className="border-border text-foreground hover:bg-background h-8 rounded-lg font-semibold"
               >
                 {showForm ? 'Cancel' : 'Configure'}
               </Button>
@@ -186,7 +186,7 @@ function IntegrationCard({ integration, canManage, onConfigured, onDisconnected 
                     setShowForm(!showForm);
                     setFieldValues({});
                   }}
-                  className="border-[#e2e8f0] text-[#0f172a] hover:bg-[#f8fafc] h-8 rounded-lg font-semibold"
+                  className="border-border text-foreground hover:bg-background h-8 rounded-lg font-semibold"
                 >
                   Update Credentials
                 </Button>
@@ -212,8 +212,8 @@ function IntegrationCard({ integration, canManage, onConfigured, onDisconnected 
 
       {/* Credential form */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="border-t border-[#e2e8f0] bg-[#f8fafc]/40 px-4 py-4 space-y-4">
-          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-[#94a3b8]">
+        <form onSubmit={handleSubmit} className="border-t border-border bg-background/40 px-4 py-4 space-y-4">
+          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             <ShieldCheck size={12} />
             <span>Secure API Credentials — Encrypted with AES-256-GCM</span>
           </div>
@@ -221,7 +221,7 @@ function IntegrationCard({ integration, canManage, onConfigured, onDisconnected 
           <div className="grid gap-4 sm:grid-cols-2">
             {integration.credential_fields.map((field) => (
               <div key={field} className="space-y-1.5">
-                <label className="text-xs font-medium text-[#64748b] capitalize">
+                <label className="text-xs font-medium text-muted-foreground capitalize">
                   {field.replace(/_/g, ' ')}
                 </label>
                 <div className="relative">
@@ -233,14 +233,14 @@ function IntegrationCard({ integration, canManage, onConfigured, onDisconnected 
                     }
                     placeholder={`Enter ${field.replace(/_/g, ' ')}`}
                     required
-                    className="h-9 border-[#e2e8f0] bg-white text-[#0f172a] placeholder-[#94a3b8] pr-10"
+                    className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8] pr-10"
                   />
                   <button
                     type="button"
                     onClick={() =>
                       setShowValues((s) => ({ ...s, [field]: !s[field] }))
                     }
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#0f172a]"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
                     {showValues[field] ? <EyeOff size={14} /> : <Eye size={14} />}
                   </button>
@@ -250,13 +250,13 @@ function IntegrationCard({ integration, canManage, onConfigured, onDisconnected 
           </div>
 
           <div className="flex items-center justify-between pt-2">
-            <span className="text-[10px] text-[#94a3b8] leading-normal max-w-xs">
+            <span className="text-[10px] text-muted-foreground leading-normal max-w-xs">
               Credentials are encrypted at rest and never shown again post-save.
             </span>
             <Button
               type="submit"
               disabled={configureMutation.isPending}
-              className="bg-[#0f172a] hover:bg-[#1e293b] text-white h-9 rounded-lg"
+              className="bg-primary hover:bg-[#1e293b] text-white h-9 rounded-lg"
             >
               {configureMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />}
               Save & Encrypt
@@ -267,11 +267,11 @@ function IntegrationCard({ integration, canManage, onConfigured, onDisconnected 
 
       {/* Connected credential fingerprint */}
       {isConnected && integration.has_credentials && !showForm && (
-        <div className="border-t border-[#e2e8f0] bg-[#f8fafc]/30 px-4 py-3 flex items-center justify-between text-xs">
+        <div className="border-t border-border bg-background/30 px-4 py-3 flex items-center justify-between text-xs">
           <div>
-            <p className="font-medium text-[#0f172a]">Credentials stored (AES-256-GCM encrypted)</p>
+            <p className="font-medium text-foreground">Credentials stored (AES-256-GCM encrypted)</p>
             {integration.configured_at && (
-              <p className="text-[10px] text-[#94a3b8] mt-0.5">
+              <p className="text-[10px] text-muted-foreground mt-0.5">
                 Last updated: {new Date(integration.configured_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
               </p>
             )}

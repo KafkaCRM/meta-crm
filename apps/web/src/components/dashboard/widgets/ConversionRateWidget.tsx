@@ -48,15 +48,15 @@ export function ConversionRateWidget({ className, hasPermission = true }: Conver
 
   if (!hasPermission) {
     return (
-      <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none relative overflow-hidden ${className ?? ''}`}>
+      <Card className={`bg-card border-border rounded-xl shadow-none relative overflow-hidden ${className ?? ''}`}>
         <CardContent className="pt-5 pb-5">
-          <div className="absolute inset-0 backdrop-blur-sm bg-white/60 flex items-center justify-center z-10">
+          <div className="absolute inset-0 backdrop-blur-sm bg-card/60 flex items-center justify-center z-10">
             <div className="text-center">
-              <Lock size={20} className="mx-auto text-[#94a3b8] mb-2" />
-              <p className="text-xs font-medium text-[#64748b]">Upgrade your role to view this report</p>
+              <Lock size={20} className="mx-auto text-muted-foreground mb-2" />
+              <p className="text-xs font-medium text-muted-foreground">Upgrade your role to view this report</p>
             </div>
           </div>
-          <p className="text-xs font-medium text-[#94a3b8] uppercase tracking-wider mb-2">Conversion Rate</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Conversion Rate</p>
           <Skeleton className="h-10 w-20 bg-[#e2e8f0]" />
         </CardContent>
       </Card>
@@ -65,9 +65,9 @@ export function ConversionRateWidget({ className, hasPermission = true }: Conver
 
   if (isLoading) {
     return (
-      <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none ${className ?? ''}`}>
+      <Card className={`bg-card border-border rounded-xl shadow-none ${className ?? ''}`}>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-[#0f172a]">Conversion Rate</CardTitle>
+          <CardTitle className="text-sm font-semibold text-foreground">Conversion Rate</CardTitle>
         </CardHeader>
         <Separator className="bg-[#e2e8f0]" />
         <CardContent className="pt-5">
@@ -80,18 +80,18 @@ export function ConversionRateWidget({ className, hasPermission = true }: Conver
 
   if (error) {
     return (
-      <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none ${className ?? ''}`}>
+      <Card className={`bg-card border-border rounded-xl shadow-none ${className ?? ''}`}>
         <CardContent className="pt-5 pb-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-[#94a3b8] uppercase tracking-wider mb-1">Conversion Rate</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Conversion Rate</p>
               <p className="text-sm text-[#c41c1c]">Could not load pipeline data. Retry.</p>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={() => window.location.reload()}
-              className="h-7 text-xs border-[#e2e8f0]"
+              className="h-7 text-xs border-border"
             >
               <RefreshCw size={12} className="mr-1" />
               Retry
@@ -103,9 +103,9 @@ export function ConversionRateWidget({ className, hasPermission = true }: Conver
   }
 
   return (
-    <Card className={`bg-white border-[#e2e8f0] rounded-xl shadow-none hover:shadow-md transition-shadow ${className ?? ''}`}>
+    <Card className={`bg-card border-border rounded-xl shadow-none hover:shadow-md transition-shadow ${className ?? ''}`}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-semibold text-[#0f172a]">Conversion Rate</CardTitle>
+        <CardTitle className="text-sm font-semibold text-foreground">Conversion Rate</CardTitle>
       </CardHeader>
       <Separator className="bg-[#e2e8f0]" />
       <CardContent className="pt-5">
@@ -113,7 +113,7 @@ export function ConversionRateWidget({ className, hasPermission = true }: Conver
           className="text-left w-full group"
           onClick={() => navigate({ to: '/cases', search: { stage: 'won' } as any })}
         >
-          <div className="text-4xl font-bold text-[#0f172a] tracking-tight group-hover:text-[#3b82f6] transition-colors">
+          <div className="text-4xl font-bold text-foreground tracking-tight group-hover:text-[#3b82f6] transition-colors">
             {data?.rate != null ? `${data.rate.toFixed(1)}%` : '—'}
           </div>
         </button>
@@ -129,7 +129,7 @@ export function ConversionRateWidget({ className, hasPermission = true }: Conver
             </span>
           </div>
         )}
-        <p className="text-xs text-[#94a3b8] mt-2">
+        <p className="text-xs text-muted-foreground mt-2">
           {data?.converted ?? 0} enrolled from {data?.total ?? 0} total enquiries
         </p>
         <div className="mt-3 w-full h-1.5 bg-[#e2e8f0] rounded-full overflow-hidden">

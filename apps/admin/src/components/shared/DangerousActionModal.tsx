@@ -63,7 +63,7 @@ export function DangerousActionModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md border-rose-200 shadow-xl overflow-hidden bg-white text-slate-900 rounded-2xl p-0">
+      <DialogContent className="sm:max-w-md border-rose-200 shadow-xl overflow-hidden bg-card text-foreground rounded-2xl p-0">
         <form onSubmit={handleSubmit}>
           {/* Header block with red accent warning */}
           <div className="bg-rose-50 border-b border-rose-100 p-5 flex items-start gap-3">
@@ -87,8 +87,8 @@ export function DangerousActionModal({
 
             {/* Target name match verification */}
             <div className="space-y-1.5">
-              <label htmlFor="confirm-target-name" className="text-xs font-bold text-slate-700 block">
-                Type <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 text-slate-900 font-bold select-all">{targetName}</span> to confirm:
+              <label htmlFor="confirm-target-name" className="text-xs font-bold text-foreground/80 block">
+                Type <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded border border-border text-foreground font-bold select-all">{targetName}</span> to confirm:
               </label>
               <Input
                 id="confirm-target-name"
@@ -97,14 +97,14 @@ export function DangerousActionModal({
                 placeholder={targetName}
                 value={nameInput}
                 onChange={(e) => setNameInput(e.target.value)}
-                className="bg-slate-50 border-slate-200 placeholder:text-slate-400 focus-visible:ring-rose-600 focus-visible:border-rose-600 h-9 font-semibold text-xs text-slate-800"
+                className="bg-muted border-border placeholder:text-muted-foreground focus-visible:ring-rose-600 focus-visible:border-rose-600 h-9 font-semibold text-xs text-foreground"
                 required
               />
             </div>
 
             {/* Impersonator/Operator logged reason */}
             <div className="space-y-1.5">
-              <label htmlFor="operator-action-reason" className="text-xs font-bold text-slate-700 block">
+              <label htmlFor="operator-action-reason" className="text-xs font-bold text-foreground/80 block">
                 Logged reason for action (minimum 5 characters):
               </label>
               <textarea
@@ -113,22 +113,22 @@ export function DangerousActionModal({
                 value={reasonInput}
                 onChange={(e) => setReasonInput(e.target.value)}
                 rows={3}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-800 focus-visible:ring-rose-600 focus-visible:border-rose-600 outline-none placeholder:text-slate-400 font-medium"
+                className="w-full rounded-lg border border-border bg-muted p-2.5 text-xs text-foreground focus-visible:ring-rose-600 focus-visible:border-rose-600 outline-none placeholder:text-muted-foreground font-medium"
                 required
               />
-              <p className="text-[10px] text-slate-400 font-semibold italic">
+              <p className="text-[10px] text-muted-foreground font-semibold italic">
                 * This action will be permanently logged in the audit history under your super-admin profile.
               </p>
             </div>
           </div>
 
-          <DialogFooter className="bg-slate-50 border-t border-slate-100 p-4 flex flex-row justify-end gap-2">
+          <DialogFooter className="bg-muted border-t border-border/50 p-4 flex flex-row justify-end gap-2">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
               disabled={isPending}
-              className="h-9 rounded-lg border-slate-200 text-slate-700 text-xs font-bold"
+              className="h-9 rounded-lg border-border text-foreground/80 text-xs font-bold"
             >
               Cancel
             </Button>

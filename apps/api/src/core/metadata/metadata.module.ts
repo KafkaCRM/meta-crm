@@ -4,6 +4,7 @@ import { FieldDefinitionService } from './field-definition.service';
 import { LabelController } from './label.controller';
 import { LabelService } from './label.service';
 import { TemplateService } from './template.service';
+import { TemplateController } from './template.controller';
 import { FieldValidationService } from './field-validation.service';
 import { PageLayoutController } from './page-layout.controller';
 import { PageLayoutService } from './page-layout.service';
@@ -17,6 +18,7 @@ import { LookupController } from './lookup.controller';
   controllers: [
     FieldDefinitionController,
     LabelController,
+    TemplateController,
     PageLayoutController,
     CustomObjectDefinitionController,
     SetupAuditTrailController,

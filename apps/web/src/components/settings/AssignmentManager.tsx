@@ -70,7 +70,7 @@ export function AssignmentManager() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-[#94a3b8]" />
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -78,20 +78,20 @@ export function AssignmentManager() {
   return (
     <div className="space-y-6 max-w-[1000px]">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-[#0f172a]">Assignments</h1>
-        <p className="text-sm text-[#64748b] mt-0.5">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Assignments</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
           Map your locations (branches) to specific brand identities
         </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
         {/* Assignments list card */}
-        <Card className={cn("bg-white border-[#e2e8f0] rounded-xl shadow-none", canManage ? "md:col-span-2" : "md:col-span-3")}>
-          <CardHeader className="pb-3 border-b border-[#e2e8f0]">
-            <CardTitle className="text-base font-medium text-[#0f172a]">
+        <Card className={cn("bg-card border-border rounded-xl shadow-none", canManage ? "md:col-span-2" : "md:col-span-3")}>
+          <CardHeader className="pb-3 border-b border-border">
+            <CardTitle className="text-base font-medium text-foreground">
               Active Mappings
             </CardTitle>
-            <CardDescription className="text-xs text-[#94a3b8]">
+            <CardDescription className="text-xs text-muted-foreground">
               Linked relations directing customer touchpoints
             </CardDescription>
           </CardHeader>
@@ -100,29 +100,29 @@ export function AssignmentManager() {
               {assignments?.map((assignment) => (
                 <div
                   key={assignment.id}
-                  className="flex items-center justify-between p-4 hover:bg-[#f8fafc]/60 transition-colors group"
+                  className="flex items-center justify-between p-4 hover:bg-background/60 transition-colors group"
                 >
                   <div className="flex items-center gap-4 min-w-0">
-                    <div className="flex items-center gap-2 text-sm font-medium text-[#0f172a]">
-                      <div className="p-2 bg-[#f1f5f9] rounded-lg text-[#64748b] border border-[#e2e8f0] flex items-center justify-center">
+                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                      <div className="p-2 bg-[#f1f5f9] rounded-lg text-muted-foreground border border-border flex items-center justify-center">
                         <GitBranch size={14} />
                       </div>
                       <span className="truncate">{getBranchName(assignment.branch_id)}</span>
                     </div>
 
-                    <div className="flex items-center text-[#94a3b8]">
+                    <div className="flex items-center text-muted-foreground">
                       <ChevronRight size={16} strokeWidth={2.5} />
                     </div>
 
-                    <div className="flex items-center gap-2 text-sm font-medium text-[#0f172a]">
-                      <div className="p-2 bg-[#f1f5f9] rounded-lg text-[#64748b] border border-[#e2e8f0] flex items-center justify-center">
+                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                      <div className="p-2 bg-[#f1f5f9] rounded-lg text-muted-foreground border border-border flex items-center justify-center">
                         <Building2 size={14} />
                       </div>
                       <span className="truncate">{getBrandName(assignment.brand_id)}</span>
                     </div>
 
                     {assignment.is_primary && (
-                      <Badge variant="outline" className="bg-indigo-50/50 text-indigo-600 border-indigo-100 text-[10px] font-semibold rounded-md py-0 px-2 h-5 flex items-center justify-center">
+                      <Badge variant="outline" className="bg-fin-orange/10/50 text-fin-orange border-fin-orange/20 text-[10px] font-semibold rounded-md py-0 px-2 h-5 flex items-center justify-center">
                         Primary
                       </Badge>
                     )}
@@ -144,7 +144,7 @@ export function AssignmentManager() {
                 </div>
               ))}
               {assignments?.length === 0 && (
-                <div className="p-8 text-center text-sm text-[#64748b]">
+                <div className="p-8 text-center text-sm text-muted-foreground">
                   No active mappings found. {canManage && 'Create one using the side panel.'}
                 </div>
               )}
@@ -154,24 +154,24 @@ export function AssignmentManager() {
 
         {/* Add Assignment form card */}
         {canManage && (
-        <Card className="bg-white border-[#e2e8f0] rounded-xl shadow-none h-fit">
-          <CardHeader className="pb-3 border-b border-[#e2e8f0]">
-            <CardTitle className="text-base font-medium text-[#0f172a] flex items-center gap-1.5">
-              <Link2 size={16} className="text-[#94a3b8]" />
+        <Card className="bg-card border-border rounded-xl shadow-none h-fit">
+          <CardHeader className="pb-3 border-b border-border">
+            <CardTitle className="text-base font-medium text-foreground flex items-center gap-1.5">
+              <Link2 size={16} className="text-muted-foreground" />
               Link Entity
             </CardTitle>
-            <CardDescription className="text-xs text-[#94a3b8]">
+            <CardDescription className="text-xs text-muted-foreground">
               Connect a physical location to an identity brand
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[#64748b]">Select Branch</label>
+                <label className="text-xs font-medium text-muted-foreground">Select Branch</label>
                 <select
                   value={branchId}
                   onChange={(e) => setBranchId(e.target.value)}
-                  className="w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#0f172a] outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-400/50"
+                  className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-400/50"
                   required
                 >
                   <option value="">Select branch...</option>
@@ -182,11 +182,11 @@ export function AssignmentManager() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[#64748b]">Select Brand</label>
+                <label className="text-xs font-medium text-muted-foreground">Select Brand</label>
                 <select
                   value={brandId}
                   onChange={(e) => setBrandId(e.target.value)}
-                  className="w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#0f172a] outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-400/50"
+                  className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-400/50"
                   required
                 >
                   <option value="">Select brand...</option>
@@ -200,7 +200,7 @@ export function AssignmentManager() {
                 <Button
                   type="submit"
                   disabled={createMutation.isPending}
-                  className="bg-[#0f172a] hover:bg-[#1e293b] text-white w-full h-9 rounded-lg flex items-center justify-center gap-1.5"
+                  className="bg-primary hover:bg-[#1e293b] text-white w-full h-9 rounded-lg flex items-center justify-center gap-1.5"
                 >
                   {createMutation.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

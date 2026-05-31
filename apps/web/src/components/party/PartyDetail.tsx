@@ -66,7 +66,7 @@ function StageBadge({ stage }: { stage: string }) {
 
 const CHANNEL_ICONS: Record<string, { icon: React.ReactNode; color: string }> = {
   [Channel.WhatsApp]: { icon: <MessageSquare size={13} />, color: 'text-emerald-500' },
-  [Channel.Email]: { icon: <Mail size={13} />, color: 'text-indigo-500' },
+  [Channel.Email]: { icon: <Mail size={13} />, color: 'text-fin-orange' },
   [Channel.Call]: { icon: <Phone size={13} />, color: 'text-violet-500' },
   [Channel.Note]: { icon: <FileText size={13} />, color: 'text-muted-foreground' },
   [Channel.Sms]: { icon: <MessageSquare size={13} />, color: 'text-sky-500' },
@@ -339,7 +339,7 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
   if (!party) {
     return (
       <div className="flex items-center justify-center py-16">
-        <p className="text-[#94a3b8]">Contact not found</p>
+        <p className="text-muted-foreground">Contact not found</p>
       </div>
     );
   }
@@ -411,7 +411,7 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
       <div className="grid gap-4 lg:grid-cols-5">
         {/* Left column (60%): Timeline + ComposeBar */}
         <div className="lg:col-span-3 space-y-0">
-          <Card className="bg-white border-border rounded-xl shadow-none overflow-hidden">
+          <Card className="bg-card border-border rounded-xl shadow-none overflow-hidden">
             <CardHeader className="pb-2 px-4 pt-3">
               <CardTitle className="text-sm font-semibold text-foreground">
                 Timeline
@@ -465,7 +465,7 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
             <div className="border-t border-border p-3 bg-muted/30">
               <div className="flex items-end gap-2">
                 <Select value={composeChannel} onValueChange={setComposeChannel}>
-                  <SelectTrigger className="h-8 w-[100px] bg-white border-border text-xs shrink-0">
+                  <SelectTrigger className="h-8 w-[100px] bg-card border-border text-xs shrink-0">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -480,7 +480,7 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
                     value={composeMessage}
                     onChange={(e) => setComposeMessage(e.target.value)}
                     placeholder="Type a message…"
-                    className="pr-10 min-h-[36px] max-h-[120px] resize-none bg-white border-border text-sm"
+                    className="pr-10 min-h-[36px] max-h-[120px] resize-none bg-card border-border text-sm"
                     rows={1}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -512,7 +512,7 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
           <RecordLayout objectType="Party" record={party} t={t} />
 
           {/* Cases list */}
-          <Card className="bg-white border-border rounded-xl shadow-none">
+          <Card className="bg-card border-border rounded-xl shadow-none">
             <CardHeader className="pb-3 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold text-foreground">
                 {t('case.plural') ?? 'Cases'} ({cases.length})
@@ -555,7 +555,7 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
           </Card>
 
           {/* Related parties */}
-          <Card className="bg-white border-border rounded-xl shadow-none">
+          <Card className="bg-card border-border rounded-xl shadow-none">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold text-foreground">
                 Related Parties
@@ -640,7 +640,7 @@ function TimelineItemRenderer({ item, expandedThreads, setExpandedThreads, canPi
     );
   }
 
-  const channelInfo = CHANNEL_ICONS[item.channel ?? ''] ?? { icon: <MessageSquare size={13} />, color: 'text-[#94a3b8]' };
+  const channelInfo = CHANNEL_ICONS[item.channel ?? ''] ?? { icon: <MessageSquare size={13} />, color: 'text-muted-foreground' };
   const isInbound = item.direction === Direction.Inbound;
 
   return (

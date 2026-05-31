@@ -180,7 +180,7 @@ export function PartyForm({ party }: PartyFormProps) {
   if (!can('read', 'Party')) {
     return (
       <div className="flex items-center justify-center py-12">
-        <p className="text-[#94a3b8]">You do not have permission to view this page.</p>
+        <p className="text-muted-foreground">You do not have permission to view this page.</p>
       </div>
     );
   }
@@ -216,17 +216,17 @@ export function PartyForm({ party }: PartyFormProps) {
               ? navigate({ to: '/parties/$id', params: { id: party.id } })
               : navigate({ to: '/parties' })
           }
-          className="text-[#94a3b8] hover:text-[#0f172a] h-8"
+          className="text-muted-foreground hover:text-foreground h-8"
         >
           <ArrowLeft size={14} className="mr-1" />
           Back
         </Button>
         <div>
-          <h1 className="text-2xl font-medium text-[#0f172a] tracking-tight">
+          <h1 className="text-2xl font-medium text-foreground tracking-tight">
             {isEdit ? t('party.edit') ?? 'Edit Party' : t('party.new') ?? 'New Party'}
           </h1>
           {prefillSource && (
-            <p className="text-sm text-[#94a3b8] mt-0.5">
+            <p className="text-sm text-muted-foreground mt-0.5">
               Pre-filled from {prefillSource} lead
             </p>
           )}
