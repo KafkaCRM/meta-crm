@@ -4,6 +4,7 @@ export type TenantAction = 'create' | 'read' | 'update' | 'delete' | 'manage' | 
 
 export type TenantSubject =
   | 'Party'
+  | 'Lead'
   | 'Case'
   | 'Interaction'
   | 'Report'

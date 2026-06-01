@@ -12,6 +12,9 @@ export const SYSTEM_ROLE_MAP: Record<TenantRole, PermissionDefinition[]> = {
     { action: 'create', resource: 'Party' },
     { action: 'read', resource: 'Party' },
     { action: 'update', resource: 'Party' },
+    { action: 'create', resource: 'Lead' },
+    { action: 'read', resource: 'Lead' },
+    { action: 'update', resource: 'Lead' },
     { action: 'create', resource: 'Case', conditions: { own_assignment_only: true } },
     { action: 'read', resource: 'Case', conditions: { own_assignment_only: true } },
     { action: 'update', resource: 'Case', conditions: { own_assignment_only: true } },
@@ -26,6 +29,9 @@ export const SYSTEM_ROLE_MAP: Record<TenantRole, PermissionDefinition[]> = {
     { action: 'create', resource: 'Party' },
     { action: 'read', resource: 'Party' },
     { action: 'update', resource: 'Party' },
+    { action: 'create', resource: 'Lead' },
+    { action: 'read', resource: 'Lead' },
+    { action: 'update', resource: 'Lead' },
     { action: 'create', resource: 'Case', conditions: { own_assignment_only: true } },
     { action: 'read', resource: 'Case', conditions: { own_assignment_only: true } },
     { action: 'update', resource: 'Case', conditions: { own_assignment_only: true } },
@@ -45,6 +51,7 @@ export const SYSTEM_ROLE_MAP: Record<TenantRole, PermissionDefinition[]> = {
 
   [TenantRole.Admin]: [
     { action: 'manage', resource: 'Party' },
+    { action: 'manage', resource: 'Lead' },
     { action: 'manage', resource: 'Case' },
     { action: 'manage', resource: 'Interaction' },
     { action: 'manage', resource: 'Report' },
@@ -64,6 +71,7 @@ export const SYSTEM_ROLE_MAP: Record<TenantRole, PermissionDefinition[]> = {
 
   [TenantRole.Owner]: [
     { action: 'manage', resource: 'Party' },
+    { action: 'manage', resource: 'Lead' },
     { action: 'manage', resource: 'Case' },
     { action: 'manage', resource: 'Interaction' },
     { action: 'manage', resource: 'Report' },
@@ -84,6 +92,7 @@ export const SYSTEM_ROLE_MAP: Record<TenantRole, PermissionDefinition[]> = {
 
   [TenantRole.Viewer]: [
     { action: 'read', resource: 'Party' },
+    { action: 'read', resource: 'Lead' },
     { action: 'read', resource: 'Case' },
     { action: 'read', resource: 'Interaction' },
     { action: 'read', resource: 'Vertical' },

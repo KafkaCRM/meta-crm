@@ -1,0 +1,20 @@
+model Lead {
+  id                 String   @id @default(cuid())
+  tenant_id          String
+  name               String
+  email              String?
+  phone              String
+  source             String   // e.g. "facebook", "justdial", "web"
+  status             String   @default("new") // e.g. "new", "contacted", "unqualified", "qualified", "converted"
+  notes              String?
+  converted_party_id String?
+  converted_case_id  String?
+  attributes         Json     @default("{}")
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  tenant             Tenant   @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id, status])
+  @@index([tenant_id, created_at])
+}

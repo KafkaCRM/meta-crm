@@ -27,6 +27,7 @@ model Tenant {
   automationFlows        AutomationFlow[]
   tenantExtensions       TenantExtension[]
   secureCredentials      SecureCredential[]
+  leads                  Lead[]
 }
 
 model Brand {

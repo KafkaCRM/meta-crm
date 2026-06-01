@@ -70,6 +70,7 @@ import {
   MessageSquare,
   Check,
   Search,
+  UserCheck,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useCapabilities } from '@/hooks/useCapabilities';
@@ -93,6 +94,7 @@ function AppSidebar() {
 
   const mainItems = [
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
+    { label: 'Leads', path: '/leads', icon: UserCheck },
     { label: t('party.plural') ?? 'Contacts', path: '/parties', icon: Users },
     { label: t('case.plural') ?? 'Cases', path: '/cases', icon: Workflow },
     { label: 'Campaigns', path: '/campaigns', icon: Megaphone },
@@ -754,6 +756,7 @@ import { propertiesRoute } from './routes/properties';
 import { ordersRoute } from './routes/orders';
 import { onboardingsRoute } from './routes/onboardings';
 import { campaignsRoute } from './routes/campaigns';
+import { leadsRoute } from './routes/leads';
 
 /* ------------------------------------------------------------------ */
 /*  Route tree + router                                                */
@@ -763,6 +766,7 @@ export const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
   partiesRoute,
+  leadsRoute,
   partiesNewRoute,
   partyDetailRoute,
   partyEditRoute,

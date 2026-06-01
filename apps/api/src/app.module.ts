@@ -29,6 +29,7 @@ import { VerticalModule } from './core/vertical/vertical.module';
 import { CampaignModule } from './core/campaign/campaign.module';
 import { WorkflowModule } from './core/workflow/workflow.module';
 import { IntegrationModule } from './core/integration/integration.module';
+import { LeadModule } from './core/lead/lead.module';
 
 const CAPABILITY_MODULES = [
   EnrollmentModule,
@@ -75,6 +76,7 @@ const CAPABILITY_MODULES = [
     CampaignModule,
     WorkflowModule,
     IntegrationModule,
+    LeadModule,
     ...CAPABILITY_MODULES,
   ],
   providers: [

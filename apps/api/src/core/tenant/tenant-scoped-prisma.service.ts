@@ -26,6 +26,7 @@ export const TENANT_SCOPED_MODELS: readonly string[] = [
   'TenantPlan',
   'Vertical',
   'Campaign',
+  'Lead',
   // Phase 2 — Extension Registry
   'TenantExtension',
   'SecureCredential',
