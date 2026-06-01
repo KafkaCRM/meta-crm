@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { leadsApi } from '@/api/leads';
 import { settingsApi } from '@/api/settings';
+import { campaignsApi } from '@/api/campaigns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +36,9 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
   const [createCase, setCreateCase] = useState(true);
   const [caseTitle, setCaseTitle] = useState('');
   const [caseType, setCaseType] = useState('sales');
+  const [workflowDefinitionId, setWorkflowDefinitionId] = useState('');
+  const [caseStage, setCaseStage] = useState('');
+  const [campaignId, setCampaignId] = useState('');
 
   const { data: lead, isLoading: leadLoading } = useQuery({
     queryKey: ['lead', leadId],
@@ -56,10 +60,16 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
     queryFn: () => settingsApi.brands.list(),
   });
 
-  const { data: campaignStats } = useQuery({
-    queryKey: ['campaigns'],
-    queryFn: () => queryClient.getQueryData(['campaigns']) || [],
-    enabled: false, // fallback logic
+  const { data: defaultWorkflow } = useQuery({
+    queryKey: ['settings', 'workflows', 'default'],
+    queryFn: () => settingsApi.workflows.getDefault(),
+    staleTime: 60_000,
+  });
+
+  const { data: campaigns = [] } = useQuery({
+    queryKey: ['campaigns', 'list-active'],
+    queryFn: () => campaignsApi.list({ status: 'active' }),
+    staleTime: 60_000,
   });
 
   // Map assignment options
@@ -74,12 +84,24 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
     });
   }, [assignments, branches, brands]);
 
-  // Set default case title when lead loads
+  // Set default case title, campaign, workflow, and stage when loaded
   useMemo(() => {
     if (lead) {
       setCaseTitle(`Opportunity: ${lead.name}`);
+      if (lead.campaign_id) {
+        setCampaignId(lead.campaign_id);
+      }
     }
   }, [lead]);
+
+  useMemo(() => {
+    if (defaultWorkflow) {
+      setWorkflowDefinitionId(defaultWorkflow.id);
+      if (defaultWorkflow.stages && defaultWorkflow.stages.length > 0) {
+        setCaseStage(defaultWorkflow.stages[0].id);
+      }
+    }
+  }, [defaultWorkflow]);
 
   const convertMutation = useMutation({
     mutationFn: (data: any) => leadsApi.convert(leadId, data),
@@ -106,6 +128,9 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
       create_case: createCase,
       case_title: createCase ? caseTitle : undefined,
       case_type: createCase ? caseType : undefined,
+      workflow_definition_id: createCase && workflowDefinitionId ? workflowDefinitionId : undefined,
+      case_stage: createCase && caseStage ? caseStage : undefined,
+      campaign_id: campaignId || undefined,
     });
   };
 
@@ -283,15 +308,50 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground uppercase tracking-wider">Pipeline Stage</Label>
+                <Label className="text-xs font-semibold text-foreground uppercase tracking-wider">Opportunity Type</Label>
                 <Select value={caseType} onValueChange={setCaseType}>
                   <SelectTrigger className="h-9 border-border bg-card">
                     <SelectValue placeholder="Select type..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="sales">Sales Pipeline</SelectItem>
+                    <SelectItem value="sales">Sales Opportunity</SelectItem>
                     <SelectItem value="service">Service Ticket</SelectItem>
                     <SelectItem value="onboarding">Customer Onboarding</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {defaultWorkflow && defaultWorkflow.stages && defaultWorkflow.stages.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-foreground uppercase tracking-wider">Target Pipeline Stage</Label>
+                  <Select value={caseStage} onValueChange={setCaseStage}>
+                    <SelectTrigger className="h-9 border-border bg-card">
+                      <SelectValue placeholder="Select stage..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {defaultWorkflow.stages.map((stage: any) => (
+                        <SelectItem key={stage.id} value={stage.id}>
+                          {stage.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground uppercase tracking-wider">Campaign Attribution</Label>
+                <Select value={campaignId || 'none'} onValueChange={setCampaignId}>
+                  <SelectTrigger className="h-9 border-border bg-card">
+                    <SelectValue placeholder="Select campaign..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Campaign Association</SelectItem>
+                    {campaigns.map((camp: any) => (
+                      <SelectItem key={camp.id} value={camp.id}>
+                        {camp.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

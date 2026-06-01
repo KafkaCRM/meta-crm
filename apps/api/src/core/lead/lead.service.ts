@@ -80,6 +80,7 @@ export class LeadService {
         source: dto.source,
         status: dto.status ?? 'new',
         notes: dto.notes,
+        campaign_id: dto.campaign_id,
         attributes: (dto.attributes ?? {}) as any,
         tenant_id: scope.tenant_id,
       },
@@ -103,6 +104,7 @@ export class LeadService {
         ...(dto.source !== undefined && { source: dto.source }),
         ...(dto.status !== undefined && { status: dto.status }),
         ...(dto.notes !== undefined && { notes: dto.notes }),
+        ...(dto.campaign_id !== undefined && { campaign_id: dto.campaign_id }),
         ...(dto.attributes !== undefined && { attributes: dto.attributes as any }),
       },
     });
@@ -162,6 +164,22 @@ export class LeadService {
 
         let createdCaseId: string | undefined = undefined;
         if (dto.create_case !== false) {
+          let workflow = await tx.workflowDefinition.findFirst({
+            where: { id: dto.workflow_definition_id || undefined },
+          });
+          if (!workflow) {
+            workflow = await tx.workflowDefinition.findFirst();
+          }
+          if (!workflow) {
+            throw new Error('No workflow definition found to associate with the case');
+          }
+
+          const stages = await tx.workflowStage.findMany({
+            where: { workflow_definition_id: workflow.id },
+            orderBy: { order: 'asc' },
+          });
+          const defaultStage = stages[0]?.id || '';
+
           const c = await tx.case.create({
             data: {
               tenant_id: scope.tenant_id,
@@ -169,11 +187,11 @@ export class LeadService {
               party_id: party.id,
               type: dto.case_type ?? 'sales',
               title: dto.case_title ?? `Opportunity: ${lead.name}`,
-              stage: dto.case_stage ?? 'new',
-              workflow_definition_id: dto.workflow_definition_id ?? '',
+              stage: dto.case_stage && dto.case_stage !== 'new' ? dto.case_stage : defaultStage,
+              workflow_definition_id: workflow.id,
               assigned_to_id: dto.assigned_to_id ?? scope.user_id,
-              vertical_id: dto.vertical_id,
-              campaign_id: dto.campaign_id,
+              vertical_id: dto.vertical_id ?? workflow.vertical_id,
+              campaign_id: dto.campaign_id ?? lead.campaign_id,
               attributes: {},
             },
           });
@@ -186,6 +204,7 @@ export class LeadService {
             status: 'converted',
             converted_party_id: party.id,
             converted_case_id: createdCaseId,
+            campaign_id: dto.campaign_id ?? lead.campaign_id,
           },
         });
 

@@ -20,6 +20,12 @@ function mockDb() {
       lead: {
         update: vi.fn().mockResolvedValue({ id: 'lead-1', status: 'converted' }),
       },
+      workflowDefinition: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'wf-1', vertical_id: 'vert-1' }),
+      },
+      workflowStage: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'stage-1', order: 0 }]),
+      },
     });
   });
 

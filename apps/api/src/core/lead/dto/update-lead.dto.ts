@@ -26,6 +26,10 @@ export class UpdateLeadDto {
   notes?: string;
 
   @IsOptional()
+  @IsString()
+  campaign_id?: string;
+
+  @IsOptional()
   @IsObject()
   attributes?: Record<string, any>;
 }

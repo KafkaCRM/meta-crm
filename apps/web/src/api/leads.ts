@@ -19,6 +19,7 @@ export interface LeadResponse {
   notes: string | null;
   converted_party_id: string | null;
   converted_case_id: string | null;
+  campaign_id?: string | null;
   attributes: Record<string, any>;
   created_at: string;
   updated_at: string;
