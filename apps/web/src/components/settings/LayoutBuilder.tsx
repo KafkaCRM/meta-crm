@@ -35,7 +35,9 @@ import {
   useSensors, 
   PointerSensor, 
   KeyboardSensor,
-  closestCenter
+  closestCenter,
+  useDraggable,
+  useDroppable
 } from '@dnd-kit/core';
 import { 
   SortableContext, 
@@ -115,7 +117,7 @@ function SortablePlacedField({
   layoutSections
 }: SortablePlacedFieldProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: `${sIdx}-${placedField.name}`
+    id: `placed:${sIdx}:${placedField.name}`
   });
 
   const style = {
@@ -239,6 +241,116 @@ function SortablePlacedField({
   );
 }
 
+interface DraggablePaletteFieldProps {
+  field: any;
+  canManage: boolean;
+  sections: any[];
+  handleAddFieldToSection: (fieldName: string, sectionIdx: number) => void;
+}
+
+function DraggablePaletteField({ field, canManage, sections, handleAddFieldToSection }: DraggablePaletteFieldProps) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `palette:${field.name}`
+  });
+
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: 50,
+  } : undefined;
+
+  return (
+    <div 
+      ref={setNodeRef}
+      style={style}
+      {...(canManage ? listeners : {})}
+      {...(canManage ? attributes : {})}
+      className={cn(
+        "p-3 hover:bg-muted flex items-center justify-between group select-none transition-colors border-b border-border/50 last:border-b-0",
+        canManage && "cursor-grab active:cursor-grabbing",
+        isDragging && "border-indigo-400 ring-2 ring-indigo-500/10 bg-muted"
+      )}
+    >
+      <div className="min-w-0 pr-2">
+        <div className="text-[11px] font-semibold text-foreground flex items-center gap-1">
+          {field.label}
+          {field.required && <span className="text-red-500 font-bold">*</span>}
+        </div>
+        <div className="text-[9px] font-mono text-muted-foreground truncate mt-0.5">
+          {field.name}
+        </div>
+      </div>
+
+      {canManage && (
+        <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+          <select
+            onChange={(e) => {
+              if (e.target.value !== '') {
+                handleAddFieldToSection(field.name, parseInt(e.target.value));
+                e.target.value = '';
+              }
+            }}
+            className="text-[9px] h-6 border-border border rounded bg-card text-muted-foreground font-medium px-1 outline-none opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+            defaultValue=""
+          >
+            <option value="" disabled>+</option>
+            {sections.map((sec, sIdx) => (
+              <option key={sIdx} value={sIdx}>{sec.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface PaletteDroppableProps {
+  children: React.ReactNode;
+}
+
+function PaletteDroppable({ children }: PaletteDroppableProps) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'palette-droppable'
+  });
+
+  return (
+    <div 
+      ref={setNodeRef} 
+      className={cn(
+        "lg:col-span-1 bg-card border rounded-xl shadow-none self-start max-h-[700px] flex flex-col transition-all duration-200",
+        isOver ? "border-dashed border-red-400 bg-red-50/10 ring-2 ring-red-500/10" : "border-border"
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+interface SectionDroppableProps {
+  sIdx: number;
+  columns: number;
+  children: React.ReactNode;
+}
+
+function SectionDroppable({ sIdx, columns, children }: SectionDroppableProps) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `section:${sIdx}`
+  });
+
+  return (
+    <div 
+      ref={setNodeRef}
+      className={cn(
+        "p-4 gap-4 transition-all duration-150 min-h-[100px] flex-1 flex flex-col",
+        columns === 2 ? "sm:grid sm:grid-cols-2" : "",
+        isOver && "bg-indigo-50/5 ring-2 ring-indigo-500/5 rounded-b-xl border-t-0 border-indigo-200"
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
 export function LayoutBuilder() {
   const { can } = usePermissions();
   const canManage = can('manage', 'FieldDefinition');
@@ -340,42 +452,185 @@ export function LayoutBuilder() {
     })
   );
 
-  const handleDragEnd = (event: DragEndEvent, sectionIdx: number) => {
+  const handleGlobalDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    if (!over || active.id === over.id || !layout) return;
+    if (!over || !layout) return;
 
-    const sections = [...layout.layout_json.sections];
-    const section = sections[sectionIdx];
-    if (!section) return;
+    const activeId = String(active.id);
+    const overId = String(over.id);
 
-    const fields = [...section.fields];
-    
-    const activeName = String(active.id).split('-')[1];
-    const overName = String(over.id).split('-')[1];
-    
-    if (!activeName || !overName) return;
-    
-    const oldIndex = fields.findIndex((f) => f.name === activeName);
-    const newIndex = fields.findIndex((f) => f.name === overName);
+    // Parse active item
+    const isActivePalette = activeId.startsWith('palette:');
+    const isActivePlaced = activeId.startsWith('placed:');
 
-    if (oldIndex !== -1 && newIndex !== -1) {
-      const [removed] = fields.splice(oldIndex, 1);
-      if (removed) {
-        fields.splice(newIndex, 0, removed);
-      }
+    // Parse over target
+    const isOverPalette = overId === 'palette-droppable';
+    const isOverSection = overId.startsWith('section:');
+    const isOverPlaced = overId.startsWith('placed:');
+
+    // 1. Dragged from section back to palette -> Remove field from layout
+    if (isActivePlaced && isOverPalette) {
+      const parts = activeId.split(':'); // ["placed", "sIdx", "fieldName"]
+      const sIdx = parseInt(parts[1] || '0');
+      const fieldName = parts[2] || '';
       
-      sections[sectionIdx] = {
-        ...section,
-        fields
-      };
-
-      setLayout({
-        ...layout,
-        layout_json: { ...layout.layout_json, sections }
-      });
-      toast.success('Fields reordered');
+      const sections = [...layout.layout_json.sections];
+      const section = sections[sIdx];
+      if (section) {
+        sections[sIdx] = {
+          ...section,
+          fields: section.fields.filter(f => f.name !== fieldName)
+        };
+        setLayout({
+          ...layout,
+          layout_json: { ...layout.layout_json, sections }
+        });
+        toast.info(`Removed field "${fieldName}" from layout`);
+      }
+      return;
     }
-  };
+
+    // 2. Dragged from palette into a section
+    if (isActivePalette) {
+      const fieldName = activeId.split(':')[1] || '';
+      const fieldRegistry = allFieldsRegistry.find(r => r.name === fieldName);
+      if (!fieldRegistry) return;
+
+      let targetSIdx = -1;
+      let insertIdx = -1;
+
+      if (isOverSection) {
+        targetSIdx = parseInt(overId.split(':')[1] || '-1');
+      } else if (isOverPlaced) {
+        const overParts = overId.split(':');
+        targetSIdx = parseInt(overParts[1] || '-1');
+        const targetFieldName = overParts[2] || '';
+        
+        const section = layout.layout_json.sections[targetSIdx];
+        if (section) {
+          insertIdx = section.fields.findIndex(f => f.name === targetFieldName);
+        }
+      }
+
+      if (targetSIdx !== -1) {
+        const sections = [...layout.layout_json.sections];
+        const section = sections[targetSIdx];
+        if (!section) return;
+
+        // Double check it doesn't already exist
+        if (section.fields.some(f => f.name === fieldName)) return;
+
+        const newField: LayoutField = {
+          name: fieldName,
+          required: fieldRegistry.required || false,
+          readonly: false
+        };
+
+        const newFields = [...section.fields];
+        if (insertIdx !== -1) {
+          newFields.splice(insertIdx, 0, newField);
+        } else {
+          newFields.push(newField);
+        }
+
+        sections[targetSIdx] = {
+          ...section,
+          fields: newFields
+        };
+
+        setLayout({
+          ...layout,
+          layout_json: { ...layout.layout_json, sections }
+        });
+        toast.success(`Added field "${fieldRegistry.label || fieldName}"`);
+      }
+      return;
+    }
+
+    // 3. Dragged placed field to another location (reorder or move between sections)
+    if (isActivePlaced) {
+      const parts = activeId.split(':');
+      const sourceSIdx = parseInt(parts[1] || '0');
+      const fieldName = parts[2] || '';
+
+      let targetSIdx = -1;
+      let targetFieldName: string | null = null;
+
+      if (isOverSection) {
+        targetSIdx = parseInt(overId.split(':')[1] || '-1');
+      } else if (isOverPlaced) {
+        const overParts = overId.split(':');
+        targetSIdx = parseInt(overParts[1] || '-1');
+        targetFieldName = overParts[2] || null;
+      }
+
+      if (targetSIdx === -1) return;
+
+      const sections = [...layout.layout_json.sections];
+      const sourceSection = sections[sourceSIdx];
+      const targetSection = sections[targetSIdx];
+      if (!sourceSection || !targetSection) return;
+
+      const fieldObj = sourceSection.fields.find(f => f.name === fieldName);
+      if (!fieldObj) return;
+
+      // Case A: Moving within the SAME section
+      if (sourceSIdx === targetSIdx) {
+        const fields = [...sourceSection.fields];
+        const oldIndex = fields.findIndex(f => f.name === fieldName);
+        const newIndex = targetFieldName 
+          ? fields.findIndex(f => f.name === targetFieldName)
+          : fields.length - 1;
+
+        if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+          const [removed] = fields.splice(oldIndex, 1);
+          if (removed) {
+            fields.splice(newIndex, 0, removed);
+          }
+          sections[sourceSIdx] = {
+            ...sourceSection,
+            fields
+          };
+          setLayout({
+            ...layout,
+            layout_json: { ...layout.layout_json, sections }
+          });
+          toast.success('Fields reordered');
+        }
+      } 
+      // Case B: Moving BETWEEN different sections
+      else {
+        // Remove from source section
+        sections[sourceSIdx] = {
+          ...sourceSection,
+          fields: sourceSection.fields.filter(f => f.name !== fieldName)
+        };
+
+        // Insert into target section
+        const targetFields = [...targetSection.fields];
+        const insertIdx = targetFieldName
+          ? targetFields.findIndex(f => f.name === targetFieldName)
+          : targetFields.length;
+
+        if (insertIdx !== -1) {
+          targetFields.splice(insertIdx, 0, fieldObj);
+        } else {
+          targetFields.push(fieldObj);
+        }
+
+        sections[targetSIdx] = {
+          ...targetSection,
+          fields: targetFields
+        };
+
+        setLayout({
+          ...layout,
+          layout_json: { ...layout.layout_json, sections }
+        });
+        toast.success(`Moved "${fieldName}" to "${targetSection.name}"`);
+      }
+    }
+  };;
 
   // Mutations
   const updateLayoutMutation = useMutation({
@@ -782,241 +1037,215 @@ export function LayoutBuilder() {
         </Card>
       ) : (
         /* Layout Builder Active Panel Workspace */
-        <div className="grid gap-6 lg:grid-cols-4 items-start">
-          
-          {/* Left panel: Fields Palette */}
-          <Card className="lg:col-span-1 bg-card border-border rounded-xl shadow-none self-start max-h-[700px] flex flex-col">
-            <CardHeader className="pb-3 border-b border-border">
-              <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                Available Fields
-              </CardTitle>
-              <CardDescription className="text-[11px] text-muted-foreground leading-normal">
-                Double-click or click + to add standard/custom fields into page layout blocks.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0 overflow-y-auto max-h-[500px] divide-y divide-border/50">
-              {availableFields.map((field) => (
-                <div key={field.name} className="p-3 hover:bg-muted flex items-center justify-between group">
-                  <div className="min-w-0 pr-2">
-                    <div className="text-[11px] font-semibold text-foreground flex items-center gap-1">
-                      {field.label}
-                      {field.required && <span className="text-red-500 font-bold">*</span>}
-                    </div>
-                    <div className="text-[9px] font-mono text-muted-foreground truncate mt-0.5">
-                      {field.name}
-                    </div>
-                  </div>
+        <DndContext 
+          sensors={sensors} 
+          collisionDetection={closestCenter} 
+          onDragEnd={handleGlobalDragEnd}
+        >
+          <div className="grid gap-6 lg:grid-cols-4 items-start">
+            
+            {/* Left panel: Fields Palette (Droppable) */}
+            <PaletteDroppable>
+              <CardHeader className="pb-3 border-b border-border">
+                <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                  Available Fields
+                </CardTitle>
+                <CardDescription className="text-[11px] text-muted-foreground leading-normal">
+                  Drag fields directly into sections, or use the + dropdown to place them.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0 overflow-y-auto max-h-[500px] divide-y divide-border/50">
+                {availableFields.map((field) => (
+                  <DraggablePaletteField
+                    key={field.name}
+                    field={field}
+                    canManage={canManage}
+                    sections={layout.layout_json.sections}
+                    handleAddFieldToSection={handleAddFieldToSection}
+                  />
+                ))}
 
-                  {canManage && (
-                    <div className="flex items-center gap-1 shrink-0">
-                      {/* Target Select section list popover / dropdown */}
-                      <select
+                {availableFields.length === 0 && (
+                  <div className="p-6 text-center text-xs text-muted-foreground">
+                    All defined fields have been placed in layout sections.
+                  </div>
+                )}
+              </CardContent>
+            </PaletteDroppable>
+
+            {/* Right Panel: Sections Layout Designer Canvas */}
+            <div className="lg:col-span-3 space-y-6">
+              
+              {/* Sections canvas list */}
+              {layout.layout_json.sections.map((section, sIdx) => (
+                <Card key={sIdx} className="bg-card border-border rounded-xl shadow-none overflow-hidden group/section">
+                  
+                  {/* Section Header toolbar */}
+                  <CardHeader className="pb-3 border-b border-border bg-muted/30 flex flex-row items-center justify-between p-4">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="bg-background text-fin-orange border-fin-orange/20 text-[10px] font-bold rounded-md py-0 px-2 select-none">
+                        Section {sIdx + 1}
+                      </Badge>
+                      <Input 
+                        value={section.name}
+                        disabled={!canManage}
                         onChange={(e) => {
-                          if (e.target.value !== '') {
-                            handleAddFieldToSection(field.name, parseInt(e.target.value));
-                            e.target.value = '';
-                          }
+                          const newSections = [...layout.layout_json.sections];
+                          newSections[sIdx] = { ...section, name: e.target.value };
+                          setLayout({
+                            ...layout,
+                            layout_json: { ...layout.layout_json, sections: newSections }
+                          });
                         }}
-                        className="text-[9px] h-6 border-border border rounded bg-card text-muted-foreground font-medium px-1 outline-none opacity-0 group-hover:opacity-100 transition-opacity"
-                        defaultValue=""
-                      >
-                        <option value="" disabled>+</option>
-                        {layout.layout_json.sections.map((sec, sIdx) => (
-                          <option key={sIdx} value={sIdx}>{sec.name}</option>
-                        ))}
-                      </select>
+                        className="h-7 text-xs font-semibold text-foreground border-none bg-transparent hover:bg-muted/70 focus-visible:bg-card rounded px-2 w-[240px] focus-visible:ring-1 focus-visible:ring-indigo-500 py-0"
+                      />
                     </div>
-                  )}
-                </div>
+
+                    {canManage && (
+                      <div className="flex items-center gap-1.5">
+                        {/* Column grid toggle */}
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleToggleSectionColumns(sIdx)}
+                          title={`Toggle Columns (Active: ${section.columns} Columns)`}
+                          className="h-7 w-7 border-border text-muted-foreground rounded-md hover:bg-muted"
+                        >
+                          <Columns size={13} className={section.columns === 2 ? "text-fin-orange" : ""} />
+                        </Button>
+
+                        {/* Direction modifiers */}
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          disabled={sIdx === 0}
+                          onClick={() => handleMoveSection(sIdx, 'up')}
+                          className="h-7 w-7 border-border text-muted-foreground rounded-md hover:bg-muted disabled:opacity-30"
+                        >
+                          <ArrowUp size={13} />
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          disabled={sIdx === layout.layout_json.sections.length - 1}
+                          onClick={() => handleMoveSection(sIdx, 'down')}
+                          className="h-7 w-7 border-border text-muted-foreground rounded-md hover:bg-muted disabled:opacity-30"
+                        >
+                          <ArrowDown size={13} />
+                        </Button>
+
+                        {/* Delete */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteSection(sIdx)}
+                          className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md opacity-0 group-hover/section:opacity-100 transition-opacity"
+                        >
+                          <Trash2 size={13} />
+                        </Button>
+                      </div>
+                    )}
+                  </CardHeader>
+
+                  {/* Section Content Field placements grid */}
+                  <CardContent className="p-0">
+                    <SectionDroppable sIdx={sIdx} columns={section.columns}>
+                      <SortableContext 
+                        items={section.fields.map(f => `placed:${sIdx}:${f.name}`)} 
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {section.fields.map((placedField, fIdx) => (
+                          <SortablePlacedField
+                            key={placedField.name}
+                            placedField={placedField}
+                            sIdx={sIdx}
+                            fIdx={fIdx}
+                            allFieldsRegistry={allFieldsRegistry}
+                            canManage={canManage}
+                            handleMoveField={handleMoveField}
+                            handleMoveFieldToSection={handleMoveFieldToSection}
+                            handleToggleFieldProp={handleToggleFieldProp}
+                            handleRemoveFieldFromSection={handleRemoveFieldFromSection}
+                            layoutSections={layout.layout_json.sections}
+                          />
+                        ))}
+                      </SortableContext>
+
+                      {section.fields.length === 0 && (
+                        <div className="col-span-full py-8 text-center text-[11px] text-muted-foreground border border-dashed border-border rounded-lg bg-muted/30">
+                          Empty Section. Drag fields from the left palette to add them here.
+                        </div>
+                      )}
+                    </SectionDroppable>
+                  </CardContent>
+                </Card>
               ))}
 
-              {availableFields.length === 0 && (
-                <div className="p-6 text-center text-xs text-muted-foreground">
-                  All defined fields have been placed in layout sections.
+              {/* Add Section Trigger */}
+              {canManage && (
+                <div>
+                  {showAddSection ? (
+                    <Card className="bg-card border-border rounded-xl shadow-none p-4">
+                      <form onSubmit={handleAddSection} className="space-y-4">
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          <div className="flex-1 space-y-1">
+                            <label className="text-xs font-semibold text-muted-foreground">New Section Title</label>
+                            <Input 
+                              placeholder="e.g. Sales Metrics, Address Info"
+                              value={newSectionName}
+                              onChange={(e) => setNewSectionName(e.target.value)}
+                              required
+                              className="h-8 text-xs border-border"
+                            />
+                          </div>
+                          <div className="space-y-1 sm:w-[150px]">
+                            <label className="text-xs font-semibold text-muted-foreground">Column Layout</label>
+                            <select
+                              value={newSectionColumns}
+                              onChange={(e) => setNewSectionColumns(parseInt(e.target.value))}
+                              className="block w-full h-8 px-2 rounded-lg border border-border bg-card text-xs text-foreground outline-none"
+                            >
+                              <option value={1}>1 Column</option>
+                              <option value={2}>2 Columns</option>
+                            </select>
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-end gap-2 pt-2 border-t border-border/50">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => setShowAddSection(false)}
+                            className="h-8 text-xs"
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            type="submit"
+                            className="bg-primary hover:bg-muted text-white h-8 text-xs rounded-lg px-3 flex items-center gap-1"
+                          >
+                            <Plus size={13} />
+                            Add Section
+                          </Button>
+                        </div>
+                      </form>
+                    </Card>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowAddSection(true)}
+                      className="w-full h-11 border-dashed border-[#cbd5e1] text-muted-foreground hover:text-foreground hover:border-slate-350 hover:bg-muted bg-card/50 rounded-xl flex items-center justify-center gap-1.5 text-xs font-semibold transition-all"
+                    >
+                      <Plus size={15} />
+                      Add Layout Section Block
+                    </Button>
+                  )}
                 </div>
               )}
-            </CardContent>
-          </Card>
-
-          {/* Right Panel: Sections Layout Designer Canvas */}
-          <div className="lg:col-span-3 space-y-6">
-            
-            {/* Sections canvas list */}
-            {layout.layout_json.sections.map((section, sIdx) => (
-              <Card key={sIdx} className="bg-card border-border rounded-xl shadow-none overflow-hidden group/section">
-                
-                {/* Section Header toolbar */}
-                <CardHeader className="pb-3 border-b border-border bg-muted/30 flex flex-row items-center justify-between p-4">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="bg-background text-fin-orange border-fin-orange/20 text-[10px] font-bold rounded-md py-0 px-2 select-none">
-                      Section {sIdx + 1}
-                    </Badge>
-                    <Input 
-                      value={section.name}
-                      disabled={!canManage}
-                      onChange={(e) => {
-                        const newSections = [...layout.layout_json.sections];
-                        newSections[sIdx] = { ...section, name: e.target.value };
-                        setLayout({
-                          ...layout,
-                          layout_json: { ...layout.layout_json, sections: newSections }
-                        });
-                      }}
-                      className="h-7 text-xs font-semibold text-foreground border-none bg-transparent hover:bg-muted/70 focus-visible:bg-card rounded px-2 w-[240px] focus-visible:ring-1 focus-visible:ring-indigo-500 py-0"
-                    />
-                  </div>
-
-                  {canManage && (
-                    <div className="flex items-center gap-1.5">
-                      {/* Column grid toggle */}
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleToggleSectionColumns(sIdx)}
-                        title={`Toggle Columns (Active: ${section.columns} Columns)`}
-                        className="h-7 w-7 border-border text-muted-foreground rounded-md hover:bg-muted"
-                      >
-                        <Columns size={13} className={section.columns === 2 ? "text-fin-orange" : ""} />
-                      </Button>
-
-                      {/* Direction modifiers */}
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        disabled={sIdx === 0}
-                        onClick={() => handleMoveSection(sIdx, 'up')}
-                        className="h-7 w-7 border-border text-muted-foreground rounded-md hover:bg-muted disabled:opacity-30"
-                      >
-                        <ArrowUp size={13} />
-                      </Button>
-
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        disabled={sIdx === layout.layout_json.sections.length - 1}
-                        onClick={() => handleMoveSection(sIdx, 'down')}
-                        className="h-7 w-7 border-border text-muted-foreground rounded-md hover:bg-muted disabled:opacity-30"
-                      >
-                        <ArrowDown size={13} />
-                      </Button>
-
-                      {/* Delete */}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteSection(sIdx)}
-                        className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md opacity-0 group-hover/section:opacity-100 transition-opacity"
-                      >
-                        <Trash2 size={13} />
-                      </Button>
-                    </div>
-                  )}
-                </CardHeader>
-
-                {/* Section Content Field placements grid */}
-                <CardContent className={cn(
-                  "p-4 gap-4",
-                  section.columns === 2 ? "grid grid-cols-1 sm:grid-cols-2" : "flex flex-col"
-                )}>
-                  <DndContext 
-                    sensors={sensors} 
-                    collisionDetection={closestCenter} 
-                    onDragEnd={(e) => handleDragEnd(e, sIdx)}
-                  >
-                    <SortableContext 
-                      items={section.fields.map(f => `${sIdx}-${f.name}`)} 
-                      strategy={verticalListSortingStrategy}
-                    >
-                      {section.fields.map((placedField, fIdx) => (
-                        <SortablePlacedField
-                          key={placedField.name}
-                          placedField={placedField}
-                          sIdx={sIdx}
-                          fIdx={fIdx}
-                          allFieldsRegistry={allFieldsRegistry}
-                          canManage={canManage}
-                          handleMoveField={handleMoveField}
-                          handleMoveFieldToSection={handleMoveFieldToSection}
-                          handleToggleFieldProp={handleToggleFieldProp}
-                          handleRemoveFieldFromSection={handleRemoveFieldFromSection}
-                          layoutSections={layout.layout_json.sections}
-                        />
-                      ))}
-                    </SortableContext>
-                  </DndContext>
-
-                  {section.fields.length === 0 && (
-                    <div className="col-span-full py-8 text-center text-[11px] text-muted-foreground border border-dashed border-border rounded-lg bg-muted/30">
-                      Empty Section. Select fields from the left palette to add them here.
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-
-            {/* Add Section Trigger */}
-            {canManage && (
-              <div>
-                {showAddSection ? (
-                  <Card className="bg-card border-border rounded-xl shadow-none p-4">
-                    <form onSubmit={handleAddSection} className="space-y-4">
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1 space-y-1">
-                          <label className="text-xs font-semibold text-muted-foreground">New Section Title</label>
-                          <Input 
-                            placeholder="e.g. Sales Metrics, Address Info"
-                            value={newSectionName}
-                            onChange={(e) => setNewSectionName(e.target.value)}
-                            required
-                            className="h-8 text-xs border-border"
-                          />
-                        </div>
-                        <div className="space-y-1 sm:w-[150px]">
-                          <label className="text-xs font-semibold text-muted-foreground">Column Layout</label>
-                          <select
-                            value={newSectionColumns}
-                            onChange={(e) => setNewSectionColumns(parseInt(e.target.value))}
-                            className="block w-full h-8 px-2 rounded-lg border border-border bg-card text-xs text-foreground outline-none"
-                          >
-                            <option value={1}>1 Column</option>
-                            <option value={2}>2 Columns</option>
-                          </select>
-                        </div>
-                      </div>
-                      
-                      <div className="flex justify-end gap-2 pt-2 border-t border-border/50">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          onClick={() => setShowAddSection(false)}
-                          className="h-8 text-xs"
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          type="submit"
-                          className="bg-primary hover:bg-muted text-white h-8 text-xs rounded-lg px-3 flex items-center gap-1"
-                        >
-                          <Plus size={13} />
-                          Add Section
-                        </Button>
-                      </div>
-                    </form>
-                  </Card>
-                ) : (
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowAddSection(true)}
-                    className="w-full h-11 border-dashed border-[#cbd5e1] text-muted-foreground hover:text-foreground hover:border-slate-350 hover:bg-muted bg-card/50 rounded-xl flex items-center justify-center gap-1.5 text-xs font-semibold transition-all"
-                  >
-                    <Plus size={15} />
-                    Add Layout Section Block
-                  </Button>
-                )}
-              </div>
-            )}
+            </div>
           </div>
-        </div>
+        </DndContext>
       )}
     </div>
   );

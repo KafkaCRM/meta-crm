@@ -1,7 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Settings2, Plus, Trash2, Loader2, ArrowLeft, Sliders, Info, Shield, HelpCircle, X } from 'lucide-react';
+import { Settings2, Plus, Trash2, Loader2, ArrowLeft, Sliders, Info, Shield, HelpCircle, X, Lock, Save } from 'lucide-react';
 import { settingsApi } from '@/api/settings';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -14,6 +14,211 @@ import { SchemaGraph } from './SchemaGraph';
 
 const FIELD_TYPES = ['text', 'number', 'date', 'select', 'multi_select', 'boolean', 'phone', 'email', 'lookup'];
 
+interface EditFieldCardProps {
+  field: any;
+  selectedObject: any;
+  onClose: () => void;
+  queryClient: any;
+}
+
+function EditFieldCard({ field, selectedObject, onClose, queryClient }: EditFieldCardProps) {
+  const [activeTab, setActiveTab] = useState<'edit' | 'dependencies'>('edit');
+  const [label, setLabel] = useState(field.label);
+  const [required, setRequired] = useState(field.required);
+  const [options, setOptions] = useState(field.options ? field.options.join(', ') : '');
+
+  // Reset state when field changes
+  useEffect(() => {
+    setLabel(field.label);
+    setRequired(field.required);
+    setOptions(field.options ? field.options.join(', ') : '');
+    setActiveTab('edit');
+  }, [field]);
+
+  const updateFieldMutation = useMutation({
+    mutationFn: (data: { id: string; label: string; required: boolean; options?: string[] }) =>
+      settingsApi.fieldDefinitions.update(data.id, {
+        label: data.label,
+        required: data.required,
+        options: data.options,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings', 'custom-fields', selectedObject.api_name] });
+      toast.success('Field definition updated successfully');
+      onClose();
+    },
+    onError: (err: any) => toast.error(`Failed to update field: ${err.message || 'Error'}`),
+  });
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!label.trim()) return;
+
+    const parsedOptions = (field.field_type === 'select' || field.field_type === 'multi_select')
+      ? options.split(',').map((o: string) => o.trim()).filter(Boolean)
+      : undefined;
+
+    updateFieldMutation.mutate({
+      id: field.id,
+      label: label.trim(),
+      required,
+      options: parsedOptions,
+    });
+  };
+
+  return (
+    <Card className="bg-card border-border rounded-xl shadow-none">
+      <CardHeader className="pb-3 border-b border-border flex flex-row items-center justify-between bg-muted/10">
+        <div>
+          <CardTitle className="text-sm font-medium text-foreground flex items-center gap-1.5">
+            <Sliders size={14} className="text-muted-foreground" />
+            Field Properties
+          </CardTitle>
+          <CardDescription className="text-[11px] text-muted-foreground mt-0.5">
+            Manage metadata and view usage dependencies for <span className="font-mono text-foreground font-semibold">{field.name}</span>
+          </CardDescription>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={onClose}
+          className="h-6 w-6 rounded-md hover:bg-muted/70 text-muted-foreground"
+        >
+          <X size={14} />
+        </Button>
+      </CardHeader>
+      
+      {/* Tabs list */}
+      <div className="flex border-b border-border px-4 bg-muted/20">
+        <button
+          type="button"
+          onClick={() => setActiveTab('edit')}
+          className={cn(
+            "px-3 py-2 text-xs font-semibold border-b-2 transition-all mr-4 outline-none",
+            activeTab === 'edit'
+              ? "border-primary text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Edit Properties
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('dependencies')}
+          className={cn(
+            "px-3 py-2 text-xs font-semibold border-b-2 transition-all outline-none",
+            activeTab === 'dependencies'
+              ? "border-primary text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Dependency Viewer
+        </button>
+      </div>
+
+      <CardContent className="pt-4">
+        {activeTab === 'edit' ? (
+          <form onSubmit={handleSave} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">API Name</label>
+                <Input
+                  value={field.name}
+                  disabled
+                  className="h-8 text-xs border-border bg-muted text-muted-foreground font-mono cursor-not-allowed"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Data Type</label>
+                <Input
+                  value={field.field_type.toUpperCase().replace('_', ' ')}
+                  disabled
+                  className="h-8 text-xs border-border bg-muted text-muted-foreground cursor-not-allowed"
+                />
+              </div>
+            </div>
+
+            {field.field_type === 'lookup' && field.related_to && (
+              <div className="space-y-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Related To</label>
+                <Input
+                  value={field.related_to}
+                  disabled
+                  className="h-8 text-xs border-border bg-muted text-muted-foreground cursor-not-allowed"
+                />
+              </div>
+            )}
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Field Label (UI Display)</label>
+              <Input
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                required
+                className="h-8 text-xs border-border bg-card text-foreground placeholder-[#94a3b8]"
+              />
+            </div>
+
+            {(field.field_type === 'select' || field.field_type === 'multi_select') && (
+              <div className="space-y-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                  Picklist Options
+                  <span title="Comma separated options list">
+                    <HelpCircle size={12} className="text-muted-foreground" />
+                  </span>
+                </label>
+                <textarea
+                  value={options}
+                  onChange={(e) => setOptions(e.target.value)}
+                  required
+                  placeholder="e.g. Hot, Warm, Cold"
+                  className="w-full min-h-[60px] rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground placeholder-[#94a3b8] outline-none"
+                />
+              </div>
+            )}
+
+            <div className="flex items-center gap-2 pt-1">
+              <input
+                type="checkbox"
+                id="edit_required_field"
+                checked={required}
+                onChange={(e) => setRequired(e.target.checked)}
+                className="h-3.5 w-3.5 rounded border-[#cbd5e1] text-foreground cursor-pointer"
+              />
+              <label htmlFor="edit_required_field" className="text-xs text-[#475569] font-medium select-none cursor-pointer">
+                Mark as Required Field
+              </label>
+            </div>
+
+            <div className="pt-2">
+              <Button
+                type="submit"
+                disabled={updateFieldMutation.isPending}
+                className="w-full h-8 text-xs bg-primary hover:bg-[#1e293b] text-white flex items-center justify-center gap-1"
+              >
+                {updateFieldMutation.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Save size={13} />
+                )}
+                Save Properties
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <DependencyViewer
+            objectName={selectedObject.api_name}
+            fieldName={field.name}
+            fieldLabel={field.label}
+          />
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function ObjectManager() {
   const { can } = usePermissions();
   const canManage = can('manage', 'FieldDefinition');
@@ -24,6 +229,11 @@ export function ObjectManager() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showFieldForm, setShowFieldForm] = useState(false);
   
+  const [isEditingObject, setIsEditingObject] = useState(false);
+  const [editObjectForm, setEditObjectForm] = useState({
+    singular_label: '', plural_label: '', description: '',
+  });
+
   const [objectForm, setObjectForm] = useState({
     api_name: '', singular_label: '', plural_label: '', description: '',
   });
@@ -70,6 +280,21 @@ export function ObjectManager() {
     onError: () => toast.error('Failed to delete Custom Object'),
   });
 
+  const updateObjectMutation = useMutation({
+    mutationFn: (data: { id: string; singular_label: string; plural_label: string; description?: string }) =>
+      settingsApi.customObjects.update(data.id, {
+        singular_label: data.singular_label,
+        plural_label: data.plural_label,
+        description: data.description,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings', 'custom-objects'] });
+      toast.success('Custom Object updated successfully');
+      setIsEditingObject(false);
+    },
+    onError: (err: any) => toast.error(`Failed to update Custom Object: ${err.message || 'Error'}`),
+  });
+
   const createFieldMutation = useMutation({
     mutationFn: (data: any) => settingsApi.fieldDefinitions.create(data),
     onSuccess: () => {
@@ -105,6 +330,18 @@ export function ObjectManager() {
       api_name: apiName,
     });
   }, [objectForm, createObjectMutation]);
+
+  const handleUpdateObject = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedObject || !editObjectForm.singular_label.trim() || !editObjectForm.plural_label.trim()) return;
+
+    updateObjectMutation.mutate({
+      id: selectedObject.id,
+      singular_label: editObjectForm.singular_label.trim(),
+      plural_label: editObjectForm.plural_label.trim(),
+      description: editObjectForm.description.trim(),
+    });
+  }, [selectedObject, editObjectForm, updateObjectMutation]);
 
   const handleCreateField = useCallback((e: React.FormEvent) => {
     e.preventDefault();
@@ -173,18 +410,34 @@ export function ObjectManager() {
           </div>
 
           {canManage && (
-            <Button
-              variant="ghost"
-              onClick={() => {
-                if (window.confirm(`Are you absolutely sure you want to permanently delete custom object "${selectedObject.singular_label}" and all its fields?`)) {
-                  removeObjectMutation.mutate(selectedObject.id);
-                }
-              }}
-              className="text-red-500 hover:text-red-700 hover:bg-red-50 text-xs font-semibold h-8 rounded-lg"
-            >
-              <Trash2 size={13} className="mr-1.5" />
-              Delete Object definition
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setEditObjectForm({
+                    singular_label: selectedObject.singular_label,
+                    plural_label: selectedObject.plural_label,
+                    description: selectedObject.description || '',
+                  });
+                  setIsEditingObject(true);
+                }}
+                className="h-8 rounded-lg border-border text-xs font-semibold"
+              >
+                Edit Properties
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  if (window.confirm(`Are you absolutely sure you want to permanently delete custom object "${selectedObject.singular_label}" and all its fields?`)) {
+                    removeObjectMutation.mutate(selectedObject.id);
+                  }
+                }}
+                className="text-red-500 hover:text-red-700 hover:bg-red-50 text-xs font-semibold h-8 rounded-lg"
+              >
+                <Trash2 size={13} className="mr-1.5" />
+                Delete Object definition
+              </Button>
+            </div>
           )}
         </div>
 
@@ -337,7 +590,11 @@ export function ObjectManager() {
                       <label className="text-xs font-medium text-muted-foreground">Field Data Type</label>
                       <select
                         value={fieldForm.field_type}
-                        onChange={(e) => setFieldForm(f => ({ ...f, field_type: e.target.value }))}
+                        onChange={(e) => setFieldForm(f => ({ 
+                          ...f, 
+                          field_type: e.target.value,
+                          related_to: e.target.value === 'lookup' ? 'Party' : ''
+                        }))}
                         className="w-full h-8 px-2.5 rounded-lg border border-border bg-card text-xs text-foreground outline-none"
                       >
                         {FIELD_TYPES.map(t => (
@@ -349,13 +606,21 @@ export function ObjectManager() {
                     {fieldForm.field_type === 'lookup' && (
                       <div className="space-y-1">
                         <label className="text-xs font-medium text-muted-foreground">Related To (Target Object)</label>
-                        <Input
-                          placeholder="e.g. Party, Case, or custom name"
-                          value={fieldForm.related_to}
+                        <select
+                          value={fieldForm.related_to || 'Party'}
                           onChange={(e) => setFieldForm(f => ({ ...f, related_to: e.target.value }))}
                           required
-                          className="h-8 text-xs border-border bg-card text-foreground placeholder-[#94a3b8]"
-                        />
+                          className="w-full h-8 px-2.5 rounded-lg border border-border bg-card text-xs text-foreground outline-none"
+                        >
+                          <option value="Party">Standard: Party</option>
+                          <option value="Case">Standard: Case</option>
+                          <option value="Interaction">Standard: Interaction</option>
+                          {(objects || []).map(o => (
+                            <option key={o.api_name} value={o.api_name}>
+                              Custom: {o.singular_label} ({o.api_name})
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     )}
 
@@ -412,10 +677,11 @@ export function ObjectManager() {
                 const f = fields.find(field => field.id === selectedFieldId);
                 if (!f) return null;
                 return (
-                  <DependencyViewer
-                    objectName={selectedObject.api_name}
-                    fieldName={f.name}
-                    fieldLabel={f.label}
+                  <EditFieldCard
+                    field={f}
+                    selectedObject={selectedObject}
+                    onClose={() => setSelectedFieldId(null)}
+                    queryClient={queryClient}
                   />
                 );
               })()
@@ -600,6 +866,96 @@ export function ObjectManager() {
                 >
                   {createObjectMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                   Deploy Custom Object
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal dialog */}
+      {isEditingObject && selectedObject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
+          <div className="w-full max-w-md bg-card border border-border rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-muted/50">
+              <div>
+                <h3 className="text-base font-semibold text-foreground">Edit Custom Object Properties</h3>
+                <p className="text-[11px] text-muted-foreground">Modify metadata for custom object entity</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setIsEditingObject(false)}
+                className="h-6 w-6 rounded-md hover:bg-muted/70"
+              >
+                <X size={14} className="text-muted-foreground" />
+              </Button>
+            </div>
+
+            <form onSubmit={handleUpdateObject} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">Singular Label</label>
+                  <Input
+                    placeholder="e.g. Property"
+                    value={editObjectForm.singular_label}
+                    onChange={(e) => setEditObjectForm(f => ({ ...f, singular_label: e.target.value }))}
+                    required
+                    className="h-9 text-xs border-border bg-card text-foreground placeholder-[#94a3b8]"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">Plural Label</label>
+                  <Input
+                    placeholder="e.g. Properties"
+                    value={editObjectForm.plural_label}
+                    onChange={(e) => setEditObjectForm(f => ({ ...f, plural_label: e.target.value }))}
+                    required
+                    className="h-9 text-xs border-border bg-card text-foreground placeholder-[#94a3b8]"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                  API Object Name (Locked)
+                  <span title="API name cannot be changed after creation.">
+                    <Lock size={12} className="text-muted-foreground" />
+                  </span>
+                </label>
+                <Input
+                  value={selectedObject.api_name}
+                  disabled
+                  className="h-9 text-xs border-border bg-muted text-muted-foreground font-mono cursor-not-allowed"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Description</label>
+                <textarea
+                  placeholder="Outline context of custom records storage..."
+                  value={editObjectForm.description}
+                  onChange={(e) => setEditObjectForm(f => ({ ...f, description: e.target.value }))}
+                  className="min-h-[70px] w-full rounded-lg border border-border bg-card px-3 py-2 text-xs text-foreground placeholder-[#94a3b8] outline-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-border -mx-6 -mb-6 p-4 bg-muted/50">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditingObject(false)}
+                  className="h-8 text-xs border-border"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={updateObjectMutation.isPending}
+                  className="h-8 text-xs bg-primary hover:bg-[#1e293b] text-white flex items-center gap-1"
+                >
+                  {updateObjectMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  Save Changes
                 </Button>
               </div>
             </form>
