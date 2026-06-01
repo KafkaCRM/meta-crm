@@ -560,9 +560,13 @@ function AdminOverridesManager({ tenantId, tenantData, canUpdate }: AdminOverrid
   const [maxBranches, setMaxBranches] = useState<string>(
     customLimits.max_branches !== undefined ? String(customLimits.max_branches) : ''
   );
+  const [maxPlugins, setMaxPlugins] = useState<string>(
+    customLimits.max_plugins !== undefined ? String(customLimits.max_plugins) : ''
+  );
 
   const [overrideUsers, setOverrideUsers] = useState<boolean>(customLimits.max_users !== undefined);
   const [overrideBranches, setOverrideBranches] = useState<boolean>(customLimits.max_branches !== undefined);
+  const [overridePlugins, setOverridePlugins] = useState<boolean>(customLimits.max_plugins !== undefined);
 
   const updateMutation = useMutation({
     mutationFn: (data: Record<string, any>) => updateTenantOverrides(tenantId, data),
@@ -592,11 +596,18 @@ function AdminOverridesManager({ tenantId, tenantData, canUpdate }: AdminOverrid
       payload.max_branches = null; // Clear override
     }
 
+    if (overridePlugins && maxPlugins.trim() !== '') {
+      payload.max_plugins = parseInt(maxPlugins, 10);
+    } else {
+      payload.max_plugins = null; // Clear override
+    }
+
     updateMutation.mutate(payload);
   };
 
   const resolvedMaxUsers = overrideUsers && maxUsers !== '' ? maxUsers : (plan?.max_users ?? '5');
   const resolvedMaxBranches = overrideBranches && maxBranches !== '' ? maxBranches : (plan?.max_branches ?? '1');
+  const resolvedMaxPlugins = overridePlugins && maxPlugins !== '' ? maxPlugins : (plan?.max_plugins ?? '3');
 
   return (
     <form onSubmit={handleSave} className="space-y-4">
@@ -692,6 +703,52 @@ function AdminOverridesManager({ tenantId, tenantData, canUpdate }: AdminOverrid
         )}
       </div>
 
+      {/* Plugin Limits */}
+      <div className="space-y-2.5">
+        <div className="flex items-center justify-between">
+          <label className="text-[11px] font-semibold text-foreground/80 flex items-center gap-1.5">
+            <Puzzle size={12} className="text-muted-foreground" />
+            Plugin Limit Override
+          </label>
+          <div className="flex items-center gap-1.5 select-none">
+            <input
+              type="checkbox"
+              id="overridePlugins"
+              checked={overridePlugins}
+              disabled={!canUpdate}
+              onChange={(e) => setOverridePlugins(e.target.checked)}
+              className="rounded border-border text-fin-orange focus:ring-indigo-600 h-3.5 w-3.5 cursor-pointer"
+            />
+            <label htmlFor="overridePlugins" className="text-[10px] text-muted-foreground font-medium cursor-pointer">
+              Custom Plugin Limit
+            </label>
+          </div>
+        </div>
+
+        {overridePlugins ? (
+          <div className="space-y-1.5 animate-in slide-in-from-top-1 duration-150">
+            <input
+              type="number"
+              min="1"
+              max="100"
+              value={maxPlugins}
+              disabled={!canUpdate}
+              onChange={(e) => setMaxPlugins(e.target.value)}
+              className="w-full rounded-lg border border-border px-3 py-2 text-xs bg-card focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all"
+              placeholder="Enter custom maximum plugins..."
+            />
+            <p className="text-[9px] text-fin-orange font-medium leading-none">
+              Overriding default plan limit of {plan?.max_plugins ?? '3'} plugins.
+            </p>
+          </div>
+        ) : (
+          <div className="p-2.5 bg-muted border border-border/50 rounded-lg text-[10px] text-muted-foreground flex justify-between select-none">
+            <span>Inheriting plan default:</span>
+            <span className="font-semibold text-foreground">{plan?.max_plugins ?? '3'} Plugins</span>
+          </div>
+        )}
+      </div>
+
       {/* Resolved ceilings summary info */}
       <div className="p-2.5 bg-muted/50 border border-border/50 rounded-lg space-y-1">
         <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block">Resolved Active Ceilings</span>
@@ -703,13 +760,17 @@ function AdminOverridesManager({ tenantId, tenantData, canUpdate }: AdminOverrid
           <span className="text-muted-foreground font-medium">Max Branch Capacity</span>
           <span className="font-bold text-foreground font-mono">{resolvedMaxBranches} Branches</span>
         </div>
+        <div className="flex items-center justify-between text-xs pt-1 border-t border-border/50 mt-1">
+          <span className="text-muted-foreground font-medium">Max Plugin Capacity</span>
+          <span className="font-bold text-foreground font-mono">{resolvedMaxPlugins} Plugins</span>
+        </div>
       </div>
 
       {canUpdate && (
         <button
           type="submit"
           disabled={updateMutation.isPending}
-          className="w-full py-2.5 rounded-lg bg-fin-orange hover:bg-fin-orange/90 text-white disabled:opacity-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+          className="w-full py-2.5 rounded-lg bg-fin-orange hover:bg-fin-orange/90 text-white disabled:opacity-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
         >
           {updateMutation.isPending ? (
             <>

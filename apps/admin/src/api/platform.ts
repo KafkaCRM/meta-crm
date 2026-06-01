@@ -49,6 +49,7 @@ export interface CreateTenantRequest {
     email: string;
   };
   capabilities?: string[];
+  session_id?: string;
 }
 
 export interface CreateTenantResponse {

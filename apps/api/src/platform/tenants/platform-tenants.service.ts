@@ -6,6 +6,7 @@ import type { Result } from 'neverthrow';
 import { PlatformPrismaService } from '../../core/tenant/platform-prisma.service';
 import { AVAILABLE_CAPABILITIES } from '../../core/capability/capability.service';
 import { PlatformAuditService } from '../audit/platform-audit.service';
+import { ProvisioningStreamService } from './provisioning-stream.service';
 import type { RequestScope } from '../../core/tenant/request-scope.interface';
 
 const BCRYPT_COST = 12;
@@ -50,6 +51,7 @@ export interface CreateTenantInput {
   plan_id: string;
   owner: { name: string; email: string };
   capabilities?: string[];
+  session_id?: string;
 }
 
 export interface CreateTenantResponse {
@@ -96,6 +98,7 @@ export class PlatformTenantsService {
   constructor(
     private readonly db: PlatformPrismaService,
     private readonly audit: PlatformAuditService,
+    private readonly streamService: ProvisioningStreamService,
   ) {}
 
   async list(params: {
@@ -359,20 +362,38 @@ export class PlatformTenantsService {
     input: CreateTenantInput,
     auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
   ): Promise<Result<CreateTenantResponse, PlatformTenantError>> {
+    const sessionId = input.session_id;
+
+    if (sessionId) {
+      this.streamService.emit(sessionId, 'VALIDATE', 'Validating request parameters & checking plan compatibility', 10);
+    }
+
     const existing = await this.db.client.tenant.findUnique({ where: { slug: input.slug } });
     if (existing) {
-      return err({ code: 'SLUG_TAKEN', message: `Slug "${input.slug}" is already taken` });
+      const errMsg = `Slug "${input.slug}" is already taken`;
+      if (sessionId) {
+        this.streamService.error(sessionId, errMsg);
+      }
+      return err({ code: 'SLUG_TAKEN', message: errMsg });
     }
 
     const plan = await this.db.client.subscriptionPlan.findUnique({ where: { id: input.plan_id } });
     if (!plan) {
-      return err({ code: 'PLAN_NOT_FOUND', message: 'Subscription plan not found' });
+      const errMsg = 'Subscription plan not found';
+      if (sessionId) {
+        this.streamService.error(sessionId, errMsg);
+      }
+      return err({ code: 'PLAN_NOT_FOUND', message: errMsg });
     }
 
     const temporaryPassword = generateTempPassword();
     const passwordHash = await bcrypt.hash(temporaryPassword, BCRYPT_COST);
 
     try {
+      if (sessionId) {
+        this.streamService.emit(sessionId, 'PROVISION', 'Creating tenant record, initializing core workspace metadata', 30);
+      }
+
       const defaultCap = CAPABILITY_MAPPINGS[input.industry.toLowerCase()];
       const requestedCaps = input.capabilities || [];
       const enabledCapabilities = Array.from(
@@ -400,6 +421,10 @@ export class PlatformTenantsService {
           },
         });
 
+        if (sessionId) {
+          this.streamService.emit(sessionId, 'BILLING', 'Initializing tenant plan subscription & database schema bindings', 50);
+        }
+
         await tx.tenantPlan.create({
           data: {
             tenant_id: t.id,
@@ -412,8 +437,16 @@ export class PlatformTenantsService {
 
       // Post-transaction Onboarding Automation:
       // 1. Industry Database Template Execution
+      if (sessionId) {
+        this.streamService.emit(sessionId, 'TEMPLATE', 'Applying industry template schemas & workflows', 70);
+      }
+
       const templateResult = await this.applyTemplate(tenant.id, input.industry);
       if (templateResult.isErr()) {
+        const errMsg = `Failed to apply industry template: ${templateResult.error.message}`;
+        if (sessionId) {
+          this.streamService.error(sessionId, errMsg, templateResult.error);
+        }
         // Rollback / clean up all records related to this tenant to keep database consistent
         await this.db.client.labelOverride.deleteMany({ where: { tenant_id: tenant.id } }).catch(() => {});
         await this.db.client.workflowTransition.deleteMany({ where: { workflowDefinition: { tenant_id: tenant.id } } }).catch(() => {});
@@ -427,8 +460,12 @@ export class PlatformTenantsService {
 
         return err({
           code: 'TRANSACTION_FAILED',
-          message: `Failed to apply industry template: ${templateResult.error.message}`,
+          message: errMsg,
         });
+      }
+
+      if (sessionId) {
+        this.streamService.emit(sessionId, 'PLUGINS', 'Installing & activating default plugin extensions', 90);
       }
 
       for (const entry of PLUGIN_CATALOGUE) {
@@ -482,7 +519,7 @@ export class PlatformTenantsService {
         });
       }
 
-      return ok({
+      const responsePayload = {
         tenant: {
           id: tenant.id,
           name: tenant.name,
@@ -493,11 +530,21 @@ export class PlatformTenantsService {
           email: input.owner.email,
           temporary_password: temporaryPassword,
         },
-      });
+      };
+
+      if (sessionId) {
+        this.streamService.complete(sessionId, responsePayload);
+      }
+
+      return ok(responsePayload);
     } catch (e: any) {
+      const errMsg = e?.message ?? 'Transaction failed';
+      if (sessionId) {
+        this.streamService.error(sessionId, errMsg, e);
+      }
       return err({
         code: 'TRANSACTION_FAILED',
-        message: e?.message ?? 'Transaction failed',
+        message: errMsg,
       });
     }
   }
@@ -1045,8 +1092,13 @@ export class PlatformTenantsService {
       return err({ code: 'TENANT_NOT_FOUND', message: 'Tenant not found' });
     }
 
+    const config = (tenant.config_json ?? {}) as Record<string, any>;
+    const customMaxPlugins = config.custom_limits?.max_plugins;
+
     const plan = tenant.tenantPlans?.[0]?.plan;
-    const maxPlugins = plan ? plan.max_plugins : 5;
+    const maxPlugins = typeof customMaxPlugins === 'number'
+      ? customMaxPlugins
+      : (plan ? plan.max_plugins : 5);
 
     const installedCount = await this.db.client.tenantPlugin.count({
       where: { tenant_id: tenantId, enabled: true },

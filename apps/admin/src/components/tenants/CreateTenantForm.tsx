@@ -21,6 +21,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/auth.context';
 
 const INDUSTRIES = ['education', 'healthcare', 'real-estate', 'retail', 'finance', 'technology'];
 
@@ -35,7 +36,11 @@ const REGIONS = [
 
 export function CreateTenantForm() {
   const navigate = useNavigate();
+  const { accessToken } = useAuth();
   const [step, setStep] = useState(1);
+  const [logs, setLogs] = useState<Array<{ stage: string; message: string; progress: number; timestamp: string }>>([]);
+  const [currentProgress, setCurrentProgress] = useState(0);
+  const [activeStage, setActiveStage] = useState('');
   
   // Step 1: Basic Details
   const [name, setName] = useState('');
@@ -130,7 +135,42 @@ export function CreateTenantForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLogs([]);
+    setCurrentProgress(0);
+    setActiveStage('VALIDATE');
     setIsSubmitting(true);
+
+    const sessionId = Math.random().toString(36).substring(2, 15);
+    const tokenParam = accessToken ? `&token=${encodeURIComponent(accessToken)}` : '';
+    const eventSource = new EventSource(`/api/v1/platform/tenants/provision-stream?session=${sessionId}${tokenParam}`);
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        setLogs((prev) => [
+          ...prev,
+          {
+            stage: data.stage,
+            message: data.message,
+            progress: data.progress,
+            timestamp: new Date().toLocaleTimeString(),
+          },
+        ]);
+        if (data.progress !== undefined) {
+          setCurrentProgress(data.progress);
+        }
+        if (data.stage) {
+          setActiveStage(data.stage);
+        }
+      } catch (err) {
+        console.error('Failed to parse SSE event data', err);
+      }
+    };
+
+    eventSource.onerror = (err) => {
+      console.error('SSE Error:', err);
+      eventSource.close();
+    };
 
     try {
       const response = await createTenant({
@@ -143,12 +183,14 @@ export function CreateTenantForm() {
           email: ownerEmail,
         },
         capabilities: selectedCapabilities,
+        session_id: sessionId,
       });
       setResult(response);
       toast.success('Workspace tenant provisioned successfully!');
     } catch (err: any) {
       setError(err.message ?? 'Failed to create tenant');
     } finally {
+      eventSource.close();
       setIsSubmitting(false);
     }
   };
@@ -173,6 +215,59 @@ export function CreateTenantForm() {
   const handleBackStep = () => {
     setStep(prev => prev - 1);
   };
+
+  // PROVISIONING STREAM LOGS SCREEN
+  if (isSubmitting) {
+    return (
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm max-w-2xl mx-auto space-y-6 animate-in fade-in duration-200">
+        <div className="flex flex-col items-center text-center pb-6 border-b border-border/50">
+          <div className="w-12 h-12 bg-indigo-50/50 text-indigo-600 rounded-full flex items-center justify-center mb-3">
+            <Loader2 size={24} className="animate-spin text-fin-orange" />
+          </div>
+          <h2 className="text-xl font-semibold text-foreground tracking-tight text-center">Provisioning Workspace</h2>
+          <p className="text-xs text-muted-foreground mt-1">Please wait while we allocate infrastructure and configure resources.</p>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="space-y-2">
+          <div className="flex justify-between text-xs font-semibold">
+            <span className="text-muted-foreground">Current Stage: <span className="text-indigo-600 font-bold uppercase">{activeStage || 'VALIDATE'}</span></span>
+            <span className="text-foreground">{currentProgress}%</span>
+          </div>
+          <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+            <div 
+              className="bg-fin-orange h-full rounded-full transition-all duration-500 ease-out" 
+              style={{ width: `${currentProgress}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Terminal/Console Logs */}
+        <div className="bg-slate-950 text-slate-100 rounded-xl p-4 font-mono text-[11px] leading-relaxed h-64 overflow-y-auto shadow-inner border border-slate-800">
+          <div className="text-slate-500 mb-2 border-b border-slate-900 pb-1.5 flex justify-between">
+            <span>SYSTEM CONSOLE LOGS</span>
+            <span className="animate-pulse text-emerald-400">● LIVE</span>
+          </div>
+          <div className="space-y-1.5">
+            {logs.map((log, index) => (
+              <div key={index} className="flex gap-2">
+                <span className="text-slate-600">[{log.timestamp}]</span>
+                <span className={`font-semibold ${
+                  log.stage === 'ERROR' ? 'text-rose-400' :
+                  log.stage === 'COMPLETE' ? 'text-emerald-400' :
+                  'text-indigo-400'
+                }`}>[{log.stage}]</span>
+                <span className="text-slate-300">{log.message}</span>
+              </div>
+            ))}
+            {logs.length === 0 && (
+              <div className="text-slate-500 italic">Initializing stream connection...</div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // SUCCESS SCREEN
   if (result) {

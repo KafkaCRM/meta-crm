@@ -3,6 +3,7 @@ import { AuthModule } from '../core/auth/auth.module';
 import { PermissionsModule } from '../core/permissions/permissions.module';
 import { PlatformTenantsController } from './tenants/platform-tenants.controller';
 import { PlatformTenantsService } from './tenants/platform-tenants.service';
+import { ProvisioningStreamService } from './tenants/provisioning-stream.service';
 import { PlatformPlansController } from './plans/platform-plans.controller';
 import { PlatformPlansService } from './plans/platform-plans.service';
 import { PlatformPluginsController } from './plugins/platform-plugins.controller';
@@ -35,6 +36,7 @@ import { PlatformSystemController } from './system/platform-system.controller';
   ],
   providers: [
     PlatformTenantsService,
+    ProvisioningStreamService,
     PlatformPlansService,
     PlatformPluginsService,
     PlatformTeamService,

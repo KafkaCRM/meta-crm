@@ -14,14 +14,19 @@ import {
   HttpCode,
   HttpStatus,
   Req,
+  Sse,
+  MessageEvent,
 } from '@nestjs/common';
 import { IsString, IsOptional, IsNumber, Min, Max, IsEmail, ValidateNested, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
 import type { FastifyRequest } from 'fastify';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { PlatformPermissionsGuard } from '../../core/permissions/permissions.guard';
 import { CheckPlatformPermissions } from '../../core/permissions/permissions.decorator';
 import { PlatformTenantsService } from './platform-tenants.service';
+import { ProvisioningStreamService, ProvisioningEvent } from './provisioning-stream.service';
 import { CurrentUser } from '../../core/auth/decorators/current-user.decorator';
 import type { RequestScope } from '../../core/tenant/request-scope.interface';
 import { AuthService } from '../../core/auth/auth.service';
@@ -62,6 +67,10 @@ class CreateTenantBody {
   @IsArray()
   @IsString({ each: true })
   capabilities?: string[];
+
+  @IsOptional()
+  @IsString()
+  session_id?: string;
 }
 
 class TenantListQuery {
@@ -99,7 +108,19 @@ export class PlatformTenantsController {
   constructor(
     private readonly service: PlatformTenantsService,
     private readonly authService: AuthService,
+    private readonly streamService: ProvisioningStreamService,
   ) {}
+
+  @Sse('provision-stream')
+  @CheckPlatformPermissions('create', 'PlatformTenant')
+  stream(@Query('session') session: string): Observable<MessageEvent> {
+    if (!session) {
+      throw new BadRequestException('Session parameter is required');
+    }
+    return this.streamService.getOrCreateStream(session).pipe(
+      map((event: ProvisioningEvent) => ({ data: event } as MessageEvent))
+    );
+  }
 
   @Get()
   @CheckPlatformPermissions('read', 'PlatformTenant')
