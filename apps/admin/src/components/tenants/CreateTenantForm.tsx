@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { createTenant, CreateTenantResponse, listPlans } from '@/api/platform';
+import { createTenant, CreateTenantResponse, listPlans, listAvailableCapabilities } from '@/api/platform';
 import { useNavigate } from '@tanstack/react-router';
 import { 
   CheckCircle2, 
@@ -24,44 +24,7 @@ import { toast } from 'sonner';
 
 const INDUSTRIES = ['education', 'healthcare', 'real-estate', 'retail', 'finance', 'technology'];
 
-const AVAILABLE_CAPABILITIES = [
-  {
-    id: 'capability/enrollment',
-    name: 'Enrollment',
-    description: 'Enables academic courses, cohort tracking, and enrollment workflow stages.',
-    industry: 'education',
-  },
-  {
-    id: 'capability/appointment',
-    name: 'Appointments & Scheduling',
-    description: 'Adds appointments, slots, availability schedules, and calendar view.',
-    industry: 'healthcare',
-  },
-  {
-    id: 'capability/billing',
-    name: 'Invoicing & Billing',
-    description: 'Adds invoice documents, line items, payments, and billing ledger.',
-    industry: 'finance',
-  },
-  {
-    id: 'capability/property-listing',
-    name: 'Property Listings',
-    description: 'Adds property coordinates, bedrooms, floor plans, and listing status.',
-    industry: 'real-estate',
-  },
-  {
-    id: 'capability/order-management',
-    name: 'Order Management',
-    description: 'Adds order creation, product line items, payment status, and order tracking.',
-    industry: 'retail',
-  },
-  {
-    id: 'capability/customer-onboarding',
-    name: 'Customer Onboarding',
-    description: 'Adds multi-step customer onboarding workflows, tracking setup steps and contract values.',
-    industry: 'technology',
-  },
-];
+
 
 const REGIONS = [
   { id: 'us-east-1', name: 'US East (N. Virginia)', provider: 'AWS' },
@@ -103,6 +66,11 @@ export function CreateTenantForm() {
     queryFn: listPlans,
   });
 
+  const { data: availableCapabilities = [] } = useQuery({
+    queryKey: ['available-capabilities'],
+    queryFn: listAvailableCapabilities,
+  });
+
   // Auto-select first plan when plans load
   useEffect(() => {
     if (plans && plans.length > 0 && !planId) {
@@ -138,7 +106,7 @@ export function CreateTenantForm() {
 
   const handleIndustryChange = (val: string) => {
     setIndustry(val);
-    const coreCap = AVAILABLE_CAPABILITIES.find(c => c.industry === val);
+    const coreCap = availableCapabilities.find(c => c.industry === val);
     setSelectedCapabilities(coreCap ? [coreCap.id] : []);
   };
 
@@ -521,7 +489,7 @@ export function CreateTenantForm() {
               <div className="space-y-4">
                 <div>
                   <span className="text-[10px] font-bold text-fin-orange tracking-wider uppercase block mb-2">Core Included (Based on Industry: {industry})</span>
-                  {AVAILABLE_CAPABILITIES.filter(c => c.industry === industry).map(cap => (
+                  {availableCapabilities.filter(c => c.industry === industry).map(cap => (
                     <div key={cap.id} className="flex items-start gap-3 p-3 bg-fin-orange/10/40 border border-fin-orange/20 rounded-xl">
                       <input
                         type="checkbox"
@@ -543,7 +511,7 @@ export function CreateTenantForm() {
                 <div>
                   <span className="text-[10px] font-bold text-muted-foreground tracking-wider uppercase block mb-2">Optional Domain Add-ons</span>
                   <div className="grid gap-3">
-                    {AVAILABLE_CAPABILITIES.filter(c => c.industry !== industry).map(cap => {
+                    {availableCapabilities.filter(c => c.industry !== industry).map(cap => {
                       const isChecked = selectedCapabilities.includes(cap.id);
                       return (
                         <div 

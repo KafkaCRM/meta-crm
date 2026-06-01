@@ -500,3 +500,14 @@ export async function impersonateTenant(id: string): Promise<{
     method: 'POST',
   });
 }
+
+export interface PlatformCapability {
+  id: string;
+  name: string;
+  description: string;
+  industry: string;
+}
+
+export async function listAvailableCapabilities(): Promise<PlatformCapability[]> {
+  return apiCall<PlatformCapability[]>('/platform/tenants/capabilities');
+}

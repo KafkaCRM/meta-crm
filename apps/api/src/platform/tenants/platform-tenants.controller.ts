@@ -25,6 +25,7 @@ import { PlatformTenantsService } from './platform-tenants.service';
 import { CurrentUser } from '../../core/auth/decorators/current-user.decorator';
 import type { RequestScope } from '../../core/tenant/request-scope.interface';
 import { AuthService } from '../../core/auth/auth.service';
+import { AVAILABLE_CAPABILITIES } from '../../core/capability/capability.service';
 
 class DangerousActionBody {
   @IsOptional()
@@ -108,6 +109,12 @@ export class PlatformTenantsController {
       throw new InternalServerErrorException(result.error);
     }
     return result.value;
+  }
+
+  @Get('capabilities')
+  @CheckPlatformPermissions('read', 'PlatformTenant')
+  async listAvailableCapabilities() {
+    return AVAILABLE_CAPABILITIES;
   }
 
   @Get(':id')
