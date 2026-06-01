@@ -282,26 +282,28 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
           </div>
 
           {/* Assignment Group */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-foreground">
-              Branch & Brand Assignment
-            </label>
-            <select
-              value={assignmentId}
-              onChange={(e) => setAssignmentId(e.target.value)}
-              className="w-full h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
-            >
-              <option value="">-- Choose Branch Assignment --</option>
-              {assignmentOptions.map((opt) => (
-                <option key={opt.id} value={opt.id}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-            {errors.assignmentId && (
-              <p className="text-xs text-red-600 mt-1">{errors.assignmentId}</p>
-            )}
-          </div>
+          {assignmentOptions.length > 1 && (
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">
+                Branch & Brand Assignment
+              </label>
+              <select
+                value={assignmentId}
+                onChange={(e) => setAssignmentId(e.target.value)}
+                className="w-full h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
+              >
+                <option value="">-- Choose Branch Assignment --</option>
+                {assignmentOptions.map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              {errors.assignmentId && (
+                <p className="text-xs text-red-600 mt-1">{errors.assignmentId}</p>
+              )}
+            </div>
+          )}
 
           {/* Assigned To (User) */}
           <div className="space-y-1.5">

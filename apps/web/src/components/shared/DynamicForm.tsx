@@ -17,6 +17,8 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useLabels } from '@/hooks/useLabels';
 import { toast } from 'sonner';
 import { Lock, Check, X, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { settingsApi } from '@/api/settings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -305,6 +307,89 @@ function FormField<T extends FieldValues>({
       setCheckingDuplicate(false);
     }
   };
+
+  // 1. Fetch assignments if it's the assignment field
+  const isAssignmentField = field.name === 'branch_brand_assignment_id';
+
+  const { data: assignments = [] } = useQuery({
+    queryKey: ['settings', 'assignments'],
+    queryFn: () => settingsApi.assignments.list(),
+    enabled: isAssignmentField,
+    staleTime: 60_000,
+  });
+
+  const { data: branches = [] } = useQuery({
+    queryKey: ['settings', 'branches'],
+    queryFn: () => settingsApi.branches.list(),
+    enabled: isAssignmentField,
+    staleTime: 60_000,
+  });
+
+  const { data: brands = [] } = useQuery({
+    queryKey: ['settings', 'brands'],
+    queryFn: () => settingsApi.brands.list(),
+    enabled: isAssignmentField,
+    staleTime: 60_000,
+  });
+
+  // Build resolved options
+  const assignmentOptions = useMemo(() => {
+    if (!isAssignmentField) return [];
+    return assignments.map((asg) => {
+      const branchName = branches.find((b) => b.id === asg.branch_id)?.name ?? `Branch (${asg.branch_id})`;
+      const brandName = brands.find((b) => b.id === asg.brand_id)?.name ?? `Brand (${asg.brand_id})`;
+      return {
+        id: asg.id,
+        label: `${branchName} · ${brandName}`,
+      };
+    });
+  }, [isAssignmentField, assignments, branches, brands]);
+
+  // Set default if only 1 assignment exists
+  useEffect(() => {
+    if (isAssignmentField && assignments.length === 1 && currentValue !== assignments[0]?.id) {
+      setValue(fieldName, assignments[0]!.id as PathValue<T, typeof fieldName>);
+    }
+  }, [isAssignmentField, assignments, currentValue, setValue, fieldName]);
+
+  // If it's the assignment field and there is only 1 assignment, hide it!
+  if (isAssignmentField && assignments.length === 1) {
+    return null;
+  }
+
+  if (isAssignmentField && assignments.length > 1) {
+    return (
+      <div className="space-y-1.5 relative">
+        {isPrefilled && (
+          <Badge variant="outline" className="absolute -top-2 -right-1 text-[10px] h-4 px-1.5 border-[#3b82f6] text-[#3b82f6] bg-card">
+            Pre-filled
+          </Badge>
+        )}
+        <Label className="text-sm font-medium text-foreground">
+          {label}
+          {field.required && <span className="text-[#c41c1c] ml-0.5">*</span>}
+        </Label>
+        <Select
+          value={(currentValue as string) ?? ''}
+          onValueChange={(val) => setValue(fieldName, val as PathValue<T, typeof fieldName>)}
+        >
+          <SelectTrigger className={inputBaseClass}>
+            <SelectValue placeholder={`Select ${label.toLowerCase()}`} />
+          </SelectTrigger>
+          <SelectContent>
+            {assignmentOptions.map((opt) => (
+              <SelectItem key={opt.id} value={opt.id}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {error && (
+          <p className="text-xs text-[#c41c1c]">{error.message}</p>
+        )}
+      </div>
+    );
+  }
 
   if (!canUpdate) {
     return (

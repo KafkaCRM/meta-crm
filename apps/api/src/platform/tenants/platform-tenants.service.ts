@@ -724,6 +724,46 @@ export class PlatformTenantsService {
         });
       }
 
+      // Provision default branch, brand, and assignment if not already present
+      let defaultAssignment = await this.db.client.branchBrandAssignment.findFirst({
+        where: { tenant_id: id, is_primary: true },
+      });
+
+      if (!defaultAssignment) {
+        let branch = await this.db.client.branch.findFirst({
+          where: { tenant_id: id, name: `${tenant.name} Headquarters` },
+        });
+        if (!branch) {
+          branch = await this.db.client.branch.create({
+            data: {
+              tenant_id: id,
+              name: `${tenant.name} Headquarters`,
+            },
+          });
+        }
+
+        let brand = await this.db.client.brand.findFirst({
+          where: { tenant_id: id, name: 'Primary Brand' },
+        });
+        if (!brand) {
+          brand = await this.db.client.brand.create({
+            data: {
+              tenant_id: id,
+              name: 'Primary Brand',
+            },
+          });
+        }
+
+        defaultAssignment = await this.db.client.branchBrandAssignment.create({
+          data: {
+            tenant_id: id,
+            branch_id: branch.id,
+            brand_id: brand.id,
+            is_primary: true,
+          },
+        });
+      }
+
       // Provision the 5 universal system roles
       const industryKey = industry.toLowerCase().replace(/_/g, '-').replace(/\s+/g, '-');
       let memberName = 'Member';
@@ -808,7 +848,7 @@ export class PlatformTenantsService {
         const ownerRole = await this.db.client.role.findFirst({
           where: { tenant_id: id, slug: 'owner' },
         });
-        if (ownerRole) {
+        if (ownerRole && defaultAssignment) {
           await this.db.client.userRole.upsert({
             where: {
               user_id_role_id: {
@@ -816,11 +856,14 @@ export class PlatformTenantsService {
                 role_id: ownerRole.id,
               },
             },
-            update: {},
+            update: {
+              assignment_id: defaultAssignment.id,
+            },
             create: {
               user_id: firstUser.id,
               role_id: ownerRole.id,
               tenant_id: id,
+              assignment_id: defaultAssignment.id,
             },
           });
         }

@@ -111,6 +111,18 @@ export class UserService {
         },
       });
 
+      // Resolve auto-assignment if single-entity workspace
+      const assignmentsCount = await tx.branchBrandAssignment.count({
+        where: { tenant_id: tenantId },
+      });
+      let resolvedAssignmentId = input.assignment_ids?.[0] ?? null;
+      if (!resolvedAssignmentId && assignmentsCount === 1) {
+        const singleAssignment = await tx.branchBrandAssignment.findFirst({
+          where: { tenant_id: tenantId },
+        });
+        resolvedAssignmentId = singleAssignment?.id ?? null;
+      }
+
       // Connect selected roles
       for (const roleId of input.role_ids) {
         await tx.userRole.create({
@@ -118,7 +130,7 @@ export class UserService {
             tenant_id: tenantId,
             user_id: user.id,
             role_id: roleId,
-            assignment_id: input.assignment_ids?.[0] ?? null, // Connect branch or brand mapping
+            assignment_id: resolvedAssignmentId,
           },
         });
       }
@@ -155,6 +167,18 @@ export class UserService {
       });
 
       if (input.role_ids) {
+        // Resolve auto-assignment if single-entity workspace
+        const assignmentsCount = await tx.branchBrandAssignment.count({
+          where: { tenant_id: tenantId },
+        });
+        let resolvedAssignmentId = input.assignment_ids?.[0] ?? null;
+        if (!resolvedAssignmentId && assignmentsCount === 1) {
+          const singleAssignment = await tx.branchBrandAssignment.findFirst({
+            where: { tenant_id: tenantId },
+          });
+          resolvedAssignmentId = singleAssignment?.id ?? null;
+        }
+
         // Clear existing mappings
         await tx.userRole.deleteMany({
           where: { user_id: id, tenant_id: tenantId },
@@ -167,7 +191,7 @@ export class UserService {
               tenant_id: tenantId,
               user_id: id,
               role_id: roleId,
-              assignment_id: input.assignment_ids?.[0] ?? null,
+              assignment_id: resolvedAssignmentId,
             },
           });
         }
