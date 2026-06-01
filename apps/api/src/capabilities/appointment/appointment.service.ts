@@ -3,6 +3,7 @@ import { ok, err } from 'neverthrow';
 import type { Result } from 'neverthrow';
 import { TenantScopedPrismaService } from '../../core/tenant/tenant-scoped-prisma.service';
 import { ClsService } from 'nestjs-cls';
+import { HooksService } from '../../core/hooks/hooks.service';
 import type { RequestScope } from '../../core/tenant/request-scope.interface';
 import * as dayjs from 'dayjs';
 
@@ -39,6 +40,7 @@ export class AppointmentService {
   constructor(
     private readonly db: TenantScopedPrismaService,
     private readonly cls: ClsService,
+    private readonly hooks: HooksService,
   ) {}
 
   private getTenantId(): string | null {
@@ -145,6 +147,8 @@ export class AppointmentService {
         },
       });
 
+      await this.hooks.emit('appointment:created', appointment);
+
       return ok(appointment);
     } catch (e) {
       return err({ code: 'QUERY_FAILED', message: (e as Error).message });
@@ -181,6 +185,8 @@ export class AppointmentService {
           user: true,
         },
       });
+
+      await this.hooks.emit('appointment:updated', updated);
 
       return ok(updated);
     } catch (e) {

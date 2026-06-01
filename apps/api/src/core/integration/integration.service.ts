@@ -71,6 +71,30 @@ export const INTEGRATION_MANIFESTS: IntegrationManifest[] = [
     icon: 'Mail',
     credential_fields: ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass'],
   },
+  {
+    id: 'integration/zapier',
+    provider: 'zapier',
+    name: 'Zapier',
+    description: 'Zapier Integration — sync cases, leads, and events with 5,000+ apps.',
+    icon: 'Zap',
+    credential_fields: ['webhook_url'],
+  },
+  {
+    id: 'integration/google-calendar',
+    provider: 'google-calendar',
+    name: 'Google Calendar',
+    description: 'Google Calendar Sync — automatically synchronize appointments with your Google Calendar.',
+    icon: 'Calendar',
+    credential_fields: ['client_id', 'client_secret', 'refresh_token'],
+  },
+  {
+    id: 'integration/email-to-case',
+    provider: 'email-to-case',
+    name: 'Email-to-Case Router',
+    description: 'Email-to-Case Router — monitor an IMAP mailbox and automatically convert incoming emails to cases.',
+    icon: 'Inbox',
+    credential_fields: ['imap_host', 'imap_port', 'imap_user', 'imap_pass'],
+  },
 ];
 
 // ─── Response Shapes ──────────────────────────────────────────────────────────

@@ -14,6 +14,9 @@ import {
   Link,
   ShieldCheck,
   Plug,
+  Zap,
+  Calendar,
+  Inbox,
 } from 'lucide-react';
 import { settingsApi, type IntegrationConfig } from '@/api/settings';
 import { Card } from '@/components/ui/card';
@@ -31,6 +34,9 @@ function resolveIcon(icon: string) {
     case 'PhoneCall':     return PhoneCall;
     case 'Mail':          return Mail;
     case 'Plug':          return Plug;
+    case 'Zap':           return Zap;
+    case 'Calendar':      return Calendar;
+    case 'Inbox':         return Inbox;
     default:              return Link;
   }
 }
