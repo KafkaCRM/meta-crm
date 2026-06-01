@@ -155,7 +155,39 @@ export function SettingsLayout({ children }: SettingsLayoutProps) {
   }
 
   return (
-    <div className="flex h-full min-h-[calc(100vh-56px)] max-w-[1280px] gap-8">
+    <div className="flex flex-col md:flex-row h-full min-h-[calc(100vh-56px)] max-w-[1280px] gap-6 md:gap-8">
+      {/* Mobile Settings Selector */}
+      <div className="md:hidden w-full border-b border-border pb-4">
+        <label htmlFor="settings-mobile-nav" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-2">
+          Settings Section
+        </label>
+        <select
+          id="settings-mobile-nav"
+          value={currentSubPageId || ''}
+          onChange={(e) => navigateTo(e.target.value)}
+          className="w-full h-10 px-3 rounded-lg border border-border bg-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+        >
+          {NAV.map((section) => {
+            const visibleItems = section.items.filter(
+              (item) =>
+                !item.permission ||
+                can(item.permission[0] as any, item.permission[1] as any) ||
+                can('read' as any, item.permission[1] as any),
+            );
+            if (visibleItems.length === 0) return null;
+            return (
+              <optgroup key={section.group} label={section.group}>
+                {visibleItems.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.label}
+                  </option>
+                ))}
+              </optgroup>
+            );
+          })}
+        </select>
+      </div>
+
       {/* Settings Navigation Sidebar */}
       <aside className="w-52 flex-shrink-0 border-r border-border pr-6 py-2 overflow-auto hidden md:block">
         <nav className="space-y-5">
