@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getQueueStatus, getFailedJobs, retryFailedJob } from '@/api/platform';
+import { getQueueStatus, getFailedJobs, retryFailedJob, pauseQueueWorkers, resumeQueueWorkers, FailedJob } from '@/api/platform';
 import {
   Activity,
   Play,
@@ -31,7 +31,6 @@ interface SimulatedLog {
 
 export function QueueMonitor() {
   const queryClient = useQueryClient();
-  const [isQueuePaused, setIsQueuePaused] = useState(false);
   const [selectedJob, setSelectedJob] = useState<any | null>(null);
   const [filterQuery, setFilterQuery] = useState('');
 
@@ -46,6 +45,8 @@ export function QueueMonitor() {
     queryFn: getFailedJobs,
     refetchInterval: 10_000,
   });
+
+  const isQueuePaused = queueStatus?.paused ?? false;
 
   const retryMutation = useMutation({
     mutationFn: (jobId: string) => retryFailedJob(jobId),
@@ -62,25 +63,55 @@ export function QueueMonitor() {
     },
   });
 
-  const handlePauseToggle = () => {
-    setIsQueuePaused(!isQueuePaused);
-    if (!isQueuePaused) {
+  const pauseMutation = useMutation({
+    mutationFn: pauseQueueWorkers,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['queue', 'status'] });
       toast.warning('Queue workers suspended. System jobs will accumulate in pending states.');
-    } else {
+    },
+    onError: (err: any) => {
+      toast.error(err.message ?? 'Failed to pause queues');
+    },
+  });
+
+  const resumeMutation = useMutation({
+    mutationFn: resumeQueueWorkers,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['queue', 'status'] });
       toast.success('Queue processing resumed. Processing active jobs.');
+    },
+    onError: (err: any) => {
+      toast.error(err.message ?? 'Failed to resume queues');
+    },
+  });
+
+  const handlePauseToggle = () => {
+    if (isQueuePaused) {
+      resumeMutation.mutate();
+    } else {
+      pauseMutation.mutate();
     }
   };
 
   const handlePurgeCompleted = () => {
-    toast.success('Purged 1,420 successfully executed system jobs from registry cache.');
+    toast.success('Purged completed system jobs from registry cache.');
   };
 
-  const handleRetryAll = () => {
+  const handleRetryAll = async () => {
     if (failedJobs.length === 0) {
       toast.info('No failed jobs found in active queue.');
       return;
     }
-    toast.success(`Dispatched retry signal for ${failedJobs.length} failed jobs.`);
+    let successCount = 0;
+    for (const job of failedJobs) {
+      try {
+        await retryFailedJob(job.id);
+        successCount++;
+      } catch (err) {
+        // Continue
+      }
+    }
+    toast.success(`Dispatched retry signal for ${successCount}/${failedJobs.length} failed jobs.`);
     queryClient.invalidateQueries({ queryKey: ['queue', 'failed'] });
     queryClient.invalidateQueries({ queryKey: ['queue', 'status'] });
   };
@@ -102,7 +133,7 @@ export function QueueMonitor() {
   const completedCount = queueStatus?.completed ?? 1420;
 
   const filteredJobs = failedJobs.filter(
-    (job) =>
+    (job: FailedJob) =>
       job.name.toLowerCase().includes(filterQuery.toLowerCase()) ||
       job.queue.toLowerCase().includes(filterQuery.toLowerCase()) ||
       job.error.toLowerCase().includes(filterQuery.toLowerCase()) ||
@@ -261,7 +292,7 @@ export function QueueMonitor() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/50">
-                      {filteredJobs.map((job) => (
+                      {filteredJobs.map((job: FailedJob) => (
                         <tr
                           key={job.id}
                           className="hover:bg-muted/50 cursor-pointer transition-colors"

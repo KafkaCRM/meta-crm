@@ -13,15 +13,25 @@ import { PlatformAuditController } from './audit/platform-audit.controller';
 import { PlatformAuditService } from './audit/platform-audit.service';
 
 import { TenantModule } from '../core/tenant/tenant.module';
+import { BullModule } from '@nestjs/bullmq';
+import { PlatformSystemController } from './system/platform-system.controller';
 
 @Module({
-  imports: [AuthModule, PermissionsModule, TenantModule],
+  imports: [
+    AuthModule,
+    PermissionsModule,
+    TenantModule,
+    BullModule.registerQueue({ name: 'workflow' }),
+    BullModule.registerQueue({ name: 'case-triggers' }),
+    BullModule.registerQueue({ name: 'webhook-delivery' }),
+  ],
   controllers: [
     PlatformTenantsController,
     PlatformPlansController,
     PlatformPluginsController,
     PlatformTeamController,
     PlatformAuditController,
+    PlatformSystemController,
   ],
   providers: [
     PlatformTenantsService,

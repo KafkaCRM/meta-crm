@@ -291,6 +291,7 @@ export interface QueueStatus {
   failed: number;
   delayed: number;
   processing_rate: number;
+  paused?: boolean;
 }
 
 export interface FailedJob {
@@ -510,4 +511,16 @@ export interface PlatformCapability {
 
 export async function listAvailableCapabilities(): Promise<PlatformCapability[]> {
   return apiCall<PlatformCapability[]>('/platform/tenants/capabilities');
+}
+
+export async function pauseQueueWorkers(): Promise<{ message: string }> {
+  return apiCall<{ message: string }>('/platform/system/queue/pause', {
+    method: 'POST',
+  });
+}
+
+export async function resumeQueueWorkers(): Promise<{ message: string }> {
+  return apiCall<{ message: string }>('/platform/system/queue/resume', {
+    method: 'POST',
+  });
 }

@@ -61,7 +61,16 @@ export function WebhookFailures() {
 
   const handleRetryAll = async () => {
     if (failures.length === 0) return;
-    toast.success(`Dispatched batch retry signal for all ${failures.length} failed webhooks.`);
+    let successCount = 0;
+    for (const f of failures) {
+      try {
+        await retryWebhookFailure(f.id);
+        successCount++;
+      } catch (err) {
+        // Continue trying others
+      }
+    }
+    toast.success(`Dispatched batch retry signal for all ${successCount}/${failures.length} failed webhooks.`);
     queryClient.invalidateQueries({ queryKey: ['webhooks', 'failures'] });
   };
 
