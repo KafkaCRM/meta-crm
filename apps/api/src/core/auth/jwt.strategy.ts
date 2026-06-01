@@ -13,6 +13,8 @@ export interface JwtPayload {
   assignment_ids: string[];
   role: TenantRole;
   platform_role?: PlatformRole;
+  is_impersonating?: boolean;
+  admin_user_id?: string;
   iat: number;
   exp: number;
 }
@@ -100,6 +102,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       role: payload.role,
       platform_role: payload.platform_role,
       vertical_ids: verticalIds || [],
+      is_impersonating: payload.is_impersonating,
+      admin_user_id: payload.admin_user_id,
     };
 
     this.cls.set('scope', scope);

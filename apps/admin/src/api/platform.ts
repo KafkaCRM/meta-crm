@@ -474,3 +474,29 @@ export async function getPlatformAuditLogs(cursor?: string, limit = 50): Promise
   params.set('limit', String(limit));
   return apiCall<PlatformAuditLogsResponse>(`/platform/audit-logs?${params.toString()}`);
 }
+
+export async function impersonateTenant(id: string): Promise<{
+  access_token: string;
+  tenant_slug: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    assignment_ids: string[];
+  };
+}> {
+  return apiCall<{
+    access_token: string;
+    tenant_slug: string;
+    user: {
+      id: string;
+      name: string;
+      email: string;
+      role: string;
+      assignment_ids: string[];
+    };
+  }>(`/platform/tenants/${id}/impersonate`, {
+    method: 'POST',
+  });
+}

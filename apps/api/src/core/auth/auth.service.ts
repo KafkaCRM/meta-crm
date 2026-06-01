@@ -315,6 +315,109 @@ export class AuthService {
     }
   }
 
+  async impersonateTenant(
+    tenantId: string,
+    adminUserId: string,
+  ): Promise<Result<{ access_token: string; tenant_slug: string; user: { id: string; name: string; email: string; role: string; assignment_ids: string[] } }, AuthError>> {
+    const tenant = await this.db.tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) {
+      return err({ code: 'TENANT_NOT_FOUND', message: 'Tenant not found' });
+    }
+
+    if (tenant.status === 'suspended') {
+      return err({ code: 'ACCOUNT_SUSPENDED', message: 'Tenant is suspended' });
+    }
+
+    // Try finding the owner first
+    let user = await this.db.user.findFirst({
+      where: {
+        tenant_id: tenant.id,
+        status: 'active',
+        userRoles: {
+          some: {
+            role: {
+              slug: 'owner',
+            },
+          },
+        },
+      },
+      include: {
+        userRoles: {
+          include: { role: true },
+        },
+      },
+    });
+
+    // Fallback to admin user
+    if (!user) {
+      user = await this.db.user.findFirst({
+        where: {
+          tenant_id: tenant.id,
+          status: 'active',
+          userRoles: {
+            some: {
+              role: {
+                slug: 'admin',
+              },
+            },
+          },
+        },
+        include: {
+          userRoles: {
+            include: { role: true },
+          },
+        },
+      });
+    }
+
+    // Fallback to any active user
+    if (!user) {
+      user = await this.db.user.findFirst({
+        where: { tenant_id: tenant.id, status: 'active' },
+        include: {
+          userRoles: {
+            include: { role: true },
+          },
+        },
+      });
+    }
+
+    if (!user) {
+      return err({ code: 'USER_NOT_IN_TENANT', message: 'No active user found in this tenant to impersonate' });
+    }
+
+    const roleSlug = (user.userRoles[0]?.role?.slug ?? '') as TenantRole;
+    const assignmentIds: string[] = user.userRoles
+      .map((r) => r.assignment_id)
+      .filter((id): id is string => id !== null);
+
+    const verticalIds = await this.resolveVerticalIds(tenant.id, roleSlug, assignmentIds);
+
+    const accessToken = this.jwtService.sign({
+      sub: user.id,
+      tenant_id: tenant.id,
+      assignment_ids: assignmentIds,
+      role: roleSlug,
+      vertical_ids: verticalIds,
+      name: user.name,
+      email: user.email,
+      is_impersonating: true,
+      admin_user_id: adminUserId,
+    });
+
+    return ok({
+      access_token: accessToken,
+      tenant_slug: tenant.slug,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: roleSlug,
+        assignment_ids: assignmentIds,
+      },
+    });
+  }
+
   private async resolveVerticalIds(
     tenantId: string,
     role: string,

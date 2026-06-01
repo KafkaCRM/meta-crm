@@ -7,4 +7,6 @@ export interface RequestScope {
   role: TenantRole;
   platform_role?: PlatformRole | undefined;
   vertical_ids?: string[];
+  is_impersonating?: boolean;
+  admin_user_id?: string;
 }

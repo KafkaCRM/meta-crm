@@ -291,7 +291,7 @@ function CurrencySelector() {
 }
 
 function RootLayout() {
-  const { isAuthenticated, ability, isLoading } = useAuth();
+  const { isAuthenticated, ability, isLoading, isImpersonating, logout } = useAuth();
   const location = useLocation();
   const router = useRouter();
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
@@ -327,9 +327,27 @@ function RootLayout() {
       <CurrencyProvider>
         <LabelsProvider>
           <SidebarProvider>
-            <div className="flex min-h-screen w-full bg-background text-foreground">
-            <AppSidebar />
-            <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex min-h-screen w-full bg-background text-foreground flex-col">
+              {isImpersonating && (
+                <div className="bg-gradient-to-r from-amber-500 via-orange-600 to-amber-600 text-white px-4 py-2 flex items-center justify-between text-xs sm:text-sm font-semibold tracking-wide shadow-md border-b border-orange-700/50 relative z-50">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-ping flex-shrink-0" />
+                    <span>
+                      Support Impersonation Mode Active: Viewing Workspace as Customer Support
+                    </span>
+                  </div>
+                  <Button
+                    onClick={logout}
+                    size="xs"
+                    className="bg-card/10 hover:bg-card/20 text-white border border-white/20 hover:border-white/40 h-7 rounded px-3 transition-all flex items-center gap-1.5 shadow-sm font-bold cursor-pointer"
+                  >
+                    Exit Session
+                  </Button>
+                </div>
+              )}
+              <div className="flex flex-1 w-full bg-background text-foreground">
+                <AppSidebar />
+                <div className="flex-1 flex flex-col min-w-0">
               {/* Top bar */}
               <header className="h-14 bg-background border-b border-border flex items-center justify-between px-4 sticky top-0 z-10">
                 <div className="flex items-center gap-3">
@@ -375,6 +393,7 @@ function RootLayout() {
               </main>
             </div>
           </div>
+        </div>
           </SidebarProvider>
         </LabelsProvider>
       </CurrencyProvider>
@@ -728,6 +747,67 @@ const loginRoute = createRoute({
 });
 
 /* ------------------------------------------------------------------ */
+/*  Impersonation handshake landing page                              */
+/* ------------------------------------------------------------------ */
+
+function ImpersonatePage() {
+  const { impersonate } = useAuth();
+  const router = useRouter();
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    const userStr = params.get('user');
+
+    if (!token || !userStr) {
+      setError('Invalid or expired support session handshake.');
+      return;
+    }
+
+    try {
+      const user = JSON.parse(userStr);
+      impersonate(token, user);
+      router.navigate({ to: '/' });
+    } catch {
+      setError('Malformed session metadata payload.');
+    }
+  }, [impersonate, router]);
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-[#f5f1ec] font-sans">
+        <div className="bg-card border border-border rounded-xl p-8 max-w-sm w-full shadow-sm text-center space-y-4">
+          <div className="w-12 h-12 rounded-full bg-rose-50 border border-rose-200/50 flex items-center justify-center mx-auto">
+            <span className="text-rose-600 font-bold text-xl">!</span>
+          </div>
+          <h2 className="text-lg font-bold text-foreground">Impersonation Failed</h2>
+          <p className="text-xs text-muted-foreground leading-relaxed">{error}</p>
+          <Button onClick={() => window.close()} className="w-full bg-[#111111] text-white text-xs h-9 rounded-lg">
+            Close Window
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen w-full items-center justify-center bg-[#f5f1ec] font-sans">
+      <div className="flex items-center gap-2.5 text-sm text-muted-foreground font-semibold">
+        <div className="w-4 h-4 border-2 border-border border-t-fin-orange rounded-full animate-spin" />
+        Establishing secure support session…
+      </div>
+    </div>
+  );
+}
+
+const impersonateRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/auth/impersonate',
+  component: ImpersonatePage,
+});
+
+/* ------------------------------------------------------------------ */
 /*  Dashboard (index)                                                  */
 /* ------------------------------------------------------------------ */
 
@@ -788,6 +868,7 @@ import { leadsRoute } from './routes/leads';
 export const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
+  impersonateRoute,
   partiesRoute,
   leadsRoute,
   partiesNewRoute,

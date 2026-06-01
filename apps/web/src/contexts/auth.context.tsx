@@ -24,11 +24,13 @@ interface AuthState {
   ability: TenantAbility | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isImpersonating: boolean;
 }
 
 interface AuthContextValue extends AuthState {
   login: (email: string, password: string, tenantSlug?: string) => Promise<void>;
   logout: () => Promise<void>;
+  impersonate: (token: string, user: AuthUser) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -58,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: false,
     // Show a loading screen while we attempt a silent token refresh on boot.
     isLoading: isPreviouslyLoggedIn,
+    isImpersonating: localStorage.getItem('meta_crm_is_impersonating') === 'true',
   });
 
   const login = useCallback(async (email: string, password: string, tenantSlug?: string) => {
@@ -81,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ability,
         isAuthenticated: true,
         isLoading: false,
+        isImpersonating: false,
       });
 
       initSocket(result.access_token);
@@ -90,12 +94,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const impersonate = useCallback((token: string, user: AuthUser) => {
+    const roles: TenantRoleEntry[] = [{ role: user.role as TenantRoleEntry['role'] }];
+    const ability = buildTenantAbility(roles, user.assignment_ids);
+
+    localStorage.setItem(LOGGED_IN_KEY, 'true');
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    localStorage.setItem('meta_crm_is_impersonating', 'true');
+    sessionStorage.setItem('meta_crm_impersonation_token', token);
+
+    queryClient.clear();
+
+    setState({
+      user,
+      accessToken: token,
+      ability,
+      isAuthenticated: true,
+      isLoading: false,
+      isImpersonating: true,
+    });
+
+    initSocket(token);
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await apiLogout(state.accessToken || undefined);
     } catch {}
     localStorage.removeItem(LOGGED_IN_KEY);
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem('meta_crm_is_impersonating');
+    sessionStorage.removeItem('meta_crm_impersonation_token');
     disconnectSocket();
     setState({
       user: null,
@@ -103,12 +132,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ability: null,
       isAuthenticated: false,
       isLoading: false,
+      isImpersonating: false,
     });
     queryClient.clear();
   }, [state.accessToken]);
 
   const refresh = useCallback(async (): Promise<string | null> => {
     if (localStorage.getItem(LOGGED_IN_KEY) !== 'true') return null;
+    if (localStorage.getItem('meta_crm_is_impersonating') === 'true') {
+      return stateRef.current.accessToken;
+    }
     try {
       const result = await apiRefresh();
       setState((s) => ({ ...s, accessToken: result.access_token }));
@@ -128,6 +161,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const storedUser = readStoredUser();
 
+    if (localStorage.getItem('meta_crm_is_impersonating') === 'true') {
+      const impersonationToken = sessionStorage.getItem('meta_crm_impersonation_token');
+      if (storedUser && impersonationToken) {
+        const roles: TenantRoleEntry[] = [{ role: storedUser.role as TenantRoleEntry['role'] }];
+        const ability = buildTenantAbility(roles, storedUser.assignment_ids);
+
+        setState({
+          user: storedUser,
+          accessToken: impersonationToken,
+          ability,
+          isAuthenticated: true,
+          isLoading: false,
+          isImpersonating: true,
+        });
+
+        initSocket(impersonationToken);
+        return;
+      } else {
+        localStorage.removeItem(LOGGED_IN_KEY);
+        localStorage.removeItem(USER_KEY);
+        localStorage.removeItem('meta_crm_is_impersonating');
+        sessionStorage.removeItem('meta_crm_impersonation_token');
+        setState({
+          user: null,
+          accessToken: null,
+          ability: null,
+          isAuthenticated: false,
+          isLoading: false,
+          isImpersonating: false,
+        });
+        return;
+      }
+    }
+
     apiRefresh()
       .then((result) => {
         if (!storedUser) {
@@ -144,6 +211,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           ability,
           isAuthenticated: true,
           isLoading: false,
+          isImpersonating: false,
         });
 
         initSocket(result.access_token);
@@ -152,12 +220,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Stored token is stale / invalid — clear everything and send to login.
         localStorage.removeItem(LOGGED_IN_KEY);
         localStorage.removeItem(USER_KEY);
+        localStorage.removeItem('meta_crm_is_impersonating');
+        sessionStorage.removeItem('meta_crm_impersonation_token');
         setState({
           user: null,
           accessToken: null,
           ability: null,
           isAuthenticated: false,
           isLoading: false,
+          isImpersonating: false,
         });
       });
 
@@ -199,7 +270,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ ...state, login, logout }}>
+    <AuthContext.Provider value={{ ...state, login, logout, impersonate }}>
       {children}
     </AuthContext.Provider>
   );

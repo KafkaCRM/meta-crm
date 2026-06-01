@@ -24,6 +24,7 @@ import { CheckPlatformPermissions } from '../../core/permissions/permissions.dec
 import { PlatformTenantsService } from './platform-tenants.service';
 import { CurrentUser } from '../../core/auth/decorators/current-user.decorator';
 import type { RequestScope } from '../../core/tenant/request-scope.interface';
+import { AuthService } from '../../core/auth/auth.service';
 
 class DangerousActionBody {
   @IsOptional()
@@ -94,7 +95,10 @@ class UpdateCapabilitiesBody {
 @Controller('platform/tenants')
 @UseGuards(JwtAuthGuard, PlatformPermissionsGuard)
 export class PlatformTenantsController {
-  constructor(private readonly service: PlatformTenantsService) {}
+  constructor(
+    private readonly service: PlatformTenantsService,
+    private readonly authService: AuthService,
+  ) {}
 
   @Get()
   @CheckPlatformPermissions('read', 'PlatformTenant')
@@ -495,6 +499,29 @@ export class PlatformTenantsController {
         throw new NotFoundException(result.error);
       }
       throw new InternalServerErrorException(result.error);
+    }
+    return result.value;
+  }
+
+  @Post(':id/impersonate')
+  @HttpCode(HttpStatus.OK)
+  @CheckPlatformPermissions('update', 'PlatformTenant')
+  async impersonate(
+    @Param('id') id: string,
+    @CurrentUser() scope: RequestScope,
+  ) {
+    const result = await this.authService.impersonateTenant(id, scope.user_id);
+    if (result.isErr()) {
+      switch (result.error.code) {
+        case 'TENANT_NOT_FOUND':
+          throw new NotFoundException(result.error);
+        case 'ACCOUNT_SUSPENDED':
+          throw new BadRequestException(result.error);
+        case 'USER_NOT_IN_TENANT':
+          throw new NotFoundException(result.error);
+        default:
+          throw new InternalServerErrorException(result.error);
+      }
     }
     return result.value;
   }
