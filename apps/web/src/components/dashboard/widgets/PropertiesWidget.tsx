@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { capabilitiesApi } from '@/api/capabilities';
+import { useCurrency } from '@/contexts/currency.context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -54,9 +55,7 @@ export function PropertiesWidget({ className }: PropertiesWidgetProps) {
     );
   }
 
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
-  };
+  const { formatCurrency } = useCurrency();
 
   return (
     <Card className={`bg-card border-border rounded-xl shadow-none hover:shadow-md transition-shadow ${className ?? ''}`}>
@@ -108,7 +107,7 @@ export function PropertiesWidget({ className }: PropertiesWidgetProps) {
                     </div>
                   </div>
                   <div className="text-right ml-2 shrink-0">
-                    <p className="text-xs font-bold text-foreground">{formatCurrency(prop.price)}</p>
+                    <p className="text-xs font-bold text-foreground">{formatCurrency(prop.price, 0)}</p>
                     <span className={`inline-flex items-center px-1 py-0.5 rounded text-[8px] font-semibold uppercase border mt-0.5 ${
                       prop.status === 'available'
                         ? 'bg-blue-50 text-blue-700 border-blue-100'

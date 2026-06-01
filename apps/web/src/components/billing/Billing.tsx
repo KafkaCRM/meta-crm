@@ -19,9 +19,11 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Receipt, DollarSign, Plus, Trash2, Calendar, FileText, ChevronRight, Check } from 'lucide-react';
 import dayjs from 'dayjs';
+import { useCurrency } from '@/contexts/currency.context';
 
 export function Billing() {
   const queryClient = useQueryClient();
+  const { formatCurrency } = useCurrency();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isPayOpen, setIsPayOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -270,7 +272,7 @@ export function Billing() {
 
               <div className="flex justify-between items-center text-sm font-semibold p-2.5 bg-background rounded-lg border border-border">
                 <span className="text-muted-foreground">Total Invoice Amount:</span>
-                <span className="text-foreground font-mono text-base">${calculateTotal().toFixed(2)}</span>
+                <span className="text-foreground font-mono text-base">{formatCurrency(calculateTotal())}</span>
               </div>
             </div>
 
@@ -304,7 +306,7 @@ export function Billing() {
               </div>
               <div>
                 <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-wider">Total Invoiced</p>
-                <h3 className="text-lg font-bold text-foreground font-mono">${stats.total_billed.toFixed(2)}</h3>
+                <h3 className="text-lg font-bold text-foreground font-mono">{formatCurrency(stats.total_billed)}</h3>
               </div>
             </CardContent>
           </Card>
@@ -315,7 +317,7 @@ export function Billing() {
               </div>
               <div>
                 <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-wider">Total Collected</p>
-                <h3 className="text-lg font-bold text-foreground font-mono">${stats.total_paid.toFixed(2)}</h3>
+                <h3 className="text-lg font-bold text-foreground font-mono">{formatCurrency(stats.total_paid)}</h3>
               </div>
             </CardContent>
           </Card>
@@ -326,7 +328,7 @@ export function Billing() {
               </div>
               <div>
                 <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-wider">Outstanding Ledger</p>
-                <h3 className="text-lg font-bold text-foreground font-mono">${stats.total_outstanding.toFixed(2)}</h3>
+                <h3 className="text-lg font-bold text-foreground font-mono">{formatCurrency(stats.total_outstanding)}</h3>
               </div>
             </CardContent>
           </Card>
@@ -389,7 +391,7 @@ export function Billing() {
                         {dayjs(inv.due_date).format('DD MMM YYYY')}
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm text-foreground">
-                        ${inv.amount.toFixed(2)}
+                        {formatCurrency(inv.amount)}
                       </TableCell>
                       <TableCell className="text-center">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold uppercase ${
@@ -517,9 +519,9 @@ export function Billing() {
                     <TableBody>
                       {selectedInvoice.items?.map((item) => (
                         <TableRow key={item.id} className="border-b border-border hover:bg-transparent">
-                          <TableCell className="text-xs py-1.5">{item.description}</TableCell>
-                          <TableCell className="text-xs text-center py-1.5">{item.quantity} x ${item.unit_price}</TableCell>
-                          <TableCell className="text-right text-xs py-1.5 font-mono">${item.amount.toFixed(2)}</TableCell>
+                           <TableCell className="text-xs py-1.5">{item.description}</TableCell>
+                           <TableCell className="text-xs text-center py-1.5">{item.quantity} x {formatCurrency(item.unit_price)}</TableCell>
+                           <TableCell className="text-right text-xs py-1.5 font-mono">{formatCurrency(item.amount)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -528,8 +530,8 @@ export function Billing() {
               </div>
 
               <div className="flex justify-between items-center text-sm font-semibold p-2 bg-background border border-border rounded-lg">
-                <span className="text-muted-foreground">Invoice Total:</span>
-                <span className="text-foreground font-mono">${selectedInvoice.amount.toFixed(2)}</span>
+                 <span className="text-muted-foreground">Invoice Total:</span>
+                 <span className="text-foreground font-mono">{formatCurrency(selectedInvoice.amount)}</span>
               </div>
 
               <div>
@@ -544,7 +546,7 @@ export function Billing() {
                           <Check className="text-green-600 h-3.5 w-3.5" />
                           <span>{p.method.replace('_', ' ')} {p.reference && `(${p.reference})`}</span>
                         </div>
-                        <span className="font-semibold text-green-700">${p.amount.toFixed(2)}</span>
+                         <span className="font-semibold text-green-700">{formatCurrency(p.amount)}</span>
                       </div>
                     ))}
                   </div>

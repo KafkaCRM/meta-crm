@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/auth.context';
 import { AbilityProvider } from '@/contexts/permissions.context';
 import { LabelsProvider } from '@/contexts/labels.context';
 import { useLabels } from '@/hooks/useLabels';
+import { CurrencyProvider, useCurrency } from '@/contexts/currency.context';
 import { Dashboard } from '@/components/dashboard';
 import {
   Sidebar,
@@ -272,6 +273,23 @@ function AppSidebar() {
 /*  Root layout                                                        */
 /* ------------------------------------------------------------------ */
 
+function CurrencySelector() {
+  const { currency, setCurrency } = useCurrency();
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider font-sans">Currency:</span>
+      <select
+        value={currency}
+        onChange={(e) => setCurrency(e.target.value as 'USD' | 'INR')}
+        className="text-xs font-semibold text-foreground border border-border px-2.5 py-1 rounded-lg bg-card focus:outline-none focus:ring-1 focus:ring-primary select-none shadow-xs cursor-pointer"
+      >
+        <option value="INR">₹ INR</option>
+        <option value="USD">$ USD</option>
+      </select>
+    </div>
+  );
+}
+
 function RootLayout() {
   const { isAuthenticated, ability, isLoading } = useAuth();
   const location = useLocation();
@@ -306,9 +324,10 @@ function RootLayout() {
 
   return (
     <AbilityProvider ability={ability}>
-      <LabelsProvider>
-        <SidebarProvider>
-          <div className="flex min-h-screen w-full bg-background text-foreground">
+      <CurrencyProvider>
+        <LabelsProvider>
+          <SidebarProvider>
+            <div className="flex min-h-screen w-full bg-background text-foreground">
             <AppSidebar />
             <div className="flex-1 flex flex-col min-w-0">
               {/* Top bar */}
@@ -340,6 +359,9 @@ function RootLayout() {
                     <span className="text-[9px] font-bold text-amber-700 uppercase tracking-wider font-mono">Sandbox</span>
                   </div>
 
+                  {/* Currency Selector */}
+                  <CurrencySelector />
+
                   {/* Tenant Workspace Selector */}
                   <div className="text-xs font-semibold text-foreground border border-border px-2.5 py-1 rounded-lg bg-card select-none shadow-xs">
                     Workspace: Acme Corp
@@ -353,8 +375,9 @@ function RootLayout() {
               </main>
             </div>
           </div>
-        </SidebarProvider>
-      </LabelsProvider>
+          </SidebarProvider>
+        </LabelsProvider>
+      </CurrencyProvider>
     </AbilityProvider>
   );
 }

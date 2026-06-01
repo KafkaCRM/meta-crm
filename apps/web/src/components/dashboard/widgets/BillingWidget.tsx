@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { capabilitiesApi } from '@/api/capabilities';
+import { useCurrency } from '@/contexts/currency.context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -50,10 +51,7 @@ export function BillingWidget({ className }: BillingWidgetProps) {
     );
   }
 
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
-  };
-
+  const { formatCurrency } = useCurrency();
   const collectionRate = stats.total_billed > 0 ? (stats.total_paid / stats.total_billed) * 100 : 0;
 
   return (

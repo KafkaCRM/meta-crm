@@ -1,4 +1,5 @@
 import React from 'react';
+import { useCurrency } from '@/contexts/currency.context';
 
 interface CurrencyDisplayProps {
   value: number;
@@ -10,33 +11,25 @@ interface CurrencyDisplayProps {
 export function CurrencyDisplay({
   value,
   className = '',
-  format = 'indian',
+  format,
   showSymbol = true,
 }: CurrencyDisplayProps) {
+  const { config } = useCurrency();
+  const activeFormat = format ?? config.format;
+
   const formatted = React.useMemo(() => {
     if (value === undefined || value === null || isNaN(value)) {
-      return showSymbol ? '₹0' : '0';
+      return showSymbol ? `${config.symbol}0` : '0';
     }
 
-    if (format === 'indian') {
-      // Indian formatting: Lakhs and Crores
-      // e.g. 1200000 -> 12,00,000
-      const formatter = new Intl.NumberFormat('en-IN', {
-        style: 'decimal',
-        maximumFractionDigits: 2,
-      });
-      const formattedVal = formatter.format(value);
-      return showSymbol ? `₹${formattedVal}` : formattedVal;
-    } else {
-      // Standard international formatting
-      const formatter = new Intl.NumberFormat('en-US', {
-        style: 'decimal',
-        maximumFractionDigits: 2,
-      });
-      const formattedVal = formatter.format(value);
-      return showSymbol ? `₹${formattedVal}` : formattedVal;
-    }
-  }, [value, format, showSymbol]);
+    const locale = activeFormat === 'indian' ? 'en-IN' : 'en-US';
+    const formatter = new Intl.NumberFormat(locale, {
+      style: 'decimal',
+      maximumFractionDigits: 2,
+    });
+    const formattedVal = formatter.format(value);
+    return showSymbol ? `${config.symbol}${formattedVal}` : formattedVal;
+  }, [value, activeFormat, showSymbol, config]);
 
   return <span className={`font-mono ${className}`}>{formatted}</span>;
 }

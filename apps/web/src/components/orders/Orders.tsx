@@ -19,9 +19,11 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ShoppingCart, Plus, Trash2, ChevronRight, Package, CreditCard, Clock, Truck, CheckCircle, XCircle } from 'lucide-react';
 import dayjs from 'dayjs';
+import { useCurrency } from '@/contexts/currency.context';
 
 export function Orders() {
   const queryClient = useQueryClient();
+  const { formatCurrency } = useCurrency();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -270,7 +272,7 @@ export function Orders() {
 
               <div className="flex justify-between items-center text-sm font-semibold p-2.5 bg-background rounded-lg border border-border">
                 <span className="text-muted-foreground">Total Order Price:</span>
-                <span className="text-foreground font-mono text-base">${calculateTotal().toFixed(2)}</span>
+                <span className="text-foreground font-mono text-base">{formatCurrency(calculateTotal())}</span>
               </div>
             </div>
 
@@ -342,7 +344,7 @@ export function Orders() {
                       </span>
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm text-foreground">
-                      ${ord.total_amount.toFixed(2)}
+                      {formatCurrency(ord.total_amount)}
                     </TableCell>
                     <TableCell className="text-center">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold uppercase border ${getOrderStatusBadge(ord.status)}`}>
@@ -435,8 +437,8 @@ export function Orders() {
                       {selectedOrder.items?.map((item) => (
                         <TableRow key={item.id} className="border-b border-border hover:bg-transparent">
                           <TableCell className="text-xs py-1.5">{item.product_name}</TableCell>
-                          <TableCell className="text-xs text-center py-1.5">{item.quantity} x ${item.unit_price}</TableCell>
-                          <TableCell className="text-right text-xs py-1.5 font-mono">${item.amount.toFixed(2)}</TableCell>
+                          <TableCell className="text-xs text-center py-1.5">{item.quantity} x {formatCurrency(item.unit_price)}</TableCell>
+                          <TableCell className="text-right text-xs py-1.5 font-mono">{formatCurrency(item.amount)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -446,7 +448,7 @@ export function Orders() {
 
               <div className="flex justify-between items-center text-sm font-semibold p-2 bg-background border border-border rounded-lg">
                 <span className="text-muted-foreground">Grand Total:</span>
-                <span className="text-foreground font-mono">${selectedOrder.total_amount.toFixed(2)}</span>
+                <span className="text-foreground font-mono">{formatCurrency(selectedOrder.total_amount)}</span>
               </div>
             </div>
           )}

@@ -16,9 +16,11 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Home, MapPin, BedDouble, Bath, Maximize2, Plus, Edit, Trash2, Sliders } from 'lucide-react';
+import { useCurrency } from '@/contexts/currency.context';
 
 export function Properties() {
   const queryClient = useQueryClient();
+  const { config, formatCurrency } = useCurrency();
   const [isOpen, setIsOpen] = useState(false);
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
 
@@ -219,7 +221,7 @@ export function Properties() {
 
               <div className="grid grid-cols-4 gap-3">
                 <div className="space-y-1 col-span-2">
-                  <Label htmlFor="price" className="text-xs font-semibold text-muted-foreground">Listing Price ($) *</Label>
+                  <Label htmlFor="price" className="text-xs font-semibold text-muted-foreground">Listing Price ({config.symbol}) *</Label>
                   <Input
                     id="price"
                     type="number"
@@ -368,7 +370,7 @@ export function Properties() {
 
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <Label htmlFor="f-min" className="text-xs text-muted-foreground">Min Price ($)</Label>
+                <Label htmlFor="f-min" className="text-xs text-muted-foreground">Min Price ({config.symbol})</Label>
                 <Input
                   id="f-min"
                   type="number"
@@ -379,7 +381,7 @@ export function Properties() {
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="f-max" className="text-xs text-muted-foreground">Max Price ($)</Label>
+                <Label htmlFor="f-max" className="text-xs text-muted-foreground">Max Price ({config.symbol})</Label>
                 <Input
                   id="f-max"
                   type="number"
@@ -477,7 +479,7 @@ export function Properties() {
                       </div>
 
                       <div className="font-mono text-base font-bold text-foreground">
-                        ${prop.price.toLocaleString()}
+                        {formatCurrency(prop.price, 0)}
                       </div>
 
                       {prop.description && (
