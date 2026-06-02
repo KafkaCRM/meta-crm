@@ -3,12 +3,14 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   UseGuards,
   HttpCode,
   HttpStatus,
   NotFoundException,
+  BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
 import { IsString, IsArray } from 'class-validator';
@@ -75,5 +77,21 @@ export class WorkflowController {
       throw new InternalServerErrorException(result.error.message);
     }
     return result.value;
+  }
+
+  @Delete(':id')
+  @CheckPermissions('manage', 'Workflow')
+  async delete(@Param('id') id: string) {
+    const result = await this.service.delete(id);
+    if (result.isErr()) {
+      if (result.error.code === 'NOT_FOUND') {
+        throw new NotFoundException(result.error.message);
+      }
+      if (result.error.code === 'VALIDATION_ERROR') {
+        throw new BadRequestException(result.error.message);
+      }
+      throw new InternalServerErrorException(result.error.message);
+    }
+    return { success: true };
   }
 }

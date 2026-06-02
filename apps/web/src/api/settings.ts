@@ -234,6 +234,8 @@ export const settingsApi = {
     getDefault: () => apiCall<any>('/workflows/default'),
     update: (id: string, data: { name: string; stages: any[]; transitions: any[] }) =>
       apiCall<any>(`/workflows/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: (id: string) =>
+      apiCall<{ success: boolean }>(`/workflows/${id}`, { method: 'DELETE' }),
   },
   customObjects: {
     list: () => apiCall<any[]>('/custom-objects'),

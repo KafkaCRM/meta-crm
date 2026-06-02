@@ -4,7 +4,7 @@ import { ClsService } from 'nestjs-cls';
 import { TenantScopedPrismaService } from '../tenant/tenant-scoped-prisma.service';
 import type { RequestScope } from '../tenant/request-scope.interface';
 
-export type WorkflowErrorCode = 'NOT_FOUND' | 'TRANSACTION_FAILED';
+export type WorkflowErrorCode = 'NOT_FOUND' | 'TRANSACTION_FAILED' | 'VALIDATION_ERROR';
 
 export interface WorkflowError {
   code: WorkflowErrorCode;
@@ -294,6 +294,76 @@ export class WorkflowService {
       return err({
         code: 'TRANSACTION_FAILED',
         message: e?.message ?? 'Failed to update workflow transaction',
+      });
+    }
+  }
+
+  async delete(id: string): Promise<Result<void, WorkflowError>> {
+    try {
+      const dbClient = this.db.getClient();
+
+      // 1. Fetch workflow definition
+      const workflow = await dbClient.workflowDefinition.findFirst({
+        where: { id },
+      });
+
+      if (!workflow) {
+        return err({ code: 'NOT_FOUND', message: 'Workflow pipeline not found' });
+      }
+
+      // 2. Prevent deleting the only workflow
+      const totalWorkflows = await dbClient.workflowDefinition.count();
+      if (totalWorkflows <= 1) {
+        return err({
+          code: 'VALIDATION_ERROR',
+          message: 'Cannot delete the only pipeline: a CRM tenant must have at least one pipeline.'
+        });
+      }
+
+      // 3. Check for linked active campaigns
+      const campaignsCount = await dbClient.campaign.count({
+        where: { pipeline_id: id },
+      });
+
+      if (campaignsCount > 0) {
+        return err({
+          code: 'VALIDATION_ERROR',
+          message: `Cannot delete pipeline: it is linked to ${campaignsCount} active campaign(s).`
+        });
+      }
+
+      // 4. Check for linked cases
+      const casesCount = await dbClient.case.count({
+        where: { workflow_definition_id: id },
+      });
+
+      if (casesCount > 0) {
+        return err({
+          code: 'VALIDATION_ERROR',
+          message: `Cannot delete pipeline: it is linked to ${casesCount} active customer items (deals/cases).`
+        });
+      }
+
+      // 5. Delete in a transaction: transitions, stages, and then the definition itself
+      await dbClient.$transaction(async (tx) => {
+        await tx.workflowTransition.deleteMany({
+          where: { workflow_definition_id: id },
+        });
+
+        await tx.workflowStage.deleteMany({
+          where: { workflow_definition_id: id },
+        });
+
+        await tx.workflowDefinition.delete({
+          where: { id },
+        });
+      });
+
+      return ok(undefined);
+    } catch (e: any) {
+      return err({
+        code: 'TRANSACTION_FAILED',
+        message: e?.message ?? 'Failed to delete workflow pipeline',
       });
     }
   }

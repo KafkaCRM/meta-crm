@@ -37,6 +37,8 @@ export function WorkflowBuilder() {
   const [activePipelineName, setActivePipelineName] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newPipelineName, setNewPipelineName] = useState('');
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [pipelineToDelete, setPipelineToDelete] = useState<{ id: string; name: string } | null>(null);
 
   // Option B Stage Builder states
   const [stages, setStages] = useState<Stage[]>([]);
@@ -84,6 +86,37 @@ export function WorkflowBuilder() {
       return;
     }
     createPipelineMutation.mutate({ name: newPipelineName.trim() });
+  };
+
+  // Mutation - Delete custom pipeline
+  const deletePipelineMutation = useMutation({
+    mutationFn: (id: string) => settingsApi.workflows.delete(id),
+    onSuccess: () => {
+      toast.success('Pipeline deleted successfully!');
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
+      refetchPipelines();
+      setIsDeleteModalOpen(false);
+      setPipelineToDelete(null);
+    },
+    onError: (err: any) => {
+      const msg = err instanceof Error ? err.message : err?.response?.data?.message || 'Failed to delete pipeline';
+      toast.error(msg, {
+        description: 'Ensure it is not the only pipeline, and no active campaigns or leads are linked to it.',
+      });
+      setIsDeleteModalOpen(false);
+      setPipelineToDelete(null);
+    },
+  });
+
+  const handleDeletePipeline = (id: string, name: string) => {
+    setPipelineToDelete({ id, name });
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (pipelineToDelete) {
+      deletePipelineMutation.mutate(pipelineToDelete.id);
+    }
   };
 
   // 4. Mutation - Save pipeline changes
@@ -300,6 +333,20 @@ export function WorkflowBuilder() {
                       Active Lead Pipeline
                     </CardDescription>
                   </div>
+                  {canManage && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeletePipeline(pipe.id, pipe.name);
+                      }}
+                      className="h-8 w-8 text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors rounded-lg shrink-0 cursor-pointer"
+                      title="Delete Pipeline"
+                    >
+                      <Trash2 size={14} />
+                    </Button>
+                  )}
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex flex-wrap gap-1.5">
@@ -389,6 +436,50 @@ export function WorkflowBuilder() {
                 >
                   {createPipelineMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1.5" />}
                   Create & Design
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Delete Confirmation Dialog */}
+          <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+            <DialogContent className="sm:max-w-md p-6 bg-card border border-border">
+              <DialogHeader>
+                <DialogTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+                  <AlertCircle size={18} className="text-red-605 text-red-600" />
+                  Delete Pipeline Workflow
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  Are you sure you want to permanently delete the pipeline <strong className="text-slate-800 font-bold">"{pipelineToDelete?.name}"</strong>? 
+                  This will also remove all stage configurations and SLA limits associated with it. This action cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex items-start gap-3 p-3.5 border border-dashed border-red-200 bg-red-50/5 rounded-xl mt-3">
+                <ShieldAlert size={16} className="text-red-600 shrink-0 mt-0.5" />
+                <p className="text-[10px] text-red-800 leading-normal font-semibold">
+                  Warning: Deletion will fail if any active calling campaigns or client leads are currently linked to this pipeline.
+                </p>
+              </div>
+              <DialogFooter className="pt-4 border-t border-border mt-4 -mx-6 -mb-6 px-6 bg-muted flex sm:justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsDeleteModalOpen(false);
+                    setPipelineToDelete(null);
+                  }}
+                  className="h-9 text-xs border-border bg-card text-muted-foreground"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  disabled={deletePipelineMutation.isPending}
+                  className="h-9 text-xs bg-red-600 hover:bg-red-700 text-white font-semibold"
+                >
+                  {deletePipelineMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
+                  Delete Pipeline
                 </Button>
               </DialogFooter>
             </DialogContent>
