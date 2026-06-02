@@ -68,8 +68,23 @@ export function WorkflowBuilder() {
       // Auto-enter editing mode for the new pipeline
       handleEditPipeline(created.id, created.name, created.stages || []);
     },
-    onError: () => toast.error('Failed to create pipeline'),
+    onError: (err: any) => {
+      const msg = err instanceof Error ? err.message : err?.response?.data?.message || 'Failed to create pipeline';
+      toast.error(msg);
+    },
   });
+
+  const handleCreatePipeline = () => {
+    if (!newPipelineName.trim()) return;
+    const isDuplicate = pipelines.some(
+      (p: any) => p.name.trim().toLowerCase() === newPipelineName.trim().toLowerCase()
+    );
+    if (isDuplicate) {
+      toast.error(`A pipeline named "${newPipelineName.trim()}" already exists. Please choose a unique name.`);
+      return;
+    }
+    createPipelineMutation.mutate({ name: newPipelineName.trim() });
+  };
 
   // 4. Mutation - Save pipeline changes
   const saveMutation = useMutation({
@@ -368,7 +383,7 @@ export function WorkflowBuilder() {
                 </Button>
                 <Button
                   type="button"
-                  onClick={() => createPipelineMutation.mutate({ name: newPipelineName })}
+                  onClick={handleCreatePipeline}
                   disabled={createPipelineMutation.isPending || !newPipelineName.trim()}
                   className="h-9 text-xs bg-primary hover:bg-[#1e293b] text-white"
                 >

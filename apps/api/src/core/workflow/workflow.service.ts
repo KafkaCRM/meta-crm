@@ -39,6 +39,23 @@ export class WorkflowService {
       const scope = this.cls.get<RequestScope>('scope');
       const tenantId = scope?.tenant_id || '';
 
+      const existing = await this.db.getClient().workflowDefinition.findFirst({
+        where: {
+          tenant_id: tenantId,
+          name: {
+            equals: data.name.trim(),
+            mode: 'insensitive',
+          },
+        },
+      });
+
+      if (existing) {
+        return err({
+          code: 'TRANSACTION_FAILED',
+          message: `A pipeline named "${data.name.trim()}" already exists. Please choose a unique name.`,
+        });
+      }
+
       const created = await this.db.getClient().workflowDefinition.create({
         data: {
           tenant_id: tenantId,

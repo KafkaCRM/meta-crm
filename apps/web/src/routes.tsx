@@ -86,6 +86,25 @@ import { CommandPalette } from '@/components/shared/CommandPalette';
 /*  App Shell Sidebar                                                  */
 /* ------------------------------------------------------------------ */
 
+// Helper to generate distinct glowing colors for pipelines in the sidebar
+const getPipelineColor = (id: string) => {
+  const colors = [
+    'bg-emerald-500 shadow-emerald-500/25',
+    'bg-blue-500 shadow-blue-500/25',
+    'bg-indigo-500 shadow-indigo-500/25',
+    'bg-amber-500 shadow-amber-500/25',
+    'bg-pink-500 shadow-pink-500/25',
+    'bg-violet-500 shadow-violet-500/25',
+    'bg-rose-500 shadow-rose-500/25',
+    'bg-cyan-500 shadow-cyan-500/25',
+  ];
+  let sum = 0;
+  for (let i = 0; i < id.length; i++) {
+    sum += id.charCodeAt(i);
+  }
+  return colors[sum % colors.length];
+};
+
 function AppSidebar() {
   const { user, ability, logout } = useAuth();
   const location = useLocation();
@@ -193,47 +212,49 @@ function AppSidebar() {
                 const isActive = location.pathname === item.path ||
                   (item.path !== '/' && location.pathname.startsWith(item.path));
                 
-                if (item.path === '/cases' && workflows.length > 1) {
+                if (item.path === '/cases' && workflows.length > 0) {
                   const isSubActive = location.pathname === '/cases';
                   return (
-                    <Collapsible key={item.path} defaultOpen={isSubActive} className="group/collapsible w-full">
+                    <DropdownMenu key={item.path}>
                       <SidebarMenuItem>
-                        <CollapsibleTrigger asChild>
+                        <DropdownMenuTrigger asChild>
                           <SidebarMenuButton isActive={isSubActive} tooltip={item.label} className="w-full justify-between pr-2.5">
                             <div className="flex items-center gap-2.5 font-medium">
                               <item.icon size={15} strokeWidth={isSubActive ? 2 : 1.75} className={isSubActive ? 'text-fin-orange' : 'text-sidebar-foreground/60'} />
                               <span className="text-sm font-medium">{item.label}</span>
                             </div>
-                            <ChevronRight size={13} className="transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 text-sidebar-foreground/50" />
+                            <ChevronRight size={13} className="text-sidebar-foreground/50 ml-auto" />
                           </SidebarMenuButton>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <SidebarMenuSub className="ml-5 border-l border-sidebar-border/40 mt-1 pl-2 space-y-1">
-                            {workflows.map((wf: any) => {
-                              const isWfActive = location.pathname === '/cases' && search.workflowId === wf.id;
-                              return (
-                                <SidebarMenuSubItem key={wf.id}>
-                                  <SidebarMenuSubButton asChild isActive={isWfActive}>
-                                    <Link
-                                      to="/cases"
-                                      search={{ workflowId: wf.id }}
-                                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[13px] transition-all w-full duration-150 ${
-                                        isWfActive
-                                          ? 'text-sidebar-accent-foreground font-semibold bg-sidebar-accent/50'
-                                          : 'text-sidebar-foreground/80 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/30'
-                                      }`}
-                                    >
-                                      <span className={`w-1.5 h-1.5 rounded-full ${isWfActive ? 'bg-fin-orange' : 'bg-sidebar-foreground/30'}`} />
-                                      <span className="truncate flex-1 text-left">{wf.name}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              );
-                            })}
-                          </SidebarMenuSub>
-                        </CollapsibleContent>
+                        </DropdownMenuTrigger>
+                        
+                        <DropdownMenuContent side="right" align="start" className="w-56 bg-sidebar border border-sidebar-border shadow-md rounded-xl p-1.5 space-y-0.5 animate-in slide-in-from-left-2 duration-150">
+                          <DropdownMenuLabel className="text-[10px] text-sidebar-foreground/50 font-bold uppercase tracking-wider px-2.5 py-1.5">
+                            Select Pipeline
+                          </DropdownMenuLabel>
+                          <DropdownMenuSeparator className="bg-sidebar-border/40 mx-1" />
+                          
+                          {workflows.map((wf: any) => {
+                            const isWfActive = location.pathname === '/cases' && search.workflowId === wf.id;
+                            return (
+                              <DropdownMenuItem key={wf.id} asChild className="p-0 focus:bg-transparent">
+                                <Link
+                                  to="/cases"
+                                  search={{ workflowId: wf.id }}
+                                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all w-full duration-150 cursor-pointer ${
+                                    isWfActive
+                                      ? 'text-sidebar-accent-foreground bg-sidebar-accent/70 font-bold'
+                                      : 'text-sidebar-foreground/90 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/40'
+                                  }`}
+                                >
+                                  <span className="truncate flex-1 text-left">{wf.name}</span>
+                                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ml-1.5 shadow-sm border border-white/10 ${getPipelineColor(wf.id)}`} />
+                                </Link>
+                              </DropdownMenuItem>
+                            );
+                          })}
+                        </DropdownMenuContent>
                       </SidebarMenuItem>
-                    </Collapsible>
+                    </DropdownMenu>
                   );
                 }
 
