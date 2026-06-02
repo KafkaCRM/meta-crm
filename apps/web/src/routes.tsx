@@ -187,7 +187,7 @@ function AppSidebar() {
 
   return (
     <Sidebar className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
-      <SidebarHeader className="px-4 py-4 border-b border-sidebar-border bg-sidebar">
+      <SidebarHeader className="px-4 py-3 border-b border-sidebar-border bg-sidebar">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-md bg-fin-orange flex items-center justify-center flex-shrink-0 shadow-sm shadow-orange-500/20">
             <span className="text-white text-xs font-bold font-mono">M</span>
@@ -199,9 +199,9 @@ function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-2 py-3 bg-sidebar">
+      <SidebarContent className="px-2 pt-1 pb-3 bg-sidebar">
         {/* Main Section */}
-        <SidebarGroup>
+        <SidebarGroup className="pt-0 pb-1">
           <SidebarGroupLabel className="text-sidebar-foreground/50 text-[10px] font-bold uppercase tracking-wider px-2 mb-1">
             Main
           </SidebarGroupLabel>
@@ -227,7 +227,7 @@ function AppSidebar() {
                           </SidebarMenuButton>
                         </DropdownMenuTrigger>
                         
-                        <DropdownMenuContent side="right" align="start" className="w-56 bg-sidebar border border-sidebar-border shadow-md rounded-xl p-1.5 space-y-0.5 animate-in slide-in-from-left-2 duration-150">
+                        <DropdownMenuContent side="right" align="start" alignOffset={-6} className="w-56 bg-sidebar border border-sidebar-border shadow-md rounded-xl p-1.5 space-y-0.5 animate-in slide-in-from-left-2 duration-150">
                           <DropdownMenuLabel className="text-[10px] text-sidebar-foreground/50 font-bold uppercase tracking-wider px-2.5 py-1.5">
                             Select Pipeline
                           </DropdownMenuLabel>
@@ -246,8 +246,8 @@ function AppSidebar() {
                                       : 'text-sidebar-foreground/90 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/40'
                                   }`}
                                 >
+                                  <span className={`w-2 h-2 rounded-full flex-shrink-0 mr-1.5 shadow-sm border border-white/10 ${getPipelineColor(wf.id)}`} />
                                   <span className="truncate flex-1 text-left">{wf.name}</span>
-                                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ml-1.5 shadow-sm border border-white/10 ${getPipelineColor(wf.id)}`} />
                                 </Link>
                               </DropdownMenuItem>
                             );
