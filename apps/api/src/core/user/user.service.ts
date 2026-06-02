@@ -7,12 +7,15 @@ import * as bcrypt from 'bcrypt';
 export interface InviteUserInput {
   name: string;
   email: string;
+  phone_number?: string;
+  password?: string;
   role_ids: string[];
   assignment_ids?: string[];
 }
 
 export interface UpdateUserInput {
   name?: string;
+  phone_number?: string;
   role_ids?: string[];
   assignment_ids?: string[];
 }
@@ -64,6 +67,7 @@ export class UserService {
       tenant_id: user.tenant_id,
       name: user.name,
       email: user.email,
+      phone_number: user.phone_number ?? undefined,
       status: user.status,
       created_at: user.created_at,
       roles: user.userRoles.map((ur) => ({
@@ -97,7 +101,7 @@ export class UserService {
     }
 
     // Generate temporary password hash for new user
-    const tempPassword = 'Temp' + Math.random().toString(36).slice(-8) + '!';
+    const tempPassword = input.password || ('Temp' + Math.random().toString(36).slice(-8) + '!');
     const passwordHash = await bcrypt.hash(tempPassword, BCRYPT_COST);
 
     return this.tenantDb.getClient().$transaction(async (tx) => {
@@ -106,6 +110,7 @@ export class UserService {
           tenant_id: tenantId,
           name: input.name,
           email: input.email,
+          phone_number: input.phone_number ?? null,
           password_hash: passwordHash,
           status: 'active',
         },
@@ -140,6 +145,7 @@ export class UserService {
         tenant_id: user.tenant_id,
         name: user.name,
         email: user.email,
+        phone_number: user.phone_number ?? undefined,
         status: user.status,
         created_at: user.created_at,
         temporary_password: tempPassword, // Included so details can be shown to inviter
@@ -163,6 +169,7 @@ export class UserService {
         where: { id },
         data: {
           name: input.name,
+          phone_number: input.phone_number,
         },
       });
 

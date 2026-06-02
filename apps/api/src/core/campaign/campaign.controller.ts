@@ -48,7 +48,7 @@ export class CampaignController {
   }
 
   @Get('stats')
-  @CheckPermissions('read', 'Report')
+  @CheckPermissions('read', 'Campaign')
   async getAggregateStats() {
     const result = await this.service.getAggregateStats();
     if (result.isErr()) {

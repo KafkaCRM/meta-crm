@@ -18,6 +18,65 @@ export class WorkflowService {
     private readonly cls: ClsService,
   ) {}
 
+  async list(): Promise<Result<any[], WorkflowError>> {
+    try {
+      const workflows = await this.db.getClient().workflowDefinition.findMany({
+        include: {
+          stages: { orderBy: { order: 'asc' } },
+        },
+      });
+      return ok(workflows);
+    } catch (e: any) {
+      return err({
+        code: 'TRANSACTION_FAILED',
+        message: e?.message ?? 'Failed to retrieve workflows',
+      });
+    }
+  }
+
+  async create(data: { name: string; entity_type?: string }): Promise<Result<any, WorkflowError>> {
+    try {
+      const scope = this.cls.get<RequestScope>('scope');
+      const tenantId = scope?.tenant_id || '';
+
+      const created = await this.db.getClient().workflowDefinition.create({
+        data: {
+          tenant_id: tenantId,
+          name: data.name,
+          entity_type: data.entity_type ?? 'appointment',
+        },
+      });
+
+      // Automatically seed default stages for this new pipeline so it starts functional
+      const defaultStages = [
+        { name: 'Lead', order: 0, sla_hours: 24, terminal_outcome: null },
+        { name: 'Contacted', order: 1, sla_hours: null, terminal_outcome: null },
+        { name: 'Proposal Sent', order: 2, sla_hours: null, terminal_outcome: null },
+        { name: 'Closed Won', order: 3, sla_hours: null, terminal_outcome: 'won' },
+        { name: 'Closed Lost', order: 4, sla_hours: null, terminal_outcome: 'lost' },
+      ];
+
+      for (const stage of defaultStages) {
+        await this.db.getClient().workflowStage.create({
+          data: {
+            workflow_definition_id: created.id,
+            name: stage.name,
+            order: stage.order,
+            sla_hours: stage.sla_hours,
+            terminal_outcome: stage.terminal_outcome,
+          },
+        });
+      }
+
+      return ok(created);
+    } catch (e: any) {
+      return err({
+        code: 'TRANSACTION_FAILED',
+        message: e?.message ?? 'Failed to create pipeline',
+      });
+    }
+  }
+
   async getDefault(): Promise<Result<any, WorkflowError>> {
     try {
       const scope = this.cls.get<RequestScope>('scope');
@@ -41,10 +100,11 @@ export class WorkflowService {
         });
 
         const stagesData = [
-          { name: 'Appointment Scheduled', order: 0, sla_hours: 24 },
-          { name: 'Consultation', order: 1, sla_hours: null },
-          { name: 'Follow-up', order: 2, sla_hours: null },
-          { name: 'Closed', order: 3, sla_hours: null },
+          { name: 'Appointment Scheduled', order: 0, sla_hours: 24, terminal_outcome: null },
+          { name: 'Consultation', order: 1, sla_hours: null, terminal_outcome: null },
+          { name: 'Follow-up', order: 2, sla_hours: null, terminal_outcome: null },
+          { name: 'Closed Won', order: 3, sla_hours: null, terminal_outcome: 'won' },
+          { name: 'Closed Lost', order: 4, sla_hours: null, terminal_outcome: 'lost' },
         ];
 
         const stageIds: string[] = [];
@@ -55,6 +115,7 @@ export class WorkflowService {
               name: stage.name,
               order: stage.order,
               sla_hours: stage.sla_hours,
+              terminal_outcome: stage.terminal_outcome,
             },
           });
           stageIds.push(createdStage.id);
@@ -63,12 +124,14 @@ export class WorkflowService {
         // Default transitions:
         // stage 0 -> stage 1
         // stage 1 -> stage 2
-        // stage 1 -> stage 3
-        // stage 2 -> stage 3
+        // stage 1 -> stage 3 (Won)
+        // stage 1 -> stage 4 (Lost)
+        // stage 2 -> stage 3 (Won)
         const transitionsData = [
           { fromIdx: 0, toIdx: 1 },
           { fromIdx: 1, toIdx: 2 },
           { fromIdx: 1, toIdx: 3 },
+          { fromIdx: 1, toIdx: 4 },
           { fromIdx: 2, toIdx: 3 },
         ];
 
@@ -157,6 +220,7 @@ export class WorkflowService {
                 name: inputStage.name,
                 order: inputStage.order,
                 sla_hours: inputStage.sla_hours,
+                terminal_outcome: inputStage.terminal_outcome ?? null,
                 entry_criteria: inputStage.entry_criteria ? JSON.parse(JSON.stringify(inputStage.entry_criteria)) : '[]',
               },
             });
@@ -168,6 +232,7 @@ export class WorkflowService {
                 name: inputStage.name,
                 order: inputStage.order,
                 sla_hours: inputStage.sla_hours,
+                terminal_outcome: inputStage.terminal_outcome ?? null,
                 entry_criteria: inputStage.entry_criteria ? JSON.parse(JSON.stringify(inputStage.entry_criteria)) : '[]',
               },
             });

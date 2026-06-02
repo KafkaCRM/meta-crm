@@ -16,6 +16,7 @@ import { produce } from 'immer';
 import { evaluateVisibilityRules } from '@meta-crm/types';
 import type { CaseDto, WorkflowStageDto } from '@meta-crm/types';
 import { casesApi, type CasesByStage } from '@/api/cases';
+import { settingsApi } from '@/api/settings';
 import { useRealtime } from '@/hooks/useRealtime';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useLabels } from '@/hooks/useLabels';
@@ -76,6 +77,11 @@ export function CaseKanban({ workflowDefinitionId }: CaseKanbanProps) {
   const queryClient = useQueryClient();
   const { can } = usePermissions();
   const { t } = useLabels();
+
+  const { data: workflows = [] } = useQuery({
+    queryKey: ['settings', 'workflows'],
+    queryFn: () => settingsApi.workflows.list(),
+  });
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -471,16 +477,49 @@ export function CaseKanban({ workflowDefinitionId }: CaseKanbanProps) {
   const totalCases = allCases.length;
 
   return (
-    <DndContext
-      sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="flex items-center justify-between px-4 py-2 border-b">
-        <span className="text-sm text-muted-foreground">
-          {totalCases} {totalCases === 1 ? (t('case.singular')?.toLowerCase() ?? 'case') : (t('case.plural')?.toLowerCase() ?? 'cases')}
-        </span>
+    <div className="space-y-4">
+      {/* Visual Header & Hot-swapper */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-card border rounded-xl p-5 shadow-xs">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold tracking-tight text-foreground">
+              {workflows.find((wf: any) => wf.id === workflowDefinitionId)?.name || 'Pipeline Board'}
+            </h1>
+            {workflows.length > 1 && (
+              <div className="relative inline-block text-left ml-2">
+                <select
+                  value={workflowDefinitionId}
+                  onChange={(e) => {
+                    navigate({ to: '/cases', search: { workflowId: e.target.value } });
+                  }}
+                  className="inline-flex items-center justify-between rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted focus:outline-hidden focus:ring-1 focus:ring-fin-orange cursor-pointer"
+                >
+                  {workflows.map((wf: any) => (
+                    <option key={wf.id} value={wf.id}>
+                      {wf.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Manage your opportunities, track conversations, and slide pipeline items across stages.
+          </p>
+        </div>
+      </div>
+
+      <DndContext
+        sensors={sensors}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="bg-card border rounded-xl shadow-xs overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b bg-muted/15">
+            <span className="text-xs text-muted-foreground font-medium">
+              {totalCases} {totalCases === 1 ? 'pipeline item' : 'pipeline items'}
+            </span>
         <div className="flex items-center gap-1 bg-muted rounded-md p-1">
           <button
             className={cn(
@@ -568,6 +607,7 @@ export function CaseKanban({ workflowDefinitionId }: CaseKanbanProps) {
           />
         </div>
       )}
+      </div>
 
       <BulkActionBar
         selectedRows={selectedCases}
@@ -575,6 +615,7 @@ export function CaseKanban({ workflowDefinitionId }: CaseKanbanProps) {
         onClearSelection={handleClearSelection}
         resource="Case"
       />
-    </DndContext>
+      </DndContext>
+    </div>
   );
 }

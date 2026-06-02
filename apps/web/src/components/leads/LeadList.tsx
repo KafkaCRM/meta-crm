@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { PageShell } from '@/components/shared/PageShell';
 import { Card, CardContent } from '@/components/ui/card';
-import { Search, Megaphone, UserCheck } from 'lucide-react';
+import { Search, Megaphone, UserCheck, Plus } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -17,6 +17,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { LeadDetail } from './LeadDetail';
+import { CreateLeadModal } from './CreateLeadModal';
 import dayjs from 'dayjs';
 
 const columnHelper = createColumnHelper<LeadResponse>();
@@ -57,6 +58,7 @@ export function LeadList() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -134,7 +136,15 @@ export function LeadList() {
     <PageShell
       title="Leads Ingestion"
       description="Monitor raw inbound prospects from Facebook, Justdial, Web Forms before converting them to client contacts."
-      actions={null}
+      actions={
+        <Button
+          onClick={() => setCreateOpen(true)}
+          className="bg-primary hover:bg-[#1e293b] text-white flex items-center gap-1.5 h-9 rounded-lg text-xs font-semibold"
+        >
+          <Plus size={14} />
+          Add Lead
+        </Button>
+      }
     >
       <div className="space-y-4">
         {/* Toolbar */}
@@ -162,7 +172,7 @@ export function LeadList() {
                 <Megaphone size={36} className="text-muted-foreground/40 mb-3" />
                 <p className="font-semibold text-foreground">No leads ingested yet</p>
                 <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-                  Leads from connected third-party integrations (Facebook Ads, Justdial, etc.) will appear here automatically.
+                  Leads from connected third-party integrations (Facebook Ads, Justdial, etc.) will appear here automatically, or you can create one manually using the "Add Lead" button.
                 </p>
               </div>
             ) : (
@@ -198,6 +208,16 @@ export function LeadList() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Create Lead Modal */}
+      <CreateLeadModal
+        isOpen={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onSuccess={() => {
+          setCreateOpen(false);
+          refetch();
+        }}
+      />
     </PageShell>
   );
 }

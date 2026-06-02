@@ -32,8 +32,6 @@
   },
   "label_overrides": {
     "party.singular": "Lead",
-    "party.plural": "Leads",
-    "case.singular": "Onboarding",
-    "case.plural": "Onboardings"
+    "party.plural": "Leads"
   }
 }

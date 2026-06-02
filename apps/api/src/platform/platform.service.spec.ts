@@ -17,6 +17,13 @@ const mockAudit = {
   list: vi.fn(),
 } as any;
 
+const mockStream = {
+  emit: vi.fn(),
+  error: vi.fn(),
+  complete: vi.fn(),
+} as any;
+
+
 /* ------------------------------------------------------------------ */
 /*  PlatformPermissionsGuard — tenant JWT rejection                     */
 /* ------------------------------------------------------------------ */
@@ -293,7 +300,7 @@ describe('PlatformTenantsService — getHierarchy', () => {
         workflowStage: { groupBy: vi.fn(), findMany: vi.fn() },
       },
     };
-    svc = new PlatformTenantsService(mockDb as unknown as PlatformPrismaService, mockAudit);
+    svc = new PlatformTenantsService(mockDb as unknown as PlatformPrismaService, mockAudit, mockStream);
   });
 
   it('returns TENANT_NOT_FOUND when tenant does not exist', async () => {
@@ -361,7 +368,7 @@ describe('PlatformTenantsService — create', () => {
         tenantPlugin: { create: vi.fn() },
       },
     };
-    svc = new PlatformTenantsService(mockDb as unknown as PlatformPrismaService, mockAudit);
+    svc = new PlatformTenantsService(mockDb as unknown as PlatformPrismaService, mockAudit, mockStream);
     // Mock applyTemplate to return ok
     vi.spyOn(svc, 'applyTemplate').mockResolvedValue({ isErr: () => false, isOk: () => true } as any);
   });

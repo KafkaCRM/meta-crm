@@ -32,8 +32,6 @@
   },
   "label_overrides": {
     "party.singular": "Client",
-    "party.plural": "Clients",
-    "case.singular": "Deal",
-    "case.plural": "Deals"
+    "party.plural": "Clients"
   }
 }

@@ -29,8 +29,8 @@ const INDUSTRIES: IndustryOption[] = [
     terms: {
       partySingular: 'Account',
       partyPlural: 'Accounts',
-      caseSingular: 'Onboarding',
-      casePlural: 'Onboardings',
+      caseSingular: 'Pipeline Item',
+      casePlural: 'Pipeline',
     },
   },
   {
@@ -41,8 +41,8 @@ const INDUSTRIES: IndustryOption[] = [
     terms: {
       partySingular: 'Student',
       partyPlural: 'Students',
-      caseSingular: 'Admission',
-      casePlural: 'Admissions',
+      caseSingular: 'Pipeline Item',
+      casePlural: 'Pipeline',
     },
   },
   {
@@ -53,8 +53,8 @@ const INDUSTRIES: IndustryOption[] = [
     terms: {
       partySingular: 'Patient',
       partyPlural: 'Patients',
-      caseSingular: 'Appointment',
-      casePlural: 'Appointments',
+      caseSingular: 'Pipeline Item',
+      casePlural: 'Pipeline',
     },
   },
   {
@@ -65,8 +65,8 @@ const INDUSTRIES: IndustryOption[] = [
     terms: {
       partySingular: 'Client',
       partyPlural: 'Clients',
-      caseSingular: 'Deal',
-      casePlural: 'Deals',
+      caseSingular: 'Pipeline Item',
+      casePlural: 'Pipeline',
     },
   },
   {
@@ -77,8 +77,8 @@ const INDUSTRIES: IndustryOption[] = [
     terms: {
       partySingular: 'Customer',
       partyPlural: 'Customers',
-      caseSingular: 'Order',
-      casePlural: 'Orders',
+      caseSingular: 'Pipeline Item',
+      casePlural: 'Pipeline',
     },
   },
   {
@@ -89,8 +89,8 @@ const INDUSTRIES: IndustryOption[] = [
     terms: {
       partySingular: 'Client',
       partyPlural: 'Clients',
-      caseSingular: 'Case',
-      casePlural: 'Cases',
+      caseSingular: 'Pipeline Item',
+      casePlural: 'Pipeline',
     },
   },
 ];

@@ -17,6 +17,7 @@ model WorkflowStage {
   order                 Int
   entry_criteria        Json   @default("[]")
   sla_hours             Int?
+  terminal_outcome      String? // "won" | "lost" | null
 
   workflowDefinition WorkflowDefinition @relation(fields: [workflow_definition_id], references: [id])
 }

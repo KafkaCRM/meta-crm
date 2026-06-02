@@ -7,8 +7,8 @@ export const DEFAULT_FALLBACKS: Record<string, string> = {
   'dashboard.title': 'Dashboard',
   'party.singular': 'Contact',
   'party.plural': 'Contacts',
-  'case.singular': 'Case',
-  'case.plural': 'Cases',
+  'case.singular': 'Pipeline Item',
+  'case.plural': 'Pipeline',
 };
 
 export const INDUSTRY_PRESETS: Record<string, Record<string, string>> = {

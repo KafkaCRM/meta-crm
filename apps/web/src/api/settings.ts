@@ -42,6 +42,7 @@ export interface User {
   tenant_id: string;
   name: string;
   email: string;
+  phone_number?: string;
   status: string;
   created_at: string;
   roles?: { role_id: string; role_name: string; assignment_id?: string }[];
@@ -137,13 +138,33 @@ export const settingsApi = {
       const query = qs.toString();
       return apiCall<Vertical[]>(`/verticals${query ? `?${query}` : ''}`);
     },
+    create: (data: { brand_id: string; name: string; description?: string; status?: string }) =>
+      apiCall<Vertical>('/verticals', { method: 'POST', body: JSON.stringify(data) }),
   },
 
   users: {
     list: () => apiCall<User[]>('/users'),
-    invite: (data: { name: string; email: string; role_ids: string[]; assignment_ids?: string[] }) =>
-      apiCall<User>('/users/invite', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: { name?: string; role_ids?: string[]; assignment_ids?: string[] }) =>
+    invite: (data: {
+      name: string;
+      email: string;
+      phone_number?: string;
+      password?: string;
+      role_ids: string[];
+      assignment_ids?: string[];
+    }) =>
+      apiCall<User & { temporary_password?: string }>('/users/invite', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    update: (
+      id: string,
+      data: {
+        name?: string;
+        phone_number?: string;
+        role_ids?: string[];
+        assignment_ids?: string[];
+      },
+    ) =>
       apiCall<User>(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     remove: (id: string) =>
       apiCall<{ message: string }>(`/users/${id}`, { method: 'DELETE' }),
@@ -207,6 +228,9 @@ export const settingsApi = {
   },
 
   workflows: {
+    list: () => apiCall<any[]>('/workflows'),
+    create: (data: { name: string; entity_type?: string }) =>
+      apiCall<any>('/workflows', { method: 'POST', body: JSON.stringify(data) }),
     getDefault: () => apiCall<any>('/workflows/default'),
     update: (id: string, data: { name: string; stages: any[]; transitions: any[] }) =>
       apiCall<any>(`/workflows/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),

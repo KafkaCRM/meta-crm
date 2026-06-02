@@ -25,6 +25,14 @@ class InviteUserDto {
   @IsEmail()
   email!: string;
 
+  @IsOptional()
+  @IsString()
+  phone_number?: string;
+
+  @IsOptional()
+  @IsString()
+  password?: string;
+
   @IsArray()
   @IsString({ each: true })
   role_ids!: string[];
@@ -39,6 +47,10 @@ class UpdateUserDto {
   @IsOptional()
   @IsString()
   name?: string;
+
+  @IsOptional()
+  @IsString()
+  phone_number?: string;
 
   @IsOptional()
   @IsArray()

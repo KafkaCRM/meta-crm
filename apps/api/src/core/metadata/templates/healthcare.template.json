@@ -29,8 +29,6 @@
   },
   "label_overrides": {
     "party.singular": "Patient",
-    "party.plural": "Patients",
-    "case.singular": "Appointment",
-    "case.plural": "Appointments"
+    "party.plural": "Patients"
   }
 }

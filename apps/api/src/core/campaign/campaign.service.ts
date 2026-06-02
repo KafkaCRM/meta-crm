@@ -154,7 +154,7 @@ export class CampaignService {
 
       const campaign = await this.db.getClient().campaign.create({
         data: {
-          tenant_id: '',
+          tenant_id: this.scope?.tenant_id ?? '',
           branch_id: dto.branch_id,
           brand_id: dto.brand_id,
           vertical_id: dto.vertical_id,
@@ -175,7 +175,7 @@ export class CampaignService {
 
       await this.hooks.emit('campaign:created', {
         campaign_id: campaign.id,
-        tenant_id: this.scope.tenant_id,
+        tenant_id: this.scope?.tenant_id ?? '',
         vertical_id: campaign.vertical_id,
         channel: campaign.channel,
       });

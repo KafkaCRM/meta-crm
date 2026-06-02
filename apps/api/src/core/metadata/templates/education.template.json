@@ -42,8 +42,6 @@
   },
   "label_overrides": {
     "party.singular": "Student",
-    "party.plural": "Students",
-    "case.singular": "Admission",
-    "case.plural": "Admissions"
+    "party.plural": "Students"
   }
 }

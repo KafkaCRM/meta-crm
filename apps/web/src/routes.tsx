@@ -5,6 +5,8 @@ import { useAuth } from '@/contexts/auth.context';
 import { AbilityProvider } from '@/contexts/permissions.context';
 import { LabelsProvider } from '@/contexts/labels.context';
 import { useLabels } from '@/hooks/useLabels';
+import { useQuery } from '@tanstack/react-query';
+import { settingsApi } from '@/api/settings';
 import { CurrencyProvider, useCurrency } from '@/contexts/currency.context';
 import { Dashboard } from '@/components/dashboard';
 import {
@@ -24,6 +26,7 @@ import {
   SidebarMenuSubItem,
   SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -89,6 +92,11 @@ function AppSidebar() {
   const { isEnabled } = useCapabilities();
   const { t } = useLabels();
 
+  const { data: workflows = [] } = useQuery({
+    queryKey: ['settings', 'workflows'],
+    queryFn: () => settingsApi.workflows.list(),
+  });
+
   const initials = user?.name
     ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : 'U';
@@ -97,7 +105,7 @@ function AppSidebar() {
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
     { label: 'Leads', path: '/leads', icon: UserCheck },
     { label: t('party.plural') ?? 'Contacts', path: '/parties', icon: Users },
-    { label: t('case.plural') ?? 'Cases', path: '/cases', icon: Workflow },
+    { label: 'Pipeline', path: '/cases', icon: Workflow },
     { label: 'Campaigns', path: '/campaigns', icon: Megaphone },
     ...(isEnabled('capability/appointment')
       ? [{ label: 'Appointments', path: '/appointments', icon: Calendar }]
@@ -138,7 +146,7 @@ function AppSidebar() {
     { label: 'Brands', path: '/settings/brands', icon: Building2 },
     { label: 'Industry Vertical', path: '/settings/industry', icon: Globe },
     { label: 'Assignments', path: '/settings/assignments', icon: UserCog },
-    { label: 'Workflows', path: '/settings/workflows', icon: Workflow },
+    { label: 'Pipeline Settings', path: '/settings/workflows', icon: Workflow },
     { label: 'Fields', path: '/settings/fields', icon: Sliders },
     { label: 'Labels', path: '/settings/labels', icon: Tags },
     { label: 'Capabilities', path: '/settings/capabilities', icon: Layers },
@@ -181,8 +189,54 @@ function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {mainItems.map((item) => {
+                const search = location.search as any;
                 const isActive = location.pathname === item.path ||
                   (item.path !== '/' && location.pathname.startsWith(item.path));
+                
+                if (item.path === '/cases' && workflows.length > 1) {
+                  const isSubActive = location.pathname === '/cases';
+                  return (
+                    <Collapsible key={item.path} defaultOpen={isSubActive} className="group/collapsible w-full">
+                      <SidebarMenuItem>
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton isActive={isSubActive} tooltip={item.label} className="w-full justify-between pr-2.5">
+                            <div className="flex items-center gap-2.5 font-medium">
+                              <item.icon size={15} strokeWidth={isSubActive ? 2 : 1.75} className={isSubActive ? 'text-fin-orange' : 'text-sidebar-foreground/60'} />
+                              <span className="text-sm font-medium">{item.label}</span>
+                            </div>
+                            <ChevronRight size={13} className="transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 text-sidebar-foreground/50" />
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub className="ml-5 border-l border-sidebar-border/40 mt-1 pl-2 space-y-1">
+                            {workflows.map((wf: any) => {
+                              const isWfActive = location.pathname === '/cases' && search.workflowId === wf.id;
+                              return (
+                                <SidebarMenuSubItem key={wf.id}>
+                                  <SidebarMenuSubButton asChild isActive={isWfActive}>
+                                    <Link
+                                      to="/cases"
+                                      search={{ workflowId: wf.id }}
+                                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[13px] transition-all w-full duration-150 ${
+                                        isWfActive
+                                          ? 'text-sidebar-accent-foreground font-semibold bg-sidebar-accent/50'
+                                          : 'text-sidebar-foreground/80 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/30'
+                                      }`}
+                                    >
+                                      <span className={`w-1.5 h-1.5 rounded-full ${isWfActive ? 'bg-fin-orange' : 'bg-sidebar-foreground/30'}`} />
+                                      <span className="truncate flex-1 text-left">{wf.name}</span>
+                                    </Link>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                              );
+                            })}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </SidebarMenuItem>
+                    </Collapsible>
+                  );
+                }
+
                 return (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton asChild isActive={isActive}>
@@ -323,10 +377,11 @@ function RootLayout() {
   }
 
   return (
-    <AbilityProvider ability={ability}>
-      <CurrencyProvider>
-        <LabelsProvider>
-          <SidebarProvider>
+    <TooltipProvider>
+      <AbilityProvider ability={ability}>
+        <CurrencyProvider>
+          <LabelsProvider>
+            <SidebarProvider>
             <div className="flex min-h-screen w-full bg-background text-foreground flex-col">
               {isImpersonating && (
                 <div className="bg-gradient-to-r from-amber-500 via-orange-600 to-amber-600 text-white px-4 py-2 flex items-center justify-between text-xs sm:text-sm font-semibold tracking-wide shadow-md border-b border-orange-700/50 relative z-50">
@@ -394,10 +449,11 @@ function RootLayout() {
             </div>
           </div>
         </div>
-          </SidebarProvider>
-        </LabelsProvider>
-      </CurrencyProvider>
-    </AbilityProvider>
+            </SidebarProvider>
+          </LabelsProvider>
+        </CurrencyProvider>
+      </AbilityProvider>
+    </TooltipProvider>
   );
 }
 

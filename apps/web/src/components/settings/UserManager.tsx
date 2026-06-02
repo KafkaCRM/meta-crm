@@ -1,12 +1,13 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Plus, Trash2, Loader2, Mail, Shield, UserPlus, X } from 'lucide-react';
+import { Plus, Trash2, Loader2, Mail, Shield, UserPlus, X, Phone, Key } from 'lucide-react';
 import { settingsApi, type User, type Role } from '@/api/settings';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { usePermissions } from '@/hooks/usePermissions';
 import { cn } from '@/lib/utils';
 
@@ -14,7 +15,23 @@ export function UserManager() {
   const { can } = usePermissions();
   const canManage = can('manage', 'User');
   const queryClient = useQueryClient();
-  const [inviteForm, setInviteForm] = useState({ name: '', email: '', roleIds: [] as string[] });
+
+  const [inviteForm, setInviteForm] = useState({
+    name: '',
+    email: '',
+    phone_number: '',
+    password: '',
+    autoGeneratePassword: true,
+    assignment_id: '',
+    roleIds: [] as string[],
+  });
+
+  const [createdUserCredentials, setCreatedUserCredentials] = useState<{
+    name: string;
+    email: string;
+    phone_number?: string;
+    password?: string;
+  } | null>(null);
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['settings', 'users'],
@@ -27,6 +44,36 @@ export function UserManager() {
     queryFn: () => settingsApi.roles.list(),
     staleTime: 30_000,
   });
+
+  const { data: assignments } = useQuery({
+    queryKey: ['settings', 'assignments'],
+    queryFn: () => settingsApi.assignments.list(),
+    staleTime: 30_000,
+  });
+
+  const { data: branches } = useQuery({
+    queryKey: ['settings', 'branches'],
+    queryFn: () => settingsApi.branches.list(),
+    staleTime: 30_000,
+  });
+
+  const { data: brands } = useQuery({
+    queryKey: ['settings', 'brands'],
+    queryFn: () => settingsApi.brands.list(),
+    staleTime: 30_000,
+  });
+
+  const assignmentOptions = useMemo(() => {
+    if (!assignments || !branches || !brands) return [];
+    return assignments.map((a) => {
+      const branch = branches.find((b) => b.id === a.branch_id);
+      const brand = brands.find((b) => b.id === a.brand_id);
+      return {
+        id: a.id,
+        name: `${branch?.name ?? 'Unknown Branch'} - ${brand?.name ?? 'Unknown Brand'}`,
+      };
+    });
+  }, [assignments, branches, brands]);
 
   const sortedRoles = useMemo(() => {
     if (!roles) return [];
@@ -46,12 +93,32 @@ export function UserManager() {
   }, [roles]);
 
   const inviteMutation = useMutation({
-    mutationFn: (data: { name: string; email: string; role_ids: string[] }) =>
-      settingsApi.users.invite(data),
-    onSuccess: () => {
+    mutationFn: (data: {
+      name: string;
+      email: string;
+      phone_number?: string;
+      password?: string;
+      role_ids: string[];
+      assignment_ids?: string[];
+    }) => settingsApi.users.invite(data),
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['settings', 'users'] });
-      toast.success('Invitation sent successfully');
-      setInviteForm({ name: '', email: '', roleIds: [] });
+      toast.success('User invited successfully');
+      setCreatedUserCredentials({
+        name: data.name,
+        email: data.email,
+        phone_number: data.phone_number,
+        password: data.temporary_password,
+      });
+      setInviteForm({
+        name: '',
+        email: '',
+        phone_number: '',
+        password: '',
+        autoGeneratePassword: true,
+        assignment_id: '',
+        roleIds: [],
+      });
     },
     onError: () => toast.error('Failed to send invitation'),
   });
@@ -72,13 +139,25 @@ export function UserManager() {
         toast.error('Please fill out all fields and select at least one role');
         return;
       }
+      if (!inviteForm.autoGeneratePassword && !inviteForm.password.trim()) {
+        toast.error('Please enter a custom password or select auto-generate');
+        return;
+      }
+      if (assignmentOptions.length > 1 && !inviteForm.assignment_id) {
+        toast.error('Please select a Branch / Brand Assignment');
+        return;
+      }
+
       inviteMutation.mutate({
         name: inviteForm.name,
         email: inviteForm.email,
+        phone_number: inviteForm.phone_number.trim() || undefined,
+        password: inviteForm.autoGeneratePassword ? undefined : inviteForm.password,
         role_ids: inviteForm.roleIds,
+        assignment_ids: inviteForm.assignment_id ? [inviteForm.assignment_id] : undefined,
       });
     },
-    [inviteForm, inviteMutation],
+    [inviteForm, inviteMutation, assignmentOptions],
   );
 
   const toggleRole = useCallback((roleId: string) => {
@@ -149,10 +228,18 @@ export function UserManager() {
                           {/* Pulsing indicator - simulates active status */}
                           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                          <Mail size={12} className="text-muted-foreground" />
-                          <span className="truncate">{user.email}</span>
-                        </p>
+                        <div className="flex flex-col gap-0.5 mt-0.5">
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Mail size={12} className="text-muted-foreground/85" />
+                            <span className="truncate">{user.email}</span>
+                          </p>
+                          {user.phone_number && (
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Phone size={12} className="text-muted-foreground/85" />
+                              <span className="truncate">{user.phone_number}</span>
+                            </p>
+                          )}
+                        </div>
                         {user.roles && user.roles.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1.5">
                             {user.roles.map((r) => (
@@ -233,12 +320,86 @@ export function UserManager() {
                   />
                 </div>
 
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Phone Number (Optional)</label>
+                  <Input
+                    type="tel"
+                    placeholder="e.g. +1 555-0199"
+                    value={inviteForm.phone_number}
+                    onChange={(e) => setInviteForm((f) => ({ ...f, phone_number: e.target.value }))}
+                    className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                    <Key size={12} className="text-muted-foreground" />
+                    Security Credentials
+                  </label>
+                  <div className="space-y-2 p-3 border border-border rounded-lg bg-background/50">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="autoGeneratePassword"
+                        checked={inviteForm.autoGeneratePassword}
+                        onChange={(e) => setInviteForm((f) => ({ ...f, autoGeneratePassword: e.target.checked }))}
+                        className="rounded border-border bg-card text-primary focus:ring-ring h-4 w-4"
+                      />
+                      <label htmlFor="autoGeneratePassword" className="text-xs font-medium text-foreground cursor-pointer select-none">
+                        Auto-generate random 8-character password
+                      </label>
+                    </div>
+                    {!inviteForm.autoGeneratePassword && (
+                      <div className="space-y-1.5 pt-1 animate-in fade-in-50 duration-200">
+                        <Input
+                          type="password"
+                          placeholder="Enter custom password"
+                          value={inviteForm.password}
+                          onChange={(e) => setInviteForm((f) => ({ ...f, password: e.target.value }))}
+                          required
+                          className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {assignmentOptions.length > 1 && (
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Branch / Brand Assignment</label>
+                    <select
+                      value={inviteForm.assignment_id}
+                      onChange={(e) => setInviteForm((f) => ({ ...f, assignment_id: e.target.value }))}
+                      required
+                      className="w-full h-9 rounded-lg border border-border bg-card text-foreground px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring animate-in fade-in-50 duration-200"
+                    >
+                      <option value="">Select Assignment...</option>
+                      {assignmentOptions.map((opt) => (
+                        <option key={opt.id} value={opt.id}>
+                          {opt.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {assignmentOptions.length === 1 && (
+                  <div className="space-y-1 mt-1 bg-background/30 p-2 rounded border border-border/40">
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                      Branch / Brand Assignment (Auto-selected)
+                    </label>
+                    <span className="text-xs text-foreground font-medium block">
+                      {assignmentOptions[0]?.name ?? ''}
+                    </span>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                     <Shield size={12} className="text-muted-foreground" />
                     Assigned Roles
                   </label>
-                  <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1 border border-border rounded-lg bg-background/50">
+                  <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1.5 border border-border rounded-lg bg-background/50">
                     {sortedRoles.map((role) => {
                       const isSelected = inviteForm.roleIds.includes(role.id);
                       return (
@@ -278,6 +439,70 @@ export function UserManager() {
           </Card>
         )}
       </div>
+
+      {/* Success Dialog showing created user credentials */}
+      <Dialog
+        open={!!createdUserCredentials}
+        onOpenChange={(open) => {
+          if (!open) setCreatedUserCredentials(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md bg-card border border-border rounded-xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <Shield className="text-emerald-500 h-5 w-5" />
+              Operator Created Successfully
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground mt-1">
+              The user has been successfully provisioned. Please copy their credentials below. For security reasons, the password will not be shown again.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 my-2 p-4 rounded-lg bg-background/50 border border-border/60">
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <span className="font-medium text-muted-foreground">Full Name:</span>
+              <span className="col-span-2 font-semibold text-foreground">{createdUserCredentials?.name}</span>
+
+              <span className="font-medium text-muted-foreground">Email:</span>
+              <span className="col-span-2 font-mono text-foreground select-all break-all">{createdUserCredentials?.email}</span>
+
+              {createdUserCredentials?.phone_number && (
+                <>
+                  <span className="font-medium text-muted-foreground">Phone:</span>
+                  <span className="col-span-2 font-mono text-foreground select-all">{createdUserCredentials?.phone_number}</span>
+                </>
+              )}
+
+              <span className="font-medium text-muted-foreground">Password:</span>
+              <span className="col-span-2 font-mono text-foreground font-semibold select-all break-all bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 w-fit">
+                {createdUserCredentials?.password}
+              </span>
+            </div>
+          </div>
+
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                const text = `Operator Credentials:\nName: ${createdUserCredentials?.name}\nEmail: ${createdUserCredentials?.email}${createdUserCredentials?.phone_number ? `\nPhone: ${createdUserCredentials?.phone_number}` : ''}\nPassword: ${createdUserCredentials?.password}`;
+                navigator.clipboard.writeText(text);
+                toast.success('Credentials copied to clipboard');
+              }}
+              className="w-full sm:w-auto flex items-center justify-center gap-1.5"
+            >
+              Copy Credentials
+            </Button>
+            <Button
+              type="button"
+              onClick={() => setCreatedUserCredentials(null)}
+              className="w-full sm:w-auto bg-primary text-white hover:bg-[#1e293b]"
+            >
+              Done
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

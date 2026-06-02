@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
   Body,
   Param,
@@ -31,6 +32,27 @@ class UpdateWorkflowDto {
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class WorkflowController {
   constructor(private readonly service: WorkflowService) {}
+
+  @Get()
+  @CheckPermissions('read', 'Workflow')
+  async list() {
+    const result = await this.service.list();
+    if (result.isErr()) {
+      throw new InternalServerErrorException(result.error.message);
+    }
+    return result.value;
+  }
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  @CheckPermissions('manage', 'Workflow')
+  async create(@Body() body: { name: string; entity_type?: string }) {
+    const result = await this.service.create(body);
+    if (result.isErr()) {
+      throw new InternalServerErrorException(result.error.message);
+    }
+    return result.value;
+  }
 
   @Get('default')
   @CheckPermissions('read', 'Workflow')
