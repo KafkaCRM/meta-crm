@@ -1,12 +1,21 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Loader2, Sparkles, Settings2, ChevronDown, ChevronUp, DollarSign, Calendar, Target } from 'lucide-react';
+import { 
+  Loader2, Sparkles, Settings2, ChevronDown, ChevronUp, Target, Users, 
+  PhoneCall, Crown, ShieldAlert, Check, Search, ArrowRight, Shuffle, 
+  Sliders, ShieldCheck, HeartHandshake, AlertTriangle, AlertCircle, X, HelpCircle, Layers
+} from 'lucide-react';
 import { settingsApi } from '@/api/settings';
 import { campaignsApi } from '@/api/campaigns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 
 interface CampaignFormModalProps {
   isOpen: boolean;
@@ -14,40 +23,136 @@ interface CampaignFormModalProps {
   onSuccess: () => void;
 }
 
+// Custom Searchable User Selection Popover Component for Enterprise UX
+interface UserSelectPopoverProps {
+  title: string;
+  users: any[];
+  selectedIds: string[];
+  onChange: (ids: string[]) => void;
+  placeholder: string;
+  icon: React.ReactNode;
+  activeColor: string;
+}
+
+function UserSelectPopover({ title, users, selectedIds, onChange, placeholder, icon, activeColor }: UserSelectPopoverProps) {
+  const [search, setSearch] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+
+  const filteredUsers = useMemo(() => {
+    return users.filter(u => u.name.toLowerCase().includes(search.toLowerCase()));
+  }, [users, search]);
+
+  const toggleUser = (userId: string) => {
+    if (selectedIds.includes(userId)) {
+      onChange(selectedIds.filter(id => id !== userId));
+    } else {
+      onChange([...selectedIds, userId]);
+    }
+  };
+
+  return (
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="w-full flex items-center justify-between gap-2 px-3 py-2 border border-border rounded-xl bg-background hover:bg-slate-50/50 transition-colors text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+        >
+          <div className="flex items-center gap-2 text-muted-foreground truncate">
+            {icon}
+            <span className="text-xs font-semibold text-slate-700">
+              {selectedIds.length > 0 
+                ? `${selectedIds.length} chosen` 
+                : placeholder
+              }
+            </span>
+          </div>
+          <ChevronDown size={14} className="text-muted-foreground shrink-0" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 p-0 border border-border rounded-xl shadow-lg bg-popover z-[9999]" align="start">
+        <div className="p-2 border-b border-border flex items-center gap-1.5 bg-muted/40 rounded-t-xl">
+          <Search size={13} className="text-muted-foreground ml-1" />
+          <input
+            type="text"
+            placeholder={`Search ${title.toLowerCase()}...`}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-transparent border-none text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 py-1"
+          />
+          {search && (
+            <button type="button" onClick={() => setSearch('')} className="hover:bg-slate-100 p-0.5 rounded text-muted-foreground">
+              <X size={12} />
+            </button>
+          )}
+        </div>
+        <div className="max-h-56 overflow-y-auto p-1.5 space-y-0.5">
+          {filteredUsers.length > 0 ? (
+            filteredUsers.map((u) => {
+              const isSelected = selectedIds.includes(u.id);
+              const initials = u.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+              return (
+                <button
+                  key={u.id}
+                  type="button"
+                  onClick={() => toggleUser(u.id)}
+                  className={cn(
+                    "w-full flex items-center justify-between gap-2.5 px-2 py-1.5 rounded-lg text-left text-xs transition-colors hover:bg-slate-50",
+                    isSelected && "bg-slate-50/70 font-semibold"
+                  )}
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <div className={cn(
+                      "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-extrabold shrink-0 border border-border shadow-xs",
+                      isSelected ? activeColor : "bg-slate-100 text-slate-600"
+                    )}>
+                      {initials}
+                    </div>
+                    <span className="truncate text-foreground">{u.name}</span>
+                  </div>
+                  {isSelected && <Check size={13} className="text-primary shrink-0" />}
+                </button>
+              );
+            })
+          ) : (
+            <p className="text-[10px] text-muted-foreground text-center py-6 font-semibold">No users match your query</p>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormModalProps) {
   const queryClient = useQueryClient();
 
-  // Form State - 1. Core Profile
+  // Multi-step Active tab tracker (for progresive disclosure & flowchart coordination)
+  const [activeTab, setActiveTab] = useState('basics');
+
+  // Form State - 1. Basics & Pipeline
   const [name, setName] = useState('');
-  const [channel, setChannel] = useState('meta_ads');
   const [status, setStatus] = useState('active');
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0] ?? '');
-  const [endDate, setEndDate] = useState('');
-
-  // Form State - 2. Financials & Telemetry (ROI / CAC)
-  const [budgetedCost, setBudgetedCost] = useState('');
-  const [actualCost, setActualCost] = useState('');
-  const [targetLeads, setTargetLeads] = useState('');
-
-  // Form State - 3. Hidden Relational Defaults (Scoped silently)
-  const [assignmentId, setAssignmentId] = useState('');
-  const [verticalId, setVerticalId] = useState('');
   const [pipelineId, setPipelineId] = useState('');
 
-  // Form State - 4. Advanced Custom Tracking
-  const [autoTrack, setAutoTrack] = useState(true);
-  const [utmSource, setUtmSource] = useState('');
-  const [utmMedium, setUtmMedium] = useState('');
-  const [utmCampaign, setUtmCampaign] = useState('');
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  // Form State - 2. Performance Target
+  const [targetLeads, setTargetLeads] = useState('');
 
-  // Form State - 5. Advanced Dialer & Deduplication Settings
+  // Form State - 3. Operational Hierarchy (NeoDove 3-Tiered Access)
   const [selectedManagers, setSelectedManagers] = useState<string[]>([]);
+  const [selectedSupervisors, setSelectedSupervisors] = useState<string[]>([]);
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
+
+  // Form State - 4. Routing & Spillover Configurations
   const [distribution, setDistribution] = useState<'on_demand' | 'round_robin' | 'conditional'>('on_demand');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [allowSpillover, setAllowSpillover] = useState(false);
+
+  // Form State - 5. Data Safety / Deduplication Rules
   const [dupCheckScope, setDupCheckScope] = useState<'none' | 'campaign' | 'pipeline' | 'global'>('none');
   const [dupResolution, setDupResolution] = useState<'ignore' | 'merge' | 'create_new' | 'reopen'>('ignore');
+
+  // Hidden default scopes (Seeded automatically)
+  const [assignmentId, setAssignmentId] = useState('');
+  const [verticalId, setVerticalId] = useState('');
 
   const [isInitializing, setIsInitializing] = useState(false);
   const [hasAttemptedInit, setHasAttemptedInit] = useState(false);
@@ -92,7 +197,7 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
     staleTime: 30_000,
   });
 
-  // 5. Fetch all users for agent/manager assignments
+  // 5. Fetch all users for assignments
   const { data: users = [], isLoading: usersLoading } = useQuery({
     queryKey: ['settings', 'users-all'],
     queryFn: () => settingsApi.users.list(),
@@ -114,14 +219,10 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
     });
   }, [assignments, branches, brands]);
 
-  // Silent automatic setup helper for simple single-store configuration
+  // Silent default initialization helper
   const ensureDefaults = useCallback(async () => {
     if (assignmentsLoading || verticalsLoading || pipelinesLoading) return;
-    
-    // Check if defaults are already loaded or exist
-    if (assignmentOptions.length > 0 && verticals.length > 0 && pipelines.length > 0) {
-      return;
-    }
+    if (assignmentOptions.length > 0 && verticals.length > 0 && pipelines.length > 0) return;
     
     try {
       setIsInitializing(true);
@@ -132,7 +233,6 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
       let activeVerticalId = verticals[0]?.id;
       let activePipelineId = pipelines[0]?.id;
 
-      // Silently create Branch if missing
       if (!activeBranchId) {
         const branchRes = await settingsApi.branches.create({
           name: 'Main Location',
@@ -141,7 +241,6 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
         activeBranchId = branchRes.id;
       }
 
-      // Silently create Brand if missing
       if (!activeBrandId) {
         const brandRes = await settingsApi.brands.create({
           name: 'Primary Store Brand',
@@ -149,7 +248,6 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
         activeBrandId = brandRes.id;
       }
 
-      // Silently create Brand-Branch Assignment link if missing
       if (!activeAsgId) {
         const assignmentRes = await settingsApi.assignments.create({
           branch_id: activeBranchId,
@@ -159,7 +257,6 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
         activeAsgId = assignmentRes.id;
       }
 
-      // Silently create Category/Vertical if missing
       if (!activeVerticalId) {
         const verticalRes = await settingsApi.verticals.create({
           brand_id: activeBrandId,
@@ -169,16 +266,13 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
         activeVerticalId = verticalRes.id;
       }
 
-      // Silently fetch and initialize default pipeline workflow definition
       if (!activePipelineId) {
         const defaultWf = await settingsApi.workflows.getDefault();
         activePipelineId = defaultWf.id;
       }
 
-      // Reload setting queries in background
       await queryClient.invalidateQueries({ queryKey: ['settings'] });
       
-      // Update form selections silently
       setAssignmentId(activeAsgId);
       setVerticalId(activeVerticalId);
       setPipelineId(activePipelineId);
@@ -189,7 +283,7 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
     }
   }, [assignmentsLoading, verticalsLoading, pipelinesLoading, assignmentOptions, verticals, pipelines, branches, brands, assignments, queryClient]);
 
-  // Silently trigger background check when opened (at most once to prevent loops)
+  // Silently trigger background check when opened
   useEffect(() => {
     if (isOpen && !assignmentsLoading && !verticalsLoading && !pipelinesLoading && !hasAttemptedInit) {
       if (assignmentOptions.length > 0 && verticals.length > 0 && pipelines.length > 0) {
@@ -201,7 +295,7 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
     }
   }, [isOpen, assignmentsLoading, verticalsLoading, pipelinesLoading, hasAttemptedInit, assignmentOptions, verticals, pipelines, ensureDefaults]);
 
-  // Update default states when populated
+  // Sync default options
   useEffect(() => {
     if (isOpen) {
       if (assignmentOptions.length > 0 && !assignmentId) {
@@ -217,38 +311,38 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
     }
   }, [isOpen, assignmentOptions, assignmentId, assignments, verticals, verticalId, pipelines, pipelineId]);
 
-  // Reset form when modal closes or opens
+  // Reset form upon close/re-open
   useEffect(() => {
     if (!isOpen) {
       setName('');
-      setChannel('meta_ads');
       setStatus('active');
       setAssignmentId('');
       setVerticalId('');
       setPipelineId('');
-      setStartDate(new Date().toISOString().split('T')[0] ?? '');
-      setEndDate('');
-      setBudgetedCost('');
-      setActualCost('');
       setTargetLeads('');
-      setUtmSource('');
-      setUtmMedium('');
-      setUtmCampaign('');
-      setAutoTrack(true);
-      setShowAdvanced(false);
       setSelectedManagers([]);
+      setSelectedSupervisors([]);
       setSelectedAgents([]);
       setDistribution('on_demand');
       setPriority('medium');
+      setAllowSpillover(false);
       setDupCheckScope('none');
       setDupResolution('ignore');
       setIsInitializing(false);
       setHasAttemptedInit(false);
+      setActiveTab('basics');
       setErrors({});
     }
   }, [isOpen]);
 
   const createMutation = useMutation({
+    onSuccess: (newCampaign) => {
+      queryClient.invalidateQueries({ queryKey: ['campaigns'] });
+      toast.success('Campaign launched successfully!', {
+        description: newCampaign.name,
+      });
+      onSuccess();
+    },
     mutationFn: (data: {
       branch_id: string;
       brand_id: string;
@@ -258,563 +352,689 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
       status: string;
       channel: string;
       start_date: string;
-      end_date?: string;
       target_leads?: number;
-      utm_source?: string;
-      utm_medium?: string;
-      utm_campaign?: string;
       attributes?: Record<string, any>;
     }) => campaignsApi.create(data),
-    onSuccess: (newCampaign) => {
-      queryClient.invalidateQueries({ queryKey: ['campaigns'] });
-      toast.success('Campaign launched successfully!', {
-        description: newCampaign.name,
-      });
-      onSuccess();
-    },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : 'Failed to create campaign');
     },
   });
 
-  const validate = (): boolean => {
+  const validate = (tab?: string): boolean => {
     const nextErrors: Record<string, string> = {};
-    if (!name.trim()) nextErrors.name = 'Campaign Name is required';
-    if (!channel) nextErrors.channel = 'Marketing Channel is required';
-    if (!startDate) nextErrors.startDate = 'Launch Date is required';
     
-    // Technical checks (will only trigger if background setup fails)
-    if (!assignmentId) nextErrors.assignmentId = 'Store location link is missing';
-    if (!verticalId) nextErrors.verticalId = 'Category Vertical is missing';
-    if (!pipelineId) nextErrors.pipelineId = 'Workflow pipeline is missing';
+    // Step 1 validation (Basics & Pipeline)
+    if (!tab || tab === 'basics') {
+      if (!name.trim()) nextErrors.name = 'Campaign Name is required';
+      if (!pipelineId) nextErrors.pipelineId = 'Target Workflow Pipeline is required';
+    }
+    
+    // System integrity verification - ONLY validated on final submit
+    if (tab === 'submit') {
+      if (!assignmentId) nextErrors.assignmentId = 'Store location link is missing';
+      if (!verticalId) nextErrors.verticalId = 'Category Vertical is missing';
+    }
 
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
 
-  const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!validate()) return;
+  const handleNextStep = () => {
+    if (activeTab === 'basics') {
+      if (!validate('basics')) return;
+      setActiveTab('agents');
+    } else if (activeTab === 'agents') {
+      setActiveTab('routing');
+    } else if (activeTab === 'routing') {
+      setActiveTab('dupes');
+    }
+  };
 
-      const activeAssignment = assignmentOptions.find((o) => o.id === assignmentId);
-      if (!activeAssignment) {
-        toast.error('Store assignment configuration is currently initializing. Please try again in a moment.');
+  const handlePrevStep = () => {
+    if (activeTab === 'agents') setActiveTab('basics');
+    else if (activeTab === 'routing') setActiveTab('agents');
+    else if (activeTab === 'dupes') setActiveTab('routing');
+  };
+
+  const handleSubmit = useCallback(
+    (e?: React.FormEvent) => {
+      e?.preventDefault();
+      if (!validate('submit')) {
+        setActiveTab('basics');
+        toast.error('Please correct errors under the basic settings.');
         return;
       }
 
-      // Automatically generate UTM tracking details under the hood
-      let resolvedSource = utmSource.trim();
-      let resolvedMedium = utmMedium.trim();
-      let resolvedCampaign = utmCampaign.trim();
-
-      if (autoTrack) {
-        // Map channel to user-friendly UTM sources
-        if (channel === 'meta_ads') resolvedSource = 'facebook';
-        else if (channel === 'google_ads') resolvedSource = 'google';
-        else if (channel === 'email') resolvedSource = 'newsletter';
-        else if (channel === 'sms') resolvedSource = 'sms';
-        else if (channel === 'referral') resolvedSource = 'referral';
-        else resolvedSource = channel;
-
-        // Map channel to standard marketing mediums
-        if (channel === 'meta_ads' || channel === 'google_ads') resolvedMedium = 'cpc';
-        else if (channel === 'email') resolvedMedium = 'email';
-        else if (channel === 'sms') resolvedMedium = 'sms';
-        else resolvedMedium = 'social';
-
-        // Auto-generate a clean, URL-safe campaign tag name
-        resolvedCampaign = name
-          .toLowerCase()
-          .trim()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/(^-|-$)/g, '');
+      const activeAssignment = assignmentOptions.find((o) => o.id === assignmentId);
+      if (!activeAssignment) {
+        toast.error('Location configuration initialization incomplete.');
+        return;
       }
 
       createMutation.mutate({
         name: name.trim(),
-        channel,
+        channel: 'direct',
         status,
         branch_id: activeAssignment.branchId,
         brand_id: activeAssignment.brandId,
         vertical_id: verticalId,
         pipeline_id: pipelineId,
-        start_date: new Date(startDate).toISOString(),
-        ...(endDate ? { end_date: new Date(endDate).toISOString() } : {}),
+        start_date: new Date().toISOString(),
         ...(targetLeads ? { target_leads: parseInt(targetLeads, 10) } : {}),
-        ...(resolvedSource ? { utm_source: resolvedSource } : {}),
-        ...(resolvedMedium ? { utm_medium: resolvedMedium } : {}),
-        ...(resolvedCampaign ? { utm_campaign: resolvedCampaign } : {}),
         attributes: {
-          budgeted_cost: budgetedCost ? parseFloat(budgetedCost) : null,
-          actual_cost: actualCost ? parseFloat(actualCost) : null,
           selected_managers: selectedManagers,
+          selected_supervisors: selectedSupervisors,
           selected_agents: selectedAgents,
           distribution,
           priority,
+          allow_spillover: allowSpillover,
           dup_check_scope: dupCheckScope,
           dup_resolution: dupResolution,
         }
       });
     },
     [
-      name, channel, status, assignmentId, verticalId, pipelineId, startDate, endDate, 
-      targetLeads, budgetedCost, actualCost, utmSource, utmMedium, utmCampaign, 
-      autoTrack, assignmentOptions, createMutation, selectedManagers, selectedAgents,
-      distribution, priority, dupCheckScope, dupResolution
+      name, status, assignmentId, verticalId, pipelineId, targetLeads, 
+      assignmentOptions, createMutation, selectedManagers, 
+      selectedSupervisors, selectedAgents, distribution, priority, allowSpillover, 
+      dupCheckScope, dupResolution
     ]
   );
 
   const isFormLoading = assignmentsLoading || verticalsLoading || pipelinesLoading || usersLoading || isInitializing;
 
+  // Selected pipeline label
+  const selectedPipelineName = useMemo(() => {
+    const p = pipelines.find((wf: any) => wf.id === pipelineId);
+    return p ? p.name : 'Target Pipeline';
+  }, [pipelines, pipelineId]);
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-5xl max-h-[90vh] overflow-y-auto p-6 bg-card border border-border">
-        <DialogHeader className="pb-3 border-b border-border">
-          <DialogTitle className="text-lg font-semibold text-foreground flex items-center gap-1.5">
-            <Sparkles size={18} className="text-amber-500 font-extrabold" />
-            Launch Marketing Campaign
-          </DialogTitle>
-          <DialogDescription className="text-xs text-muted-foreground mt-1">
-            Configure dialer agents, auto-assignment, and duplicate rules paired with an interactive flowchart simulation.
-          </DialogDescription>
+      <DialogContent className="sm:max-w-6xl max-h-[95vh] overflow-y-auto p-0 bg-card border border-border shadow-2xl rounded-2xl flex flex-col">
+        
+        {/* Sleek Custom Header */}
+        <DialogHeader className="p-5 border-b border-border bg-slate-50/50 rounded-t-2xl flex flex-row items-center justify-between shrink-0">
+          <div className="space-y-1">
+            <DialogTitle className="text-lg font-semibold text-foreground flex items-center gap-1.5">
+              <Sparkles size={18} className="text-amber-500 font-extrabold animate-pulse" />
+              Configure Outbound Campaign
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Define target pipelines, dialer agent groups, and queue routing parameters.
+            </DialogDescription>
+          </div>
         </DialogHeader>
 
         {isFormLoading ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-3">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <span className="text-xs text-muted-foreground font-semibold">Configuring your campaign workspace...</span>
+          <div className="flex flex-col items-center justify-center py-32 gap-3 flex-grow">
+            <Loader2 className="h-7 w-7 animate-spin text-primary" />
+            <span className="text-xs text-muted-foreground font-semibold">Pre-configuring custom distribution pools...</span>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-4 animate-in fade-in duration-200">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 flex-grow divide-y lg:divide-y-0 lg:divide-x divide-border">
             
-            {/* --- LEFT PANEL: Settings Form --- */}
-            <div className="lg:col-span-7 space-y-4">
+            {/* --- LEFT PANEL: Stepped Configuration form --- */}
+            <div className="lg:col-span-7 p-6 flex flex-col h-full justify-between gap-6 min-h-[500px]">
               
-              {/* --- SECTION 1: Core Profile --- */}
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-800 uppercase tracking-wider">Campaign Name</label>
-                  <Input
-                    type="text"
-                    placeholder="e.g. Summer Admissions Campaign 2026"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="bg-background border-border placeholder:text-muted-foreground focus-visible:ring-[#0f172a] h-9 text-sm"
-                    required
+              <Tabs value={activeTab} onValueChange={(v) => validate() && setActiveTab(v)} className="w-full flex-grow flex flex-col gap-6">
+                
+                {/* Horizontal Wizard Stepper Controls */}
+                <TabsList className="grid w-full grid-cols-4 bg-slate-100/70 p-1 rounded-xl h-10 border border-slate-200/50 shrink-0">
+                  <TabsTrigger value="basics" className="text-[11px] font-bold tracking-wide uppercase rounded-lg">
+                    1. Basics
+                  </TabsTrigger>
+                  <TabsTrigger value="agents" className="text-[11px] font-bold tracking-wide uppercase rounded-lg">
+                    2. Access
+                  </TabsTrigger>
+                  <TabsTrigger value="routing" className="text-[11px] font-bold tracking-wide uppercase rounded-lg">
+                    3. Routing
+                  </TabsTrigger>
+                  <TabsTrigger value="dupes" className="text-[11px] font-bold tracking-wide uppercase rounded-lg">
+                    4. Safety
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* --- PROGRESS BAR GAUGE --- */}
+                <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden -mt-2 shrink-0">
+                  <div 
+                    className="h-full bg-gradient-to-r from-cyan-500 to-primary transition-all duration-300 rounded-full"
+                    style={{
+                      width: activeTab === 'basics' ? '25%' :
+                             activeTab === 'agents' ? '50%' :
+                             activeTab === 'routing' ? '75%' : '100%'
+                    }}
                   />
-                  {errors.name && <p className="text-xs text-red-600 mt-1">{errors.name}</p>}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-800 uppercase tracking-wider">Where will you advertise?</label>
-                    <select
-                      value={channel}
-                      onChange={(e) => setChannel(e.target.value)}
-                      className="w-full h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors font-medium text-foreground"
-                    >
-                      <option value="meta_ads">Meta Ads (Facebook & Instagram)</option>
-                      <option value="google_ads">Google Search / YouTube Ads</option>
-                      <option value="email">Email Broadcast</option>
-                      <option value="sms">SMS Blast</option>
-                      <option value="referral">Partnership Referral Link</option>
-                      <option value="direct">Direct Walk-ins / General Traffic</option>
-                      <option value="other">Other / Custom Channel</option>
-                    </select>
-                  </div>
+                <div className="flex-grow min-h-[300px]">
+                  {/* STEP 1 CONTENT: BASICS & PIPELINE */}
+                  <TabsContent value="basics" className="space-y-4 pt-1 animate-in fade-in duration-200">
+                    <div className="space-y-1">
+                      <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+                        <Settings2 size={15} className="text-slate-500" />
+                        Campaign Profile & Target Pipeline
+                      </h3>
+                      <p className="text-[11px] text-muted-foreground leading-normal">
+                        Identify the campaign name and connect it to a sales funnel workflow pipeline.
+                      </p>
+                    </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-800 uppercase tracking-wider">Campaign Status</label>
-                    <select
-                      value={status}
-                      onChange={(e) => setStatus(e.target.value)}
-                      className="w-full h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors font-medium text-foreground"
-                    >
-                      <option value="active">Active (Currently Running)</option>
-                      <option value="draft">Draft (Planning Phase)</option>
-                      <option value="paused">Paused (Temporarily Stopped)</option>
-                      <option value="completed">Completed (Finished)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1">
-                      <Calendar size={13} className="text-slate-400" />
-                      Launch Date
-                    </label>
-                    <Input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="bg-background border-border focus-visible:ring-[#0f172a] h-9 text-sm text-foreground"
-                      required
-                    />
-                    {errors.startDate && <p className="text-xs text-red-600 mt-1">{errors.startDate}</p>}
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1">
-                      <Calendar size={13} className="text-slate-400" />
-                      End Date (Optional)
-                    </label>
-                    <Input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="bg-background border-border focus-visible:ring-[#0f172a] h-9 text-sm text-foreground"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* --- SECTION 2: Financials & Goals (CAC & ROI) --- */}
-              <div className="border-t border-border pt-4 mt-2">
-                <h3 className="text-xs font-bold text-slate-450 uppercase tracking-wider mb-3">Financials & Acquisition Goals</h3>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-700 uppercase flex items-center gap-0.5">
-                      <DollarSign size={10} className="text-slate-400" />
-                      Budgeted Cost
-                    </label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="e.g. 5000"
-                      value={budgetedCost}
-                      onChange={(e) => setBudgetedCost(e.target.value)}
-                      className="bg-background border-border placeholder:text-muted-foreground focus-visible:ring-[#0f172a] h-9 text-sm"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-700 uppercase flex items-center gap-0.5">
-                      <DollarSign size={10} className="text-slate-400" />
-                      Actual Cost
-                    </label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="e.g. 4850"
-                      value={actualCost}
-                      onChange={(e) => setActualCost(e.target.value)}
-                      className="bg-background border-border placeholder:text-muted-foreground focus-visible:ring-[#0f172a] h-9 text-sm"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-700 uppercase flex items-center gap-0.5">
-                      <Target size={10} className="text-slate-400" />
-                      Lead Goal
-                    </label>
-                    <Input
-                      type="number"
-                      placeholder="e.g. 250 leads"
-                      value={targetLeads}
-                      onChange={(e) => setTargetLeads(e.target.value)}
-                      className="bg-background border-border placeholder:text-muted-foreground focus-visible:ring-[#0f172a] h-9 text-sm"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* --- SECTION 3: Outbound Access & Dialer Settings --- */}
-              <div className="border-t border-border pt-4 mt-2 space-y-4">
-                <h3 className="text-xs font-bold text-slate-450 uppercase tracking-wider">Dialer Access & Leads Distribution</h3>
-                
-                {/* Managers Selection (Multi-select) */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-800 uppercase tracking-wider">Campaign Managers</label>
-                  <div className="flex flex-wrap gap-1.5 p-2 border border-border rounded-lg bg-background min-h-[38px] items-center">
-                    {selectedManagers.map((mId) => {
-                      const u = users.find((usr) => usr.id === mId);
-                      return (
-                        <span key={mId} className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 text-[11px] font-bold px-2 py-0.5 rounded-md border border-slate-200">
-                          {u?.name || 'User'}
-                          <button
-                            type="button"
-                            onClick={() => setSelectedManagers((prev) => prev.filter((id) => id !== mId))}
-                            className="hover:text-red-500 font-bold ml-0.5 focus:outline-none"
-                          >
-                            ×
-                          </button>
-                        </span>
-                      );
-                    })}
-                    <select
-                      value=""
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val && !selectedManagers.includes(val)) {
-                          setSelectedManagers((prev) => [...prev, val]);
-                        }
-                      }}
-                      className="h-6 text-xs bg-transparent border-none text-slate-500 focus:outline-none cursor-pointer flex-1 min-w-[120px]"
-                    >
-                      <option value="" disabled>Add Manager...</option>
-                      {users.map((u) => (
-                        <option key={u.id} value={u.id}>{u.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Assigned Callers/Agents (Multi-select) */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-800 uppercase tracking-wider">Assigned Dialer Agents (Callers)</label>
-                  <div className="flex flex-wrap gap-1.5 p-2 border border-border rounded-lg bg-background min-h-[38px] items-center">
-                    {selectedAgents.map((aId) => {
-                      const u = users.find((usr) => usr.id === aId);
-                      return (
-                        <span key={aId} className="inline-flex items-center gap-1 bg-amber-50 text-amber-800 text-[11px] font-bold px-2 py-0.5 rounded-md border border-amber-200">
-                          {u?.name || 'User'}
-                          <button
-                            type="button"
-                            onClick={() => setSelectedAgents((prev) => prev.filter((id) => id !== aId))}
-                            className="hover:text-red-500 font-bold ml-0.5 focus:outline-none"
-                          >
-                            ×
-                          </button>
-                        </span>
-                      );
-                    })}
-                    <select
-                      value=""
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val && !selectedAgents.includes(val)) {
-                          setSelectedAgents((prev) => [...prev, val]);
-                        }
-                      }}
-                      className="h-6 text-xs bg-transparent border-none text-slate-500 focus:outline-none cursor-pointer flex-1 min-w-[120px]"
-                    >
-                      <option value="" disabled>Add Dialer Agent...</option>
-                      {users.map((u) => (
-                        <option key={u.id} value={u.id}>{u.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Lead Distribution & Priority */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-800 uppercase tracking-wider">Lead Distribution Mode</label>
-                    <select
-                      value={distribution}
-                      onChange={(e) => setDistribution(e.target.value as any)}
-                      className="w-full h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none text-foreground font-medium cursor-pointer"
-                    >
-                      <option value="on_demand">On Demand (Manual Pull)</option>
-                      <option value="round_robin">Equal (Round-Robin Auto-Assign)</option>
-                      <option value="conditional">Conditional (Rule-Based)</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-800 uppercase tracking-wider">Campaign Priority</label>
-                    <select
-                      value={priority}
-                      onChange={(e) => setPriority(e.target.value as any)}
-                      className="w-full h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none text-foreground font-medium cursor-pointer"
-                    >
-                      <option value="low">🔵 Low Priority</option>
-                      <option value="medium">🟡 Medium Priority</option>
-                      <option value="high">🔴 High Priority</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* --- SECTION 4: Lead Duplication Scoping --- */}
-              <div className="border-t border-border pt-4 mt-2 space-y-4">
-                <h3 className="text-xs font-bold text-slate-450 uppercase tracking-wider">Lead Duplication Settings</h3>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-800 uppercase tracking-wider">Check for Duplicates</label>
-                    <select
-                      value={dupCheckScope}
-                      onChange={(e) => setDupCheckScope(e.target.value as any)}
-                      className="w-full h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none text-foreground font-medium cursor-pointer"
-                    >
-                      <option value="none">No Duplicate Checking</option>
-                      <option value="campaign">Within this campaign only</option>
-                      <option value="pipeline">Within this pipeline only</option>
-                      <option value="global">Across all campaigns</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-800 uppercase tracking-wider">If Duplicate is Found</label>
-                    <select
-                      value={dupResolution}
-                      onChange={(e) => setDupResolution(e.target.value as any)}
-                      disabled={dupCheckScope === 'none'}
-                      className="w-full h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none text-foreground font-medium disabled:opacity-50 cursor-pointer"
-                    >
-                      <option value="ignore">Ignore duplicate (Discard)</option>
-                      <option value="merge">Merge duplicate details</option>
-                      <option value="create_new">Create duplicate lead ticket</option>
-                      <option value="reopen">Merge & Reopen closed lead</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* --- SECTION 5: Smart Link Ingestion --- */}
-              <div className="border border-emerald-100 bg-emerald-50/20 rounded-xl p-3.5 mt-2 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-xs font-bold text-emerald-900">Automated Link Ingestion</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setAutoTrack(!autoTrack)}
-                    className="text-[10px] text-slate-500 font-semibold underline hover:text-slate-800"
-                  >
-                    {autoTrack ? "Configure Manually" : "Switch to Automatic"}
-                  </button>
-                </div>
-
-                {autoTrack ? (
-                  <p className="text-[11px] text-emerald-800 leading-relaxed font-medium">
-                    ✨ <strong>Zero Setup Required:</strong> We will automatically generate clean tracking codes to attribute all inbound leads coming from this campaign.
-                  </p>
-                ) : (
-                  <div className="space-y-2.5 pt-1">
-                    <p className="text-[10px] text-muted-foreground leading-normal">
-                      Customize your UTM parameters if you are using specific tracking schemas in external managers.
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-bold text-muted-foreground uppercase">UTM Source</label>
-                        <Input
-                          type="text"
-                          placeholder="e.g. facebook"
-                          value={utmSource}
-                          onChange={(e) => setUtmSource(e.target.value)}
-                          className="bg-background border-border placeholder:text-muted-foreground focus-visible:ring-[#0f172a] h-8 text-xs"
-                        />
+                    <div className="space-y-4">
+                      {/* Name */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest flex items-center gap-1">
+                          Campaign Name <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <Input
+                            type="text"
+                            placeholder="e.g. Inbound Real Estate Dialing Queue"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            className="bg-background border-border placeholder:text-muted-foreground/60 h-10 text-sm pl-3 shadow-xs rounded-xl focus-visible:ring-[#0f172a]"
+                            required
+                          />
+                        </div>
+                        {errors.name && <p className="text-[10px] text-red-600 mt-1 font-semibold">⚠️ {errors.name}</p>}
                       </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-bold text-muted-foreground uppercase">UTM Medium</label>
-                        <Input
-                          type="text"
-                          placeholder="e.g. cpc"
-                          value={utmMedium}
-                          onChange={(e) => setUtmMedium(e.target.value)}
-                          className="bg-background border-border placeholder:text-muted-foreground focus-visible:ring-[#0f172a] h-8 text-xs"
-                        />
+
+                      {/* Side-by-Side Pipeline & Status */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">
+                            Target Workflow Pipeline <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            value={pipelineId}
+                            onChange={(e) => setPipelineId(e.target.value)}
+                            className="w-full h-10 rounded-xl border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-colors font-medium text-foreground cursor-pointer shadow-xs"
+                            required
+                          >
+                            <option value="" disabled>Select Pipeline...</option>
+                            {pipelines.map((p: any) => (
+                              <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                          </select>
+                          {errors.pipelineId && <p className="text-[10px] text-red-600 mt-1 font-semibold">⚠️ {errors.pipelineId}</p>}
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">Campaign State</label>
+                          <select
+                            value={status}
+                            onChange={(e) => setStatus(e.target.value)}
+                            className="w-full h-10 rounded-xl border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-colors font-medium text-foreground cursor-pointer shadow-xs"
+                          >
+                            <option value="active">Active (Running)</option>
+                            <option value="draft">Draft (Planning)</option>
+                            <option value="paused">Paused</option>
+                            <option value="completed">Completed</option>
+                          </select>
+                        </div>
                       </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-bold text-muted-foreground uppercase">UTM Campaign</label>
-                        <Input
-                          type="text"
-                          placeholder="e.g. summer2026"
-                          value={utmCampaign}
-                          onChange={(e) => setUtmCampaign(e.target.value)}
-                          className="bg-background border-border placeholder:text-muted-foreground focus-visible:ring-[#0f172a] h-8 text-xs"
-                        />
+
+                      {/* Lead Goal */}
+                      <div className="space-y-1.5 max-w-sm">
+                        <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest flex items-center gap-1">
+                          <Target size={12} className="text-slate-400" />
+                          Target Lead Ingress Goal (Optional)
+                        </label>
+                        <div className="relative flex items-center">
+                          <Input
+                            type="number"
+                            placeholder="e.g. 500 leads"
+                            value={targetLeads}
+                            onChange={(e) => setTargetLeads(e.target.value)}
+                            className="bg-background border-border placeholder:text-muted-foreground/60 h-10 text-sm shadow-xs rounded-xl focus-visible:ring-primary pr-12"
+                          />
+                          <span className="absolute right-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Leads</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  </TabsContent>
 
-              {/* --- SECTION 6: Collapsible Advanced Settings --- */}
-              <div className="border-t border-border pt-3 mt-1">
-                <button
+                  {/* STEP 2 CONTENT: OPERATIONAL HIERARCHY */}
+                  <TabsContent value="agents" className="space-y-4 pt-1 animate-in fade-in duration-200">
+                    <div className="space-y-1">
+                      <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+                        <Users size={15} className="text-slate-500" />
+                        Access Hierarchies & Assigned Callers
+                      </h3>
+                      <p className="text-[11px] text-muted-foreground leading-normal font-medium">
+                        NeoDove three-tiered structure matching campaign administrators, queue leaders, and dialing agents.
+                      </p>
+                    </div>
+
+                    <div className="space-y-5">
+                      {/* Managers Select */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest flex items-center gap-1">
+                            <Crown size={12} className="text-amber-500" />
+                            Campaign Managers
+                          </label>
+                          <span className="text-[9px] text-muted-foreground">Executive oversight</span>
+                        </div>
+                        <UserSelectPopover
+                          title="Managers"
+                          users={users}
+                          selectedIds={selectedManagers}
+                          onChange={setSelectedManagers}
+                          placeholder="Select campaign managers..."
+                          icon={<Crown size={13} className="text-amber-500" />}
+                          activeColor="bg-amber-100 text-amber-800 border-amber-300"
+                        />
+                        {selectedManagers.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pt-1.5">
+                            {selectedManagers.map((mId) => {
+                              const u = users.find((usr) => usr.id === mId);
+                              return (
+                                <Badge key={mId} variant="outline" className="h-6 flex items-center gap-1 pl-1 pr-2 py-0.5 rounded-lg border-amber-200/50 bg-amber-50/30 text-amber-900 text-[10px] font-semibold">
+                                  <div className="w-4 h-4 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-[8px] font-black uppercase">
+                                    {u?.name ? u.name[0] : 'U'}
+                                  </div>
+                                  {u?.name || 'User'}
+                                  <button type="button" onClick={() => setSelectedManagers(prev => prev.filter(x => x !== mId))} className="text-amber-500 hover:text-red-500 ml-1 font-bold">×</button>
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Supervisors Select */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest flex items-center gap-1">
+                            <ShieldAlert size={12} className="text-blue-500" />
+                            Campaign Supervisors
+                          </label>
+                          <span className="text-[9px] text-muted-foreground">On-the-floor queue leads</span>
+                        </div>
+                        <UserSelectPopover
+                          title="Supervisors"
+                          users={users}
+                          selectedIds={selectedSupervisors}
+                          onChange={setSelectedSupervisors}
+                          placeholder="Select team supervisors..."
+                          icon={<ShieldAlert size={13} className="text-blue-500" />}
+                          activeColor="bg-blue-100 text-blue-800 border-blue-300"
+                        />
+                        {selectedSupervisors.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pt-1.5">
+                            {selectedSupervisors.map((sId) => {
+                              const u = users.find((usr) => usr.id === sId);
+                              return (
+                                <Badge key={sId} variant="outline" className="h-6 flex items-center gap-1 pl-1 pr-2 py-0.5 rounded-lg border-blue-200/50 bg-blue-50/30 text-blue-900 text-[10px] font-semibold">
+                                  <div className="w-4 h-4 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[8px] font-black uppercase">
+                                    {u?.name ? u.name[0] : 'U'}
+                                  </div>
+                                  {u?.name || 'User'}
+                                  <button type="button" onClick={() => setSelectedSupervisors(prev => prev.filter(x => x !== sId))} className="text-blue-500 hover:text-red-500 ml-1 font-bold">×</button>
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Dialer Agents Select */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest flex items-center gap-1">
+                            <PhoneCall size={12} className="text-emerald-500" />
+                            Assigned Dialer Agents
+                          </label>
+                          <span className="text-[9px] text-muted-foreground">Active outbound callers</span>
+                        </div>
+                        <UserSelectPopover
+                          title="Dialer Agents"
+                          users={users}
+                          selectedIds={selectedAgents}
+                          onChange={setSelectedAgents}
+                          placeholder="Select queue callers..."
+                          icon={<PhoneCall size={13} className="text-emerald-500" />}
+                          activeColor="bg-emerald-100 text-emerald-800 border-emerald-300"
+                        />
+                        {selectedAgents.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pt-1.5">
+                            {selectedAgents.map((aId) => {
+                              const u = users.find((usr) => usr.id === aId);
+                              return (
+                                <Badge key={aId} variant="outline" className="h-6 flex items-center gap-1 pl-1 pr-2 py-0.5 rounded-lg border-emerald-200/50 bg-emerald-50/30 text-emerald-950 text-[10px] font-semibold">
+                                  <div className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[8px] font-black uppercase">
+                                    {u?.name ? u.name[0] : 'U'}
+                                  </div>
+                                  {u?.name || 'User'}
+                                  <button type="button" onClick={() => setSelectedAgents(prev => prev.filter(x => x !== aId))} className="text-emerald-500 hover:text-red-500 ml-1 font-bold">×</button>
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  {/* STEP 3 CONTENT: INGESTION & DISTRIBUTION RULES */}
+                  <TabsContent value="routing" className="space-y-4 pt-1 animate-in fade-in duration-200">
+                    <div className="space-y-1">
+                      <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+                        <Shuffle size={15} className="text-slate-500" />
+                        Queue Routing & Lead Distribution Mode
+                      </h3>
+                      <p className="text-[11px] text-muted-foreground leading-normal">
+                        Control how new leads are funneled into agent dialers and prevent caller idleness.
+                      </p>
+                    </div>
+
+                    <div className="space-y-5">
+                      {/* Distribution Mode Cards */}
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest block">Lead Distribution Mode</label>
+                        <div className="grid grid-cols-3 gap-3">
+                          {/* On Demand */}
+                          <button
+                            type="button"
+                            onClick={() => setDistribution('on_demand')}
+                            className={cn(
+                              "border rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 text-center transition-all cursor-pointer h-24 hover:bg-slate-50/40 hover:shadow-xs",
+                              distribution === 'on_demand' 
+                                ? "border-slate-800 ring-1 ring-slate-800 bg-slate-50/50 text-foreground font-bold shadow-xs" 
+                                : "border-border text-muted-foreground"
+                            )}
+                          >
+                            <Users size={16} className={cn("transition-colors", distribution === 'on_demand' ? "text-slate-800" : "text-slate-400")} />
+                            <div className="space-y-0.5">
+                              <span className="text-[11px] block font-semibold text-slate-850">On-Demand</span>
+                              <span className="text-[9px] block text-muted-foreground scale-95 font-medium leading-none">Manual Pull</span>
+                            </div>
+                          </button>
+
+                          {/* Round Robin */}
+                          <button
+                            type="button"
+                            onClick={() => setDistribution('round_robin')}
+                            className={cn(
+                              "border rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 text-center transition-all cursor-pointer h-24 hover:bg-slate-50/40 hover:shadow-xs",
+                              distribution === 'round_robin' 
+                                ? "border-teal-600 ring-1 ring-teal-600 bg-teal-50/5 text-teal-950 font-bold shadow-xs" 
+                                : "border-border text-muted-foreground"
+                            )}
+                          >
+                            <Shuffle size={16} className={cn("transition-colors", distribution === 'round_robin' ? "text-teal-600 animate-spin-slow" : "text-slate-400")} />
+                            <div className="space-y-0.5">
+                              <span className="text-[11px] block font-semibold text-slate-850">Round-Robin</span>
+                              <span className="text-[9px] block text-muted-foreground scale-95 font-medium leading-none">Auto-Assign</span>
+                            </div>
+                          </button>
+
+                          {/* Conditional */}
+                          <button
+                            type="button"
+                            onClick={() => setDistribution('conditional')}
+                            className={cn(
+                              "border rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 text-center transition-all cursor-pointer h-24 hover:bg-slate-50/40 hover:shadow-xs",
+                              distribution === 'conditional' 
+                                ? "border-indigo-600 ring-1 ring-indigo-600 bg-indigo-50/5 text-indigo-950 font-bold shadow-xs" 
+                                : "border-border text-muted-foreground"
+                            )}
+                          >
+                            <Sliders size={16} className={cn("transition-colors", distribution === 'conditional' ? "text-indigo-600" : "text-slate-400")} />
+                            <div className="space-y-0.5">
+                              <span className="text-[11px] block font-semibold text-slate-850">Conditional</span>
+                              <span className="text-[9px] block text-muted-foreground scale-95 font-medium leading-none">Skill-Based</span>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Campaign Priority Selector Cards */}
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest block">Campaign Call Priority</label>
+                        <div className="grid grid-cols-3 gap-3">
+                          {/* Low */}
+                          <button
+                            type="button"
+                            onClick={() => setPriority('low')}
+                            className={cn(
+                              "border rounded-xl px-2 py-2 flex items-center justify-center gap-1.5 transition-all text-xs cursor-pointer hover:bg-slate-50/50",
+                              priority === 'low' 
+                                ? "border-blue-500 ring-1 ring-blue-500 bg-blue-50/10 text-blue-900 font-semibold" 
+                                : "border-border text-muted-foreground"
+                            )}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                            Low Queue
+                          </button>
+
+                          {/* Medium */}
+                          <button
+                            type="button"
+                            onClick={() => setPriority('medium')}
+                            className={cn(
+                              "border rounded-xl px-2 py-2 flex items-center justify-center gap-1.5 transition-all text-xs cursor-pointer hover:bg-slate-50/50",
+                              priority === 'medium' 
+                                ? "border-amber-500 ring-1 ring-amber-500 bg-amber-50/10 text-amber-900 font-semibold" 
+                                : "border-border text-muted-foreground"
+                            )}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                            Medium
+                          </button>
+
+                          {/* High */}
+                          <button
+                            type="button"
+                            onClick={() => setPriority('high')}
+                            className={cn(
+                              "border rounded-xl px-2 py-2 flex items-center justify-center gap-1.5 transition-all text-xs cursor-pointer hover:bg-slate-50/50",
+                              priority === 'high' 
+                                ? "border-rose-500 ring-1 ring-rose-500 bg-rose-50/10 text-rose-950 font-semibold shadow-xs" 
+                                : "border-border text-muted-foreground"
+                            )}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                            High Priority
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Dynamic Ingress Spillover Switch Card */}
+                      <div className={cn(
+                        "flex items-start gap-4 p-4 border rounded-xl transition-all duration-300",
+                        allowSpillover 
+                          ? "border-teal-200 bg-teal-50/5/30 shadow-xs" 
+                          : "border-border bg-slate-50/10"
+                      )}>
+                        <Switch
+                          id="allow-spillover"
+                          checked={allowSpillover}
+                          onCheckedChange={setAllowSpillover}
+                          className="mt-0.5"
+                        />
+                        <div className="space-y-1.5 cursor-pointer select-none" onClick={() => setAllowSpillover(!allowSpillover)}>
+                          <label htmlFor="allow-spillover" className="text-xs font-bold text-slate-800 uppercase tracking-widest cursor-pointer flex items-center gap-1.5">
+                            Cross-Campaign Spillover
+                            {allowSpillover && (
+                              <Badge variant="outline" className="text-[9px] font-bold bg-teal-50 text-teal-700 border-teal-200 py-0 px-1 rounded">
+                                ACTIVE 🌀
+                              </Badge>
+                            )}
+                          </label>
+                          <p className="text-[10px] text-muted-foreground leading-normal font-medium">
+                            Allows idle callers in this campaign to automatically retrieve inbound leads from other campaigns sharing the same pipeline, preventing dialer caller downtime.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  {/* STEP 4 CONTENT: DATA INTEGRITY & DEDUPLICATION */}
+                  <TabsContent value="dupes" className="space-y-4 pt-1 animate-in fade-in duration-200">
+                    <div className="space-y-1">
+                      <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+                        <ShieldCheck size={15} className="text-slate-500" />
+                        Protection Safeguards & Lead Deduplication
+                      </h3>
+                      <p className="text-[11px] text-muted-foreground leading-normal font-medium">
+                        Prevent redundant client records and resolve inbound duplicate contacts.
+                      </p>
+                    </div>
+
+                    <div className="space-y-4">
+                      {/* Duplicate Checking Scope */}
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest block">Duplicate Checking Filter</label>
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* None */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDupCheckScope('none');
+                              setDupResolution('ignore');
+                            }}
+                            className={cn(
+                              "border rounded-xl p-3 flex flex-col items-start gap-1 text-left transition-all cursor-pointer hover:bg-slate-50/50",
+                              dupCheckScope === 'none' 
+                                ? "border-slate-800 ring-1 ring-slate-800 bg-slate-50/20 font-bold" 
+                                : "border-border text-muted-foreground"
+                            )}
+                          >
+                            <AlertCircle size={15} className={cn("mb-1", dupCheckScope === 'none' ? "text-slate-800" : "text-slate-400")} />
+                            <span className="text-[11px] font-semibold text-slate-850">No Filter</span>
+                            <span className="text-[9px] text-muted-foreground scale-95 font-medium leading-none">Accept all incoming leads</span>
+                          </button>
+
+                          {/* Campaign */}
+                          <button
+                            type="button"
+                            onClick={() => setDupCheckScope('campaign')}
+                            className={cn(
+                              "border rounded-xl p-3 flex flex-col items-start gap-1 text-left transition-all cursor-pointer hover:bg-slate-50/50",
+                              dupCheckScope === 'campaign' 
+                                ? "border-slate-800 ring-1 ring-slate-800 bg-slate-50/20 font-bold" 
+                                : "border-border text-muted-foreground"
+                            )}
+                          >
+                            <Target size={15} className={cn("mb-1", dupCheckScope === 'campaign' ? "text-slate-800" : "text-slate-400")} />
+                            <span className="text-[11px] font-semibold text-slate-850">Within Campaign</span>
+                            <span className="text-[9px] text-muted-foreground scale-95 font-medium leading-none">Discard if phone exists here</span>
+                          </button>
+
+                          {/* Pipeline */}
+                          <button
+                            type="button"
+                            onClick={() => setDupCheckScope('pipeline')}
+                            className={cn(
+                              "border rounded-xl p-3 flex flex-col items-start gap-1 text-left transition-all cursor-pointer hover:bg-slate-50/50",
+                              dupCheckScope === 'pipeline' 
+                                ? "border-slate-800 ring-1 ring-slate-800 bg-slate-50/20 font-bold" 
+                                : "border-border text-muted-foreground"
+                            )}
+                          >
+                            <Layers size={15} className={cn("mb-1", dupCheckScope === 'pipeline' ? "text-slate-800" : "text-slate-400")} />
+                            <span className="text-[11px] font-semibold text-slate-850">Within Pipeline</span>
+                            <span className="text-[9px] text-muted-foreground scale-95 font-medium leading-none">Checks active pipeline workflow</span>
+                          </button>
+
+                          {/* Global */}
+                          <button
+                            type="button"
+                            onClick={() => setDupCheckScope('global')}
+                            className={cn(
+                              "border rounded-xl p-3 flex flex-col items-start gap-1 text-left transition-all cursor-pointer hover:bg-slate-50/50",
+                              dupCheckScope === 'global' 
+                                ? "border-rose-600 ring-1 ring-rose-600 bg-rose-50/5 font-bold" 
+                                : "border-border text-muted-foreground"
+                            )}
+                          >
+                            <ShieldCheck size={15} className={cn("mb-1", dupCheckScope === 'global' ? "text-rose-600" : "text-slate-400")} />
+                            <span className="text-[11px] font-semibold text-slate-850">Global Scoping</span>
+                            <span className="text-[9px] text-muted-foreground scale-95 font-medium leading-none">Checks across all campaigns</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Duplicate Resolution Selection */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest flex items-center gap-1">
+                          Duplicate Ingress Resolution
+                        </label>
+                        <select
+                          value={dupResolution}
+                          onChange={(e) => setDupResolution(e.target.value as any)}
+                          disabled={dupCheckScope === 'none'}
+                          className="w-full h-10 rounded-xl border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-colors font-medium text-foreground disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-xs"
+                        >
+                          <option value="ignore">Ignore duplicate (Discard completely)</option>
+                          <option value="merge">Merge duplicates (Consolidate caller details)</option>
+                          <option value="create_new">Create duplicate ticket (Forces new record)</option>
+                          <option value="reopen">Merge & Re-Open closed lead items</option>
+                        </select>
+                      </div>
+                    </div>
+                  </TabsContent>
+                </div>
+
+              </Tabs>
+
+              {/* Wizard Navigational Footer */}
+              <div className="flex items-center justify-between border-t border-border pt-4 mt-2 shrink-0">
+                <Button
                   type="button"
-                  onClick={() => setShowAdvanced(!showAdvanced)}
-                  className="flex items-center justify-between w-full text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                  variant="outline"
+                  onClick={handlePrevStep}
+                  disabled={activeTab === 'basics'}
+                  className="h-9 px-4 text-xs font-semibold border-border bg-card hover:bg-slate-50 text-slate-700 rounded-xl transition-all disabled:opacity-50"
                 >
-                  <span className="flex items-center gap-1">
-                    <Settings2 size={13} />
-                    Advanced Settings (Multi-Location & Workflows)
-                  </span>
-                  {showAdvanced ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                </button>
+                  Back
+                </Button>
 
-                {showAdvanced && (
-                  <div className="space-y-4 pt-3 mt-1 border-l-2 border-border pl-3 animate-in slide-in-from-top-2 duration-200">
-                    <p className="text-[10px] text-muted-foreground leading-normal">
-                      These parameters are pre-configured automatically for your primary store location. Modify only if you run multiple locations or custom workflows.
-                    </p>
-                    
-                    {/* Assignment */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-foreground uppercase tracking-wider">Business Location</label>
-                      <select
-                        value={assignmentId}
-                        onChange={(e) => setAssignmentId(e.target.value)}
-                        className="w-full h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
-                      >
-                        {assignmentOptions.map((opt) => (
-                          <option key={opt.id} value={opt.id}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.assignmentId && <p className="text-xs text-red-600 mt-1">{errors.assignmentId}</p>}
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {/* Vertical */}
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-foreground uppercase tracking-wider">Category / Vertical</label>
-                        <select
-                          value={verticalId}
-                          onChange={(e) => setVerticalId(e.target.value)}
-                          className="w-full h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
-                        >
-                          {verticals.map((v) => (
-                            <option key={v.id} value={v.id}>
-                              {v.name}
-                            </option>
-                          ))}
-                        </select>
-                        {errors.verticalId && <p className="text-xs text-red-600 mt-1">{errors.verticalId}</p>}
-                      </div>
-
-                      {/* Target Pipeline */}
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-foreground uppercase tracking-wider">Target Workflow Pipeline</label>
-                        <select
-                          value={pipelineId}
-                          onChange={(e) => setPipelineId(e.target.value)}
-                          className="w-full h-9 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#0f172a] transition-colors"
-                        >
-                          {pipelines.map((p: any) => (
-                            <option key={p.id} value={p.id}>
-                              {p.name}
-                            </option>
-                          ))}
-                        </select>
-                        {errors.pipelineId && <p className="text-xs text-red-600 mt-1">{errors.pipelineId}</p>}
-                      </div>
-                    </div>
-                  </div>
+                {activeTab !== 'dupes' ? (
+                  <Button
+                    type="button"
+                    onClick={handleNextStep}
+                    className="h-9 px-4 text-xs font-semibold bg-primary hover:bg-[#1e293b] text-white rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-sm hover:scale-[1.01]"
+                  >
+                    Continue
+                    <ArrowRight size={13} />
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    onClick={() => handleSubmit()}
+                    disabled={createMutation.isPending}
+                    className="h-9 px-4 text-xs font-semibold bg-primary hover:bg-[#1e293b] text-white rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-sm hover:scale-[1.01]"
+                  >
+                    {createMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
+                    Launch Outbound Campaign
+                  </Button>
                 )}
               </div>
+
             </div>
 
             {/* --- RIGHT PANEL: Live "Visual Flow" Preview Canvas --- */}
-            <div className="lg:col-span-5 flex flex-col h-full border border-border rounded-2xl bg-slate-50/50 p-4 min-h-[500px] overflow-hidden select-none">
-              <div className="pb-3 border-b border-border mb-3">
-                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                  <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                  Live "Visual Flow" Preview
-                </h4>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Real-time simulation of your campaign's lead routing path.</p>
+            <div className="lg:col-span-5 flex flex-col h-full bg-slate-50/40 p-5 min-h-[500px] overflow-hidden select-none flex-grow">
+              
+              <div className="pb-3 border-b border-border mb-3 flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-widest flex items-center gap-1.5">
+                    <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                    Live "Visual Flow" Preview
+                  </h4>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Progressive coordinate highlights matching config tabs.</p>
+                </div>
+                <Badge variant="outline" className="text-[9px] bg-white text-slate-600 py-0.5 px-2 border-border font-bold">
+                  SIMULATOR 👁️
+                </Badge>
               </div>
 
               {/* Blueprint Dot Grid Canvas */}
-              <div className="relative flex-1 bg-background border border-border rounded-xl p-4 flex flex-col items-center justify-between min-h-[460px] bg-[#f8fafc] bg-[radial-gradient(#e2e8f0_1.2px,transparent_1.2px)] [background-size:14px_14px] shadow-inner">
+              <div className="relative flex-1 bg-background border border-border rounded-xl p-4 flex flex-col items-center justify-between min-h-[460px] bg-[#fafafa] bg-[radial-gradient(#e2e8f0_1.2px,transparent_1.2px)] [background-size:14px_14px] shadow-inner">
+                
                 {/* SVG Style sheet inside */}
                 <style>{`
                   @keyframes lead-flow-dash {
@@ -826,38 +1046,75 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
                     stroke-dasharray: 6, 4;
                     animation: lead-flow-dash 1s linear infinite;
                   }
+                  .animate-pulse-glow {
+                    animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+                  }
+                  @keyframes pulse-glow {
+                    0%, 100% {
+                      box-shadow: 0 0 0 0px rgba(59, 130, 246, 0.4);
+                    }
+                    50% {
+                      box-shadow: 0 0 12px 4px rgba(59, 130, 246, 0.2);
+                    }
+                  }
                 `}</style>
 
-                {/* Node 1: Inbound Lead Source */}
-                <div className="w-full max-w-[200px] bg-card border border-border rounded-xl p-2.5 shadow-sm text-center flex flex-col items-center justify-center relative z-10 animate-in fade-in duration-200">
-                  <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Source</span>
-                  <p className="text-xs font-bold text-foreground truncate max-w-full">
-                    {channel === 'meta_ads' ? 'Meta Ingestion 📲' :
-                     channel === 'google_ads' ? 'Google Ingestion 🔍' :
-                     channel === 'email' ? 'Email Inbound 📧' :
-                     channel === 'sms' ? 'SMS Inbound 💬' :
-                     channel === 'referral' ? 'Referral Link 🔗' : 'Inbound Leads 📥'}
-                  </p>
+                {/* Node 1: Inbound Lead Source (Highlighted on 'basics' step) */}
+                <div className={cn(
+                  "w-full max-w-[210px] bg-card border rounded-xl p-2.5 shadow-sm text-center flex flex-col items-center justify-center relative z-10 transition-all duration-300",
+                  activeTab === 'basics' 
+                    ? "border-primary ring-2 ring-primary/20 scale-[1.03] shadow-md bg-white animate-pulse-glow" 
+                    : "border-border opacity-90"
+                )}>
+                  <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block">Campaign Source</span>
+                  <div className="flex items-center gap-1 justify-center max-w-full">
+                    <p className="text-xs font-bold text-slate-800 truncate">
+                      {name.trim() ? `${name.trim()} Ingest 📥` : 'Campaign Ingestion 📥'}
+                    </p>
+                  </div>
                 </div>
+
+                {/* Dynamic Spillover Ingress Label (Left-aligned) */}
+                {allowSpillover && (
+                  <div className={cn(
+                    "absolute left-3 top-[170px] z-10 bg-teal-50 text-teal-800 border px-2 py-1.5 rounded-xl text-[9px] font-bold shadow-xs transition-all duration-300 max-w-[110px] text-left",
+                    activeTab === 'routing' ? "border-teal-400 scale-[1.03] ring-1 ring-teal-200" : "border-teal-200"
+                  )}>
+                    <span className="flex h-1.5 w-1.5 rounded-full bg-teal-500 animate-pulse mb-0.5 inline-block mr-1" />
+                    <strong>Spillover 🌀</strong> Inbound backlog shared from pipeline.
+                  </div>
+                )}
 
                 {/* Flow Lines & SVG Layer */}
                 <div className="absolute inset-0 z-0 pointer-events-none">
                   <svg viewBox="0 0 350 480" width="100%" height="100%" className="w-full h-full text-slate-350" fill="none">
+                    
                     {/* Path 1: Source to Duplicity Check (or Splitter) */}
                     {dupCheckScope !== 'none' ? (
                       <>
                         {/* Source (x: 175, y: 52) -> Duplicity (x: 175, y: 155) */}
-                        <path d="M 175 52 L 175 145" stroke="#cbd5e1" strokeWidth="2" className="lead-flow-line" />
+                        <path d="M 175 52 L 175 145" stroke={activeTab === 'basics' ? '#3b82f6' : '#cbd5e1'} strokeWidth="2" className="lead-flow-line" />
                         
                         {/* Duplicity (x: 175, y: 200) -> Splitter (x: 175, y: 280) */}
-                        <path d="M 175 198 L 175 272" stroke="#cbd5e1" strokeWidth="2" className="lead-flow-line" />
+                        <path d="M 175 198 L 175 272" stroke={activeTab === 'dupes' ? '#ef4444' : '#cbd5e1'} strokeWidth="2" className="lead-flow-line" />
                         
                         {/* Duplicate Blocked Path branching off to Left (x: 60, y: 170) */}
-                        <path d="M 175 170 C 130 170, 90 170, 70 170" stroke="#f87171" strokeWidth="2" strokeDasharray="4,4" className="text-red-400" />
+                        <path d="M 175 170 C 130 170, 90 170, 70 170" stroke="#f87171" strokeWidth="2.2" strokeDasharray="4,4" className="text-red-400" />
                       </>
                     ) : (
                       /* Direct Source to Splitter (x: 175, y: 280) */
-                      <path d="M 175 52 L 175 272" stroke="#cbd5e1" strokeWidth="2" className="lead-flow-line" />
+                      <path d="M 175 52 L 175 272" stroke={activeTab === 'basics' ? '#3b82f6' : '#cbd5e1'} strokeWidth="2" className="lead-flow-line" />
+                    )}
+
+                    {/* Path 2: Cross-Campaign Spillover Source (x: 50, y: 215) -> Splitter (x: 175, y: 295) */}
+                    {allowSpillover && (
+                      <path
+                        d="M 50 215 C 50 295, 120 295, 175 295"
+                        stroke={activeTab === 'routing' ? '#0d9488' : '#cbd5e1'}
+                        strokeWidth="2"
+                        strokeDasharray="6,4"
+                        className="lead-flow-line"
+                      />
                     )}
 
                     {/* Path 3: Splitter to Agents (Multiple branches) */}
@@ -879,7 +1136,7 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
                           <path
                             key={idx}
                             d={`M ${startX} ${startY} C ${startX} ${controlY}, ${endX} ${controlY}, ${endX} ${endY}`}
-                            stroke={distribution === 'round_robin' ? '#14b8a6' : '#6366f1'}
+                            stroke={activeTab === 'agents' ? '#10b981' : (distribution === 'round_robin' ? '#14b8a6' : '#6366f1')}
                             strokeWidth="2.2"
                             className="lead-flow-line"
                           />
@@ -887,14 +1144,19 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
                       })
                     ) : (
                       /* Splitter to Generic Agent Pool */
-                      <path d="M 175 320 L 175 412" stroke="#cbd5e1" strokeWidth="2" className="lead-flow-line" />
+                      <path d="M 175 320 L 175 412" stroke={activeTab === 'agents' ? '#10b981' : '#cbd5e1'} strokeWidth="2" className="lead-flow-line" />
                     )}
                   </svg>
                 </div>
 
-                {/* Node 2: Deduplication Filter (Conditionally Rendered) */}
+                {/* Node 2: Deduplication Filter (Conditionally Rendered) (Highlighted on 'dupes' step) */}
                 {dupCheckScope !== 'none' ? (
-                  <div className="relative w-full max-w-[200px] flex items-center justify-center relative z-10 animate-in zoom-in-95 duration-200">
+                  <div className={cn(
+                    "relative w-full max-w-[210px] flex items-center justify-center relative z-10 transition-all duration-300",
+                    activeTab === 'dupes' 
+                      ? "border-red-500 ring-2 ring-red-500/20 scale-[1.03] shadow-md bg-white animate-pulse-glow" 
+                      : "border-border opacity-90"
+                  )}>
                     {/* Blocked branch tag */}
                     <div className="absolute right-[102%] top-1/2 -translate-y-1/2 bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded text-[8px] font-extrabold uppercase select-none tracking-widest shadow-xs">
                       {dupResolution === 'ignore' ? 'Discard 🚫' :
@@ -903,8 +1165,8 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
                     </div>
 
                     <div className="w-full bg-card border border-border rounded-xl p-2.5 shadow-sm text-center relative z-10">
-                      <span className="text-[8px] font-bold text-red-500/80 uppercase tracking-wider block">🛡️ Duplicity Filter</span>
-                      <p className="text-[10px] font-bold text-foreground mt-0.5 capitalize truncate">
+                      <span className="text-[8px] font-bold text-red-500/80 uppercase tracking-widest block">🛡️ Duplicity Filter</span>
+                      <p className="text-[10px] font-bold text-slate-800 mt-0.5 capitalize truncate">
                         {dupCheckScope === 'campaign' ? 'Within Campaign' :
                          dupCheckScope === 'pipeline' ? 'Within Pipeline' : 'Across System'}
                       </p>
@@ -912,68 +1174,64 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
                   </div>
                 ) : null}
 
-                {/* Node 3: Lead Distribution Splitter */}
-                <div className="w-full max-w-[200px] bg-card border border-border rounded-xl p-2.5 shadow-sm text-center relative z-10 animate-in fade-in duration-200">
-                  <span className="text-[8px] font-bold text-teal-600 uppercase tracking-wider block">Splitter</span>
-                  <p className="text-xs font-bold text-foreground truncate max-w-full">
+                {/* Node 3: Lead Distribution Splitter (Highlighted on 'routing' step) */}
+                <div className={cn(
+                  "w-full max-w-[210px] bg-card border rounded-xl p-2.5 shadow-sm text-center relative z-10 transition-all duration-300",
+                  activeTab === 'routing' 
+                    ? "border-teal-500 ring-2 ring-teal-500/20 scale-[1.03] shadow-md bg-white animate-pulse-glow" 
+                    : "border-border opacity-90"
+                )}>
+                  <span className="text-[8px] font-bold text-teal-600 uppercase tracking-widest block">{selectedPipelineName}</span>
+                  <p className="text-xs font-bold text-slate-850 truncate max-w-full">
                     {distribution === 'round_robin' ? 'Round-Robin Auto 🔄' :
                      distribution === 'conditional' ? 'Conditional Routing 🔀' : 'On-Demand Pool 📥'}
                   </p>
                 </div>
 
-                {/* Node 4: Agent Pool / Assigned Callers */}
-                <div className="w-full flex justify-center gap-4 relative z-10 animate-in fade-in duration-200">
+                {/* Node 4: Agent Pool / Assigned Callers (Highlighted on 'agents' step) */}
+                <div className={cn(
+                  "w-full flex justify-center gap-4 relative z-10 transition-all duration-300 p-2 rounded-2xl",
+                  activeTab === 'agents' 
+                    ? "scale-[1.03] bg-emerald-50/5 shadow-xs border border-dashed border-emerald-300 ring-2 ring-emerald-500/10" 
+                    : ""
+                )}>
                   {selectedAgents.length > 0 ? (
                     selectedAgents.slice(0, 3).map((aId) => {
                       const u = users.find((usr) => usr.id === aId);
                       const initial = u?.name ? u.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2) : 'A';
                       return (
                         <div key={aId} className="flex flex-col items-center text-center max-w-[80px]">
-                          <div className="w-9 h-9 rounded-full bg-teal-50 border border-teal-200 shadow-xs flex items-center justify-center text-teal-700 text-xs font-extrabold relative">
+                          <div className={cn(
+                            "w-9 h-9 rounded-full border shadow-xs flex items-center justify-center text-xs font-extrabold relative transition-colors",
+                            activeTab === 'agents' ? "bg-emerald-50 border-emerald-300 text-emerald-700" : "bg-teal-50 border-teal-200 text-teal-700"
+                          )}>
                             {initial}
-                            <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-500 border border-white" />
+                            <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-500 border-2 border-white" />
                           </div>
                           <span className="text-[9px] font-bold text-slate-700 truncate w-full mt-1.5">{u?.name || 'Agent'}</span>
                         </div>
                       );
                     })
                   ) : (
-                    <div className="w-full max-w-[200px] bg-card border border-border rounded-xl p-2.5 shadow-sm text-center">
-                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Receiver</span>
-                      <p className="text-xs font-bold text-foreground truncate max-w-full">General Caller Pool 👥</p>
+                    <div className="w-full max-w-[210px] bg-card border border-border rounded-xl p-2.5 shadow-sm text-center">
+                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block">Receiver</span>
+                      <p className="text-xs font-bold text-slate-800 truncate max-w-full">General Caller Pool 👥</p>
                     </div>
                   )}
                   {selectedAgents.length > 3 && (
                     <div className="flex flex-col items-center justify-center">
-                      <div className="w-9 h-9 rounded-full bg-slate-100 border border-dashed border-slate-300 flex items-center justify-center text-slate-500 text-xs font-bold">
+                      <div className="w-9 h-9 rounded-full bg-slate-100 border border-dashed border-slate-300 flex items-center justify-center text-slate-500 text-xs font-bold shadow-xs">
                         +{selectedAgents.length - 3}
                       </div>
                       <span className="text-[9px] font-bold text-slate-400 mt-1.5">More</span>
                     </div>
                   )}
                 </div>
+
               </div>
             </div>
 
-            <DialogFooter className="col-span-1 lg:col-span-12 pt-4 border-t border-border -mx-6 -mb-6 px-6 bg-muted flex sm:justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                className="h-9 text-xs border-border bg-card hover:bg-muted text-muted-foreground"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={createMutation.isPending}
-                className="h-9 text-xs bg-primary hover:bg-[#1e293b] text-white font-medium"
-              >
-                {createMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1.5" />}
-                Launch Campaign
-              </Button>
-            </DialogFooter>
-          </form>
+          </div>
         )}
       </DialogContent>
     </Dialog>
