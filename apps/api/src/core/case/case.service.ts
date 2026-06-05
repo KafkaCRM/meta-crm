@@ -140,18 +140,18 @@ export class CaseService {
       return err({ code: 'PARTY_NOT_FOUND', message: 'Party not found' });
     }
 
-    let workflow = await this.db.getClient().workflowDefinition.findFirst({
-      where: { id: dto.workflow_definition_id },
+    let workflow = await this.db.getClient().pipelineDefinition.findFirst({
+      where: { id: dto.pipeline_definition_id },
     });
     if (!workflow) {
-      workflow = await this.db.getClient().workflowDefinition.findFirst();
+      workflow = await this.db.getClient().pipelineDefinition.findFirst();
     }
     if (!workflow) {
       return err({ code: 'WORKFLOW_NOT_FOUND', message: 'Workflow definition not found' });
     }
 
-    const stages = await this.db.getClient().workflowStage.findMany({
-      where: { workflow_definition_id: workflow.id },
+    const stages = await this.db.getClient().pipelineStage.findMany({
+      where: { pipeline_definition_id: workflow.id },
       orderBy: { order: 'asc' },
     });
     const defaultStage = stages[0]?.id || '';
@@ -173,7 +173,7 @@ export class CaseService {
         type: dto.type,
         title: dto.title,
         stage: dto.stage || defaultStage,
-        workflow_definition_id: workflow.id,
+        pipeline_definition_id: workflow.id,
         branch_brand_assignment_id: dto.branch_brand_assignment_id,
         assigned_to_id: dto.assigned_to_id,
         vertical_id: dto.vertical_id,
@@ -324,25 +324,25 @@ export class CaseService {
     });
   }
 
-  async findByStage(workflowDefinitionId: string): Promise<Result<any, CaseError>> {
+  async findByStage(pipelineDefinitionId: string): Promise<Result<any, CaseError>> {
     const scope = this.cls.get<RequestScope>('scope');
     if (!scope || !scope.tenant_id) {
       return err({ code: 'TENANT_NOT_FOUND', message: 'Tenant not found' } as any);
     }
 
-    let workflow = await this.db.getClient().workflowDefinition.findFirst({
-      where: { id: workflowDefinitionId },
+    let workflow = await this.db.getClient().pipelineDefinition.findFirst({
+      where: { id: pipelineDefinitionId },
       include: { stages: { orderBy: { order: 'asc' } } },
     });
 
     if (!workflow) {
-      workflow = await this.db.getClient().workflowDefinition.findFirst({
+      workflow = await this.db.getClient().pipelineDefinition.findFirst({
         include: { stages: { orderBy: { order: 'asc' } } },
       });
     }
 
     if (!workflow) {
-      const createdWf = await this.db.getClient().workflowDefinition.create({
+      const createdWf = await this.db.getClient().pipelineDefinition.create({
         data: {
           tenant_id: scope.tenant_id,
           name: 'Default Pipeline',
@@ -359,16 +359,16 @@ export class CaseService {
       ];
 
       for (const s of stagesData) {
-        await this.db.getClient().workflowStage.create({
+        await this.db.getClient().pipelineStage.create({
           data: {
-            workflow_definition_id: createdWf.id,
+            pipeline_definition_id: createdWf.id,
             name: s.name,
             order: s.order,
           },
         });
       }
 
-      workflow = await this.db.getClient().workflowDefinition.findFirst({
+      workflow = await this.db.getClient().pipelineDefinition.findFirst({
         where: { id: createdWf.id },
         include: { stages: { orderBy: { order: 'asc' } } },
       }) as any;

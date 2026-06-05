@@ -26,7 +26,7 @@ describe('EnrollmentTriggersService', () => {
         case: {
           findUnique: vi.fn(),
         },
-        workflowStage: {
+        pipelineStage: {
           findUnique: vi.fn(),
         },
         interaction: {
@@ -85,7 +85,7 @@ describe('EnrollmentTriggersService', () => {
       attributes: { course_name: 'BSc Computer Science' },
       party: { phone_normalized: '+1234567890' },
     });
-    mockDb.getClient().workflowStage.findUnique.mockResolvedValue({ id: 'stage-fee-paid', name: 'Fee Paid' });
+    mockDb.getClient().pipelineStage.findUnique.mockResolvedValue({ id: 'stage-fee-paid', name: 'Fee Paid' });
 
     await service.handleStageChanged(casePayload);
 
@@ -176,7 +176,7 @@ describe('EnrollmentTriggersService', () => {
       attributes: {},
       party: { phone_normalized: '+1234567890' },
     });
-    mockDb.getClient().workflowStage.findUnique.mockResolvedValue({ id: 'stage-interview', name: 'Interview' });
+    mockDb.getClient().pipelineStage.findUnique.mockResolvedValue({ id: 'stage-interview', name: 'Interview' });
 
     await service.handleStageChanged(casePayload);
 

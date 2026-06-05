@@ -19,8 +19,8 @@ function CasePageWrapper() {
   const navigate = useNavigate();
   
   const { data: workflows = [], isLoading } = useQuery({
-    queryKey: ['settings', 'workflows'],
-    queryFn: () => settingsApi.workflows.list(),
+    queryKey: ['settings', 'pipelines'],
+    queryFn: () => settingsApi.pipelines.list(),
   });
 
   if (isLoading) {
@@ -50,7 +50,7 @@ function CasePageWrapper() {
     navigate({ to: '/cases', search: { workflowId: workflows[0].id }, replace: true });
   }
 
-  return <CaseKanban workflowDefinitionId={activeWfId} />;
+  return <CaseKanban pipelineDefinitionId={activeWfId} />;
 }
 
 export const casesNewRoute = createRoute({

@@ -19,7 +19,7 @@ export const TENANT_SCOPED_MODELS: readonly string[] = [
   'UserRole',
   'FieldDefinition',
   'LabelOverride',
-  'WorkflowDefinition',
+  'PipelineDefinition',
   'IntegrationConfig',
   'WebhookSubscription',
   'TenantPlugin',

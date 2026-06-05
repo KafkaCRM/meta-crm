@@ -192,7 +192,7 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
   // 4. Fetch pipelines (workflows)
   const { data: pipelines = [], isLoading: pipelinesLoading } = useQuery({
     queryKey: ['settings', 'pipelines'],
-    queryFn: () => settingsApi.workflows.list(),
+    queryFn: () => settingsApi.pipelines.list(),
     enabled: isOpen,
     staleTime: 30_000,
   });
@@ -267,7 +267,7 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
       }
 
       if (!activePipelineId) {
-        const defaultWf = await settingsApi.workflows.getDefault();
+        const defaultWf = await settingsApi.pipelines.getDefault();
         activePipelineId = defaultWf.id;
       }
 
@@ -366,7 +366,7 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
     // Step 1 validation (Basics & Pipeline)
     if (!tab || tab === 'basics') {
       if (!name.trim()) nextErrors.name = 'Campaign Name is required';
-      if (!pipelineId) nextErrors.pipelineId = 'Target Workflow Pipeline is required';
+      if (!pipelineId) nextErrors.pipelineId = 'Target Pipeline is required';
     }
     
     // System integrity verification - ONLY validated on final submit
@@ -516,7 +516,7 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
                         Campaign Profile & Target Pipeline
                       </h3>
                       <p className="text-[11px] text-muted-foreground leading-normal">
-                        Identify the campaign name and connect it to a sales funnel workflow pipeline.
+                        Identify the campaign name and connect it to a sales funnel pipeline.
                       </p>
                     </div>
 
@@ -543,7 +543,7 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                           <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">
-                            Target Workflow Pipeline <span className="text-red-500">*</span>
+                            Target Pipeline <span className="text-red-500">*</span>
                           </label>
                           <select
                             value={pipelineId}
@@ -936,7 +936,7 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
                           >
                             <Layers size={15} className={cn("mb-1", dupCheckScope === 'pipeline' ? "text-slate-800" : "text-slate-400")} />
                             <span className="text-[11px] font-semibold text-slate-850">Within Pipeline</span>
-                            <span className="text-[9px] text-muted-foreground scale-95 font-medium leading-none">Checks active pipeline workflow</span>
+                            <span className="text-[9px] text-muted-foreground scale-95 font-medium leading-none">Checks active pipeline</span>
                           </button>
 
                           {/* Global */}

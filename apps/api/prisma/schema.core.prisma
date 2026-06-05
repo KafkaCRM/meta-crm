@@ -37,7 +37,7 @@ model Case {
   type                      String
   title                     String
   stage                     String
-  workflow_definition_id    String
+  pipeline_definition_id    String
   assigned_to_id            String?
   vertical_id               String?
   campaign_id               String?
@@ -46,11 +46,13 @@ model Case {
   updated_at                DateTime @updatedAt
 
   party             Party          @relation(fields: [party_id], references: [id])
+  pipelineDefinition PipelineDefinition @relation(fields: [pipeline_definition_id], references: [id])
   assignedTo        User?          @relation("AssignedCases", fields: [assigned_to_id], references: [id])
   caseEvents        CaseEvent[]
   interactions      Interaction[]
 
   @@index([tenant_id, stage])
+  @@index([tenant_id, pipeline_definition_id])
   @@index([tenant_id, party_id])
   @@index([tenant_id, assigned_to_id])
   @@index([tenant_id, created_at])

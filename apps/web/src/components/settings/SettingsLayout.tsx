@@ -62,7 +62,7 @@ const NAV: SettingsNavSection[] = [
     items: [
       { id: 'objects', label: 'Object Manager', icon: Settings2, permission: ['manage', 'FieldDefinition'] },
       { id: 'layout-builder', label: 'Layout Designer', icon: Layers, permission: ['manage', 'FieldDefinition'] },
-      { id: 'workflows', label: 'Pipeline Settings', icon: Workflow, permission: ['manage', 'Workflow'] },
+      { id: 'pipelines', label: 'Pipeline Settings', icon: Workflow, permission: ['manage', 'Workflow'] },
       { id: 'fields', label: 'Custom Fields', icon: Sliders, permission: ['manage', 'FieldDefinition'] },
       { id: 'labels', label: 'Labels', icon: Tags, permission: ['manage', 'LabelOverride'] },
     ],

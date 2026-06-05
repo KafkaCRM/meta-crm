@@ -20,10 +20,10 @@ function mockDb() {
       lead: {
         update: vi.fn().mockResolvedValue({ id: 'lead-1', status: 'converted' }),
       },
-      workflowDefinition: {
+      pipelineDefinition: {
         findFirst: vi.fn().mockResolvedValue({ id: 'wf-1', vertical_id: 'vert-1' }),
       },
-      workflowStage: {
+      pipelineStage: {
         findMany: vi.fn().mockResolvedValue([{ id: 'stage-1', order: 0 }]),
       },
     });
@@ -37,6 +37,9 @@ function mockDb() {
         create: vi.fn(),
         update: vi.fn(),
         delete: vi.fn(),
+      },
+      party: {
+        findMany: vi.fn().mockResolvedValue([]),
       },
       $transaction: transactionMock,
     }),

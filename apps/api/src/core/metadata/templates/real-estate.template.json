@@ -11,7 +11,7 @@
       { "name": "negotiation_status", "label": "Negotiation Status", "field_type": "select", "options": ["Initial", "In Progress", "Final", "Closed"], "order": 2 }
     ]
   },
-  "workflow_definition": {
+  "pipeline_definition": {
     "name": "Property Deal Pipeline",
     "entity_type": "deal",
     "stages": [

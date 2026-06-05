@@ -20,6 +20,14 @@ export interface LeadResponse {
   converted_party_id: string | null;
   converted_case_id: string | null;
   campaign_id?: string | null;
+  assigned_to_id?: string | null;
+  duplicate_risk?: boolean;
+  phone_valid?: boolean;
+  assigned_to?: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
   attributes: Record<string, any>;
   created_at: string;
   updated_at: string;
@@ -36,7 +44,7 @@ export interface ConvertLeadInput {
   case_title?: string;
   case_type?: string;
   case_stage?: string;
-  workflow_definition_id?: string;
+  pipeline_definition_id?: string;
   assigned_to_id?: string;
   vertical_id?: string;
   campaign_id?: string;

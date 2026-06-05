@@ -19,7 +19,7 @@ function buildMocks() {
     caseEvent: { findMany: vi.fn() },
     interaction: { groupBy: vi.fn() },
     party: { groupBy: vi.fn() },
-    workflowStage: { groupBy: vi.fn(), findMany: vi.fn() },
+    pipelineStage: { groupBy: vi.fn(), findMany: vi.fn() },
     campaign: { findMany: vi.fn(), findFirst: vi.fn() },
   };
   const db = { getClient: vi.fn().mockReturnValue(client) } as unknown as TenantScopedPrismaService;
@@ -114,15 +114,15 @@ describe('TenantReportService', () => {
   describe('conversionRate', () => {
     it('returns rate, total, and converted', async () => {
       (client.case.count as any).mockResolvedValue(20);
-      (client.workflowStage.groupBy as any).mockResolvedValue([
-        { workflow_definition_id: 'wf-1', _max: { order: 3 } },
+      (client.pipelineStage.groupBy as any).mockResolvedValue([
+        { pipeline_definition_id: 'wf-1', _max: { order: 3 } },
       ]);
-      (client.workflowStage.findMany as any).mockResolvedValue([
+      (client.pipelineStage.findMany as any).mockResolvedValue([
         { id: 'stage-final' },
       ]);
       (client.case.findMany as any).mockResolvedValue([
-        { id: 'c-1', workflow_definition_id: 'wf-1', stage: 'stage-final' },
-        { id: 'c-2', workflow_definition_id: 'wf-1', stage: 'Enquiry' },
+        { id: 'c-1', pipeline_definition_id: 'wf-1', stage: 'stage-final' },
+        { id: 'c-2', pipeline_definition_id: 'wf-1', stage: 'Enquiry' },
       ]);
 
       const result = await svc.conversionRate({});
@@ -230,9 +230,9 @@ describe('TenantReportService', () => {
         { campaign_id: 'camp-1', stage: 'stage-final', _count: { id: 5 } },
         { campaign_id: 'camp-1', stage: 'Enquiry', _count: { id: 5 } },
       ]);
-      (client.workflowStage.findMany as any).mockResolvedValue([
-        { id: 'Enquiry', name: 'Enquiry', order: 1, workflow_definition_id: 'pipe-1' },
-        { id: 'stage-final', name: 'Won', order: 2, workflow_definition_id: 'pipe-1' },
+      (client.pipelineStage.findMany as any).mockResolvedValue([
+        { id: 'Enquiry', name: 'Enquiry', order: 1, pipeline_definition_id: 'pipe-1' },
+        { id: 'stage-final', name: 'Won', order: 2, pipeline_definition_id: 'pipe-1' },
       ]);
 
       const result = await svc.campaigns({});
@@ -293,9 +293,9 @@ describe('TenantReportService', () => {
         { campaign_id: 'camp-google', stage: 'stage-final', _count: { id: 5 } },
         { campaign_id: 'camp-google', stage: 'Enquiry', _count: { id: 5 } },
       ]);
-      (client.workflowStage.findMany as any).mockResolvedValue([
-        { id: 'Enquiry', name: 'Enquiry', order: 1, workflow_definition_id: 'pipe-1' },
-        { id: 'stage-final', name: 'Won', order: 2, workflow_definition_id: 'pipe-1' },
+      (client.pipelineStage.findMany as any).mockResolvedValue([
+        { id: 'Enquiry', name: 'Enquiry', order: 1, pipeline_definition_id: 'pipe-1' },
+        { id: 'stage-final', name: 'Won', order: 2, pipeline_definition_id: 'pipe-1' },
       ]);
 
       const result = await svc.channelPerformance({});

@@ -105,7 +105,7 @@ export class EnrollmentTriggersService implements OnModuleInit {
   }
 
   private async getStageName(stageId: string): Promise<string | null> {
-    const stage = await this.db.getClient().workflowStage.findUnique({
+    const stage = await this.db.getClient().pipelineStage.findUnique({
       where: { id: stageId },
     });
     return stage?.name ?? null;

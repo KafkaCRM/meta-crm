@@ -11,7 +11,7 @@
       { "name": "diagnosis", "label": "Diagnosis", "field_type": "text", "order": 2 }
     ]
   },
-  "workflow_definition": {
+  "pipeline_definition": {
     "name": "Patient Care Pipeline",
     "entity_type": "appointment",
     "stages": [

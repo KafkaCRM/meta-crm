@@ -60,78 +60,81 @@
   --color-sidebar-ring: var(--sidebar-ring);
 
   /* Intercom custom tokens - Editorial Cream-White ground & Charcoal ink */
-  --color-canvas: #f5f1ec;
+  --color-canvas: #f7f8fa;
   --color-surface-1: #ffffff;
-  --color-surface-2: #ebe7e1;
-  --color-hairline: #d3cec6;
-  --color-hairline-soft: #ebe7e1;
-  --color-ink: #111111;
-  --color-ink-muted: #626260;
-  --color-ink-subtle: #7b7b78;
-  --color-ink-tertiary: #9c9fa5;
-  --color-fin-orange: #ff5600;
-  --color-report-blue: #65b5ff;
-  --color-report-green: #0bdf50;
-  --color-report-pink: #ff2067;
-  --color-report-lime: #b3e01c;
-  --color-report-cyan: #03b2cb;
-  --color-brand-blue: #0007cb;
+  --color-surface-2: #eef1f5;
+  --color-hairline: #d9dee7;
+  --color-hairline-soft: #e7eaf0;
+  --color-ink: #111827;
+  --color-ink-muted: #667085;
+  --color-ink-subtle: #8a94a6;
+  --color-ink-tertiary: #a4adbb;
+  --color-fin-orange: #1d4ed8;
+  --color-report-blue: #2563eb;
+  --color-report-green: #059669;
+  --color-report-pink: #db2777;
+  --color-report-lime: #65a30d;
+  --color-report-cyan: #0891b2;
+  --color-brand-blue: #1d4ed8;
+  --color-whatsapp: #16a34a;
+  --color-due: #f59e0b;
+  --color-overdue: #dc2626;
 }
 
 :root {
   /* Intercom Editorial Cream-White ground Theme definitions */
-  --background: oklch(0.96 0.007 80);           /* #f5f1ec canvas */
-  --foreground: oklch(0.18 0 0);               /* #111111 ink */
+  --background: oklch(0.978 0.004 240);        /* #f7f8fa canvas */
+  --foreground: oklch(0.21 0.03 260);          /* #111827 ink */
 
   /* Cards = pure white */
   --card: oklch(1 0 0);                        /* #ffffff */
-  --card-foreground: oklch(0.18 0 0);          /* #111111 */
+  --card-foreground: oklch(0.21 0.03 260);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0 0);
+  --popover-foreground: oklch(0.21 0.03 260);
 
   /* Primary = charcoal ink */
-  --primary: oklch(0.18 0 0);                  /* #111111 */
+  --primary: oklch(0.53 0.19 260);             /* #1d4ed8 */
   --primary-foreground: oklch(1 0 0);          /* #ffffff */
 
   /* Secondary = surface-2 cream */
-  --secondary: oklch(0.92 0.006 80);           /* #ebe7e1 */
-  --secondary-foreground: oklch(0.18 0 0);
+  --secondary: oklch(0.94 0.01 250);           /* #eef1f5 */
+  --secondary-foreground: oklch(0.21 0.03 260);
 
   /* Muted */
-  --muted: oklch(0.92 0.006 80);               /* #ebe7e1 */
-  --muted-foreground: oklch(0.48 0.005 80);    /* #626260 ink-muted */
+  --muted: oklch(0.94 0.01 250);               /* #eef1f5 */
+  --muted-foreground: oklch(0.49 0.03 260);    /* #667085 */
 
   /* Accent */
-  --accent: oklch(0.92 0.006 80);
-  --accent-foreground: oklch(0.18 0 0);
+  --accent: oklch(0.94 0.01 250);
+  --accent-foreground: oklch(0.21 0.03 260);
 
   /* Destructive */
-  --destructive: oklch(0.45 0.18 20);          /* #c41c1c */
+  --destructive: oklch(0.58 0.22 27);          /* #dc2626 */
 
   /* Borders — hairline warm gray */
-  --border: oklch(0.85 0.006 80);              /* #d3cec6 */
-  --input: oklch(0.85 0.006 80);
-  --ring: oklch(0.48 0.005 80);                /* ink-muted */
+  --border: oklch(0.88 0.012 250);             /* #d9dee7 */
+  --input: oklch(0.88 0.012 250);
+  --ring: oklch(0.53 0.19 260);
 
   /* Border radius */
-  --radius: 0.75rem;                           /* 12px for cards */
+  --radius: 0.5rem;                            /* 8px for operational UI */
 
   /* Chart colors - Intercom report palette */
-  --chart-1: #fe4c02;
-  --chart-2: #65b5ff;
-  --chart-3: #0bdf50;
-  --chart-4: #ff2067;
-  --chart-5: #b3e01c;
+  --chart-1: #2563eb;
+  --chart-2: #059669;
+  --chart-3: #f59e0b;
+  --chart-4: #db2777;
+  --chart-5: #0891b2;
 
   /* Sidebar — beautiful warm cream canvas with charcoal text, matching the editorial styling */
-  --sidebar: oklch(0.96 0.007 80);             /* #f5f1ec canvas */
-  --sidebar-foreground: oklch(0.48 0.005 80);   /* #626260 */
-  --sidebar-primary: oklch(0.18 0 0);          /* #111111 */
+  --sidebar: oklch(0.978 0.004 240);
+  --sidebar-foreground: oklch(0.49 0.03 260);
+  --sidebar-primary: oklch(0.21 0.03 260);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.92 0.006 80);      /* #ebe7e1 */
-  --sidebar-accent-foreground: oklch(0.18 0 0);
-  --sidebar-border: oklch(0.85 0.006 80);      /* #d3cec6 */
-  --sidebar-ring: oklch(0.48 0.005 80);
+  --sidebar-accent: oklch(0.94 0.01 250);
+  --sidebar-accent-foreground: oklch(0.21 0.03 260);
+  --sidebar-border: oklch(0.88 0.012 250);
+  --sidebar-ring: oklch(0.53 0.19 260);
 }
 
 @layer base {
@@ -177,10 +180,12 @@
   .surface-2 { background-color: var(--muted); }
   .fin-orange { color: var(--color-fin-orange); }
   .bg-fin-orange { background-color: var(--color-fin-orange); }
+  .text-whatsapp { color: var(--color-whatsapp); }
+  .bg-whatsapp { background-color: var(--color-whatsapp); }
   .ink { color: var(--foreground); }
   .ink-muted { color: var(--muted-foreground); }
-  .ink-subtle { color: oklch(0.706 0.012 240); }
+  .ink-subtle { color: var(--color-ink-subtle); }
   .hairline { border-color: var(--border); }
-  .tracking-display { letter-spacing: -0.03em; }
-  .tracking-headline { letter-spacing: -0.02em; }
+  .tracking-display { letter-spacing: 0; }
+  .tracking-headline { letter-spacing: 0; }
 }

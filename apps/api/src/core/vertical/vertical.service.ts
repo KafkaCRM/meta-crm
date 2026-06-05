@@ -58,7 +58,7 @@ export class VerticalService {
       const data = await Promise.all(
         verticals.map(async (v) => {
           const [pipeline_count, active_campaign_count] = await Promise.all([
-            this.db.getClient().workflowDefinition.count({
+            this.db.getClient().pipelineDefinition.count({
               where: { vertical_id: v.id },
             }),
             this.db.getClient().campaign.count({
@@ -264,7 +264,7 @@ export class VerticalService {
   }
 
   private async getActiveCasesCount(verticalId: string): Promise<number> {
-    const wfs = await this.db.getClient().workflowDefinition.findMany({
+    const wfs = await this.db.getClient().pipelineDefinition.findMany({
       where: { vertical_id: verticalId },
       select: { id: true },
     });
@@ -276,17 +276,17 @@ export class VerticalService {
     }
 
     const wfIds = wfs.map((w) => w.id);
-    const wfGroups = await this.db.getClient().workflowStage.groupBy({
-      by: ['workflow_definition_id'],
-      where: { workflow_definition_id: { in: wfIds } },
+    const wfGroups = await this.db.getClient().pipelineStage.groupBy({
+      by: ['pipeline_definition_id'],
+      where: { pipeline_definition_id: { in: wfIds } },
       _max: { order: true },
     });
 
     const finalStageIds: string[] = [];
     for (const group of wfGroups) {
-      const stages = await this.db.getClient().workflowStage.findMany({
+      const stages = await this.db.getClient().pipelineStage.findMany({
         where: {
-          workflow_definition_id: group.workflow_definition_id,
+          pipeline_definition_id: group.pipeline_definition_id,
           order: group._max.order!,
         },
         select: { id: true },
@@ -316,7 +316,7 @@ export class VerticalService {
       this.db.getClient().campaign.count({
         where: { vertical_id: verticalId, status: 'active' },
       }),
-      this.db.getClient().workflowDefinition.count({
+      this.db.getClient().pipelineDefinition.count({
         where: { vertical_id: verticalId },
       }),
     ]);
@@ -332,7 +332,7 @@ export class VerticalService {
       };
     }
 
-    const wfs = await this.db.getClient().workflowDefinition.findMany({
+    const wfs = await this.db.getClient().pipelineDefinition.findMany({
       where: { vertical_id: verticalId },
       select: { id: true },
     });
@@ -342,17 +342,17 @@ export class VerticalService {
 
     if (wfs.length > 0) {
       const wfIds = wfs.map((w) => w.id);
-      const wfGroups = await this.db.getClient().workflowStage.groupBy({
-        by: ['workflow_definition_id'],
-        where: { workflow_definition_id: { in: wfIds } },
+      const wfGroups = await this.db.getClient().pipelineStage.groupBy({
+        by: ['pipeline_definition_id'],
+        where: { pipeline_definition_id: { in: wfIds } },
         _max: { order: true },
       });
 
       const finalStageIds: string[] = [];
       for (const group of wfGroups) {
-        const stages = await this.db.getClient().workflowStage.findMany({
+        const stages = await this.db.getClient().pipelineStage.findMany({
           where: {
-            workflow_definition_id: group.workflow_definition_id,
+            pipeline_definition_id: group.pipeline_definition_id,
             order: group._max.order!,
           },
           select: { id: true },

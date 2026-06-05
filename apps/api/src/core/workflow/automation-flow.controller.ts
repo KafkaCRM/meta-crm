@@ -16,9 +16,9 @@ import { IsString, IsOptional, IsBoolean } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../permissions/permissions.guard';
 import { CheckPermissions } from '../permissions/permissions.decorator';
-import { AutomationFlowService } from './automation-flow.service';
+import { AutomationWorkflowService } from './automation-flow.service';
 
-class CreateAutomationFlowDto {
+class CreateAutomationWorkflowDto {
   @IsString()
   name!: string;
 
@@ -36,7 +36,7 @@ class CreateAutomationFlowDto {
   is_active?: boolean;
 }
 
-class UpdateAutomationFlowDto {
+class UpdateAutomationWorkflowDto {
   @IsOptional()
   @IsString()
   name?: string;
@@ -57,10 +57,10 @@ class UpdateAutomationFlowDto {
   is_active?: boolean;
 }
 
-@Controller('automation-flows')
+@Controller(['automation-workflows', 'automation-flows'])
 @UseGuards(JwtAuthGuard, PermissionsGuard)
-export class AutomationFlowController {
-  constructor(private readonly service: AutomationFlowService) {}
+export class AutomationWorkflowController {
+  constructor(private readonly service: AutomationWorkflowService) {}
 
   @Get()
   @CheckPermissions('read', 'Workflow')
@@ -88,7 +88,7 @@ export class AutomationFlowController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @CheckPermissions('manage', 'Workflow')
-  async create(@Body() dto: CreateAutomationFlowDto) {
+  async create(@Body() dto: CreateAutomationWorkflowDto) {
     const result = await this.service.create(dto);
     if (result.isErr()) {
       throw new InternalServerErrorException(result.error.message);
@@ -98,7 +98,7 @@ export class AutomationFlowController {
 
   @Patch(':id')
   @CheckPermissions('manage', 'Workflow')
-  async update(@Param('id') id: string, @Body() dto: UpdateAutomationFlowDto) {
+  async update(@Param('id') id: string, @Body() dto: UpdateAutomationWorkflowDto) {
     const result = await this.service.update(id, dto);
     if (result.isErr()) {
       if (result.error.code === 'NOT_FOUND') {
@@ -120,6 +120,6 @@ export class AutomationFlowController {
       }
       throw new InternalServerErrorException(result.error.message);
     }
-    return { message: 'Automation flow deleted' };
+    return { message: 'Automation workflow deleted' };
   }
 }

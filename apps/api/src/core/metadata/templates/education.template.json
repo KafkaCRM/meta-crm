@@ -16,7 +16,7 @@
       { "name": "batch_preference", "label": "Batch Preference", "field_type": "select", "options": ["Morning", "Afternoon", "Evening", "Weekend"], "order": 4 }
     ]
   },
-  "workflow_definition": {
+  "pipeline_definition": {
     "name": "Admissions Pipeline",
     "entity_type": "enrollment",
     "stages": [

@@ -11,7 +11,7 @@ export class CreateCaseDto {
   title!: string;
 
   @IsString()
-  workflow_definition_id!: string;
+  pipeline_definition_id!: string;
 
   @IsString()
   stage!: string;

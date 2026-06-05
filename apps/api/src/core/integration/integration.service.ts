@@ -112,6 +112,14 @@ export interface IntegrationDto {
   config_json: Record<string, unknown>;
 }
 
+export interface IntegrationTestResult {
+  provider: string;
+  status: 'healthy' | 'error';
+  message: string;
+  last_checked_at: string;
+  checked_fields: string[];
+}
+
 // ─── Service ─────────────────────────────────────────────────────────────────
 
 @Injectable()
@@ -327,6 +335,93 @@ export class IntegrationService {
     this.logger.log(`Tenant ${tenantId} disconnected integration: ${manifest.id}`);
 
     return ok({ message: `${manifest.name} disconnected successfully` });
+  }
+
+  async testConnection(provider: string): Promise<Result<IntegrationTestResult, IntegrationError>> {
+    const scope = this.getScope();
+    if (!scope?.tenant_id) {
+      return err({ code: 'TENANT_NOT_FOUND', message: 'Tenant context missing' });
+    }
+
+    const manifest = INTEGRATION_MANIFESTS.find((m) => m.provider === provider);
+    if (!manifest) {
+      return err({ code: 'PROVIDER_NOT_FOUND', message: `Unknown integration provider: ${provider}` });
+    }
+
+    const tenantId = scope.tenant_id;
+    const checkedAt = new Date().toISOString();
+
+    const extensionRegistry = await this.db.getClient().extensionRegistry.findFirst({
+      where: { package_name: manifest.id },
+    });
+    if (!extensionRegistry) {
+      return err({ code: 'NOT_CONNECTED', message: `${manifest.name} is not configured` });
+    }
+
+    const config = await this.db.getClient().integrationConfig.findUnique({
+      where: { tenant_id_provider: { tenant_id: tenantId, provider } },
+    });
+    if (!config?.enabled) {
+      return err({ code: 'NOT_CONNECTED', message: `${manifest.name} is disconnected` });
+    }
+
+    const credential = await this.db.getClient().secureCredential.findUnique({
+      where: {
+        tenant_id_extension_id: {
+          tenant_id: tenantId,
+          extension_id: extensionRegistry.id,
+        },
+      },
+    });
+    if (!credential) {
+      return err({ code: 'NOT_CONNECTED', message: `No credentials stored for ${manifest.name}` });
+    }
+
+    const decryptResult = this.encryption.decrypt(
+      credential.cipher_text,
+      credential.iv,
+      credential.tag,
+    );
+    if (decryptResult.isErr()) {
+      return err({ code: 'DECRYPTION_FAILED', message: decryptResult.error.message });
+    }
+
+    let credentials: Record<string, string>;
+    try {
+      credentials = JSON.parse(decryptResult.value) as Record<string, string>;
+    } catch {
+      return err({ code: 'DECRYPTION_FAILED', message: 'Credential payload is not valid JSON' });
+    }
+
+    const missingFields = manifest.credential_fields.filter((field) => !credentials[field]?.trim());
+    const health: IntegrationTestResult = missingFields.length === 0
+      ? {
+          provider,
+          status: 'healthy',
+          message: `${manifest.name} has the required credentials and is ready for connector jobs.`,
+          last_checked_at: checkedAt,
+          checked_fields: manifest.credential_fields,
+        }
+      : {
+          provider,
+          status: 'error',
+          message: `Missing required credentials: ${missingFields.join(', ')}`,
+          last_checked_at: checkedAt,
+          checked_fields: manifest.credential_fields,
+        };
+
+    const existingConfig = (config.config_json as Record<string, unknown>) ?? {};
+    await this.db.getClient().integrationConfig.update({
+      where: { tenant_id_provider: { tenant_id: tenantId, provider } },
+      data: {
+        config_json: {
+          ...existingConfig,
+          health,
+        } as unknown as Prisma.InputJsonValue,
+      },
+    });
+
+    return ok(health);
   }
 
   // ── Retrieve decrypted credentials (used internally by adapters) ──────────

@@ -47,20 +47,20 @@ export function WorkflowBuilder() {
   // 1. Query - List all pipelines
   const { data: pipelines = [], isLoading: listLoading, refetch: refetchPipelines } = useQuery({
     queryKey: ['settings', 'pipelines-all'],
-    queryFn: () => settingsApi.workflows.list(),
+    queryFn: () => settingsApi.pipelines.list(),
     staleTime: 30_000,
   });
 
   // 2. Query - Fetch current selected pipeline details
   const { data: activePipeline, isLoading: pipelineDetailsLoading } = useQuery({
     queryKey: ['settings', 'pipeline-details', activePipelineId],
-    queryFn: () => settingsApi.workflows.getDefault(), // Fallback check or get
+    queryFn: () => settingsApi.pipelines.getDefault(), // Fallback check or get
     enabled: false, // Triggered manually on Edit click
   });
 
   // 3. Mutation - Create custom pipeline
   const createPipelineMutation = useMutation({
-    mutationFn: (data: { name: string }) => settingsApi.workflows.create(data),
+    mutationFn: (data: { name: string }) => settingsApi.pipelines.create(data),
     onSuccess: (created) => {
       toast.success(`Pipeline "${created.name}" created successfully!`);
       setIsCreateModalOpen(false);
@@ -90,7 +90,7 @@ export function WorkflowBuilder() {
 
   // Mutation - Delete custom pipeline
   const deletePipelineMutation = useMutation({
-    mutationFn: (id: string) => settingsApi.workflows.delete(id),
+    mutationFn: (id: string) => settingsApi.pipelines.delete(id),
     onSuccess: () => {
       toast.success('Pipeline deleted successfully!');
       queryClient.invalidateQueries({ queryKey: ['settings'] });
@@ -124,7 +124,7 @@ export function WorkflowBuilder() {
     mutationFn: () => {
       if (!activePipelineId) return Promise.reject(new Error('No pipeline loaded'));
       // Keep structural integrity but map stages cleanly
-      return settingsApi.workflows.update(activePipelineId, { 
+      return settingsApi.pipelines.update(activePipelineId, { 
         name: activePipelineName, 
         stages: stages.map((s, idx) => ({ ...s, order: idx })), 
         transitions: [] // Handled dynamically or seeded
@@ -447,7 +447,7 @@ export function WorkflowBuilder() {
               <DialogHeader>
                 <DialogTitle className="text-base font-semibold text-foreground flex items-center gap-2">
                   <AlertCircle size={18} className="text-red-605 text-red-600" />
-                  Delete Pipeline Workflow
+                  Delete Pipeline
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground mt-1 leading-relaxed">
                   Are you sure you want to permanently delete the pipeline <strong className="text-slate-800 font-bold">"{pipelineToDelete?.name}"</strong>? 

@@ -8,7 +8,7 @@ import { ChevronDown, ChevronRight, Plus, CheckCircle2, AlertCircle } from 'luci
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@radix-ui/react-tooltip';
 import { cn } from '@/lib/utils';
 import { evaluateVisibilityRules, type VisibilityRuleEntry } from '@meta-crm/types';
-import type { CaseDto, WorkflowStageDto } from '@meta-crm/types';
+import type { CaseDto, PipelineStageDto } from '@meta-crm/types';
 import { KanbanCard } from './KanbanCard';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -19,7 +19,7 @@ dayjs.extend(relativeTime);
 const CARD_HEIGHT = 112;
 
 interface KanbanColumnProps {
-  stage: WorkflowStageDto;
+  stage: PipelineStageDto;
   cases: CaseDto[];
   selectedIds: Set<string>;
   onToggleSelect: (caseId: string) => void;

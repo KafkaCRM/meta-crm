@@ -14,7 +14,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { produce } from 'immer';
 import { evaluateVisibilityRules } from '@meta-crm/types';
-import type { CaseDto, WorkflowStageDto } from '@meta-crm/types';
+import type { CaseDto, PipelineStageDto } from '@meta-crm/types';
 import { casesApi, type CasesByStage } from '@/api/cases';
 import { settingsApi } from '@/api/settings';
 import { useRealtime } from '@/hooks/useRealtime';
@@ -33,7 +33,7 @@ import { cn } from '@/lib/utils';
 dayjs.extend(relativeTime);
 
 interface CaseKanbanProps {
-  workflowDefinitionId: string;
+  pipelineDefinitionId: string;
 }
 
 interface OptimisticMove {
@@ -44,7 +44,7 @@ interface OptimisticMove {
 
 function evaluateCriteriaForStage(
   caseData: CaseDto,
-  targetStage: WorkflowStageDto,
+  targetStage: PipelineStageDto,
 ): { met: boolean; unmet: string[] } {
   const criteria = targetStage.entry_criteria;
   if (!criteria || (Array.isArray(criteria) && criteria.length === 0)) return { met: true, unmet: [] };
@@ -72,15 +72,15 @@ function evaluateCriteriaForStage(
   return { met: false, unmet };
 }
 
-export function CaseKanban({ workflowDefinitionId }: CaseKanbanProps) {
+export function CaseKanban({ pipelineDefinitionId }: CaseKanbanProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { can } = usePermissions();
   const { t } = useLabels();
 
   const { data: workflows = [] } = useQuery({
-    queryKey: ['settings', 'workflows'],
-    queryFn: () => settingsApi.workflows.list(),
+    queryKey: ['settings', 'pipelines'],
+    queryFn: () => settingsApi.pipelines.list(),
   });
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -101,8 +101,8 @@ export function CaseKanban({ workflowDefinitionId }: CaseKanbanProps) {
   }, [view]);
 
   const { data, isLoading } = useQuery<CasesByStage>({
-    queryKey: ['cases', 'kanban', workflowDefinitionId],
-    queryFn: () => casesApi.listByStage(workflowDefinitionId),
+    queryKey: ['cases', 'kanban', pipelineDefinitionId],
+    queryFn: () => casesApi.listByStage(pipelineDefinitionId),
     staleTime: 30_000,
   });
 
@@ -127,13 +127,13 @@ export function CaseKanban({ workflowDefinitionId }: CaseKanbanProps) {
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['cases', 'kanban', workflowDefinitionId] });
+      queryClient.invalidateQueries({ queryKey: ['cases', 'kanban', pipelineDefinitionId] });
     },
   });
 
   useRealtime('case:stage_changed', (payload: { case_id: string; to_stage: string }) => {
     queryClient.setQueryData<CasesByStage>(
-      ['cases', 'kanban', workflowDefinitionId],
+      ['cases', 'kanban', pipelineDefinitionId],
       (old) => {
         if (!old) return old;
         return produce(old, (draft) => {
@@ -169,7 +169,7 @@ export function CaseKanban({ workflowDefinitionId }: CaseKanbanProps) {
   const casesByStage = useMemo(() => data?.cases ?? {}, [data?.cases]);
 
   const stageMap = useMemo(() => {
-    const map = new Map<string, WorkflowStageDto>();
+    const map = new Map<string, PipelineStageDto>();
     for (const stage of stages) {
       map.set(stage.id, stage);
     }
@@ -238,7 +238,7 @@ export function CaseKanban({ workflowDefinitionId }: CaseKanbanProps) {
       }
 
       queryClient.setQueryData<CasesByStage>(
-        ['cases', 'kanban', workflowDefinitionId],
+        ['cases', 'kanban', pipelineDefinitionId],
         (old) => {
           if (!old) return old;
           return produce(old, (draft) => {
@@ -259,7 +259,7 @@ export function CaseKanban({ workflowDefinitionId }: CaseKanbanProps) {
 
       transitionMutation.mutate({ caseId, toStageId: targetStageId });
     },
-    [casesByStage, stageMap, queryClient, workflowDefinitionId, transitionMutation],
+    [casesByStage, stageMap, queryClient, pipelineDefinitionId, transitionMutation],
   );
 
   const handleToggleSelect = useCallback((caseId: string) => {
@@ -483,12 +483,12 @@ export function CaseKanban({ workflowDefinitionId }: CaseKanbanProps) {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-bold tracking-tight text-foreground">
-              {workflows.find((wf: any) => wf.id === workflowDefinitionId)?.name || 'Pipeline Board'}
+              {workflows.find((wf: any) => wf.id === pipelineDefinitionId)?.name || 'Pipeline Board'}
             </h1>
             {workflows.length > 1 && (
               <div className="relative inline-block text-left ml-2">
                 <select
-                  value={workflowDefinitionId}
+                  value={pipelineDefinitionId}
                   onChange={(e) => {
                     navigate({ to: '/cases', search: { workflowId: e.target.value } });
                   }}

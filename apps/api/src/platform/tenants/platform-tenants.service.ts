@@ -449,9 +449,9 @@ export class PlatformTenantsService {
         }
         // Rollback / clean up all records related to this tenant to keep database consistent
         await this.db.client.labelOverride.deleteMany({ where: { tenant_id: tenant.id } }).catch(() => {});
-        await this.db.client.workflowTransition.deleteMany({ where: { workflowDefinition: { tenant_id: tenant.id } } }).catch(() => {});
-        await this.db.client.workflowStage.deleteMany({ where: { workflowDefinition: { tenant_id: tenant.id } } }).catch(() => {});
-        await this.db.client.workflowDefinition.deleteMany({ where: { tenant_id: tenant.id } }).catch(() => {});
+        await this.db.client.pipelineTransition.deleteMany({ where: { pipelineDefinition: { tenant_id: tenant.id } } }).catch(() => {});
+        await this.db.client.pipelineStage.deleteMany({ where: { pipelineDefinition: { tenant_id: tenant.id } } }).catch(() => {});
+        await this.db.client.pipelineDefinition.deleteMany({ where: { tenant_id: tenant.id } }).catch(() => {});
         await this.db.client.fieldDefinition.deleteMany({ where: { tenant_id: tenant.id } }).catch(() => {});
         await this.db.client.tenantPlugin.deleteMany({ where: { tenant_id: tenant.id } }).catch(() => {});
         await this.db.client.tenantPlan.deleteMany({ where: { tenant_id: tenant.id } }).catch(() => {});
@@ -652,17 +652,17 @@ export class PlatformTenantsService {
         }
       }
 
-      const wfDef = template.workflow_definition;
+      const wfDef = template.pipeline_definition;
       if (wfDef) {
         let wfId: string;
-        const existingWf = await this.db.client.workflowDefinition.findFirst({
+        const existingWf = await this.db.client.pipelineDefinition.findFirst({
           where: { tenant_id: id, name: wfDef.name },
         });
 
         if (existingWf) {
           wfId = existingWf.id;
         } else {
-          const created = await this.db.client.workflowDefinition.create({
+          const created = await this.db.client.pipelineDefinition.create({
             data: {
               tenant_id: id,
               name: wfDef.name,
@@ -675,8 +675,8 @@ export class PlatformTenantsService {
         const stageNameToId = new Map<string, string>();
 
         for (const stageDef of wfDef.stages ?? []) {
-          const existingStage = await this.db.client.workflowStage.findFirst({
-            where: { workflow_definition_id: wfId, name: stageDef.name },
+          const existingStage = await this.db.client.pipelineStage.findFirst({
+            where: { pipeline_definition_id: wfId, name: stageDef.name },
           });
 
           if (existingStage) {
@@ -684,9 +684,9 @@ export class PlatformTenantsService {
             continue;
           }
 
-          const created = await this.db.client.workflowStage.create({
+          const created = await this.db.client.pipelineStage.create({
             data: {
-              workflow_definition_id: wfId,
+              pipeline_definition_id: wfId,
               name: stageDef.name,
               order: stageDef.order,
               entry_criteria: stageDef.entry_criteria ?? [],
@@ -701,14 +701,14 @@ export class PlatformTenantsService {
           const toId = stageNameToId.get(transDef.to_stage);
           if (!fromId || !toId) continue;
 
-          const existingTrans = await this.db.client.workflowTransition.findFirst({
+          const existingTrans = await this.db.client.pipelineTransition.findFirst({
             where: { from_stage_id: fromId, to_stage_id: toId },
           });
           if (existingTrans) continue;
 
-          await this.db.client.workflowTransition.create({
+          await this.db.client.pipelineTransition.create({
             data: {
-              workflow_definition_id: wfId,
+              pipeline_definition_id: wfId,
               from_stage_id: fromId,
               to_stage_id: toId,
             },
@@ -1280,7 +1280,7 @@ export class PlatformTenantsService {
 
               let conversion_rate = 0;
               if (total_leads > 0) {
-                const wfs = await this.db.client.workflowDefinition.findMany({
+                const wfs = await this.db.client.pipelineDefinition.findMany({
                   where: { tenant_id: tenantId, vertical_id: v.id },
                   select: { id: true },
                 });
@@ -1288,9 +1288,9 @@ export class PlatformTenantsService {
                 let converted = 0;
                 if (wfs.length > 0) {
                   const wfIds = wfs.map((w: any) => w.id);
-                  const wfGroups = await this.db.client.workflowStage.groupBy({
-                    by: ['workflow_definition_id'],
-                    where: { workflow_definition_id: { in: wfIds } },
+                  const wfGroups = await this.db.client.pipelineStage.groupBy({
+                    by: ['pipeline_definition_id'],
+                    where: { pipeline_definition_id: { in: wfIds } },
                     _max: { order: true },
                   });
 
@@ -1298,9 +1298,9 @@ export class PlatformTenantsService {
                   for (const group of wfGroups) {
                     const maxOrder = group._max?.order;
                     if (maxOrder === undefined || maxOrder === null) continue;
-                    const stages = await this.db.client.workflowStage.findMany({
+                    const stages = await this.db.client.pipelineStage.findMany({
                       where: {
-                        workflow_definition_id: group.workflow_definition_id,
+                        pipeline_definition_id: group.pipeline_definition_id,
                         order: maxOrder,
                       },
                       select: { id: true },

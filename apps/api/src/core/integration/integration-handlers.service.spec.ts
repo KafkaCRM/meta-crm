@@ -48,7 +48,7 @@ function mockPlatformDb() {
         findFirst: vi.fn().mockResolvedValue(null),
         create: vi.fn().mockResolvedValue({ id: 'party-1', name: 'John Doe Inbound' }),
       },
-      workflowDefinition: {
+      pipelineDefinition: {
         findFirst: vi.fn().mockResolvedValue(mockWorkflow),
       },
       case: {

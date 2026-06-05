@@ -116,7 +116,7 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
       title: string;
       type: string;
       party_id: string;
-      workflow_definition_id: string;
+      pipeline_definition_id: string;
       branch_brand_assignment_id: string;
       assigned_to_id?: string;
       campaign_id?: string;
@@ -153,7 +153,7 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
         title: title.trim(),
         type,
         party_id: partyId,
-        workflow_definition_id: 'wf_default_001',
+        pipeline_definition_id: 'wf_default_001',
         branch_brand_assignment_id: assignmentId,
         ...(assignedToId ? { assigned_to_id: assignedToId } : {}),
         ...(campaignId ? { campaign_id: campaignId } : {}),
@@ -238,13 +238,13 @@ export function CaseForm({ partyId: propPartyId }: CaseFormProps) {
 
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">
-                Pipeline Workflow
+                Pipeline
               </label>
               <select
                 disabled
                 className="w-full h-9 rounded-lg border border-border bg-background/60 px-3 text-sm text-muted-foreground cursor-not-allowed"
               >
-                <option value="wf_default_001">Default Admissions Workflow</option>
+                <option value="wf_default_001">Default Admissions Pipeline</option>
               </select>
             </div>
           </div>

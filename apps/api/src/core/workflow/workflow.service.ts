@@ -20,16 +20,16 @@ export class WorkflowService {
 
   async list(): Promise<Result<any[], WorkflowError>> {
     try {
-      const workflows = await this.db.getClient().workflowDefinition.findMany({
+      const pipelines = await this.db.getClient().pipelineDefinition.findMany({
         include: {
           stages: { orderBy: { order: 'asc' } },
         },
       });
-      return ok(workflows);
+      return ok(pipelines);
     } catch (e: any) {
       return err({
         code: 'TRANSACTION_FAILED',
-        message: e?.message ?? 'Failed to retrieve workflows',
+        message: e?.message ?? 'Failed to retrieve pipelines',
       });
     }
   }
@@ -39,7 +39,7 @@ export class WorkflowService {
       const scope = this.cls.get<RequestScope>('scope');
       const tenantId = scope?.tenant_id || '';
 
-      const existing = await this.db.getClient().workflowDefinition.findFirst({
+      const existing = await this.db.getClient().pipelineDefinition.findFirst({
         where: {
           tenant_id: tenantId,
           name: {
@@ -56,11 +56,11 @@ export class WorkflowService {
         });
       }
 
-      const created = await this.db.getClient().workflowDefinition.create({
+      const created = await this.db.getClient().pipelineDefinition.create({
         data: {
           tenant_id: tenantId,
           name: data.name,
-          entity_type: data.entity_type ?? 'appointment',
+          entity_type: data.entity_type ?? 'case',
         },
       });
 
@@ -74,9 +74,9 @@ export class WorkflowService {
       ];
 
       for (const stage of defaultStages) {
-        await this.db.getClient().workflowStage.create({
+        await this.db.getClient().pipelineStage.create({
           data: {
-            workflow_definition_id: created.id,
+            pipeline_definition_id: created.id,
             name: stage.name,
             order: stage.order,
             sla_hours: stage.sla_hours,
@@ -99,36 +99,36 @@ export class WorkflowService {
       const scope = this.cls.get<RequestScope>('scope');
       const tenantId = scope?.tenant_id || '';
 
-      let workflow = await this.db.getClient().workflowDefinition.findFirst({
+      let pipeline = await this.db.getClient().pipelineDefinition.findFirst({
         include: {
           stages: { orderBy: { order: 'asc' } },
           transitions: true,
         },
       });
 
-      if (!workflow) {
-        // Initialize default workflow if none exists
-        const created = await this.db.getClient().workflowDefinition.create({
+      if (!pipeline) {
+        // Initialize a generic default pipeline if none exists.
+        const created = await this.db.getClient().pipelineDefinition.create({
           data: {
             tenant_id: tenantId,
-            name: 'Patient Care Pipeline',
-            entity_type: 'appointment',
+            name: 'Default Pipeline',
+            entity_type: 'case',
           },
         });
 
         const stagesData = [
-          { name: 'Appointment Scheduled', order: 0, sla_hours: 24, terminal_outcome: null },
-          { name: 'Consultation', order: 1, sla_hours: null, terminal_outcome: null },
-          { name: 'Follow-up', order: 2, sla_hours: null, terminal_outcome: null },
+          { name: 'Lead', order: 0, sla_hours: 24, terminal_outcome: null },
+          { name: 'Contacted', order: 1, sla_hours: null, terminal_outcome: null },
+          { name: 'Qualified', order: 2, sla_hours: null, terminal_outcome: null },
           { name: 'Closed Won', order: 3, sla_hours: null, terminal_outcome: 'won' },
           { name: 'Closed Lost', order: 4, sla_hours: null, terminal_outcome: 'lost' },
         ];
 
         const stageIds: string[] = [];
         for (const stage of stagesData) {
-          const createdStage = await this.db.getClient().workflowStage.create({
+          const createdStage = await this.db.getClient().pipelineStage.create({
             data: {
-              workflow_definition_id: created.id,
+              pipeline_definition_id: created.id,
               name: stage.name,
               order: stage.order,
               sla_hours: stage.sla_hours,
@@ -153,16 +153,16 @@ export class WorkflowService {
         ];
 
         for (const t of transitionsData) {
-          await this.db.getClient().workflowTransition.create({
+          await this.db.getClient().pipelineTransition.create({
             data: {
-              workflow_definition_id: created.id,
+              pipeline_definition_id: created.id,
               from_stage_id: stageIds[t.fromIdx]!,
               to_stage_id: stageIds[t.toIdx]!,
             },
           });
         }
 
-        workflow = await this.db.getClient().workflowDefinition.findFirst({
+        pipeline = await this.db.getClient().pipelineDefinition.findFirst({
           where: { id: created.id },
           include: {
             stages: { orderBy: { order: 'asc' } },
@@ -171,11 +171,31 @@ export class WorkflowService {
         });
       }
 
-      return ok(workflow);
+      return ok(pipeline);
     } catch (e: any) {
       return err({
         code: 'TRANSACTION_FAILED',
-        message: e?.message ?? 'Failed to retrieve or initialize default workflow',
+        message: e?.message ?? 'Failed to retrieve or initialize default pipeline',
+      });
+    }
+  }
+
+  async getStages(id: string): Promise<Result<any[], WorkflowError>> {
+    try {
+      const pipeline = await this.db.getClient().pipelineDefinition.findFirst({
+        where: { id },
+        include: { stages: { orderBy: { order: 'asc' } } },
+      });
+
+      if (!pipeline) {
+        return err({ code: 'NOT_FOUND', message: 'Pipeline not found' });
+      }
+
+      return ok(pipeline.stages);
+    } catch (e: any) {
+      return err({
+        code: 'TRANSACTION_FAILED',
+        message: e?.message ?? 'Failed to retrieve pipeline stages',
       });
     }
   }
@@ -185,24 +205,24 @@ export class WorkflowService {
     data: { name: string; stages: any[]; transitions: any[] },
   ): Promise<Result<any, WorkflowError>> {
     try {
-      const workflow = await this.db.getClient().workflowDefinition.findFirst({
+      const pipeline = await this.db.getClient().pipelineDefinition.findFirst({
         where: { id },
       });
 
-      if (!workflow) {
-        return err({ code: 'NOT_FOUND', message: 'Workflow definition not found' });
+      if (!pipeline) {
+        return err({ code: 'NOT_FOUND', message: 'Pipeline not found' });
       }
 
       const result = await this.db.getClient().$transaction(async (tx) => {
-        // 1. Update workflow definition details
-        await tx.workflowDefinition.update({
+        // 1. Update pipeline definition details
+        await tx.pipelineDefinition.update({
           where: { id },
           data: { name: data.name },
         });
 
         // 2. Fetch existing stages
-        const existingStages = await tx.workflowStage.findMany({
-          where: { workflow_definition_id: id },
+        const existingStages = await tx.pipelineStage.findMany({
+          where: { pipeline_definition_id: id },
         });
 
         const inputStageIds = data.stages.map((s) => s.id).filter((sid) => sid && !sid.startsWith('stage_'));
@@ -211,7 +231,7 @@ export class WorkflowService {
         // Delete removed stages (and cascade transitions)
         if (stagesToDelete.length > 0) {
           const deleteIds = stagesToDelete.map((s) => s.id);
-          await tx.workflowTransition.deleteMany({
+          await tx.pipelineTransition.deleteMany({
             where: {
               OR: [
                 { from_stage_id: { in: deleteIds } },
@@ -219,7 +239,7 @@ export class WorkflowService {
               ],
             },
           });
-          await tx.workflowStage.deleteMany({
+          await tx.pipelineStage.deleteMany({
             where: { id: { in: deleteIds } },
           });
         }
@@ -231,9 +251,9 @@ export class WorkflowService {
           const isTempId = !inputStage.id || inputStage.id.startsWith('stage_');
           
           if (isTempId) {
-            const created = await tx.workflowStage.create({
+            const created = await tx.pipelineStage.create({
               data: {
-                workflow_definition_id: id,
+                pipeline_definition_id: id,
                 name: inputStage.name,
                 order: inputStage.order,
                 sla_hours: inputStage.sla_hours,
@@ -243,7 +263,7 @@ export class WorkflowService {
             });
             stageIdMap.set(inputStage.id, created.id);
           } else {
-            await tx.workflowStage.update({
+            await tx.pipelineStage.update({
               where: { id: inputStage.id },
               data: {
                 name: inputStage.name,
@@ -258,9 +278,9 @@ export class WorkflowService {
         }
 
         // 3. Re-create all transitions
-        // First delete all transitions for this workflow
-        await tx.workflowTransition.deleteMany({
-          where: { workflow_definition_id: id },
+        // First delete all transitions for this pipeline
+        await tx.pipelineTransition.deleteMany({
+          where: { pipeline_definition_id: id },
         });
 
         // Insert new transitions, resolving any temp IDs
@@ -269,9 +289,9 @@ export class WorkflowService {
           const toId = stageIdMap.get(inputTrans.to_stage_id) || inputTrans.to_stage_id;
 
           if (fromId && toId) {
-            await tx.workflowTransition.create({
+            await tx.pipelineTransition.create({
               data: {
-                workflow_definition_id: id,
+                pipeline_definition_id: id,
                 from_stage_id: fromId,
                 to_stage_id: toId,
                 triggers: inputTrans.triggers ? JSON.parse(JSON.stringify(inputTrans.triggers)) : '[]',
@@ -280,7 +300,7 @@ export class WorkflowService {
           }
         }
 
-        return tx.workflowDefinition.findFirst({
+        return tx.pipelineDefinition.findFirst({
           where: { id },
           include: {
             stages: { orderBy: { order: 'asc' } },
@@ -293,7 +313,7 @@ export class WorkflowService {
     } catch (e: any) {
       return err({
         code: 'TRANSACTION_FAILED',
-        message: e?.message ?? 'Failed to update workflow transaction',
+        message: e?.message ?? 'Failed to update pipeline transaction',
       });
     }
   }
@@ -302,18 +322,18 @@ export class WorkflowService {
     try {
       const dbClient = this.db.getClient();
 
-      // 1. Fetch workflow definition
-      const workflow = await dbClient.workflowDefinition.findFirst({
+      // 1. Fetch pipeline definition
+      const pipeline = await dbClient.pipelineDefinition.findFirst({
         where: { id },
       });
 
-      if (!workflow) {
-        return err({ code: 'NOT_FOUND', message: 'Workflow pipeline not found' });
+      if (!pipeline) {
+        return err({ code: 'NOT_FOUND', message: 'Pipeline not found' });
       }
 
-      // 2. Prevent deleting the only workflow
-      const totalWorkflows = await dbClient.workflowDefinition.count();
-      if (totalWorkflows <= 1) {
+      // 2. Prevent deleting the only pipeline
+      const totalPipelines = await dbClient.pipelineDefinition.count();
+      if (totalPipelines <= 1) {
         return err({
           code: 'VALIDATION_ERROR',
           message: 'Cannot delete the only pipeline: a CRM tenant must have at least one pipeline.'
@@ -334,7 +354,7 @@ export class WorkflowService {
 
       // 4. Check for linked cases
       const casesCount = await dbClient.case.count({
-        where: { workflow_definition_id: id },
+        where: { pipeline_definition_id: id },
       });
 
       if (casesCount > 0) {
@@ -346,15 +366,15 @@ export class WorkflowService {
 
       // 5. Delete in a transaction: transitions, stages, and then the definition itself
       await dbClient.$transaction(async (tx) => {
-        await tx.workflowTransition.deleteMany({
-          where: { workflow_definition_id: id },
+        await tx.pipelineTransition.deleteMany({
+          where: { pipeline_definition_id: id },
         });
 
-        await tx.workflowStage.deleteMany({
-          where: { workflow_definition_id: id },
+        await tx.pipelineStage.deleteMany({
+          where: { pipeline_definition_id: id },
         });
 
-        await tx.workflowDefinition.delete({
+        await tx.pipelineDefinition.delete({
           where: { id },
         });
       });
@@ -363,7 +383,7 @@ export class WorkflowService {
     } catch (e: any) {
       return err({
         code: 'TRANSACTION_FAILED',
-        message: e?.message ?? 'Failed to delete workflow pipeline',
+        message: e?.message ?? 'Failed to delete pipeline',
       });
     }
   }

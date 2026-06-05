@@ -2,18 +2,18 @@ import { useCallback } from 'react';
 import { Check, Circle, AlertCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@radix-ui/react-tooltip';
 import { cn } from '@/lib/utils';
-import type { WorkflowStageDto, CaseDto } from '@meta-crm/types';
+import type { PipelineStageDto, CaseDto } from '@meta-crm/types';
 import { evaluateVisibilityRules } from '@meta-crm/types';
 
 interface StageBarProps {
-  stages: WorkflowStageDto[];
+  stages: PipelineStageDto[];
   currentStageId: string;
   caseData: CaseDto;
   onTransition: (toStageId: string) => void;
   allowedTransitions: string[];
 }
 
-function checkEntryCriteria(caseData: CaseDto, stage: WorkflowStageDto): { met: boolean; unmet: string[] } {
+function checkEntryCriteria(caseData: CaseDto, stage: PipelineStageDto): { met: boolean; unmet: string[] } {
   const criteria = stage.entry_criteria;
   if (!criteria || (Array.isArray(criteria) && criteria.length === 0)) return { met: true, unmet: [] };
 

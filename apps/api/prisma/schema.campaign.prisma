@@ -19,8 +19,11 @@ model Campaign {
   created_at    DateTime  @default(now())
   updated_at    DateTime  @updatedAt
 
+  pipeline      PipelineDefinition @relation(fields: [pipeline_id], references: [id])
+
   @@index([tenant_id, status])
   @@index([tenant_id, vertical_id])
+  @@index([tenant_id, pipeline_id])
   @@index([tenant_id, channel])
   @@index([tenant_id, created_at])
   @@index([tenant_id, utm_campaign])

@@ -36,7 +36,7 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
   const [createCase, setCreateCase] = useState(true);
   const [caseTitle, setCaseTitle] = useState('');
   const [caseType, setCaseType] = useState('sales');
-  const [workflowDefinitionId, setWorkflowDefinitionId] = useState('');
+  const [pipelineDefinitionId, setPipelineDefinitionId] = useState('');
   const [caseStage, setCaseStage] = useState('');
   const [campaignId, setCampaignId] = useState('');
 
@@ -61,8 +61,8 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
   });
 
   const { data: defaultWorkflow } = useQuery({
-    queryKey: ['settings', 'workflows', 'default'],
-    queryFn: () => settingsApi.workflows.getDefault(),
+    queryKey: ['settings', 'pipelines', 'default'],
+    queryFn: () => settingsApi.pipelines.getDefault(),
     staleTime: 60_000,
   });
 
@@ -96,7 +96,7 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
 
   useMemo(() => {
     if (defaultWorkflow) {
-      setWorkflowDefinitionId(defaultWorkflow.id);
+      setPipelineDefinitionId(defaultWorkflow.id);
       if (defaultWorkflow.stages && defaultWorkflow.stages.length > 0) {
         setCaseStage(defaultWorkflow.stages[0].id);
       }
@@ -128,7 +128,7 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
       create_case: createCase,
       case_title: createCase ? caseTitle : undefined,
       case_type: createCase ? caseType : undefined,
-      workflow_definition_id: createCase && workflowDefinitionId ? workflowDefinitionId : undefined,
+      pipeline_definition_id: createCase && pipelineDefinitionId ? pipelineDefinitionId : undefined,
       case_stage: createCase && caseStage ? caseStage : undefined,
       campaign_id: campaignId || undefined,
     });

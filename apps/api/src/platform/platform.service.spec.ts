@@ -296,8 +296,8 @@ describe('PlatformTenantsService — getHierarchy', () => {
         branchBrandAssignment: { findMany: vi.fn() },
         vertical: { findMany: vi.fn() },
         case: { count: vi.fn() },
-        workflowDefinition: { findMany: vi.fn() },
-        workflowStage: { groupBy: vi.fn(), findMany: vi.fn() },
+        pipelineDefinition: { findMany: vi.fn() },
+        pipelineStage: { groupBy: vi.fn(), findMany: vi.fn() },
       },
     };
     svc = new PlatformTenantsService(mockDb as unknown as PlatformPrismaService, mockAudit, mockStream);
@@ -325,13 +325,13 @@ describe('PlatformTenantsService — getHierarchy', () => {
       { id: 'vertical-1', name: 'NEET', status: 'active' },
     ]);
     (mockDb.client.case.count as any).mockResolvedValue(10);
-    (mockDb.client.workflowDefinition.findMany as any).mockResolvedValue([
+    (mockDb.client.pipelineDefinition.findMany as any).mockResolvedValue([
       { id: 'wf-1' },
     ]);
-    (mockDb.client.workflowStage.groupBy as any).mockResolvedValue([
-      { workflow_definition_id: 'wf-1', _max: { order: 3 } },
+    (mockDb.client.pipelineStage.groupBy as any).mockResolvedValue([
+      { pipeline_definition_id: 'wf-1', _max: { order: 3 } },
     ]);
-    (mockDb.client.workflowStage.findMany as any).mockResolvedValue([
+    (mockDb.client.pipelineStage.findMany as any).mockResolvedValue([
       { id: 'stage-final' },
     ]);
 

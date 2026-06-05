@@ -10,8 +10,11 @@ import { RealtimeModule } from '../realtime/realtime.module';
 import { CampaignModule } from '../campaign/campaign.module';
 import { MetadataModule } from '../metadata/metadata.module';
 
+import { TenantModule } from '../tenant/tenant.module';
+
 @Module({
   imports: [
+    TenantModule,
     HooksModule,
     RealtimeModule,
     CampaignModule,

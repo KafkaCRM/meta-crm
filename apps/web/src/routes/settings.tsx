@@ -67,10 +67,18 @@ export const settingsRolesRoute = createRoute({
   component: RoleMatrix,
 });
 
+export const settingsPipelinesRoute = createRoute({
+  getParentRoute: () => settingsRoute,
+  path: 'pipelines',
+  component: WorkflowBuilder,
+});
+
 export const settingsWorkflowsRoute = createRoute({
   getParentRoute: () => settingsRoute,
   path: 'workflows',
-  component: WorkflowBuilder,
+  beforeLoad: () => {
+    throw redirect({ to: '/settings/pipelines' });
+  },
 });
 
 export const settingsFieldsRoute = createRoute({

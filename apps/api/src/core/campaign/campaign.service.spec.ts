@@ -35,14 +35,14 @@ function mockDb() {
       groupBy: vi.fn().mockResolvedValue([]),
       update: vi.fn(),
     },
-    workflowStage: {
+    pipelineStage: {
       findMany: vi.fn().mockResolvedValue([]),
       groupBy: vi.fn().mockResolvedValue([]),
     },
     caseEvent: {
       findMany: vi.fn().mockResolvedValue([]),
     },
-    workflowDefinition: {
+    pipelineDefinition: {
       count: vi.fn().mockResolvedValue(0),
       findMany: vi.fn().mockResolvedValue([]),
     },
@@ -312,7 +312,7 @@ describe('Campaign Modules', () => {
       });
 
       // stages in pipeline: Enquiry (initial, order 1), Won (final positive, order 3), Lost (final negative, order 3)
-      (client.workflowStage.findMany as any).mockResolvedValue([
+      (client.pipelineStage.findMany as any).mockResolvedValue([
         { id: 'stage-enquiry', name: 'Enquiry', order: 1 },
         { id: 'stage-won', name: 'Closed Won', order: 3 },
         { id: 'stage-lost', name: 'Closed Lost', order: 3 },
@@ -396,7 +396,7 @@ describe('Campaign Modules', () => {
       // Mock stage count query to calculate stats for each campaign
       // For c-fb (Facebook): 10 leads, 5 converted -> 50%
       // For c-gg (Google): 10 leads, 2 converted -> 20%
-      (client.workflowStage.findMany as any).mockResolvedValue([
+      (client.pipelineStage.findMany as any).mockResolvedValue([
         { id: 'stage-won', name: 'Closed Won', order: 3 },
       ]);
 

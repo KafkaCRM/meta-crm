@@ -4,15 +4,15 @@ import { ClsService } from 'nestjs-cls';
 import { TenantScopedPrismaService } from '../tenant/tenant-scoped-prisma.service';
 import type { RequestScope } from '../tenant/request-scope.interface';
 
-export type AutomationFlowErrorCode = 'NOT_FOUND' | 'TRANSACTION_FAILED';
+export type AutomationWorkflowErrorCode = 'NOT_FOUND' | 'TRANSACTION_FAILED';
 
-export interface AutomationFlowError {
-  code: AutomationFlowErrorCode;
+export interface AutomationWorkflowError {
+  code: AutomationWorkflowErrorCode;
   message: string;
 }
 
 @Injectable()
-export class AutomationFlowService {
+export class AutomationWorkflowService {
   constructor(
     private readonly db: TenantScopedPrismaService,
     private readonly cls: ClsService,
@@ -22,10 +22,10 @@ export class AutomationFlowService {
     return this.cls.get<RequestScope>('scope')!;
   }
 
-  async findMany(): Promise<Result<any[], AutomationFlowError>> {
+  async findMany(): Promise<Result<any[], AutomationWorkflowError>> {
     try {
       const scope = this.getScope();
-      const flows = await this.db.getClient().automationFlow.findMany({
+      const flows = await this.db.getClient().automationWorkflow.findMany({
         where: { tenant_id: scope.tenant_id },
         orderBy: { created_at: 'desc' },
       });
@@ -38,10 +38,10 @@ export class AutomationFlowService {
     }
   }
 
-  async findOne(id: string): Promise<Result<any, AutomationFlowError>> {
+  async findOne(id: string): Promise<Result<any, AutomationWorkflowError>> {
     try {
       const scope = this.getScope();
-      const flow = await this.db.getClient().automationFlow.findFirst({
+      const flow = await this.db.getClient().automationWorkflow.findFirst({
         where: { id, tenant_id: scope.tenant_id },
       });
 
@@ -64,10 +64,10 @@ export class AutomationFlowService {
     trigger_event: string;
     flow_json: any;
     is_active?: boolean;
-  }): Promise<Result<any, AutomationFlowError>> {
+  }): Promise<Result<any, AutomationWorkflowError>> {
     try {
       const scope = this.getScope();
-      const flow = await this.db.getClient().automationFlow.create({
+      const flow = await this.db.getClient().automationWorkflow.create({
         data: {
           name: data.name,
           description: data.description,
@@ -96,10 +96,10 @@ export class AutomationFlowService {
       flow_json?: any;
       is_active?: boolean;
     },
-  ): Promise<Result<any, AutomationFlowError>> {
+  ): Promise<Result<any, AutomationWorkflowError>> {
     try {
       const scope = this.getScope();
-      const existing = await this.db.getClient().automationFlow.findFirst({
+      const existing = await this.db.getClient().automationWorkflow.findFirst({
         where: { id, tenant_id: scope.tenant_id },
       });
 
@@ -107,7 +107,7 @@ export class AutomationFlowService {
         return err({ code: 'NOT_FOUND', message: 'Automation flow not found' });
       }
 
-      const updated = await this.db.getClient().automationFlow.update({
+      const updated = await this.db.getClient().automationWorkflow.update({
         where: { id },
         data: {
           ...(data.name !== undefined ? { name: data.name } : {}),
@@ -127,10 +127,10 @@ export class AutomationFlowService {
     }
   }
 
-  async remove(id: string): Promise<Result<void, AutomationFlowError>> {
+  async remove(id: string): Promise<Result<void, AutomationWorkflowError>> {
     try {
       const scope = this.getScope();
-      const existing = await this.db.getClient().automationFlow.findFirst({
+      const existing = await this.db.getClient().automationWorkflow.findFirst({
         where: { id, tenant_id: scope.tenant_id },
       });
 
@@ -138,7 +138,7 @@ export class AutomationFlowService {
         return err({ code: 'NOT_FOUND', message: 'Automation flow not found' });
       }
 
-      await this.db.getClient().automationFlow.delete({
+      await this.db.getClient().automationWorkflow.delete({
         where: { id },
       });
 

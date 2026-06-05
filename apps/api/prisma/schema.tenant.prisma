@@ -16,7 +16,7 @@ model Tenant {
   userRoles              UserRole[]
   fieldDefinitions       FieldDefinition[]
   labelOverrides         LabelOverride[]
-  workflowDefinitions    WorkflowDefinition[]
+  pipelineDefinitions    PipelineDefinition[]
   integrationConfigs     IntegrationConfig[]
   webhookSubscriptions   WebhookSubscription[]
   tenantPlugins          TenantPlugin[]
@@ -24,7 +24,7 @@ model Tenant {
   pageLayouts            PageLayout[]
   customObjectDefinitions CustomObjectDefinition[]
   flexRecords            FlexRecord[]
-  automationFlows        AutomationFlow[]
+  automationWorkflows    AutomationWorkflow[]
   tenantExtensions       TenantExtension[]
   secureCredentials      SecureCredential[]
   leads                  Lead[]
@@ -87,6 +87,7 @@ model User {
   parties   Party[]
   cases     Case[]       @relation("AssignedCases")
   appointments Appointment[]
+  leads     Lead[]
 
   @@unique([email, tenant_id])
 }

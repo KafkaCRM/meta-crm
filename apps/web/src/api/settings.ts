@@ -93,6 +93,14 @@ export interface IntegrationConfig {
   config_json: Record<string, unknown>;
 }
 
+export interface IntegrationTestResult {
+  provider: string;
+  status: 'healthy' | 'error';
+  message: string;
+  last_checked_at: string;
+  checked_fields: string[];
+}
+
 export interface Plugin {
   id: string;
   name: string;
@@ -102,6 +110,17 @@ export interface Plugin {
   requires_plan?: string;
   installed: boolean;
 }
+
+const pipelineSettingsApi = {
+  list: () => apiCall<any[]>('/pipelines'),
+  create: (data: { name: string; entity_type?: string }) =>
+    apiCall<any>('/pipelines', { method: 'POST', body: JSON.stringify(data) }),
+  getDefault: () => apiCall<any>('/pipelines/default'),
+  update: (id: string, data: { name: string; stages: any[]; transitions: any[] }) =>
+    apiCall<any>(`/pipelines/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  delete: (id: string) =>
+    apiCall<{ success: boolean }>(`/pipelines/${id}`, { method: 'DELETE' }),
+};
 
 export const settingsApi = {
   branches: {
@@ -223,20 +242,14 @@ export const settingsApi = {
     list: () => apiCall<IntegrationConfig[]>('/integrations'),
     configure: (provider: string, data: Record<string, string>) =>
       apiCall<IntegrationConfig>(`/integrations/${provider}/configure`, { method: 'POST', body: JSON.stringify(data) }),
+    test: (provider: string) =>
+      apiCall<IntegrationTestResult>(`/integrations/${provider}/test`, { method: 'POST' }),
     disconnect: (provider: string) =>
       apiCall<{ message: string }>(`/integrations/${provider}`, { method: 'DELETE' }),
   },
 
-  workflows: {
-    list: () => apiCall<any[]>('/workflows'),
-    create: (data: { name: string; entity_type?: string }) =>
-      apiCall<any>('/workflows', { method: 'POST', body: JSON.stringify(data) }),
-    getDefault: () => apiCall<any>('/workflows/default'),
-    update: (id: string, data: { name: string; stages: any[]; transitions: any[] }) =>
-      apiCall<any>(`/workflows/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-    delete: (id: string) =>
-      apiCall<{ success: boolean }>(`/workflows/${id}`, { method: 'DELETE' }),
-  },
+  pipelines: pipelineSettingsApi,
+  workflows: pipelineSettingsApi,
   customObjects: {
     list: () => apiCall<any[]>('/custom-objects'),
     get: (id: string) => apiCall<any>(`/custom-objects/${id}`),

@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { ArrowLeft, User } from 'lucide-react';
-import type { CaseDto, WorkflowStageDto, TimelineItem } from '@meta-crm/types';
+import type { CaseDto, PipelineStageDto, TimelineItem } from '@meta-crm/types';
 import { Channel, Direction } from '@meta-crm/types';
 import { casesApi } from '@/api/cases';
 import { interactionsApi } from '@/api/interactions';
@@ -48,10 +48,10 @@ export function CaseDetail({
     staleTime: 30_000,
   });
 
-  const { data: stages, isLoading: stagesLoading } = useQuery<WorkflowStageDto[]>({
-    queryKey: ['workflows', 'stages', caseData?.workflow_definition_id],
-    queryFn: () => casesApi.listStages(caseData!.workflow_definition_id),
-    enabled: !!caseData?.workflow_definition_id,
+  const { data: stages, isLoading: stagesLoading } = useQuery<PipelineStageDto[]>({
+    queryKey: ['workflows', 'stages', caseData?.pipeline_definition_id],
+    queryFn: () => casesApi.listStages(caseData!.pipeline_definition_id),
+    enabled: !!caseData?.pipeline_definition_id,
     staleTime: 60_000,
   });
 

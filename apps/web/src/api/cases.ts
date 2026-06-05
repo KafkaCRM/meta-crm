@@ -1,6 +1,6 @@
 import type {
   CaseDto,
-  WorkflowStageDto,
+  PipelineStageDto,
   TransitionStageDto,
   TransitionErrorDto,
 } from '@meta-crm/types';
@@ -11,7 +11,7 @@ export interface CaseListParams {
   limit?: number;
   stage?: string;
   assigned_to_id?: string;
-  workflow_definition_id?: string;
+  pipeline_definition_id?: string;
 }
 
 export interface CursorPaginatedCases {
@@ -21,7 +21,7 @@ export interface CursorPaginatedCases {
 }
 
 export interface CasesByStage {
-  stages: WorkflowStageDto[];
+  stages: PipelineStageDto[];
   cases: Record<string, CaseDto[]>;
 }
 
@@ -68,7 +68,7 @@ function generateMockCases(count: number, stageId: string): CaseDto[] {
       type: types[Math.floor(Math.random() * types.length)]!,
       title: titles[i % titles.length] + (i >= titles.length ? ` #${i + 1}` : ''),
       stage: stageId,
-      workflow_definition_id: 'wf_default_001',
+      pipeline_definition_id: 'wf_default_001',
       assigned_to_id: assignedToId,
       attributes: {
         course: ['B.Tech', 'MBA', 'B.Com', 'B.Sc', 'M.Tech'][Math.floor(Math.random() * 5)]!,
@@ -81,14 +81,14 @@ function generateMockCases(count: number, stageId: string): CaseDto[] {
   });
 }
 
-function generateMockStages(): WorkflowStageDto[] {
+function generateMockStages(): PipelineStageDto[] {
   return [
-    { id: 'stage_enquiry', workflow_definition_id: 'wf_default_001', name: 'Enquiry', order: 0, entry_criteria: [], sla_hours: 24 },
-    { id: 'stage_counselling', workflow_definition_id: 'wf_default_001', name: 'Counselling', order: 1, entry_criteria: [], sla_hours: 48 },
-    { id: 'stage_application', workflow_definition_id: 'wf_default_001', name: 'Application', order: 2, entry_criteria: [{ field: 'course', operator: 'is_not_empty' }], sla_hours: 72 },
-    { id: 'stage_fee_paid', workflow_definition_id: 'wf_default_001', name: 'Fee Paid', order: 3, entry_criteria: [{ field: 'fee_structure', operator: 'is_not_empty' }], sla_hours: 168 },
-    { id: 'stage_enrolled', workflow_definition_id: 'wf_default_001', name: 'Enrolled', order: 4, entry_criteria: [], sla_hours: null },
-    { id: 'stage_dropped', workflow_definition_id: 'wf_default_001', name: 'Dropped', order: 5, entry_criteria: [], sla_hours: null },
+    { id: 'stage_enquiry', pipeline_definition_id: 'wf_default_001', name: 'Enquiry', order: 0, entry_criteria: [], sla_hours: 24 },
+    { id: 'stage_counselling', pipeline_definition_id: 'wf_default_001', name: 'Counselling', order: 1, entry_criteria: [], sla_hours: 48 },
+    { id: 'stage_application', pipeline_definition_id: 'wf_default_001', name: 'Application', order: 2, entry_criteria: [{ field: 'course', operator: 'is_not_empty' }], sla_hours: 72 },
+    { id: 'stage_fee_paid', pipeline_definition_id: 'wf_default_001', name: 'Fee Paid', order: 3, entry_criteria: [{ field: 'fee_structure', operator: 'is_not_empty' }], sla_hours: 168 },
+    { id: 'stage_enrolled', pipeline_definition_id: 'wf_default_001', name: 'Enrolled', order: 4, entry_criteria: [], sla_hours: null },
+    { id: 'stage_dropped', pipeline_definition_id: 'wf_default_001', name: 'Dropped', order: 5, entry_criteria: [], sla_hours: null },
   ];
 }
 
@@ -110,12 +110,12 @@ export const casesApi = {
     if (params.limit) qs.set('limit', String(params.limit));
     if (params.stage) qs.set('stage', params.stage);
     if (params.assigned_to_id) qs.set('assigned_to_id', params.assigned_to_id);
-    if (params.workflow_definition_id) qs.set('workflow_definition_id', params.workflow_definition_id);
+    if (params.pipeline_definition_id) qs.set('pipeline_definition_id', params.pipeline_definition_id);
     const query = qs.toString();
     return apiCall<CursorPaginatedCases>(`/cases${query ? `?${query}` : ''}`);
   },
 
-  listByStage: (workflowDefinitionId: string) => {
+  listByStage: (pipelineDefinitionId: string) => {
     if (USE_MOCK) {
       const stages = generateMockStages();
       const cases: Record<string, CaseDto[]> = {};
@@ -125,7 +125,7 @@ export const casesApi = {
       return Promise.resolve<CasesByStage>({ stages, cases });
     }
 
-    return apiCall<CasesByStage>(`/cases/by-stage?workflow_definition_id=${workflowDefinitionId}`);
+    return apiCall<CasesByStage>(`/cases/by-stage?pipeline_definition_id=${pipelineDefinitionId}`);
   },
 
   get: (id: string, params?: { include?: string }) => {
@@ -139,7 +139,7 @@ export const casesApi = {
       body: JSON.stringify(data),
     }),
 
-  create: (data: { party_id: string; type: string; title: string; workflow_definition_id: string; branch_brand_assignment_id: string; assigned_to_id?: string }) =>
+  create: (data: { party_id: string; type: string; title: string; pipeline_definition_id: string; branch_brand_assignment_id: string; assigned_to_id?: string }) =>
     apiCall<CaseDto>('/cases', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -167,10 +167,10 @@ export const casesApi = {
     });
   },
 
-  listStages: (workflowDefinitionId: string) => {
+  listStages: (pipelineDefinitionId: string) => {
     if (USE_MOCK) {
-      return Promise.resolve<WorkflowStageDto[]>(generateMockStages());
+      return Promise.resolve<PipelineStageDto[]>(generateMockStages());
     }
-    return apiCall<WorkflowStageDto[]>(`/workflows/${workflowDefinitionId}/stages`);
+    return apiCall<PipelineStageDto[]>(`/pipelines/${pipelineDefinitionId}/stages`);
   },
 };

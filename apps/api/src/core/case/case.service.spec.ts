@@ -43,11 +43,11 @@ function mockDb() {
     party: {
       findUnique: vi.fn(),
     },
-    workflowDefinition: {
+    pipelineDefinition: {
       findUnique: vi.fn(),
       findFirst: vi.fn(),
     },
-    workflowStage: {
+    pipelineStage: {
       findMany: vi.fn().mockResolvedValue([]),
     },
     campaign: {
@@ -73,7 +73,7 @@ const CASE = {
   type: 'individual',
   title: 'NEET Admission',
   stage: 'stage-1',
-  workflow_definition_id: 'wf-1',
+  pipeline_definition_id: 'wf-1',
   branch_brand_assignment_id: 'assign-1',
   assigned_to_id: null,
   vertical_id: null,
@@ -115,15 +115,15 @@ describe('CaseService Campaigns & Verticals Integration', () => {
     it('Create case with vertical_id and utm_campaign → auto-tagged to campaign', async () => {
       const client = db.getClient();
       (client.party.findUnique as any).mockResolvedValue(PARTY);
-      (client.workflowDefinition.findUnique as any).mockResolvedValue(WORKFLOW);
-      (client.workflowDefinition.findFirst as any).mockResolvedValue(WORKFLOW);
+      (client.pipelineDefinition.findUnique as any).mockResolvedValue(WORKFLOW);
+      (client.pipelineDefinition.findFirst as any).mockResolvedValue(WORKFLOW);
       (client.case.create as any).mockResolvedValue({ ...CASE, vertical_id: 'vertical-1' });
 
       const result = await caseService.create({
         party_id: 'party-1',
         type: 'individual',
         title: 'NEET Admission',
-        workflow_definition_id: 'wf-1',
+        pipeline_definition_id: 'wf-1',
         stage: 'stage-1',
         branch_brand_assignment_id: 'assign-1',
         vertical_id: 'vertical-1',
@@ -147,15 +147,15 @@ describe('CaseService Campaigns & Verticals Integration', () => {
     it('Create case with vertical_id and channel=whatsapp → auto-tagged to active campaign matching channel + vertical', async () => {
       const client = db.getClient();
       (client.party.findUnique as any).mockResolvedValue(PARTY);
-      (client.workflowDefinition.findUnique as any).mockResolvedValue(WORKFLOW);
-      (client.workflowDefinition.findFirst as any).mockResolvedValue(WORKFLOW);
+      (client.pipelineDefinition.findUnique as any).mockResolvedValue(WORKFLOW);
+      (client.pipelineDefinition.findFirst as any).mockResolvedValue(WORKFLOW);
       (client.case.create as any).mockResolvedValue({ ...CASE, vertical_id: 'vertical-1' });
 
       const result = await caseService.create({
         party_id: 'party-1',
         type: 'individual',
         title: 'NEET Admission',
-        workflow_definition_id: 'wf-1',
+        pipeline_definition_id: 'wf-1',
         stage: 'stage-1',
         branch_brand_assignment_id: 'assign-1',
         vertical_id: 'vertical-1',
@@ -178,8 +178,8 @@ describe('CaseService Campaigns & Verticals Integration', () => {
     it('Create case with campaign_id manually set → that campaign used, autoTagService NOT called', async () => {
       const client = db.getClient();
       (client.party.findUnique as any).mockResolvedValue(PARTY);
-      (client.workflowDefinition.findUnique as any).mockResolvedValue(WORKFLOW);
-      (client.workflowDefinition.findFirst as any).mockResolvedValue(WORKFLOW);
+      (client.pipelineDefinition.findUnique as any).mockResolvedValue(WORKFLOW);
+      (client.pipelineDefinition.findFirst as any).mockResolvedValue(WORKFLOW);
       (client.case.create as any).mockResolvedValue({
         ...CASE,
         vertical_id: 'vertical-1',
@@ -190,7 +190,7 @@ describe('CaseService Campaigns & Verticals Integration', () => {
         party_id: 'party-1',
         type: 'individual',
         title: 'NEET Admission',
-        workflow_definition_id: 'wf-1',
+        pipeline_definition_id: 'wf-1',
         stage: 'stage-1',
         branch_brand_assignment_id: 'assign-1',
         vertical_id: 'vertical-1',
@@ -207,15 +207,15 @@ describe('CaseService Campaigns & Verticals Integration', () => {
     it('Create case with no vertical_id → campaign_id stays null, no error', async () => {
       const client = db.getClient();
       (client.party.findUnique as any).mockResolvedValue(PARTY);
-      (client.workflowDefinition.findUnique as any).mockResolvedValue(WORKFLOW);
-      (client.workflowDefinition.findFirst as any).mockResolvedValue(WORKFLOW);
+      (client.pipelineDefinition.findUnique as any).mockResolvedValue(WORKFLOW);
+      (client.pipelineDefinition.findFirst as any).mockResolvedValue(WORKFLOW);
       (client.case.create as any).mockResolvedValue(CASE);
 
       const result = await caseService.create({
         party_id: 'party-1',
         type: 'individual',
         title: 'NEET Admission',
-        workflow_definition_id: 'wf-1',
+        pipeline_definition_id: 'wf-1',
         stage: 'stage-1',
         branch_brand_assignment_id: 'assign-1',
       });

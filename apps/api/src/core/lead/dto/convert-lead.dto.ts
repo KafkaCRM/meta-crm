@@ -22,7 +22,7 @@ export class ConvertLeadDto {
 
   @IsOptional()
   @IsString()
-  workflow_definition_id?: string;
+  pipeline_definition_id?: string;
 
   @IsOptional()
   @IsString()

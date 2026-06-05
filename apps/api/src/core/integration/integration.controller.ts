@@ -62,6 +62,23 @@ export class IntegrationController {
     return result.value;
   }
 
+  @Post(':provider/test')
+  @CheckPermissions('manage', 'Integration')
+  @HttpCode(HttpStatus.OK)
+  async testConnection(@Param('provider') provider: string) {
+    const result = await this.integrationService.testConnection(provider);
+    if (result.isErr()) {
+      if (result.error.code === 'PROVIDER_NOT_FOUND') {
+        throw new NotFoundException(result.error);
+      }
+      if (result.error.code === 'NOT_CONNECTED' || result.error.code === 'DECRYPTION_FAILED') {
+        throw new BadRequestException(result.error);
+      }
+      throw new InternalServerErrorException(result.error);
+    }
+    return result.value;
+  }
+
   @Delete(':provider')
   @CheckPermissions('manage', 'Integration')
   @HttpCode(HttpStatus.OK)

@@ -12,7 +12,7 @@ export type {
   CaseEventDto,
   TransitionStageDto,
   TransitionErrorDto,
-  WorkflowStageDto,
+  PipelineStageDto,
 } from './case.dto';
 
 export type {

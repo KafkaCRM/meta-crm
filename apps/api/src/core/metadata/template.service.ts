@@ -29,7 +29,7 @@ interface IndustryTemplate {
   name: string;
   entity_type: string;
   field_definitions: Record<string, any[]>;
-  workflow_definition: {
+  pipeline_definition: {
     name: string;
     entity_type: string;
     stages: StageDef[];
@@ -84,31 +84,31 @@ export class TemplateService {
           }
         }
 
-        const wfDef = template.workflow_definition;
-        const existingWf = await tx.workflowDefinition.findFirst({
+        const wfDef = template.pipeline_definition;
+        const existingWf = await tx.pipelineDefinition.findFirst({
           where: { tenant_id: tenantId, name: wfDef.name },
         });
 
-        let workflowDefinitionId: string;
+        let pipelineDefinitionId: string;
         if (existingWf) {
-          workflowDefinitionId = existingWf.id;
+          pipelineDefinitionId = existingWf.id;
         } else {
-          const created = await tx.workflowDefinition.create({
+          const created = await tx.pipelineDefinition.create({
             data: {
               tenant_id: tenantId,
               name: wfDef.name,
               entity_type: wfDef.entity_type,
             },
           });
-          workflowDefinitionId = created.id;
+          pipelineDefinitionId = created.id;
         }
 
         const stageNameToId = new Map<string, string>();
 
         for (const stageDef of wfDef.stages) {
-          const existingStage = await tx.workflowStage.findFirst({
+          const existingStage = await tx.pipelineStage.findFirst({
             where: {
-              workflow_definition_id: workflowDefinitionId,
+              pipeline_definition_id: pipelineDefinitionId,
               name: stageDef.name,
             },
           });
@@ -118,9 +118,9 @@ export class TemplateService {
             continue;
           }
 
-          const created = await tx.workflowStage.create({
+          const created = await tx.pipelineStage.create({
             data: {
-              workflow_definition_id: workflowDefinitionId,
+              pipeline_definition_id: pipelineDefinitionId,
               name: stageDef.name,
               order: stageDef.order,
               entry_criteria: stageDef.entry_criteria as any,
@@ -135,7 +135,7 @@ export class TemplateService {
           const toId = stageNameToId.get(transDef.to_stage);
           if (!fromId || !toId) continue;
 
-          const existingTrans = await tx.workflowTransition.findFirst({
+          const existingTrans = await tx.pipelineTransition.findFirst({
             where: {
               from_stage_id: fromId,
               to_stage_id: toId,
@@ -143,8 +143,9 @@ export class TemplateService {
           });
           if (existingTrans) continue;
 
-          await tx.workflowTransition.create({
+          await tx.pipelineTransition.create({
             data: {
+              pipeline_definition_id: pipelineDefinitionId,
               from_stage_id: fromId,
               to_stage_id: toId,
             } as any,
@@ -260,6 +261,9 @@ export class TemplateService {
             });
           }
         }
+      }, {
+        maxWait: 30000,
+        timeout: 90000,
       });
     } catch (e: any) {
       return err({

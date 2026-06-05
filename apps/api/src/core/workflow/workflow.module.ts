@@ -2,10 +2,10 @@ import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { WorkflowController } from './workflow.controller';
 import { WorkflowService } from './workflow.service';
-import { AutomationFlowController } from './automation-flow.controller';
-import { AutomationFlowService } from './automation-flow.service';
-import { AutomationFlowListener } from './automation-flow.listener';
-import { AutomationFlowProcessor } from './automation-flow.processor';
+import { AutomationWorkflowController } from './automation-flow.controller';
+import { AutomationWorkflowService } from './automation-flow.service';
+import { AutomationWorkflowListener } from './automation-flow.listener';
+import { AutomationWorkflowProcessor } from './automation-flow.processor';
 import { WhatsAppModule } from '../../integrations/whatsapp/whatsapp.module';
 
 @Module({
@@ -15,16 +15,16 @@ import { WhatsAppModule } from '../../integrations/whatsapp/whatsapp.module';
       name: 'workflow',
     }),
   ],
-  controllers: [WorkflowController, AutomationFlowController],
+  controllers: [WorkflowController, AutomationWorkflowController],
   providers: [
     WorkflowService,
-    AutomationFlowService,
-    AutomationFlowListener,
-    AutomationFlowProcessor,
+    AutomationWorkflowService,
+    AutomationWorkflowListener,
+    AutomationWorkflowProcessor,
   ],
   exports: [
     WorkflowService,
-    AutomationFlowService,
+    AutomationWorkflowService,
   ],
 })
 export class WorkflowModule {}

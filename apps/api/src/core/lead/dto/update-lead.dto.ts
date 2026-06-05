@@ -30,6 +30,10 @@ export class UpdateLeadDto {
   campaign_id?: string;
 
   @IsOptional()
+  @IsString()
+  assigned_to_id?: string;
+
+  @IsOptional()
   @IsObject()
   attributes?: Record<string, any>;
 }

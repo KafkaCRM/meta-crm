@@ -8,6 +8,7 @@ model Lead {
   status             String   @default("new") // e.g. "new", "contacted", "unqualified", "qualified", "converted"
   notes              String?
   campaign_id        String?
+  assigned_to_id     String?
   converted_party_id String?
   converted_case_id  String?
   attributes         Json     @default("{}")
@@ -15,8 +16,10 @@ model Lead {
   updated_at         DateTime @updatedAt
 
   tenant             Tenant   @relation(fields: [tenant_id], references: [id])
+  assigned_to        User?    @relation(fields: [assigned_to_id], references: [id])
 
   @@index([tenant_id, status])
   @@index([tenant_id, created_at])
   @@index([tenant_id, campaign_id])
+  @@index([tenant_id, assigned_to_id])
 }

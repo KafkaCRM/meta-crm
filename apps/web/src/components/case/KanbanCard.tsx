@@ -4,20 +4,20 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import { useSortable } from '@dnd-kit/sortable';
 import { GripVertical, Clock, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { CaseDto, WorkflowStageDto } from '@meta-crm/types';
+import type { CaseDto, PipelineStageDto } from '@meta-crm/types';
 import { CardQuickView } from './CardQuickView';
 
 dayjs.extend(relativeTime);
 
 interface KanbanCardProps {
   caseData: CaseDto;
-  stage: WorkflowStageDto;
+  stage: PipelineStageDto;
   isSelected: boolean;
   onToggleSelect: (caseId: string) => void;
   disabled?: boolean;
 }
 
-function getAgeBadgeInfo(caseData: CaseDto, stage: WorkflowStageDto): {
+function getAgeBadgeInfo(caseData: CaseDto, stage: PipelineStageDto): {
   hoursInStage: number;
   badgeColor: 'default' | 'amber' | 'red';
   label: string;

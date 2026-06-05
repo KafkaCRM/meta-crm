@@ -24,7 +24,7 @@ const EXISTING_CASE = {
   party_id: 'party-1',
   type: 'enrollment',
   title: 'Test Case',
-  workflow_definition_id: 'wf-1',
+  pipeline_definition_id: 'wf-1',
   branch_brand_assignment_id: 'assign-1',
   attributes: { score: 85 },
   created_at: new Date('2025-01-01'),
@@ -32,7 +32,7 @@ const EXISTING_CASE = {
 
 const TARGET_STAGE = {
   id: 'stage-2',
-  workflow_definition_id: 'wf-1',
+  pipeline_definition_id: 'wf-1',
   name: 'Review',
   order: 2,
   entry_criteria: [],
@@ -40,7 +40,7 @@ const TARGET_STAGE = {
 
 const EXISTING_TRANSITION = {
   id: 'trans-1',
-  workflow_definition_id: 'wf-1',
+  pipeline_definition_id: 'wf-1',
   from_stage_id: 'stage-1',
   to_stage_id: 'stage-2',
   triggers: [{ type: 'webhook', url: 'https://example.com/hook' }],
@@ -51,8 +51,8 @@ function buildMocks() {
     $transaction: vi.fn(),
     case: { findUnique: vi.fn(), update: vi.fn() },
     caseEvent: { create: vi.fn() },
-    workflowStage: { findUnique: vi.fn() },
-    workflowTransition: { findFirst: vi.fn() },
+    pipelineStage: { findUnique: vi.fn() },
+    pipelineTransition: { findFirst: vi.fn() },
   };
 
   const db = { getClient: vi.fn().mockReturnValue(client) } as unknown as TenantScopedPrismaService;
@@ -108,7 +108,7 @@ describe('StageTransitionService', () => {
   /* ------------------------------------------------------------------ */
   it('returns CRITERIA_UNMET with unmet[] when entry criteria fail', async () => {
     (client.case.findUnique as any).mockResolvedValue(EXISTING_CASE);
-    (client.workflowStage.findUnique as any).mockResolvedValue({
+    (client.pipelineStage.findUnique as any).mockResolvedValue({
       ...TARGET_STAGE,
       entry_criteria: [
         { field: 'score', operator: 'gte', value: 90 },
@@ -127,9 +127,9 @@ describe('StageTransitionService', () => {
 
   it('returns CRITERIA_UNMET with empty unmet when criteria is []', async () => {
     (client.case.findUnique as any).mockResolvedValue(EXISTING_CASE);
-    // Missing workflowTransition — will trigger INVALID_TRANSITION instead
-    (client.workflowStage.findUnique as any).mockResolvedValue(TARGET_STAGE);
-    (client.workflowTransition.findFirst as any).mockResolvedValue(EXISTING_TRANSITION);
+    // Missing pipelineTransition — will trigger INVALID_TRANSITION instead
+    (client.pipelineStage.findUnique as any).mockResolvedValue(TARGET_STAGE);
+    (client.pipelineTransition.findFirst as any).mockResolvedValue(EXISTING_TRANSITION);
     (client.$transaction as any).mockImplementation(async (ops: any[]) => {
       for (const op of ops) await op;
     });
@@ -145,8 +145,8 @@ describe('StageTransitionService', () => {
   /* ------------------------------------------------------------------ */
   it('returns INVALID_TRANSITION when no transition defined', async () => {
     (client.case.findUnique as any).mockResolvedValue(EXISTING_CASE);
-    (client.workflowStage.findUnique as any).mockResolvedValue(TARGET_STAGE);
-    (client.workflowTransition.findFirst as any).mockResolvedValue(null);
+    (client.pipelineStage.findUnique as any).mockResolvedValue(TARGET_STAGE);
+    (client.pipelineTransition.findFirst as any).mockResolvedValue(null);
 
     const result = await svc.transitionStage('case-1', 'stage-2', 'user-1');
     expect(result.isErr()).toBe(true);
@@ -161,8 +161,8 @@ describe('StageTransitionService', () => {
   describe('transaction atomicity', () => {
     it('successful transition: case.stage updated AND case_events written in same transaction', async () => {
       (client.case.findUnique as any).mockResolvedValue(EXISTING_CASE);
-      (client.workflowStage.findUnique as any).mockResolvedValue(TARGET_STAGE);
-      (client.workflowTransition.findFirst as any).mockResolvedValue(EXISTING_TRANSITION);
+      (client.pipelineStage.findUnique as any).mockResolvedValue(TARGET_STAGE);
+      (client.pipelineTransition.findFirst as any).mockResolvedValue(EXISTING_TRANSITION);
 
       let transactionRan = false;
       (client.$transaction as any).mockImplementation(async (ops: any[]) => {
@@ -198,8 +198,8 @@ describe('StageTransitionService', () => {
 
     it('rolls back case.stage when case_events insert fails — both writes atomic', async () => {
       (client.case.findUnique as any).mockResolvedValue(EXISTING_CASE);
-      (client.workflowStage.findUnique as any).mockResolvedValue(TARGET_STAGE);
-      (client.workflowTransition.findFirst as any).mockResolvedValue(EXISTING_TRANSITION);
+      (client.pipelineStage.findUnique as any).mockResolvedValue(TARGET_STAGE);
+      (client.pipelineTransition.findFirst as any).mockResolvedValue(EXISTING_TRANSITION);
 
       // case.update would succeed but caseEvent.create fails
       (client.case.update as any).mockResolvedValue({ ...EXISTING_CASE, stage: 'stage-2' });
@@ -240,8 +240,8 @@ describe('StageTransitionService', () => {
   /* ------------------------------------------------------------------ */
   it('enqueues BullMQ job for each trigger after successful transition', async () => {
     (client.case.findUnique as any).mockResolvedValue(EXISTING_CASE);
-    (client.workflowStage.findUnique as any).mockResolvedValue(TARGET_STAGE);
-    (client.workflowTransition.findFirst as any).mockResolvedValue(EXISTING_TRANSITION);
+    (client.pipelineStage.findUnique as any).mockResolvedValue(TARGET_STAGE);
+    (client.pipelineTransition.findFirst as any).mockResolvedValue(EXISTING_TRANSITION);
     (client.$transaction as any).mockImplementation(async (ops: any[]) => {
       for (const op of ops) await op;
     });
@@ -264,8 +264,8 @@ describe('StageTransitionService', () => {
   /* ------------------------------------------------------------------ */
   it('emits HooksService event after successful transition', async () => {
     (client.case.findUnique as any).mockResolvedValue(EXISTING_CASE);
-    (client.workflowStage.findUnique as any).mockResolvedValue(TARGET_STAGE);
-    (client.workflowTransition.findFirst as any).mockResolvedValue(EXISTING_TRANSITION);
+    (client.pipelineStage.findUnique as any).mockResolvedValue(TARGET_STAGE);
+    (client.pipelineTransition.findFirst as any).mockResolvedValue(EXISTING_TRANSITION);
     (client.$transaction as any).mockImplementation(async (ops: any[]) => {
       for (const op of ops) await op;
     });
@@ -291,8 +291,8 @@ describe('StageTransitionService', () => {
   /* ------------------------------------------------------------------ */
   it('broadcasts Socket.io event to tenant room after transition', async () => {
     (client.case.findUnique as any).mockResolvedValue(EXISTING_CASE);
-    (client.workflowStage.findUnique as any).mockResolvedValue(TARGET_STAGE);
-    (client.workflowTransition.findFirst as any).mockResolvedValue(EXISTING_TRANSITION);
+    (client.pipelineStage.findUnique as any).mockResolvedValue(TARGET_STAGE);
+    (client.pipelineTransition.findFirst as any).mockResolvedValue(EXISTING_TRANSITION);
     (client.$transaction as any).mockImplementation(async (ops: any[]) => {
       for (const op of ops) await op;
     });
@@ -313,7 +313,7 @@ describe('StageTransitionService', () => {
   /* ------------------------------------------------------------------ */
   it('does not perform any DB write when CRITERIA_UNMET', async () => {
     (client.case.findUnique as any).mockResolvedValue(EXISTING_CASE);
-    (client.workflowStage.findUnique as any).mockResolvedValue({
+    (client.pipelineStage.findUnique as any).mockResolvedValue({
       ...TARGET_STAGE,
       entry_criteria: [{ field: 'score', operator: 'gte', value: 90 }],
     });
@@ -331,8 +331,8 @@ describe('StageTransitionService', () => {
 
   it('does not perform any DB write when INVALID_TRANSITION', async () => {
     (client.case.findUnique as any).mockResolvedValue(EXISTING_CASE);
-    (client.workflowStage.findUnique as any).mockResolvedValue(TARGET_STAGE);
-    (client.workflowTransition.findFirst as any).mockResolvedValue(null);
+    (client.pipelineStage.findUnique as any).mockResolvedValue(TARGET_STAGE);
+    (client.pipelineTransition.findFirst as any).mockResolvedValue(null);
 
     const result = await svc.transitionStage('case-1', 'stage-2', 'user-1');
 
@@ -350,7 +350,7 @@ describe('StageTransitionService', () => {
   /* ------------------------------------------------------------------ */
   it('blocks transition and returns CRITERIA_UNMET when a plugin validation blocks', async () => {
     (client.case.findUnique as any).mockResolvedValue(EXISTING_CASE);
-    (client.workflowStage.findUnique as any).mockResolvedValue(TARGET_STAGE);
+    (client.pipelineStage.findUnique as any).mockResolvedValue(TARGET_STAGE);
     // Mock the synchronous hooks to return a blockage
     (hooks.emitSynchronous as any).mockResolvedValue([
       { blocked: true, reason: 'Consent document is missing' }
@@ -370,8 +370,8 @@ describe('StageTransitionService', () => {
 
   it('succeeds transition when all plugins return blocked: false or empty', async () => {
     (client.case.findUnique as any).mockResolvedValue(EXISTING_CASE);
-    (client.workflowStage.findUnique as any).mockResolvedValue(TARGET_STAGE);
-    (client.workflowTransition.findFirst as any).mockResolvedValue(EXISTING_TRANSITION);
+    (client.pipelineStage.findUnique as any).mockResolvedValue(TARGET_STAGE);
+    (client.pipelineTransition.findFirst as any).mockResolvedValue(EXISTING_TRANSITION);
     (client.$transaction as any).mockImplementation(async (ops: any[]) => {
       for (const op of ops) await op;
     });

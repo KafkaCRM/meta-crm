@@ -17,9 +17,9 @@ function mockDb() {
     fieldDefinition: { findMany: vi.fn(), findUnique: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn(), findFirst: vi.fn() },
     labelOverride: { findMany: vi.fn(), findUnique: vi.fn(), upsert: vi.fn() },
     tenant: { findUnique: vi.fn(), update: vi.fn() },
-    workflowDefinition: { findFirst: vi.fn(), create: vi.fn() },
-    workflowStage: { findFirst: vi.fn(), create: vi.fn() },
-    workflowTransition: { findFirst: vi.fn(), create: vi.fn() },
+    pipelineDefinition: { findFirst: vi.fn(), create: vi.fn() },
+    pipelineStage: { findFirst: vi.fn(), create: vi.fn() },
+    pipelineTransition: { findFirst: vi.fn(), create: vi.fn() },
     role: { findFirst: vi.fn(), upsert: vi.fn().mockImplementation(({ create }: any) => Promise.resolve({ id: `role-${create.name}`, ...create })), create: vi.fn() },
     rolePermission: { deleteMany: vi.fn(), create: vi.fn() },
     user: { findFirst: vi.fn().mockResolvedValue({ id: 'user-1' }) },
@@ -157,17 +157,17 @@ describe('LabelService', () => {
 /*  Template Service (applyIndustryTemplate)                            */
 /* ------------------------------------------------------------------ */
 describe('TemplateService', () => {
-  it('applies education template — creates field_definitions, workflow, labels in one transaction', async () => {
+  it('applies education template — creates field_definitions, pipeline, labels in one transaction', async () => {
     const { svc, client }: any = buildTemplate();
 
     // All checks return "not found" → creates everything
     (client.fieldDefinition.findFirst as any).mockResolvedValue(null);
-    (client.workflowDefinition.findFirst as any).mockResolvedValue(null);
-    (client.workflowStage.findFirst as any).mockResolvedValue(null);
-    (client.workflowTransition.findFirst as any).mockResolvedValue(null);
+    (client.pipelineDefinition.findFirst as any).mockResolvedValue(null);
+    (client.pipelineStage.findFirst as any).mockResolvedValue(null);
+    (client.pipelineTransition.findFirst as any).mockResolvedValue(null);
 
-    (client.workflowDefinition.create as any).mockResolvedValue({ id: 'wf-1' });
-    (client.workflowStage.create as any).mockImplementation(({ data }: any) =>
+    (client.pipelineDefinition.create as any).mockResolvedValue({ id: 'wf-1' });
+    (client.pipelineStage.create as any).mockImplementation(({ data }: any) =>
       Promise.resolve({ id: `stage-${data.name}`, ...data }));
 
     // Spoof interactive $transaction
@@ -189,16 +189,16 @@ describe('TemplateService', () => {
     );
     expect(caseFields.length).toBe(4);
 
-    // Verify workflow created
-    expect(client.workflowDefinition.create).toHaveBeenCalledWith(
+    // Verify pipeline created
+    expect(client.pipelineDefinition.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ name: 'Admissions Pipeline' }) }),
     );
 
     // Verify 7 stages created
-    expect(client.workflowStage.create).toHaveBeenCalledTimes(7);
+    expect(client.pipelineStage.create).toHaveBeenCalledTimes(7);
 
     // Verify label overrides upserted
-    expect(client.labelOverride.upsert).toHaveBeenCalledTimes(4);
+    expect(client.labelOverride.upsert).toHaveBeenCalledTimes(2);
   });
 
   it('is idempotent — running twice does not duplicate records', async () => {
@@ -206,11 +206,11 @@ describe('TemplateService', () => {
 
     // First call: nothing exists
     (client.fieldDefinition.findFirst as any).mockResolvedValue(null);
-    (client.workflowDefinition.findFirst as any).mockResolvedValue(null);
-    (client.workflowStage.findFirst as any).mockResolvedValue(null);
-    (client.workflowTransition.findFirst as any).mockResolvedValue(null);
-    (client.workflowDefinition.create as any).mockResolvedValue({ id: 'wf-1' });
-    (client.workflowStage.create as any).mockImplementation(({ data }: any) =>
+    (client.pipelineDefinition.findFirst as any).mockResolvedValue(null);
+    (client.pipelineStage.findFirst as any).mockResolvedValue(null);
+    (client.pipelineTransition.findFirst as any).mockResolvedValue(null);
+    (client.pipelineDefinition.create as any).mockResolvedValue({ id: 'wf-1' });
+    (client.pipelineStage.create as any).mockImplementation(({ data }: any) =>
       Promise.resolve({ id: `stage-${data.name}`, ...data }));
     (client.$transaction as any).mockImplementation(async (cb: any) => { await cb(client); });
 
@@ -221,9 +221,9 @@ describe('TemplateService', () => {
 
     // Second call: everything exists
     (client.fieldDefinition.findFirst as any).mockResolvedValue({ id: 'existing' });
-    (client.workflowDefinition.findFirst as any).mockResolvedValue({ id: 'wf-1' });
-    (client.workflowStage.findFirst as any).mockResolvedValue({ id: 'existing-stage' });
-    (client.workflowTransition.findFirst as any).mockResolvedValue({ id: 'existing-trans' });
+    (client.pipelineDefinition.findFirst as any).mockResolvedValue({ id: 'wf-1' });
+    (client.pipelineStage.findFirst as any).mockResolvedValue({ id: 'existing-stage' });
+    (client.pipelineTransition.findFirst as any).mockResolvedValue({ id: 'existing-trans' });
 
     await svc.applyIndustryTemplate('education', tenantId);
 
@@ -235,12 +235,12 @@ describe('TemplateService', () => {
     const { svc, client }: any = buildTemplate();
 
     (client.fieldDefinition.findFirst as any).mockResolvedValue(null);
-    (client.workflowDefinition.findFirst as any).mockResolvedValue(null);
-    (client.workflowStage.findFirst as any).mockResolvedValue(null);
-    (client.workflowTransition.findFirst as any).mockResolvedValue(null);
+    (client.pipelineDefinition.findFirst as any).mockResolvedValue(null);
+    (client.pipelineStage.findFirst as any).mockResolvedValue(null);
+    (client.pipelineTransition.findFirst as any).mockResolvedValue(null);
 
     // Make a specific create fail to trigger rollback
-    (client.workflowStage.create as any).mockRejectedValue(new Error('DB failure'));
+    (client.pipelineStage.create as any).mockRejectedValue(new Error('DB failure'));
 
     // The transaction mock will throw when stage create fails
     (client.$transaction as any).mockImplementation(async (cb: any) => {

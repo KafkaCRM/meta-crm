@@ -5,7 +5,7 @@ export interface CaseResponse {
   type: string;
   title: string;
   stage: string;
-  workflow_definition_id: string;
+  pipeline_definition_id: string;
   assigned_to_id?: string | null;
   attributes: Record<string, unknown>;
   created_at: Date;

@@ -474,8 +474,8 @@ export class CampaignService {
       where: { campaign_id: campaignId },
     });
 
-    const stages = await this.db.getClient().workflowStage.findMany({
-      where: { workflow_definition_id: pipelineId },
+    const stages = await this.db.getClient().pipelineStage.findMany({
+      where: { pipeline_definition_id: pipelineId },
       orderBy: { order: 'asc' },
     });
 

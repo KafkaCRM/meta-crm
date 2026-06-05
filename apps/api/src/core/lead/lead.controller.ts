@@ -43,6 +43,10 @@ class LeadQueryDto {
   @IsOptional()
   @IsString()
   name?: string;
+
+  @IsOptional()
+  @IsString()
+  assigned_to_id?: string;
 }
 
 @Controller('leads')

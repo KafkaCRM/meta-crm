@@ -5,7 +5,7 @@ export const CreateCaseSchema = z.object({
   party_id: z.string(),
   type: z.string().min(1),
   title: z.string().min(1, 'Title is required'),
-  workflow_definition_id: z.string(),
+  pipeline_definition_id: z.string(),
   assigned_to_id: z.string().optional(),
   attributes: z.record(z.string(), z.unknown()).optional(),
   branch_brand_assignment_id: z.string(),
@@ -21,7 +21,7 @@ export const CaseResponseSchema = z.object({
   type: z.string(),
   title: z.string(),
   stage: z.string(),
-  workflow_definition_id: z.string(),
+  pipeline_definition_id: z.string(),
   assigned_to_id: z.string().nullable(),
   attributes: z.record(z.string(), z.unknown()),
   created_at: z.string().datetime(),
@@ -29,16 +29,16 @@ export const CaseResponseSchema = z.object({
   last_stage_changed_at: z.string().datetime(),
 });
 
-export const WorkflowStageSchema = z.object({
+export const PipelineStageSchema = z.object({
   id: z.string(),
-  workflow_definition_id: z.string(),
+  pipeline_definition_id: z.string(),
   name: z.string(),
   order: z.number().int(),
   entry_criteria: z.array(z.unknown()).default([]),
   sla_hours: z.number().int().nullable(),
 });
 
-export type WorkflowStage = z.infer<typeof WorkflowStageSchema>;
+export type PipelineStage = z.infer<typeof PipelineStageSchema>;
 
 export const CaseEventResponseSchema = z.object({
   id: z.string(),

@@ -1,4 +1,4 @@
-model WorkflowDefinition {
+model PipelineDefinition {
   id          String @id @default(cuid())
   tenant_id   String
   name        String
@@ -6,34 +6,35 @@ model WorkflowDefinition {
   vertical_id String?
 
   tenant     Tenant              @relation(fields: [tenant_id], references: [id])
-  stages     WorkflowStage[]
-  transitions WorkflowTransition[]
+  stages     PipelineStage[]
+  transitions PipelineTransition[]
+  cases      Case[]
+  campaigns  Campaign[]
 }
 
-model WorkflowStage {
-  id                    String @id @default(cuid())
-  workflow_definition_id String
-  name                  String
-  order                 Int
-  entry_criteria        Json   @default("[]")
-  sla_hours             Int?
-  terminal_outcome      String? // "won" | "lost" | null
+model PipelineStage {
+  id                     String @id @default(cuid())
+  pipeline_definition_id String
+  name                   String
+  order                  Int
+  entry_criteria         Json   @default("[]")
+  sla_hours              Int?
+  terminal_outcome       String? // "won" | "lost" | null
 
-  workflowDefinition WorkflowDefinition @relation(fields: [workflow_definition_id], references: [id])
+  pipelineDefinition PipelineDefinition @relation(fields: [pipeline_definition_id], references: [id])
 }
 
-model WorkflowTransition {
-  id              String @id @default(cuid())
-  workflow_definition_id String
-  from_stage_id   String
-  to_stage_id     String
-  triggers        Json   @default("[]")
+model PipelineTransition {
+  id                     String @id @default(cuid())
+  pipeline_definition_id String
+  from_stage_id          String
+  to_stage_id            String
+  triggers               Json   @default("[]")
 
-  workflowDefinition WorkflowDefinition @relation(fields: [workflow_definition_id], references: [id])
+  pipelineDefinition PipelineDefinition @relation(fields: [pipeline_definition_id], references: [id])
 }
 
-// New table to hold custom process builder flowchart configurations
-model AutomationFlow {
+model AutomationWorkflow {
   id            String   @id @default(cuid())
   tenant_id     String
   name          String

@@ -69,10 +69,8 @@ import {
   Mail,
   Globe,
   Sparkles,
-  CheckCircle2,
   ArrowRight,
   MessageSquare,
-  Check,
   Search,
   UserCheck,
 } from 'lucide-react';
@@ -112,8 +110,8 @@ function AppSidebar() {
   const { t } = useLabels();
 
   const { data: workflows = [] } = useQuery({
-    queryKey: ['settings', 'workflows'],
-    queryFn: () => settingsApi.workflows.list(),
+    queryKey: ['settings', 'pipelines'],
+    queryFn: () => settingsApi.pipelines.list(),
   });
 
   const initials = user?.name
@@ -149,6 +147,7 @@ function AppSidebar() {
     '/settings/branches': ['manage', 'Branch'],
     '/settings/brands': ['manage', 'Brand'],
     '/settings/assignments': ['manage', 'Branch'],
+    '/settings/pipelines': ['manage', 'Workflow'],
     '/settings/workflows': ['manage', 'Workflow'],
     '/settings/fields': ['manage', 'FieldDefinition'],
     '/settings/industry': ['manage', 'FieldDefinition'],
@@ -165,7 +164,7 @@ function AppSidebar() {
     { label: 'Brands', path: '/settings/brands', icon: Building2 },
     { label: 'Industry Vertical', path: '/settings/industry', icon: Globe },
     { label: 'Assignments', path: '/settings/assignments', icon: UserCog },
-    { label: 'Pipeline Settings', path: '/settings/workflows', icon: Workflow },
+    { label: 'Pipeline Settings', path: '/settings/pipelines', icon: Workflow },
     { label: 'Fields', path: '/settings/fields', icon: Sliders },
     { label: 'Labels', path: '/settings/labels', icon: Tags },
     { label: 'Capabilities', path: '/settings/capabilities', icon: Layers },
@@ -569,29 +568,29 @@ function LoginPage() {
   `;
 
   return (
-    <div className="flex min-h-screen w-full bg-[#f5f1ec] text-foreground select-none font-sans">
-      <div className="grid w-full lg:grid-cols-12">
+    <div className="flex min-h-screen w-full bg-background text-foreground select-none font-sans">
+      <div className="grid w-full">
         {/* Left Column: Form Panel */}
-        <div className="lg:col-span-5 flex flex-col justify-between p-8 sm:p-12 bg-[#f5f1ec]">
+        <div className="flex min-h-screen flex-col justify-between px-6 py-6 sm:px-10">
           {/* Logo Branding */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-[#ff5600] shadow-sm shadow-orange-500/10">
+            <div className="flex items-center justify-center w-9 h-9 rounded-md bg-primary">
               <span className="text-white font-bold text-base">M</span>
             </div>
             <div>
               <span className="text-sm font-semibold tracking-tight text-foreground block">Meta CRM</span>
-              <span className="text-[10px] text-muted-foreground font-medium tracking-wide uppercase">Workspace Portal</span>
+              <span className="text-xs text-muted-foreground font-medium">Workspace access</span>
             </div>
           </div>
  
           {/* Form Container (Enclosed in a beautiful white card with hairline border) */}
-          <div className="my-auto max-w-sm w-full mx-auto bg-card border border-border rounded-xl p-6 sm:p-8 shadow-sm">
+          <div className="my-auto max-w-sm w-full mx-auto">
             <div className="mb-6">
               <h1 className="text-2xl font-semibold text-foreground tracking-tight">
-                Sign in to workspace
+                Sign in
               </h1>
               <p className="text-xs text-muted-foreground mt-1.5 font-normal leading-relaxed">
-                Enter your credentials to access your CRM console and campaigns.
+                Access leads, follow-ups, customers, and pipeline work for your workspace.
               </p>
             </div>
  
@@ -603,9 +602,9 @@ function LoginPage() {
             )}
  
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1">
-                <label htmlFor="email" className="text-[10px] font-semibold text-foreground uppercase tracking-wider block">
-                  Email Address
+              <div className="space-y-1.5">
+                <label htmlFor="email" className="text-xs font-semibold text-foreground block">
+                  Email
                 </label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-muted-foreground">
@@ -617,14 +616,14 @@ function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@company.com"
-                    className="bg-card border-border pl-9 placeholder:text-[#9c9fa5] focus-visible:ring-[#111111] focus-visible:border-[#111111] h-10 rounded-md text-sm text-foreground"
+                    className="bg-card border-border pl-9 h-10 rounded-md text-sm text-foreground"
                     required
                   />
                 </div>
               </div>
  
-              <div className="space-y-1">
-                <label htmlFor="password" className="text-[10px] font-semibold text-foreground uppercase tracking-wider block">
+              <div className="space-y-1.5">
+                <label htmlFor="password" className="text-xs font-semibold text-foreground block">
                   Password
                 </label>
                 <div className="relative">
@@ -637,7 +636,7 @@ function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="bg-card border-border pl-9 pr-9 focus-visible:ring-[#111111] focus-visible:border-[#111111] h-10 rounded-md text-sm text-foreground"
+                    className="bg-card border-border pl-9 pr-9 h-10 rounded-md text-sm text-foreground"
                     required
                   />
                   <button
@@ -655,7 +654,7 @@ function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowTenantSlug(!showTenantSlug)}
-                  className="text-xs font-semibold text-[#ff5600] hover:underline transition-colors flex items-center gap-1 cursor-pointer"
+                  className="text-xs font-semibold text-primary hover:underline transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <Globe className="w-3.5 h-3.5" />
                   {showTenantSlug ? 'Use default workspace' : 'Log into specific workspace'}
@@ -663,8 +662,8 @@ function LoginPage() {
                 
                 {showTenantSlug && (
                   <div className="mt-2 space-y-1 transition-all">
-                    <label htmlFor="tenantSlug" className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block">
-                      Workspace Domain / Slug
+                    <label htmlFor="tenantSlug" className="text-xs font-medium text-muted-foreground block">
+                      Workspace slug
                     </label>
                     <div className="relative">
                       <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-muted-foreground">
@@ -676,7 +675,7 @@ function LoginPage() {
                         value={tenantSlug}
                         onChange={(e) => setTenantSlug(e.target.value)}
                         placeholder="acme-corp"
-                        className="bg-card border-border pl-9 focus-visible:ring-[#111111] focus-visible:border-[#111111] h-9 rounded-md text-xs text-foreground"
+                        className="bg-card border-border pl-9 h-9 rounded-md text-sm text-foreground"
                         required={showTenantSlug}
                       />
                     </div>
@@ -690,7 +689,7 @@ function LoginPage() {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-3.5 h-3.5 border-border rounded accent-[#111111] cursor-pointer"
+                  className="w-3.5 h-3.5 border-border rounded accent-primary cursor-pointer"
                 />
                 <label htmlFor="remember-me" className="text-xs text-muted-foreground font-medium cursor-pointer select-none">
                   Remember my email
@@ -700,7 +699,7 @@ function LoginPage() {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-[#111111] hover:bg-[#000000] text-white font-semibold rounded-md h-10 mt-2 hover:scale-[1.005] active:scale-[0.995] transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs"
+                className="w-full font-semibold rounded-md h-10 mt-2 flex items-center justify-center gap-1.5 cursor-pointer text-sm"
               >
                 {isLoading ? (
                   <>
@@ -709,7 +708,7 @@ function LoginPage() {
                   </>
                 ) : (
                   <>
-                    Sign in to workspace
+                    Continue
                     <ArrowRight className="w-3.5 h-3.5" />
                   </>
                 )}
@@ -719,13 +718,13 @@ function LoginPage() {
  
           {/* Flat, Clean Footer */}
           <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/60 pt-4">
-            <span className="font-medium">Meta CRM Suite</span>
-            <span>Secured Session</span>
+            <span className="font-medium">Meta CRM</span>
+            <span>Secure workspace session</span>
           </div>
         </div>
  
         {/* Right Column: Visual Showcase Panel (Premium warm canvas with crisp mockup cards) */}
-        <div className="hidden lg:col-span-7 lg:flex relative overflow-hidden bg-[#ebe7e1] flex-col justify-between p-12 border-l border-border select-none">
+        <div className="hidden">
           {/* Quiet branding top bar */}
           <div className="relative z-10 flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-[#ff5600] flex items-center justify-center">
@@ -853,14 +852,14 @@ function ImpersonatePage() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-[#f5f1ec] font-sans">
-        <div className="bg-card border border-border rounded-xl p-8 max-w-sm w-full shadow-sm text-center space-y-4">
-          <div className="w-12 h-12 rounded-full bg-rose-50 border border-rose-200/50 flex items-center justify-center mx-auto">
+      <div className="flex min-h-screen w-full items-center justify-center bg-background px-6 font-sans">
+        <div className="max-w-sm w-full text-center space-y-4">
+          <div className="w-10 h-10 rounded-md bg-red-50 border border-red-200 flex items-center justify-center mx-auto">
             <span className="text-rose-600 font-bold text-xl">!</span>
           </div>
-          <h2 className="text-lg font-bold text-foreground">Impersonation Failed</h2>
-          <p className="text-xs text-muted-foreground leading-relaxed">{error}</p>
-          <Button onClick={() => window.close()} className="w-full bg-[#111111] text-white text-xs h-9 rounded-lg">
+          <h2 className="text-lg font-semibold text-foreground">Support session failed</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">{error}</p>
+          <Button onClick={() => window.close()} className="w-full text-sm h-9 rounded-md">
             Close Window
           </Button>
         </div>
@@ -869,9 +868,9 @@ function ImpersonatePage() {
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-[#f5f1ec] font-sans">
+    <div className="flex min-h-screen w-full items-center justify-center bg-background font-sans">
       <div className="flex items-center gap-2.5 text-sm text-muted-foreground font-semibold">
-        <div className="w-4 h-4 border-2 border-border border-t-fin-orange rounded-full animate-spin" />
+        <div className="w-4 h-4 border-2 border-border border-t-primary rounded-full animate-spin" />
         Establishing secure support session…
       </div>
     </div>
@@ -918,6 +917,7 @@ import {
   settingsAssignmentsRoute,
   settingsUsersRoute,
   settingsRolesRoute,
+  settingsPipelinesRoute,
   settingsWorkflowsRoute,
   settingsFieldsRoute,
   settingsLabelsRoute,
@@ -966,6 +966,7 @@ export const routeTree = rootRoute.addChildren([
   settingsAssignmentsRoute,
   settingsUsersRoute,
   settingsRolesRoute,
+  settingsPipelinesRoute,
   settingsWorkflowsRoute,
   settingsFieldsRoute,
   settingsLabelsRoute,

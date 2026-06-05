@@ -19,7 +19,7 @@ import { PermissionsGuard } from '../permissions/permissions.guard';
 import { CheckPermissions } from '../permissions/permissions.decorator';
 import { WorkflowService } from './workflow.service';
 
-class UpdateWorkflowDto {
+class UpdatePipelineDto {
   @IsString()
   name!: string;
 
@@ -30,7 +30,7 @@ class UpdateWorkflowDto {
   transitions!: any[];
 }
 
-@Controller('workflows')
+@Controller(['pipelines', 'workflows'])
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class WorkflowController {
   constructor(private readonly service: WorkflowService) {}
@@ -66,9 +66,22 @@ export class WorkflowController {
     return result.value;
   }
 
+  @Get(':id/stages')
+  @CheckPermissions('read', 'Workflow')
+  async getStages(@Param('id') id: string) {
+    const result = await this.service.getStages(id);
+    if (result.isErr()) {
+      if (result.error.code === 'NOT_FOUND') {
+        throw new NotFoundException(result.error.message);
+      }
+      throw new InternalServerErrorException(result.error.message);
+    }
+    return result.value;
+  }
+
   @Patch(':id')
   @CheckPermissions('manage', 'Workflow')
-  async update(@Param('id') id: string, @Body() body: UpdateWorkflowDto) {
+  async update(@Param('id') id: string, @Body() body: UpdatePipelineDto) {
     const result = await this.service.update(id, body);
     if (result.isErr()) {
       if (result.error.code === 'NOT_FOUND') {

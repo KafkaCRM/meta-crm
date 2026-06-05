@@ -11,7 +11,7 @@
       { "name": "document_status", "label": "Document Status", "field_type": "select", "options": ["Pending", "Verified", "Rejected"], "order": 2 }
     ]
   },
-  "workflow_definition": {
+  "pipeline_definition": {
     "name": "Financial Lead Pipeline",
     "entity_type": "application",
     "stages": [

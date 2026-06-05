@@ -47,7 +47,7 @@ export class StageTransitionService {
     }
 
     // 2. Load target stage and entry_criteria
-    const targetStage = await this.db.getClient().workflowStage.findUnique({
+    const targetStage = await this.db.getClient().pipelineStage.findUnique({
       where: { id: toStageId },
     });
 
@@ -92,7 +92,7 @@ export class StageTransitionService {
     }
 
     // 4. Verify transition exists in workflow_transitions
-    const existingTransition = await this.db.getClient().workflowTransition.findFirst({
+    const existingTransition = await this.db.getClient().pipelineTransition.findFirst({
       where: {
         from_stage_id: caseRecord.stage,
         to_stage_id: toStageId,

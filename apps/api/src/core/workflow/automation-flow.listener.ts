@@ -12,7 +12,7 @@ interface RecordEventPayload {
 }
 
 @Injectable()
-export class AutomationFlowListener {
+export class AutomationWorkflowListener {
   constructor(
     @InjectQueue('workflow') private readonly workflowQueue: Queue,
     private readonly platformDb: PlatformPrismaService,
@@ -24,7 +24,7 @@ export class AutomationFlowListener {
       const triggerEvent = `${payload.objectType}:${payload.event}`;
 
       // Query active automation flows for this tenant and this specific trigger event
-      const flows = await this.platformDb.client.automationFlow.findMany({
+      const flows = await this.platformDb.client.automationWorkflow.findMany({
         where: {
           tenant_id: payload.tenantId,
           trigger_event: triggerEvent,

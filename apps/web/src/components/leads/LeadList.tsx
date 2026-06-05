@@ -6,10 +6,16 @@ import { leadsApi, type LeadResponse } from '@/api/leads';
 import { VirtualTable } from '@/components/shared/VirtualTable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { PageShell } from '@/components/shared/PageShell';
 import { Card, CardContent } from '@/components/ui/card';
-import { Search, Megaphone, UserCheck, Plus } from 'lucide-react';
+import { Search, Megaphone, Plus, Phone, MessageSquare, AlertTriangle, AlertCircle, Clock } from 'lucide-react';
+import {
+  CompactRecordRow,
+  DEFAULT_RECORD_ACTIONS,
+  OperationalStatusBadge,
+  SourceBadge as OperationalSourceBadge,
+  type OperationalStatus,
+} from '@/components/shared';
 import {
   Sheet,
   SheetContent,
@@ -18,38 +24,34 @@ import {
 } from '@/components/ui/sheet';
 import { LeadDetail } from './LeadDetail';
 import { CreateLeadModal } from './CreateLeadModal';
+import { cn } from '@/lib/utils';
 import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime);
 
 const columnHelper = createColumnHelper<LeadResponse>();
 
 function LeadSourceBadge({ source }: { source: string }) {
-  let variant: 'success' | 'warning' | 'info' | 'secondary' | 'outline' = 'outline';
-  if (source === 'whatsapp') variant = 'success';
-  else if (source === 'justdial') variant = 'warning';
-  else if (source === 'facebook') variant = 'info';
-  else if (source === 'web' || source === 'web_form') variant = 'secondary';
-
   const label = source === 'whatsapp' ? 'WhatsApp' : source === 'justdial' ? 'JustDial' : source === 'facebook' ? 'Facebook' : source === 'web' || source === 'web_form' ? 'Web Form' : source;
-
-  return (
-    <Badge variant={variant} className="capitalize shrink-0">
-      {label}
-    </Badge>
-  );
+  return <OperationalSourceBadge source={label} />;
 }
 
 function LeadStatusBadge({ status }: { status: string }) {
-  let variant: 'default' | 'success' | 'warning' | 'destructive' | 'secondary' = 'secondary';
-  if (status === 'converted' || status === 'qualified') variant = 'success';
-  else if (status === 'unqualified') variant = 'destructive';
-  else if (status === 'contacted') variant = 'warning';
-  else if (status === 'new') variant = 'default';
+  const operationalStatus: OperationalStatus =
+    status === 'converted'
+      ? 'converted'
+      : status === 'qualified'
+        ? 'qualified'
+        : status === 'unqualified'
+          ? 'lost'
+          : status === 'contacted'
+            ? 'contacted'
+            : status === 'new'
+              ? 'new'
+              : 'pending';
 
-  return (
-    <Badge variant={variant} className="capitalize shrink-0">
-      {status.replace('_', ' ')}
-    </Badge>
-  );
+  return <OperationalStatusBadge status={operationalStatus} label={status.replace('_', ' ')} />;
 }
 
 export function LeadList() {
@@ -59,6 +61,7 @@ export function LeadList() {
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'all' | 'new' | 'unassigned' | 'hot' | 'duplicate' | 'junk'>('all');
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -71,36 +74,103 @@ export function LeadList() {
   }, [searchQuery]);
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['leads', debouncedSearch],
+    queryKey: ['leads', debouncedSearch, activeTab],
     queryFn: () => {
       const params: Record<string, string | number> = { limit: 500 };
       if (debouncedSearch) {
         params.name = debouncedSearch;
       }
+      if (activeTab === 'new') {
+        params.status = 'new';
+      } else if (activeTab === 'unassigned') {
+        params.assigned_to_id = 'unassigned';
+      } else if (activeTab === 'hot') {
+        params.status = 'hot';
+      } else if (activeTab === 'junk') {
+        params.status = 'junk';
+      }
       return leadsApi.list(params as any);
     },
-    staleTime: 30_000,
+    staleTime: 15_000,
   });
+
+  const rawLeads = data?.data ?? [];
+
+  // Client-side filter for duplicate risk tab
+  const leads = useMemo(() => {
+    if (activeTab === 'duplicate') {
+      return rawLeads.filter((l: any) => l.duplicate_risk);
+    }
+    return rawLeads;
+  }, [rawLeads, activeTab]);
+
+  const openPhone = useCallback((phone: string) => {
+    window.location.href = `tel:${phone}`;
+  }, []);
+
+  const openWhatsApp = useCallback((phone: string) => {
+    let cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length === 10) cleaned = `91${cleaned}`;
+    window.open(`https://api.whatsapp.com/send?phone=${cleaned}`, '_blank');
+  }, []);
 
   const columns = useMemo(
     () => [
       columnHelper.accessor('name', {
         header: 'Name',
-        cell: (info) => (
-          <span className="font-semibold text-foreground">{info.getValue()}</span>
-        ),
+        cell: (info) => {
+          const row = info.row.original as any;
+          return (
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-foreground">{info.getValue()}</span>
+              {row.duplicate_risk && (
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                  <AlertTriangle size={8} />
+                  Dupe
+                </span>
+              )}
+            </div>
+          );
+        },
       }),
       columnHelper.accessor('phone', {
         header: 'Phone',
-        cell: (info) => (
-          <span className="text-muted-foreground text-sm font-mono">{info.getValue()}</span>
-        ),
-      }),
-      columnHelper.accessor('email', {
-        header: 'Email',
-        cell: (info) => (
-          <span className="text-muted-foreground text-sm">{info.getValue() || '-'}</span>
-        ),
+        cell: (info) => {
+          const phone = info.getValue();
+          const row = info.row.original as any;
+          const isInvalid = row.phone_valid === false;
+          return (
+            <div className="flex items-center gap-2 group/phone">
+              <span className={cn(
+                "text-sm font-mono font-medium",
+                isInvalid ? "text-red-500 line-through decoration-dotted" : "text-muted-foreground"
+              )}>
+                {phone}
+              </span>
+              {isInvalid && (
+                <span className="text-red-500" title="Invalid format">
+                  <AlertCircle size={12} />
+                </span>
+              )}
+              <div className="flex items-center gap-1.5 opacity-0 group-hover/phone:opacity-100 transition-opacity ml-1">
+                <button
+                  onClick={(e) => { e.stopPropagation(); openPhone(phone); }}
+                  className="p-1 rounded bg-muted hover:bg-slate-200/80 text-muted-foreground hover:text-foreground transition-colors"
+                  title="Call"
+                >
+                  <Phone size={11} />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); openWhatsApp(phone); }}
+                  className="p-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-600 hover:text-emerald-700 transition-colors"
+                  title="WhatsApp"
+                >
+                  <MessageSquare size={11} />
+                </button>
+              </div>
+            </div>
+          );
+        },
       }),
       columnHelper.accessor('source', {
         header: 'Source',
@@ -111,15 +181,56 @@ export function LeadList() {
         cell: (info) => <LeadStatusBadge status={info.getValue()} />,
       }),
       columnHelper.accessor('created_at', {
-        header: 'Ingested',
-        cell: (info) => (
-          <span className="text-sm text-muted-foreground">
-            {dayjs(info.getValue()).format('DD MMM YYYY HH:mm')}
-          </span>
-        ),
+        header: 'SLA Status',
+        cell: (info) => {
+          const row = info.row.original as any;
+          const date = dayjs(info.getValue());
+          const now = dayjs();
+          const diffHours = now.diff(date, 'hour');
+          const isConverted = row.status === 'converted';
+
+          let slaText = date.fromNow();
+          let pillStyle = "bg-muted text-muted-foreground border-transparent";
+          
+          if (!isConverted) {
+            if (diffHours < 2) {
+              pillStyle = "bg-emerald-50 text-emerald-700 border-emerald-200";
+              slaText = `New (<2h)`;
+            } else if (diffHours < 24) {
+              pillStyle = "bg-amber-50 text-amber-700 border-amber-200";
+              slaText = `No contact (${diffHours}h)`;
+            } else {
+              pillStyle = "bg-red-50 text-red-700 border-red-200 animate-pulse font-bold";
+              slaText = `Stale (>24h)`;
+            }
+          } else {
+            slaText = "Converted";
+            pillStyle = "bg-slate-100 text-slate-400 border-transparent";
+          }
+
+          return (
+            <div className="flex items-center gap-1.5">
+              <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border", pillStyle)}>
+                <Clock size={8} />
+                {slaText}
+              </span>
+            </div>
+          );
+        },
+      }),
+      columnHelper.accessor('assigned_to', {
+        header: 'Assignee',
+        cell: (info) => {
+          const assignee = info.getValue() as any;
+          return (
+            <span className="text-sm text-muted-foreground">
+              {assignee?.name ?? <span className="text-slate-400 italic">Unassigned</span>}
+            </span>
+          );
+        },
       }),
     ],
-    [],
+    [openPhone, openWhatsApp],
   );
 
   const handleRowClick = useCallback(
@@ -130,12 +241,10 @@ export function LeadList() {
     [],
   );
 
-  const leads = data?.data ?? [];
-
   return (
     <PageShell
-      title="Leads Ingestion"
-      description="Monitor raw inbound prospects from Facebook, Justdial, Web Forms before converting them to client contacts."
+      title="Leads"
+      description="Operational Cockpit: Quick calling, quality qualification, and lead promotion to active deals."
       actions={
         <Button
           onClick={() => setCreateOpen(true)}
@@ -147,6 +256,45 @@ export function LeadList() {
       }
     >
       <div className="space-y-4">
+        {/* Tab Selector */}
+        <div className="flex border-b border-border gap-6 overflow-x-auto scrollbar-none text-sm pt-1">
+          {(['all', 'new', 'unassigned', 'hot', 'duplicate', 'junk'] as const).map((tab) => {
+            const listForCount = rawLeads.filter(l => {
+              if (tab === 'all') return true;
+              if (tab === 'new') return l.status === 'new';
+              if (tab === 'unassigned') return !l.assigned_to_id;
+              if (tab === 'hot') return l.status === 'hot';
+              if (tab === 'duplicate') return l.duplicate_risk;
+              if (tab === 'junk') return l.status === 'junk';
+              return true;
+            });
+            const count = listForCount.length;
+
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={cn(
+                  "pb-2.5 pt-1 font-semibold border-b-2 capitalize transition-all relative text-xs md:text-sm whitespace-nowrap",
+                  activeTab === tab 
+                    ? "border-primary text-foreground" 
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {tab === 'duplicate' ? 'Duplicate Risk' : tab}
+                <span className={cn(
+                  "ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full font-bold",
+                  activeTab === tab
+                    ? "bg-primary text-white"
+                    : "bg-muted text-muted-foreground"
+                )}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
         {/* Toolbar */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="relative w-80 max-w-full">
@@ -170,20 +318,69 @@ export function LeadList() {
             ) : leads.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-24 text-center">
                 <Megaphone size={36} className="text-muted-foreground/40 mb-3" />
-                <p className="font-semibold text-foreground">No leads ingested yet</p>
+                <p className="font-semibold text-foreground">No leads found</p>
                 <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-                  Leads from connected third-party integrations (Facebook Ads, Justdial, etc.) will appear here automatically, or you can create one manually using the "Add Lead" button.
+                  {activeTab !== 'all' 
+                    ? `No leads match the "${activeTab === 'duplicate' ? 'duplicate risk' : activeTab}" filter right now.` 
+                    : 'Leads from connected third-party integrations will appear here automatically.'}
                 </p>
               </div>
             ) : (
-              <VirtualTable
-                data={leads}
-                columns={columns as any}
-                rowCount={leads.length}
-                isLoading={isLoading}
-                resource="Party"
-                onRowClick={handleRowClick}
-              />
+              <>
+                <div className="hidden lg:block">
+                  <VirtualTable
+                    data={leads}
+                    columns={columns as any}
+                    rowCount={leads.length}
+                    isLoading={isLoading}
+                    resource="Party"
+                    onRowClick={handleRowClick}
+                  />
+                </div>
+                <div className="lg:hidden divide-y divide-border">
+                  {leads.map((lead: any) => (
+                    <CompactRecordRow
+                      key={lead.id}
+                      title={lead.name}
+                      subtitle={lead.phone}
+                      status={<LeadStatusBadge status={lead.status} />}
+                      source={<LeadSourceBadge source={lead.source} />}
+                      meta={
+                        <div className="flex flex-col gap-1 w-full text-xs">
+                          <div className="flex items-center justify-between text-slate-500">
+                            <span>{lead.email || 'No email'}</span>
+                            <span>{dayjs(lead.created_at).format('DD MMM, h:mm A')}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                            {lead.duplicate_risk && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                <AlertTriangle size={8} />
+                                Duplicate Risk
+                              </span>
+                            )}
+                            {lead.phone_valid === false && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-50 text-red-700 border border-red-200">
+                                <AlertCircle size={8} />
+                                Invalid Phone
+                              </span>
+                            )}
+                            {lead.assigned_to?.name && (
+                              <span className="text-[10px] text-slate-400 italic">
+                                Assigned: {lead.assigned_to.name}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      }
+                      actions={[
+                        DEFAULT_RECORD_ACTIONS.call(() => openPhone(lead.phone)),
+                        DEFAULT_RECORD_ACTIONS.whatsapp(() => openWhatsApp(lead.phone)),
+                      ]}
+                      onClick={() => handleRowClick(lead)}
+                    />
+                  ))}
+                </div>
+              </>
             )}
           </CardContent>
         </Card>

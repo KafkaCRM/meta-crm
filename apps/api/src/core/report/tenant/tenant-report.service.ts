@@ -91,7 +91,7 @@ export class TenantReportService {
     if (params.date_to) createdAt.lte = new Date(params.date_to);
     if (Object.keys(createdAt).length > 0) filter.created_at = createdAt;
     if (params.assignment_id) filter.branch_brand_assignment_id = params.assignment_id;
-    if (params.workflow_id) filter.workflow_definition_id = params.workflow_id;
+    if (params.workflow_id) filter.pipeline_definition_id = params.workflow_id;
     if (params.campaign_id) filter.campaign_id = params.campaign_id;
     return filter;
   }
@@ -132,37 +132,37 @@ export class TenantReportService {
 
     const total = await this.db.getClient().case.count({ where: filter });
 
-    const wfGroups = await this.db.getClient().workflowStage.groupBy({
-      by: ['workflow_definition_id'],
+    const wfGroups = await this.db.getClient().pipelineStage.groupBy({
+      by: ['pipeline_definition_id'],
       _max: { order: true },
     });
 
     const lastStageByWorkflow = new Map<string, string[]>();
     for (const group of wfGroups) {
-      const lastStages = await this.db.getClient().workflowStage.findMany({
+      const lastStages = await this.db.getClient().pipelineStage.findMany({
         where: {
-          workflow_definition_id: group.workflow_definition_id,
+          pipeline_definition_id: group.pipeline_definition_id,
           order: group._max.order!,
         },
         select: { id: true },
       });
       lastStageByWorkflow.set(
-        group.workflow_definition_id,
+        group.pipeline_definition_id,
         lastStages.map((s) => s.id),
       );
     }
 
     const wfFilter = params.workflow_id
       ? filter
-      : { ...filter, workflow_definition_id: { in: Array.from(lastStageByWorkflow.keys()) } };
+      : { ...filter, pipeline_definition_id: { in: Array.from(lastStageByWorkflow.keys()) } };
 
     const cases = await this.db.getClient().case.findMany({
       where: wfFilter,
-      select: { id: true, workflow_definition_id: true, stage: true },
+      select: { id: true, pipeline_definition_id: true, stage: true },
     });
 
     const converted = cases.filter((c) => {
-      const lastStageIds = lastStageByWorkflow.get(c.workflow_definition_id);
+      const lastStageIds = lastStageByWorkflow.get(c.pipeline_definition_id);
       return lastStageIds ? lastStageIds.includes(c.stage) : false;
     }).length;
 
@@ -323,16 +323,16 @@ export class TenantReportService {
       });
 
       const pipelineIds = Array.from(new Set(campaignsToProcess.map((c) => c.pipeline_id)));
-      const stages = await this.db.getClient().workflowStage.findMany({
-        where: { workflow_definition_id: { in: pipelineIds } },
+      const stages = await this.db.getClient().pipelineStage.findMany({
+        where: { pipeline_definition_id: { in: pipelineIds } },
         orderBy: { order: 'asc' },
       });
 
       const pipelineStagesMap = new Map<string, typeof stages>();
       for (const stage of stages) {
-        const existing = pipelineStagesMap.get(stage.workflow_definition_id) ?? [];
+        const existing = pipelineStagesMap.get(stage.pipeline_definition_id) ?? [];
         existing.push(stage);
-        pipelineStagesMap.set(stage.workflow_definition_id, existing);
+        pipelineStagesMap.set(stage.pipeline_definition_id, existing);
       }
 
       const pipelineFinalPositiveStageIdsMap = new Map<string, Set<string>>();
@@ -464,16 +464,16 @@ export class TenantReportService {
       });
 
       const pipelineIds = Array.from(new Set(campaigns.map((c) => c.pipeline_id)));
-      const stages = await this.db.getClient().workflowStage.findMany({
-        where: { workflow_definition_id: { in: pipelineIds } },
+      const stages = await this.db.getClient().pipelineStage.findMany({
+        where: { pipeline_definition_id: { in: pipelineIds } },
         orderBy: { order: 'asc' },
       });
 
       const pipelineStagesMap = new Map<string, typeof stages>();
       for (const stage of stages) {
-        const existing = pipelineStagesMap.get(stage.workflow_definition_id) ?? [];
+        const existing = pipelineStagesMap.get(stage.pipeline_definition_id) ?? [];
         existing.push(stage);
-        pipelineStagesMap.set(stage.workflow_definition_id, existing);
+        pipelineStagesMap.set(stage.pipeline_definition_id, existing);
       }
 
       const pipelineFinalPositiveStageIdsMap = new Map<string, Set<string>>();

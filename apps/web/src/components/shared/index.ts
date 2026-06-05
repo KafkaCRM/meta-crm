@@ -10,3 +10,17 @@ export { BulkActionBar } from './BulkActionBar';
 export type { BulkAction } from './BulkActionBar';
 
 export { CapabilityGate } from './CapabilityGate';
+
+export {
+  ActionToolbar,
+  CompactRecordRow,
+  DEFAULT_RECORD_ACTIONS,
+  OperationalStatusBadge,
+  SourceBadge,
+  StickyActionBar,
+} from './OperationalPrimitives';
+export type {
+  CompactRecordRowProps,
+  OperationalAction,
+  OperationalStatus,
+} from './OperationalPrimitives';

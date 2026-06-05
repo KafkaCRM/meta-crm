@@ -28,8 +28,8 @@ interface FlowNode {
 
 @Processor('workflow')
 @Injectable()
-export class AutomationFlowProcessor extends WorkerHost {
-  private readonly logger = new Logger(AutomationFlowProcessor.name);
+export class AutomationWorkflowProcessor extends WorkerHost {
+  private readonly logger = new Logger(AutomationWorkflowProcessor.name);
 
   constructor(
     private readonly platformDb: PlatformPrismaService,
@@ -43,7 +43,7 @@ export class AutomationFlowProcessor extends WorkerHost {
     this.logger.log(`Executing automation flow ${flowId} for tenant ${tenantId} on record ${record?.id}`);
 
     try {
-      const flow = await this.platformDb.client.automationFlow.findFirst({
+      const flow = await this.platformDb.client.automationWorkflow.findFirst({
         where: { id: flowId, tenant_id: tenantId, is_active: true },
       });
 

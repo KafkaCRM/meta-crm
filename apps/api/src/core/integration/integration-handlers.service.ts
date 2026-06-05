@@ -215,7 +215,7 @@ export class IntegrationHandlersService implements OnModuleInit {
       }
 
       // Fetch the default workflow definition
-      const workflow = await this.platformDb.client.workflowDefinition.findFirst({
+      const workflow = await this.platformDb.client.pipelineDefinition.findFirst({
         where: { tenant_id: tenantId },
         include: { stages: { orderBy: { order: 'asc' } } },
       });
@@ -231,7 +231,7 @@ export class IntegrationHandlersService implements OnModuleInit {
             type: 'support',
             title: 'Inbound Email: Billing Inquiry on invoice #1002',
             stage: defaultStage,
-            workflow_definition_id: workflow.id,
+            pipeline_definition_id: workflow.id,
             assigned_to_id: 'usr_default_001',
             attributes: {},
           },

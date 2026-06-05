@@ -1,13 +1,25 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './apps/api/src/app.module';
 import { TemplateService } from './apps/api/src/core/metadata/template.service';
+import { TenantScopedPrismaService } from './apps/api/src/core/tenant/tenant-scoped-prisma.service';
 
 async function bootstrap() {
   console.log('Bootstrapping NestJS context to apply healthcare template...');
   const app = await NestFactory.createApplicationContext(AppModule);
   const service = app.get(TemplateService);
+  const db = app.get(TenantScopedPrismaService);
 
-  const tenantId = 'cmpnfzrte000108gx0i4kq3lf';
+  const tenant = await db.getClient().tenant.findUnique({
+    where: { slug: 'acme-corp' },
+  });
+
+  if (!tenant) {
+    console.error('Tenant "acme-corp" not found. Please run db:seed first.');
+    await app.close();
+    return;
+  }
+
+  const tenantId = tenant.id;
   console.log('Applying healthcare template to tenant:', tenantId);
   const result = await service.applyIndustryTemplate('healthcare', tenantId);
 

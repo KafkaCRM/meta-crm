@@ -26,14 +26,14 @@ function mockDb() {
     branchBrandAssignment: {
       findMany: vi.fn(),
     },
-    workflowDefinition: {
+    pipelineDefinition: {
       count: vi.fn(),
       findMany: vi.fn(),
     },
     campaign: {
       count: vi.fn(),
     },
-    workflowStage: {
+    pipelineStage: {
       groupBy: vi.fn(),
       findMany: vi.fn(),
     },
@@ -115,7 +115,7 @@ describe('VerticalService', () => {
       const client = db.getClient();
       (client.branchBrandAssignment.findMany as any).mockResolvedValue([{ branch_id: 'branch-1' }]);
       (client.vertical.findMany as any).mockResolvedValue([VERTICAL]);
-      (client.workflowDefinition.count as any).mockResolvedValue(1);
+      (client.pipelineDefinition.count as any).mockResolvedValue(1);
       (client.campaign.count as any).mockResolvedValue(2);
 
       const result = await svc.list({ brand_id: 'brand-a', status: 'active' });
@@ -142,7 +142,7 @@ describe('VerticalService', () => {
     it('lists verticals without brand_id filtering', async () => {
       const client = db.getClient();
       (client.vertical.findMany as any).mockResolvedValue([VERTICAL]);
-      (client.workflowDefinition.count as any).mockResolvedValue(0);
+      (client.pipelineDefinition.count as any).mockResolvedValue(0);
       (client.campaign.count as any).mockResolvedValue(0);
 
       const result = await svc.list({ status: 'active' });
@@ -160,9 +160,9 @@ describe('VerticalService', () => {
     it('returns VERTICAL_HAS_ACTIVE_CASES error if active cases exist', async () => {
       const client = db.getClient();
       (client.vertical.findUnique as any).mockResolvedValue(VERTICAL);
-      (client.workflowDefinition.findMany as any).mockResolvedValue([{ id: 'wf-1' }]);
-      (client.workflowStage.groupBy as any).mockResolvedValue([{ workflow_definition_id: 'wf-1', _max: { order: 3 } }]);
-      (client.workflowStage.findMany as any).mockResolvedValue([{ id: 'stage-final' }]);
+      (client.pipelineDefinition.findMany as any).mockResolvedValue([{ id: 'wf-1' }]);
+      (client.pipelineStage.groupBy as any).mockResolvedValue([{ pipeline_definition_id: 'wf-1', _max: { order: 3 } }]);
+      (client.pipelineStage.findMany as any).mockResolvedValue([{ id: 'stage-final' }]);
       (client.case.count as any).mockResolvedValue(3);
 
       const result = await svc.updateStatus('vertical-1', 'inactive');
@@ -179,7 +179,7 @@ describe('VerticalService', () => {
     it('returns VERTICAL_HAS_ACTIVE_CASES error if active cases exist with no workflow definitions', async () => {
       const client = db.getClient();
       (client.vertical.findUnique as any).mockResolvedValue(VERTICAL);
-      (client.workflowDefinition.findMany as any).mockResolvedValue([]);
+      (client.pipelineDefinition.findMany as any).mockResolvedValue([]);
       (client.case.count as any).mockResolvedValue(2);
 
       const result = await svc.updateStatus('vertical-1', 'inactive');
@@ -196,11 +196,11 @@ describe('VerticalService', () => {
       (client.vertical.findUnique as any).mockResolvedValue(VERTICAL);
 
       // For getActiveCasesCount
-      (client.workflowDefinition.findMany as any).mockImplementation((args: any) => {
+      (client.pipelineDefinition.findMany as any).mockImplementation((args: any) => {
         return Promise.resolve([{ id: 'wf-1' }]);
       });
-      (client.workflowStage.groupBy as any).mockResolvedValue([{ workflow_definition_id: 'wf-1', _max: { order: 3 } }]);
-      (client.workflowStage.findMany as any).mockResolvedValue([{ id: 'stage-final' }]);
+      (client.pipelineStage.groupBy as any).mockResolvedValue([{ pipeline_definition_id: 'wf-1', _max: { order: 3 } }]);
+      (client.pipelineStage.findMany as any).mockResolvedValue([{ id: 'stage-final' }]);
       
       // For getActiveCasesCount and calculateStats
       (client.case.count as any).mockImplementation((args: any) => {
@@ -216,7 +216,7 @@ describe('VerticalService', () => {
 
       (client.vertical.update as any).mockResolvedValue({ ...VERTICAL, status: 'inactive' });
       (client.campaign.count as any).mockResolvedValue(0);
-      (client.workflowDefinition.count as any).mockResolvedValue(1);
+      (client.pipelineDefinition.count as any).mockResolvedValue(1);
 
       const result = await svc.updateStatus('vertical-1', 'inactive');
 
@@ -250,10 +250,10 @@ describe('VerticalService', () => {
       const client = db.getClient();
       (client.vertical.findUnique as any).mockResolvedValue(VERTICAL);
       (client.campaign.count as any).mockResolvedValue(0);
-      (client.workflowDefinition.count as any).mockResolvedValue(1);
-      (client.workflowDefinition.findMany as any).mockResolvedValue([{ id: 'wf-1' }]);
-      (client.workflowStage.groupBy as any).mockResolvedValue([{ workflow_definition_id: 'wf-1', _max: { order: 3 } }]);
-      (client.workflowStage.findMany as any).mockResolvedValue([{ id: 'stage-final' }]);
+      (client.pipelineDefinition.count as any).mockResolvedValue(1);
+      (client.pipelineDefinition.findMany as any).mockResolvedValue([{ id: 'wf-1' }]);
+      (client.pipelineStage.groupBy as any).mockResolvedValue([{ pipeline_definition_id: 'wf-1', _max: { order: 3 } }]);
+      (client.pipelineStage.findMany as any).mockResolvedValue([{ id: 'stage-final' }]);
 
       // First run: 5 total leads, 4 converted, 1 active
       let mockTotalLeads = 5;
