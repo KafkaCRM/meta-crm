@@ -12,6 +12,7 @@ dayjs.extend(relativeTime);
 interface KanbanCardProps {
   caseData: CaseDto;
   stage: PipelineStageDto;
+  stages: PipelineStageDto[];
   isSelected: boolean;
   onToggleSelect: (caseId: string) => void;
   disabled?: boolean;
@@ -51,6 +52,7 @@ function getAgeBadgeInfo(caseData: CaseDto, stage: PipelineStageDto): {
 export const KanbanCard = memo(function KanbanCard({
   caseData,
   stage,
+  stages,
   isSelected,
   onToggleSelect,
   disabled = false,
@@ -202,6 +204,7 @@ export const KanbanCard = memo(function KanbanCard({
         onOpenChange={setQuickViewOpen}
         caseData={caseData}
         stageName={stage.name}
+        stages={stages}
       />
     </>
   );

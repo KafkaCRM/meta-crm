@@ -564,6 +564,7 @@ export function CaseKanban({ pipelineDefinitionId }: CaseKanbanProps) {
                 <KanbanColumn
                   key={stage.id}
                   stage={stage}
+                  stages={stages}
                   cases={stageCases}
                   selectedIds={selectedIds}
                   onToggleSelect={handleToggleSelect}
@@ -583,6 +584,7 @@ export function CaseKanban({ pipelineDefinitionId }: CaseKanbanProps) {
                 <KanbanCard
                   caseData={activeCase}
                   stage={activeCaseStage}
+                  stages={stages}
                   isSelected={false}
                   onToggleSelect={() => {}}
                   disabled

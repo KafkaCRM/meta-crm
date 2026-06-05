@@ -20,6 +20,7 @@ const CARD_HEIGHT = 112;
 
 interface KanbanColumnProps {
   stage: PipelineStageDto;
+  stages: PipelineStageDto[];
   cases: CaseDto[];
   selectedIds: Set<string>;
   onToggleSelect: (caseId: string) => void;
@@ -40,6 +41,7 @@ function getWidthLocalStorageKey(stageId: string): string {
 
 export function KanbanColumn({
   stage,
+  stages,
   cases,
   selectedIds,
   onToggleSelect,
@@ -249,6 +251,7 @@ export function KanbanColumn({
                   <KanbanCard
                     caseData={caseData}
                     stage={stage}
+                    stages={stages}
                     isSelected={selectedIds.has(caseData.id)}
                     onToggleSelect={onToggleSelect}
                   />

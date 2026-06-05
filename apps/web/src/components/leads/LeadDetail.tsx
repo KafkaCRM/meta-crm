@@ -103,6 +103,12 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
     }
   }, [defaultWorkflow]);
 
+  useMemo(() => {
+    if (assignments.length > 0 && !assignmentId) {
+      setAssignmentId(assignments[0]?.id || '');
+    }
+  }, [assignments, assignmentId]);
+
   const convertMutation = useMutation({
     mutationFn: (data: any) => leadsApi.convert(leadId, data),
     onSuccess: (res) => {
@@ -169,13 +175,40 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
           </div>
         </div>
         {!isConverted && !showConvertForm && (
-          <Button
-            onClick={() => setShowConvertForm(true)}
-            className="bg-primary hover:bg-[#1e293b] text-white shadow-sm flex items-center gap-1.5 h-9 text-xs rounded-lg font-bold"
-          >
-            <UserCheck size={14} />
-            Convert Lead
-          </Button>
+          <div className="flex items-center gap-2">
+            {assignments.length > 0 && (
+              <Button
+                onClick={() => {
+                  const defaultAssignmentId = assignmentId || assignments[0]?.id;
+                  if (!defaultAssignmentId) {
+                    toast.error('No office assignment available');
+                    return;
+                  }
+                  convertMutation.mutate({
+                    branch_brand_assignment_id: defaultAssignmentId,
+                    create_case: true,
+                    case_title: `Opportunity: ${lead.name}`,
+                    case_type: 'sales',
+                    pipeline_definition_id: defaultWorkflow?.id,
+                    case_stage: defaultWorkflow?.stages?.[0]?.id,
+                    campaign_id: lead.campaign_id || undefined,
+                  });
+                }}
+                disabled={convertMutation.isPending}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center gap-1.5 h-9 text-xs rounded-lg font-bold"
+              >
+                <UserCheck size={14} />
+                Quick Convert
+              </Button>
+            )}
+            <Button
+              onClick={() => setShowConvertForm(true)}
+              variant="outline"
+              className="border-border text-foreground hover:bg-slate-100 flex items-center gap-1.5 h-9 text-xs rounded-lg font-bold"
+            >
+              Convert Settings...
+            </Button>
+          </div>
         )}
       </div>
 
