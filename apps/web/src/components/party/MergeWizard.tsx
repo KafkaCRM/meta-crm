@@ -52,8 +52,8 @@ export function MergeWizard({ party, onClose, onMergeComplete }: MergeWizardProp
   const [fieldKeep, setFieldKeep] = useState<Record<string, 'left' | 'right'>>({});
 
   const { data: candidates, isLoading: candidatesLoading } = useQuery({
-    queryKey: ['parties', 'candidates', party.phone_normalized, party.name],
-    queryFn: () => partiesApi.listCandidates(party.phone_normalized, party.name),
+    queryKey: ['parties', 'candidates', party.phone_normalized],
+    queryFn: () => partiesApi.listCandidates(party.phone_normalized),
     staleTime: 30_000,
   });
 
@@ -62,11 +62,41 @@ export function MergeWizard({ party, onClose, onMergeComplete }: MergeWizardProp
     [candidates, party.id],
   );
 
+  const canonicalParty = canonicalId === party.id ? party : selectedCandidate!;
+  const duplicateParty = canonicalId === party.id ? selectedCandidate! : party;
+  const mergedParty = duplicateParty;
+
+  const fieldOverrides = useMemo(() => {
+    const overrides: Record<string, any> = {};
+    if (!selectedCandidate) return overrides;
+
+    DIFF_FIELDS.forEach(({ key }) => {
+      const keep = fieldKeep[key];
+      if (!keep) return;
+
+      const keepLeft = keep === 'left';
+      const canonicalIsLeft = canonicalId === party.id;
+
+      if (keepLeft !== canonicalIsLeft) {
+        const valueToKeep = (duplicateParty as any)[key];
+        if (valueToKeep !== undefined && valueToKeep !== null && valueToKeep !== '—') {
+          overrides[key] = valueToKeep;
+          if (key === 'phone_raw') {
+            overrides['phone_normalized'] = duplicateParty.phone_normalized;
+          }
+        }
+      }
+    });
+
+    return overrides;
+  }, [fieldKeep, canonicalId, party, selectedCandidate, duplicateParty]);
+
   const mergeMutation = useMutation({
     mutationFn: () =>
       partiesApi.merge({
         canonical_id: canonicalId,
         duplicate_id: canonicalId === party.id ? selectedCandidate!.id : party.id,
+        field_overrides: fieldOverrides,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parties'] });
@@ -92,9 +122,6 @@ export function MergeWizard({ party, onClose, onMergeComplete }: MergeWizardProp
     if (typeof val === 'object') return JSON.stringify(val);
     return String(val);
   };
-
-  const canonicalParty = canonicalId === party.id ? party : selectedCandidate!;
-  const mergedParty = canonicalId === party.id ? selectedCandidate! : party;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -193,15 +220,52 @@ export function MergeWizard({ party, onClose, onMergeComplete }: MergeWizardProp
           {/* Step 2: Diff view */}
           {step === 'review-diff' && selectedCandidate && (
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Compare fields and choose which values to keep
+              <div className="bg-muted/45 rounded-xl p-4 border border-border flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wide">Surviving Profile (Canonical)</h4>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Select which profile should remain active. The other will be marked as merged.
+                  </p>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={() => {
+                      setCanonicalId(party.id);
+                      setFieldKeep({});
+                    }}
+                    className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                      canonicalId === party.id
+                        ? 'bg-primary text-white border-primary shadow-xs'
+                        : 'bg-card text-muted-foreground border-border hover:bg-muted/50'
+                    }`}
+                  >
+                    Keep {party.name} (Original)
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCanonicalId(selectedCandidate.id);
+                      setFieldKeep({});
+                    }}
+                    className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                      canonicalId === selectedCandidate.id
+                        ? 'bg-primary text-white border-primary shadow-xs'
+                        : 'bg-card text-muted-foreground border-border hover:bg-muted/50'
+                    }`}
+                  >
+                    Keep {selectedCandidate.name} (Duplicate)
+                  </button>
+                </div>
+              </div>
+
+              <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+                Compare fields and choose which values to keep:
               </p>
 
-              <div className="grid grid-cols-4 gap-3 text-sm font-medium text-muted-foreground pb-2 border-b border-border">
+              <div className="grid grid-cols-4 gap-3 text-xs font-bold text-muted-foreground uppercase tracking-wider pb-2 border-b border-border">
                 <div>Field</div>
                 <div>{party.name}</div>
                 <div>{selectedCandidate.name}</div>
-                <div>Keep</div>
+                <div>Keep Value</div>
               </div>
 
               {DIFF_FIELDS.map(({ key, label }) => {
@@ -213,32 +277,36 @@ export function MergeWizard({ party, onClose, onMergeComplete }: MergeWizardProp
                 return (
                   <div
                     key={key}
-                    className={`grid grid-cols-4 gap-3 rounded-lg p-3 text-sm items-center ${
-                      differs ? 'bg-amber-50/60 border border-amber-200/60' : ''
+                    className={`grid grid-cols-4 gap-3 rounded-xl p-2.5 text-xs items-center ${
+                      differs ? 'bg-amber-500/5 border border-amber-500/20' : 'border border-transparent'
                     }`}
                   >
-                    <div className="font-medium text-muted-foreground">{label}</div>
-                    <div
-                      className={`rounded-md px-2.5 py-1.5 cursor-pointer transition-colors ${
-                        keep === 'left' ? 'bg-primary text-white' : 'bg-background text-foreground'
+                    <div className="font-bold text-muted-foreground">{label}</div>
+                    <button
+                      className={`rounded-lg px-3 py-2 text-left transition-colors cursor-pointer border text-xs ${
+                        keep === 'left'
+                          ? 'bg-primary text-white border-primary font-bold shadow-xs'
+                          : 'bg-card text-foreground border-border hover:bg-muted/50'
                       }`}
-                      onClick={() => { setCanonicalId(party.id); setFieldKeep((prev) => ({ ...prev, [key]: 'left' })); }}
+                      onClick={() => setFieldKeep((prev) => ({ ...prev, [key]: 'left' }))}
                     >
                       {valA}
-                    </div>
-                    <div
-                      className={`rounded-md px-2.5 py-1.5 cursor-pointer transition-colors ${
-                        keep === 'right' ? 'bg-primary text-white' : 'bg-background text-foreground'
+                    </button>
+                    <button
+                      className={`rounded-lg px-3 py-2 text-left transition-colors cursor-pointer border text-xs ${
+                        keep === 'right'
+                          ? 'bg-primary text-white border-primary font-bold shadow-xs'
+                          : 'bg-card text-foreground border-border hover:bg-muted/50'
                       }`}
-                      onClick={() => { setCanonicalId(selectedCandidate.id); setFieldKeep((prev) => ({ ...prev, [key]: 'right' })); }}
+                      onClick={() => setFieldKeep((prev) => ({ ...prev, [key]: 'right' }))}
                     >
                       {valB}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
+                    </button>
+                    <div className="text-xs font-bold">
                       {differs ? (
-                        <span className="text-amber-600 font-medium">Differs</span>
+                        <span className="text-amber-600 font-bold">Differs</span>
                       ) : (
-                        <span className="text-[#0bdf50]">Same</span>
+                        <span className="text-emerald-600 font-bold">Same</span>
                       )}
                     </div>
                   </div>
@@ -253,11 +321,10 @@ export function MergeWizard({ party, onClose, onMergeComplete }: MergeWizardProp
                     const allLeft: Record<string, 'left' | 'right'> = {};
                     DIFF_FIELDS.forEach((f) => { allLeft[f.key] = 'left'; });
                     setFieldKeep(allLeft);
-                    setCanonicalId(party.id);
                   }}
                   className="h-8 text-xs border-border"
                 >
-                  Keep all left
+                  Select All Original
                 </Button>
                 <Button
                   variant="outline"
@@ -266,11 +333,10 @@ export function MergeWizard({ party, onClose, onMergeComplete }: MergeWizardProp
                     const allRight: Record<string, 'left' | 'right'> = {};
                     DIFF_FIELDS.forEach((f) => { allRight[f.key] = 'right'; });
                     setFieldKeep(allRight);
-                    setCanonicalId(selectedCandidate.id);
                   }}
                   className="h-8 text-xs border-border"
                 >
-                  Keep all right
+                  Select All Duplicate
                 </Button>
               </div>
 

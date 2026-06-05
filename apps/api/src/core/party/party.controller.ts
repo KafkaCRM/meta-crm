@@ -65,6 +65,9 @@ class MergeBody {
 
   @IsString()
   duplicate_id!: string;
+
+  @IsOptional()
+  field_overrides?: Record<string, any>;
 }
 
 @Controller('parties')

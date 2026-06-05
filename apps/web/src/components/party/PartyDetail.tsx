@@ -112,6 +112,27 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
     staleTime: 30_000,
   });
 
+  const { data: duplicateCandidates } = useQuery({
+    queryKey: ['parties', 'candidates', party?.phone_normalized],
+    queryFn: () => partiesApi.listCandidates(party?.phone_normalized),
+    enabled: !!party?.phone_normalized,
+    staleTime: 30_000,
+  });
+
+  const duplicates = useMemo(() => {
+    if (!party || !duplicateCandidates?.data) return [];
+    return duplicateCandidates.data.filter(
+      (c) => c.id !== party.id && c.merge_status !== 'merged'
+    );
+  }, [duplicateCandidates, party]);
+
+  const { data: mergedIntoParty } = useQuery<PartyResponse>({
+    queryKey: ['parties', party?.merged_into_id],
+    queryFn: () => partiesApi.get(party!.merged_into_id!),
+    enabled: !!(party?.merge_status === 'merged' && party?.merged_into_id),
+    staleTime: 30_000,
+  });
+
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
       partiesApi.update(id, data as any),
@@ -377,7 +398,7 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          {can('manage', 'Party') && (
+          {can('manage', 'Party') && party.merge_status !== 'merged' && (
             <Button
               variant="outline"
               size="sm"
@@ -388,7 +409,7 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
               Merge
             </Button>
           )}
-          {can('update', 'Party') && (
+          {can('update', 'Party') && party.merge_status !== 'merged' && (
             <Button
               size="sm"
               onClick={() => navigate({ to: '/parties/$id/edit', params: { id: party.id } })}
@@ -401,11 +422,66 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
         </div>
       </div>
       
-      <StagePath 
-        currentStage={(party as any).stage || 'new'} 
-        stages={['new', 'contacted', 'qualified', 'negotiation', 'won', 'lost']} 
-        onStageSelect={(stage) => updateMutation.mutate({ id: party.id, data: { stage } })} 
-      />
+      {party.merge_status !== 'merged' && (
+        <StagePath 
+          currentStage={(party as any).stage || 'new'} 
+          stages={['new', 'contacted', 'qualified', 'negotiation', 'won', 'lost']} 
+          onStageSelect={(stage) => updateMutation.mutate({ id: party.id, data: { stage } })} 
+        />
+      )}
+
+      {/* Merged Warning Banner */}
+      {party.merge_status === 'merged' && (
+        <div className="mb-5 flex items-center justify-between rounded-xl border border-destructive/20 bg-destructive/5 p-4 shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+              <GitMerge size={18} />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-destructive">This Profile has been Merged</h4>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                All cases, interactions, and details have been transferred to{' '}
+                <span className="font-semibold text-foreground">
+                  {mergedIntoParty?.name || 'the canonical profile'}
+                </span>.
+              </p>
+            </div>
+          </div>
+          {party.merged_into_id && (
+            <Button
+              onClick={() => navigate({ to: '/parties/$id', params: { id: party.merged_into_id! } })}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg px-4 h-9 text-xs font-bold shadow-xs flex items-center gap-1.5"
+            >
+              View Canonical Profile
+              <ArrowLeft size={14} className="rotate-180" />
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Duplicate Warning Banner */}
+      {party.merge_status !== 'merged' && duplicates.length > 0 && (
+        <div className="mb-5 flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50/50 p-4 shadow-xs backdrop-blur-xs">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-100 text-amber-800">
+              <GitMerge size={18} />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-amber-900">Potential Duplicates Found</h4>
+              <p className="text-xs text-amber-700 mt-0.5">
+                We found {duplicates.length} other contact{duplicates.length > 1 ? 's' : ''} with the same phone number.
+              </p>
+            </div>
+          </div>
+          <Button
+            onClick={() => setShowMergeWizard(true)}
+            className="bg-amber-600 hover:bg-amber-700 text-white rounded-lg px-4 h-9 text-xs font-bold shadow-xs flex items-center gap-1.5 border border-transparent"
+          >
+            <GitMerge size={14} />
+            Compare & Merge
+          </Button>
+        </div>
+      )}
 
       {/* Two-column layout */}
       <div className="grid gap-4 lg:grid-cols-5">
@@ -462,48 +538,50 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
             </div>
 
             {/* ComposeBar */}
-            <div className="border-t border-border p-3 bg-muted/30">
-              <div className="flex items-end gap-2">
-                <Select value={composeChannel} onValueChange={setComposeChannel}>
-                  <SelectTrigger className="h-8 w-[100px] bg-card border-border text-xs shrink-0">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="note">Note</SelectItem>
-                    <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                    <SelectItem value="email">Email</SelectItem>
-                    <SelectItem value="call">Call</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div className="flex-1 relative">
-                  <Textarea
-                    value={composeMessage}
-                    onChange={(e) => setComposeMessage(e.target.value)}
-                    placeholder="Type a message…"
-                    className="pr-10 min-h-[36px] max-h-[120px] resize-none bg-card border-border text-sm"
-                    rows={1}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSend();
-                      }
-                    }}
-                  />
+            {party.merge_status !== 'merged' && (
+              <div className="border-t border-border p-3 bg-muted/30">
+                <div className="flex items-end gap-2">
+                  <Select value={composeChannel} onValueChange={setComposeChannel}>
+                    <SelectTrigger className="h-8 w-[100px] bg-card border-border text-xs shrink-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="note">Note</SelectItem>
+                      <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                      <SelectItem value="email">Email</SelectItem>
+                      <SelectItem value="call">Call</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <div className="flex-1 relative">
+                    <Textarea
+                      value={composeMessage}
+                      onChange={(e) => setComposeMessage(e.target.value)}
+                      placeholder="Type a message…"
+                      className="pr-10 min-h-[36px] max-h-[120px] resize-none bg-card border-border text-sm"
+                      rows={1}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSend();
+                        }
+                      }}
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={handleSend}
+                    disabled={!composeMessage.trim() || sendingMessage}
+                    className="h-8 w-8 p-0 bg-primary hover:bg-primary/90 text-primary-foreground shrink-0"
+                  >
+                    {sendingMessage ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Send size={14} />
+                    )}
+                  </Button>
                 </div>
-                <Button
-                  size="sm"
-                  onClick={handleSend}
-                  disabled={!composeMessage.trim() || sendingMessage}
-                  className="h-8 w-8 p-0 bg-primary hover:bg-primary/90 text-primary-foreground shrink-0"
-                >
-                  {sendingMessage ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <Send size={14} />
-                  )}
-                </Button>
               </div>
-            </div>
+            )}
           </Card>
         </div>
 
@@ -517,15 +595,17 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
               <CardTitle className="text-sm font-semibold text-foreground">
                 {t('case.plural') ?? 'Cases'} ({cases.length})
               </CardTitle>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 text-xs"
-                onClick={() => navigate({ to: '/cases/new', search: { party_id: party.id } })}
-              >
-                <Plus size={12} className="mr-1" />
-                New Case
-              </Button>
+              {party.merge_status !== 'merged' && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 text-xs"
+                  onClick={() => navigate({ to: '/cases/new', search: { party_id: party.id } })}
+                >
+                  <Plus size={12} className="mr-1" />
+                  New Case
+                </Button>
+              )}
             </CardHeader>
             <Separator />
             <CardContent className="pt-4">

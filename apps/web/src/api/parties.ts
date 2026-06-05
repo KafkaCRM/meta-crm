@@ -23,6 +23,7 @@ export interface CursorPaginatedParties {
 export interface MergeInput {
   canonical_id: string;
   duplicate_id: string;
+  field_overrides?: Record<string, any>;
 }
 
 export interface MergeResult {

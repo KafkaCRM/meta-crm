@@ -7,6 +7,7 @@ import type { RequestScope } from '../tenant/request-scope.interface';
 export interface MergeInput {
   canonical_id: string;
   duplicate_id: string;
+  field_overrides?: Record<string, any>;
 }
 
 export type MergeErrorCode = 'PARTY_NOT_FOUND' | 'ALREADY_MERGED' | 'SAME_PARTY';
@@ -64,6 +65,13 @@ export class PartyMergeService {
         where: { id: input.duplicate_id },
         data: { merge_status: 'merged', merged_into_id: input.canonical_id },
       });
+
+      if (input.field_overrides && Object.keys(input.field_overrides).length > 0) {
+        await tx.party.update({
+          where: { id: input.canonical_id },
+          data: input.field_overrides,
+        });
+      }
     });
 
     const updated = await this.db.getClient().party.findUnique({

@@ -88,4 +88,35 @@ describe('PartyMergeService', () => {
       expect(result.error.code).toBe('PARTY_NOT_FOUND');
     }
   });
+
+  it('updates canonical party with field_overrides inside transaction', async () => {
+    const client = db.getClient();
+    (client.party.findUnique as any).mockImplementation(({ where: { id } }: any) => {
+      if (id === CANONICAL.id) return CANONICAL;
+      if (id === DUPLICATE.id) return DUPLICATE;
+      return null;
+    });
+
+    const partyUpdateSpy = vi.fn();
+    const mockTx = {
+      party: { update: partyUpdateSpy, updateMany: vi.fn() },
+      case: { updateMany: vi.fn() },
+      interaction: { updateMany: vi.fn() },
+      partyMergeQueue: { updateMany: vi.fn() },
+    };
+    (client.$transaction as any).mockImplementation(async (cb: any) => cb(mockTx));
+
+    const fieldOverrides = { email: 'new-email@test.com', name: 'New Name' };
+    const result = await svc.mergeParties({
+      canonical_id: 'party-a',
+      duplicate_id: 'party-b',
+      field_overrides: fieldOverrides,
+    }, scope);
+
+    expect(result.isOk()).toBe(true);
+    expect(partyUpdateSpy).toHaveBeenCalledWith({
+      where: { id: 'party-a' },
+      data: fieldOverrides,
+    });
+  });
 });
