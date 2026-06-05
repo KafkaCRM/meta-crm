@@ -153,8 +153,10 @@ export function CampaignConsole() {
                   <th className="px-6 py-3">Channel</th>
                   <th className="px-6 py-3">Status</th>
                   <th className="px-6 py-3 text-right">Leads</th>
-                  <th className="px-6 py-3 text-right">Converted</th>
                   <th className="px-6 py-3 text-right">Conv. Rate</th>
+                  <th className="px-6 py-3 text-right">Call Connect</th>
+                  <th className="px-6 py-3 text-right">Untouched</th>
+                  <th className="px-6 py-3 text-right">Idle Agents</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#e2e8f0]">
@@ -177,22 +179,24 @@ export function CampaignConsole() {
 
                   return (
                     <tr key={camp.id} className="hover:bg-muted/50 transition-colors">
-                      <td className="px-6 py-4 font-medium text-foreground">{camp.name}</td>
+                      <td className="px-6 py-4 font-semibold text-foreground">{camp.name}</td>
                       <td className="px-6 py-4 capitalize text-muted-foreground">{camp.channel.replace('_', ' ')}</td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${statusBg}`}>
                           {camp.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right text-muted-foreground">{camp.total_leads}</td>
-                      <td className="px-6 py-4 text-right text-muted-foreground">{camp.converted}</td>
-                      <td className={`px-6 py-4 text-right ${rateColor}`}>{camp.conversion_rate}%</td>
+                      <td className="px-6 py-4 text-right text-muted-foreground font-mono">{camp.total_leads}</td>
+                      <td className={`px-6 py-4 text-right font-mono ${rateColor}`}>{camp.conversion_rate}%</td>
+                      <td className="px-6 py-4 text-right text-muted-foreground font-mono">{camp.call_connect_rate ?? 0}%</td>
+                      <td className="px-6 py-4 text-right text-amber-600 font-semibold font-mono">{camp.untouched_leads ?? 0}</td>
+                      <td className="px-6 py-4 text-right text-rose-600 font-semibold font-mono">{camp.idle_agents ?? 0}</td>
                     </tr>
                   );
                 })}
                 {campaigns.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground text-xs">
+                    <td colSpan={8} className="px-6 py-8 text-center text-muted-foreground text-xs">
                       No campaigns created yet. Click "Create Campaign" to begin tagging incoming traffic.
                     </td>
                   </tr>

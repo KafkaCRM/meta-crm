@@ -28,6 +28,7 @@ function mockDb() {
       create: vi.fn(),
       update: vi.fn(),
       count: vi.fn().mockResolvedValue(0),
+      findUnique: vi.fn().mockResolvedValue({ id: 'campaign-1', attributes: {} }),
     },
     case: {
       count: vi.fn().mockResolvedValue(0),
@@ -41,6 +42,10 @@ function mockDb() {
     },
     caseEvent: {
       findMany: vi.fn().mockResolvedValue([]),
+      groupBy: vi.fn().mockResolvedValue([]),
+    },
+    interaction: {
+      count: vi.fn().mockResolvedValue(0),
     },
     pipelineDefinition: {
       count: vi.fn().mockResolvedValue(0),

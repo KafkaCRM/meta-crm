@@ -12,6 +12,9 @@ export interface CampaignStats {
   conversion_rate: number;
   avg_days_to_convert: number;
   by_stage: CampaignStageStats[];
+  call_connect_rate?: number;
+  untouched_leads?: number;
+  idle_agents?: number;
 }
 
 export interface CampaignResponse {
@@ -45,6 +48,9 @@ export interface CampaignSummaryStats {
   total_leads: number;
   converted: number;
   conversion_rate: number;
+  call_connect_rate?: number;
+  untouched_leads?: number;
+  idle_agents?: number;
 }
 
 export interface CampaignAggregateStatsResponse {

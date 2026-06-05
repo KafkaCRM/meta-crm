@@ -31,6 +31,9 @@ export interface CampaignStats {
   conversion_rate: number;
   avg_days_to_convert: number;
   by_stage: { stage_name: string; count: number; percentage: number }[];
+  call_connect_rate?: number;
+  untouched_leads?: number;
+  idle_agents?: number;
 }
 
 export interface CreateCampaignDto {
@@ -59,6 +62,9 @@ export interface CampaignsStatsSummary {
     total_leads: number;
     converted: number;
     conversion_rate: number;
+    call_connect_rate?: number;
+    untouched_leads?: number;
+    idle_agents?: number;
   }[];
   top_channel: string;
   total_leads: number;

@@ -420,6 +420,9 @@ export class CampaignService {
             total_leads: stats.total_leads,
             converted: stats.converted,
             conversion_rate: stats.conversion_rate,
+            call_connect_rate: stats.call_connect_rate,
+            untouched_leads: stats.untouched_leads,
+            idle_agents: stats.idle_agents,
           } as CampaignSummaryStats;
         }),
       );
@@ -480,6 +483,27 @@ export class CampaignService {
     });
 
     if (stages.length === 0 || total_leads === 0) {
+      const campaign = await this.db.getClient().campaign.findUnique({
+        where: { id: campaignId },
+        select: { attributes: true },
+      });
+      const attributes = (campaign?.attributes || {}) as Record<string, any>;
+      const selectedAgents = (attributes.selected_agents || []) as string[];
+
+      let idle_agents = 0;
+      if (selectedAgents.length > 0) {
+        const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+        const activeAgentEvents = await this.db.getClient().caseEvent.groupBy({
+          by: ['actor_id'],
+          where: {
+            actor_id: { in: selectedAgents },
+            occurred_at: { gte: twoHoursAgo },
+          },
+        });
+        const activeAgentIds = new Set(activeAgentEvents.map((e) => e.actor_id));
+        idle_agents = selectedAgents.filter((agentId) => !activeAgentIds.has(agentId)).length;
+      }
+
       return {
         total_leads,
         contacted: 0,
@@ -492,6 +516,9 @@ export class CampaignService {
           count: 0,
           percentage: 0,
         })),
+        call_connect_rate: 0,
+        untouched_leads: 0,
+        idle_agents,
       };
     }
 
@@ -608,6 +635,61 @@ export class CampaignService {
       };
     });
 
+    const untouched_leads = await this.db.getClient().case.count({
+      where: {
+        campaign_id: campaignId,
+        interactions: { none: {} },
+      },
+    });
+
+    const totalCalls = await this.db.getClient().interaction.count({
+      where: {
+        case: { campaign_id: campaignId },
+        channel: 'call',
+      },
+    });
+
+    let call_connect_rate = 0;
+    if (totalCalls > 0) {
+      const connectedCalls = await this.db.getClient().interaction.count({
+        where: {
+          case: { campaign_id: campaignId },
+          channel: 'call',
+          NOT: {
+            OR: [
+              { content: { contains: 'no answer', mode: 'insensitive' } },
+              { content: { contains: 'no-answer', mode: 'insensitive' } },
+              { content: { contains: 'busy', mode: 'insensitive' } },
+              { content: { contains: 'missed', mode: 'insensitive' } },
+              { content: { contains: 'failed', mode: 'insensitive' } },
+            ],
+          },
+        },
+      });
+      call_connect_rate = Math.round((connectedCalls / totalCalls) * 100);
+    }
+
+    const campaign = await this.db.getClient().campaign.findUnique({
+      where: { id: campaignId },
+      select: { attributes: true },
+    });
+    const attributes = (campaign?.attributes || {}) as Record<string, any>;
+    const selectedAgents = (attributes.selected_agents || []) as string[];
+
+    let idle_agents = 0;
+    if (selectedAgents.length > 0) {
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+      const activeAgentEvents = await this.db.getClient().caseEvent.groupBy({
+        by: ['actor_id'],
+        where: {
+          actor_id: { in: selectedAgents },
+          occurred_at: { gte: twoHoursAgo },
+        },
+      });
+      const activeAgentIds = new Set(activeAgentEvents.map((e) => e.actor_id));
+      idle_agents = selectedAgents.filter((agentId) => !activeAgentIds.has(agentId)).length;
+    }
+
     return {
       total_leads,
       contacted,
@@ -616,6 +698,9 @@ export class CampaignService {
       conversion_rate,
       avg_days_to_convert,
       by_stage,
+      call_connect_rate,
+      untouched_leads,
+      idle_agents,
     };
   }
 }
