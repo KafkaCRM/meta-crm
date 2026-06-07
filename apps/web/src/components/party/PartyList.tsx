@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { PageShell } from '@/components/shared/PageShell';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Search, Users, Download, UserPlus } from 'lucide-react';
+import { Plus, Search, Users, Download, UserPlus, Phone, MessageSquare, ExternalLink } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -299,6 +299,54 @@ export function PartyList() {
           enableMultiSort
           pageSize={50}
           tableId="party-list"
+          getRowActions={(row) => {
+            const phone = row.phone_raw;
+            const openPhone = (e: React.MouseEvent) => {
+              e.stopPropagation();
+              window.location.href = `tel:${phone}`;
+            };
+            const openWhatsApp = (e: React.MouseEvent) => {
+              e.stopPropagation();
+              let cleaned = phone.replace(/\D/g, '');
+              if (cleaned.length === 10) cleaned = `91${cleaned}`;
+              window.open(`https://api.whatsapp.com/send?phone=${cleaned}`, '_blank');
+            };
+            const viewDetail = (e: React.MouseEvent) => {
+              e.stopPropagation();
+              navigate({ to: `/parties/${row.id}` });
+            };
+            return (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 rounded bg-muted hover:bg-emerald-50 hover:text-emerald-600 text-muted-foreground transition-all duration-200"
+                  onClick={openPhone}
+                  title="Call"
+                >
+                  <Phone size={11} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 rounded bg-muted hover:bg-emerald-50 hover:text-emerald-600 text-muted-foreground transition-all duration-200"
+                  onClick={openWhatsApp}
+                  title="WhatsApp"
+                >
+                  <MessageSquare size={11} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 rounded bg-muted hover:bg-blue-50 hover:text-blue-600 text-muted-foreground transition-all duration-200"
+                  onClick={viewDetail}
+                  title="View Profile"
+                >
+                  <ExternalLink size={11} />
+                </Button>
+              </div>
+            );
+          }}
           emptyTitle={`No ${t('party.plural')?.toLowerCase() ?? 'contacts'} yet`}
           emptyDescription={`Add your first ${t('party.singular')?.toLowerCase() ?? 'contact'} to get started`}
           {...(can('create', 'Party') ? {

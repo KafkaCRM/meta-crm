@@ -53,6 +53,7 @@ interface VirtualTableProps<TData> {
   emptyDescription?: string;
   emptyCta?: { label: string; onClick: () => void };
   emptyIcon?: React.ReactNode;
+  getRowActions?: (row: TData) => React.ReactNode;
 }
 
 const ROW_HEIGHT = 44;
@@ -75,6 +76,7 @@ export function VirtualTable<TData>({
   emptyDescription = 'Try adjusting your filters or search terms',
   emptyCta,
   emptyIcon,
+  getRowActions,
 }: VirtualTableProps<TData>) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -213,8 +215,27 @@ export function VirtualTable<TData>({
   );
 
   const allColumns = useMemo(
-    () => [selectColumn, ...columns],
-    [selectColumn, columns],
+    () => {
+      const cols = [selectColumn, ...columns];
+      if (getRowActions) {
+        cols.push({
+          id: 'row-actions',
+          header: '',
+          cell: ({ row }: { row: any }) => (
+            <div 
+              className="opacity-0 group-hover/row:opacity-100 focus-within:opacity-100 transition-opacity duration-150 flex items-center justify-end gap-1.5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {getRowActions(row.original)}
+            </div>
+          ),
+          size: 110,
+          enableResizing: false,
+        } as any);
+      }
+      return cols;
+    },
+    [selectColumn, columns, getRowActions],
   );
 
   const table = useReactTable({
@@ -356,7 +377,7 @@ export function VirtualTable<TData>({
             <DropdownMenuContent align="end" className="w-48">
               {table
                 .getAllLeafColumns()
-                .filter((col) => col.id !== 'select')
+                .filter((col) => col.id !== 'select' && col.id !== 'row-actions')
                 .map((col) => (
                   <DropdownMenuCheckboxItem
                     key={col.id}
@@ -439,7 +460,7 @@ export function VirtualTable<TData>({
               return (
                 <tr
                   key={row.id}
-                  className={`border-b border-border/40 transition-colors ${
+                  className={`group/row border-b border-border/40 transition-colors ${
                     row.getIsSelected()
                       ? 'bg-[#3b82f6]/5'
                       : isEven

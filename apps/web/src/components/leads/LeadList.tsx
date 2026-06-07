@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PageShell } from '@/components/shared/PageShell';
 import { Card, CardContent } from '@/components/ui/card';
-import { Search, Megaphone, Plus, Phone, MessageSquare, AlertTriangle, AlertCircle, Clock } from 'lucide-react';
+import { Search, Megaphone, Plus, Phone, MessageSquare, AlertTriangle, AlertCircle, Clock, ExternalLink } from 'lucide-react';
 import {
   CompactRecordRow,
   DEFAULT_RECORD_ACTIONS,
@@ -335,6 +335,52 @@ export function LeadList() {
                     isLoading={isLoading}
                     resource="Party"
                     onRowClick={handleRowClick}
+                    getRowActions={(row) => {
+                      const phone = row.phone;
+                      const openPhoneLocal = (e: React.MouseEvent) => {
+                        e.stopPropagation();
+                        openPhone(phone);
+                      };
+                      const openWhatsAppLocal = (e: React.MouseEvent) => {
+                        e.stopPropagation();
+                        openWhatsApp(phone);
+                      };
+                      const viewDetail = (e: React.MouseEvent) => {
+                        e.stopPropagation();
+                        handleRowClick(row);
+                      };
+                      return (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 rounded bg-muted hover:bg-emerald-50 hover:text-emerald-600 text-muted-foreground transition-all duration-200"
+                            onClick={openPhoneLocal}
+                            title="Call"
+                          >
+                            <Phone size={11} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 rounded bg-muted hover:bg-emerald-50 hover:text-emerald-600 text-muted-foreground transition-all duration-200"
+                            onClick={openWhatsAppLocal}
+                            title="WhatsApp"
+                          >
+                            <MessageSquare size={11} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 rounded bg-muted hover:bg-blue-50 hover:text-blue-600 text-muted-foreground transition-all duration-200"
+                            onClick={viewDetail}
+                            title="View Detail"
+                          >
+                            <ExternalLink size={11} />
+                          </Button>
+                        </div>
+                      );
+                    }}
                   />
                 </div>
                 <div className="lg:hidden divide-y divide-border">
