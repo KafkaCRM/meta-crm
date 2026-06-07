@@ -15,7 +15,6 @@ import {
   ArrowLeft,
   Sparkles,
   Building,
-  MapPin,
   Loader2,
   CheckCircle,
   HelpCircle,
@@ -26,13 +25,6 @@ import { useAuth } from '@/contexts/auth.context';
 const INDUSTRIES = ['education', 'healthcare', 'real-estate', 'retail', 'finance', 'technology'];
 
 
-
-const REGIONS = [
-  { id: 'us-east-1', name: 'US East (N. Virginia)', provider: 'AWS' },
-  { id: 'us-west-2', name: 'US West (Oregon)', provider: 'AWS' },
-  { id: 'eu-central-1', name: 'EU Central (Frankfurt)', provider: 'AWS' },
-  { id: 'ap-south-1', name: 'Asia Pacific (Mumbai)', provider: 'AWS' },
-];
 
 export function CreateTenantForm() {
   const navigate = useNavigate();
@@ -45,7 +37,6 @@ export function CreateTenantForm() {
   // Step 1: Basic Details
   const [name, setName] = useState('');
   const [industry, setIndustry] = useState('');
-  const [region, setRegion] = useState('us-east-1');
   
   // Step 2: Entitlements (Slug & Plans)
   const [slug, setSlug] = useState('');
@@ -443,55 +434,24 @@ export function CreateTenantForm() {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-              <div>
-                <label htmlFor="industry" className="mb-1 block text-xs font-bold text-foreground/80">
-                  Industry Scope Focus
-                </label>
-                <select
-                  id="industry"
-                  value={industry}
-                  onChange={(e) => handleIndustryChange(e.target.value)}
-                  className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-card focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all cursor-pointer font-medium text-foreground"
-                  required
-                >
-                  <option value="">Select industry scope focus...</option>
-                  {INDUSTRIES.map((ind) => (
-                    <option key={ind} value={ind}>
-                      {ind.charAt(0).toUpperCase() + ind.slice(1)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="region" className="mb-1 block text-xs font-bold text-foreground/80">
-                  Data Hosting Region
-                </label>
-                <select
-                  id="region"
-                  value={region}
-                  onChange={(e) => setRegion(e.target.value)}
-                  className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-card focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all cursor-pointer font-medium text-foreground"
-                  required
-                >
-                  {REGIONS.map((reg) => (
-                    <option key={reg.id} value={reg.id}>
-                      {reg.name} [{reg.provider}]
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            
-            <div className="p-4 bg-muted rounded-xl border border-border/50 flex items-start gap-2.5 mt-4">
-              <MapPin size={16} className="text-muted-foreground mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-xs font-bold text-foreground">Hosting Infrastructure Isolation</p>
-                <p className="text-[11px] text-muted-foreground leading-normal mt-0.5">
-                  Selecting the region provisions an isolated database node cluster automatically. Once configured, data residency cannot be moved.
-                </p>
-              </div>
+            <div className="pt-2">
+              <label htmlFor="industry" className="mb-1 block text-xs font-bold text-foreground/80">
+                Industry Scope Focus
+              </label>
+              <select
+                id="industry"
+                value={industry}
+                onChange={(e) => handleIndustryChange(e.target.value)}
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-card focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all cursor-pointer font-medium text-foreground"
+                required
+              >
+                <option value="">Select industry scope focus...</option>
+                {INDUSTRIES.map((ind) => (
+                  <option key={ind} value={ind}>
+                    {ind.charAt(0).toUpperCase() + ind.slice(1)}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         )}
@@ -716,10 +676,7 @@ export function CreateTenantForm() {
                 <span className="text-muted-foreground font-semibold block uppercase text-[10px]">Industry Scope Focus</span>
                 <span className="font-bold text-foreground mt-1 block capitalize">{industry}</span>
               </div>
-              <div>
-                <span className="text-muted-foreground font-semibold block uppercase text-[10px]">Data residency region</span>
-                <span className="font-bold text-foreground mt-1 block">{REGIONS.find(r => r.id === region)?.name || region}</span>
-              </div>
+
               <div>
                 <span className="text-muted-foreground font-semibold block uppercase text-[10px]">Entitlement Plan</span>
                 <span className="font-bold text-foreground mt-1 block">
