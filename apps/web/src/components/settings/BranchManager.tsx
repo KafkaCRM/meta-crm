@@ -100,7 +100,7 @@ export function BranchManager() {
 
       <div className="grid gap-6 md:grid-cols-3">
         {/* Branch listing card */}
-        <Card className={cn("bg-card border-border rounded-xl shadow-none", canManage ? "md:col-span-2" : "md:col-span-3")}>
+        <Card className={cn("bg-card border-border rounded-xl shadow-sm hover:shadow-md/5 transition-all duration-200", canManage ? "md:col-span-2" : "md:col-span-3")}>
           <CardHeader className="pb-3 border-b border-border">
             <CardTitle className="text-base font-medium text-foreground">
               Active Locations
@@ -110,21 +110,21 @@ export function BranchManager() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="divide-y divide-[#e2e8f0]">
+            <div className="divide-y divide-border/50">
               {branches?.map((branch) => (
                 <div
                   key={branch.id}
-                  className="flex items-center justify-between p-4 hover:bg-background/60 transition-colors group"
+                  className="flex items-center justify-between p-4 hover:bg-muted/40 transition-all duration-200 group first:rounded-t-none last:rounded-b-xl"
                 >
                   <div className="flex items-start gap-3 min-w-0">
-                    <div className="mt-0.5 p-2 bg-[#f1f5f9] rounded-lg text-muted-foreground group-hover:bg-card group-hover:text-foreground border border-transparent group-hover:border-border transition-colors">
+                    <div className="mt-0.5 p-2 bg-muted rounded-lg text-muted-foreground group-hover:bg-background group-hover:text-primary border border-transparent group-hover:border-border/80 transition-all duration-200">
                       <Building2 size={16} />
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">{branch.name}</p>
                       {(branch.address || branch.city) && (
                         <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                          <MapPin size={12} className="text-muted-foreground" />
+                          <MapPin size={12} className="text-muted-foreground/70" />
                           <span>
                             {branch.address}
                             {branch.address && branch.city && ', '}
@@ -135,26 +135,26 @@ export function BranchManager() {
                     </div>
                   </div>
                   {canManage && (
-                    <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        className="text-muted-foreground hover:text-foreground hover:bg-[#e2e8f0]"
+                        className="text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-150"
                         onClick={() => handleEdit(branch)}
                       >
-                        <Pencil size={14} />
+                        <Pencil size={14} className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        className="text-destructive hover:text-destructive-foreground hover:bg-destructive/10 dark:hover:bg-destructive/20 transition-colors duration-150"
                         onClick={() => {
                           if (window.confirm(`Deactivate ${branch.name}?`)) {
                             removeMutation.mutate(branch.id);
                           }
                         }}
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={14} className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   )}
@@ -171,7 +171,7 @@ export function BranchManager() {
 
         {/* Form panel card */}
         {canManage && (
-        <Card className="bg-card border-border rounded-xl shadow-none h-fit">
+        <Card className="bg-card border-border rounded-xl shadow-sm hover:shadow-md/5 transition-all duration-200 h-fit">
           <CardHeader className="pb-3 border-b border-border">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base font-medium text-foreground">
@@ -202,7 +202,7 @@ export function BranchManager() {
                   value={formData.name}
                   onChange={(e) => setFormData((f) => ({ ...f, name: e.target.value }))}
                   required
-                  className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
+                  className="h-9 border-border bg-background/50 hover:bg-background/80 focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-primary placeholder:text-muted-foreground/50 transition-all duration-200"
                 />
               </div>
               <div className="space-y-1.5">
@@ -212,7 +212,7 @@ export function BranchManager() {
                   placeholder="e.g. 100 Pine St, Suite 400"
                   value={formData.address}
                   onChange={(e) => setFormData((f) => ({ ...f, address: e.target.value }))}
-                  className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
+                  className="h-9 border-border bg-background/50 hover:bg-background/80 focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-primary placeholder:text-muted-foreground/50 transition-all duration-200"
                 />
               </div>
               <div className="space-y-1.5">
@@ -222,17 +222,17 @@ export function BranchManager() {
                   placeholder="e.g. San Francisco"
                   value={formData.city}
                   onChange={(e) => setFormData((f) => ({ ...f, city: e.target.value }))}
-                  className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
+                  className="h-9 border-border bg-background/50 hover:bg-background/80 focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-primary placeholder:text-muted-foreground/50 transition-all duration-200"
                 />
               </div>
               <div className="flex gap-2 pt-2">
                 <Button
                   type="submit"
                   disabled={createMutation.isPending || updateMutation.isPending}
-                  className="bg-primary hover:bg-[#1e293b] text-white flex-1 h-9 rounded-lg"
+                  className="flex-1 h-9 bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 font-medium shadow-sm hover:shadow"
                 >
                   {(createMutation.isPending || updateMutation.isPending) && (
-                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
                   )}
                   {editingId ? 'Save Changes' : 'Create Location'}
                 </Button>

@@ -95,7 +95,7 @@ export function BrandManager() {
 
       <div className="grid gap-6 md:grid-cols-3">
         {/* Brands listing grid */}
-        <Card className={cn("bg-card border-border rounded-xl shadow-none", canManage ? "md:col-span-2" : "md:col-span-3")}>
+        <Card className={cn("bg-card border-border rounded-xl shadow-sm hover:shadow-md/5 transition-all duration-200", canManage ? "md:col-span-2" : "md:col-span-3")}>
           <CardHeader className="pb-3 border-b border-border">
             <CardTitle className="text-base font-medium text-foreground">
               Configured Brands
@@ -111,7 +111,7 @@ export function BrandManager() {
                 return (
                   <div
                     key={brand.id}
-                    className="flex items-center justify-between p-3.5 rounded-xl border border-border hover:border-slate-400 bg-card hover:bg-background/40 transition-all group"
+                    className="flex items-center justify-between p-3.5 rounded-xl border border-border bg-card hover:bg-muted/30 hover:border-muted-foreground/30 hover:shadow-sm transition-all duration-200 group"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       {brand.logo_url ? (
@@ -138,10 +138,10 @@ export function BrandManager() {
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground hover:bg-[#e2e8f0] transition-all"
+                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200"
                         onClick={() => handleEdit(brand)}
                       >
-                        <Pencil size={13} />
+                        <Pencil size={13} className="h-3.5 w-3.5" />
                       </Button>
                     )}
                   </div>
@@ -158,7 +158,7 @@ export function BrandManager() {
 
         {/* Brand form card */}
         {canManage && (
-        <Card className="bg-card border-border rounded-xl shadow-none h-fit">
+        <Card className="bg-card border-border rounded-xl shadow-sm hover:shadow-md/5 transition-all duration-200 h-fit">
           <CardHeader className="pb-3 border-b border-border">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base font-medium text-foreground">
@@ -189,7 +189,7 @@ export function BrandManager() {
                   value={formData.name}
                   onChange={(e) => setFormData((f) => ({ ...f, name: e.target.value }))}
                   required
-                  className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
+                  className="h-9 border-border bg-background/50 hover:bg-background/80 focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-primary placeholder:text-muted-foreground/50 transition-all duration-200"
                 />
               </div>
               <div className="space-y-1.5">
@@ -199,17 +199,17 @@ export function BrandManager() {
                   placeholder="e.g. https://domain.com/logo.png"
                   value={formData.logo_url}
                   onChange={(e) => setFormData((f) => ({ ...f, logo_url: e.target.value }))}
-                  className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
+                  className="h-9 border-border bg-background/50 hover:bg-background/80 focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-primary placeholder:text-muted-foreground/50 transition-all duration-200"
                 />
               </div>
               <div className="pt-2">
                 <Button
                   type="submit"
                   disabled={createMutation.isPending || updateMutation.isPending}
-                  className="bg-primary hover:bg-[#1e293b] text-white w-full h-9 rounded-lg"
+                  className="w-full h-9 bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 font-medium shadow-sm hover:shadow"
                 >
                   {(createMutation.isPending || updateMutation.isPending) && (
-                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
                   )}
                   {editingId ? 'Save Changes' : 'Create Brand'}
                 </Button>

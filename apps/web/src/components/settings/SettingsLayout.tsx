@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { usePermissions } from '@/hooks/usePermissions';
 import { cn } from '@/lib/utils';
-import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import {
   Building2,
@@ -10,17 +9,14 @@ import {
   Shield,
   Workflow,
   Settings2,
-  Type,
-  Puzzle,
-  Plug,
   Layers,
   Link2,
   GitBranch,
   Sliders,
   Tags,
   UserCog,
-  ChevronRight,
   Globe,
+  Puzzle,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -145,7 +141,7 @@ export function SettingsLayout({ children }: SettingsLayoutProps) {
           </div>
           <Button
             onClick={() => navigate({ to: '/' })}
-            className="w-full bg-primary hover:bg-[#1e293b] text-white font-medium rounded-lg h-10 transition-colors"
+            className="w-full bg-primary hover:bg-primary/90 text-white font-medium rounded-lg h-10 transition-colors"
           >
             Return to Dashboard
           </Button>
@@ -155,7 +151,7 @@ export function SettingsLayout({ children }: SettingsLayoutProps) {
   }
 
   return (
-    <div className="flex flex-col md:flex-row h-full min-h-[calc(100vh-56px)] max-w-[1280px] gap-6 md:gap-8">
+    <div className="flex flex-col md:flex-row h-full min-h-[calc(100vh-56px)] max-w-[1280px] gap-6 md:gap-8 p-4 md:p-6">
       {/* Mobile Settings Selector */}
       <div className="md:hidden w-full border-b border-border pb-4">
         <label htmlFor="settings-mobile-nav" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-2">
@@ -189,8 +185,8 @@ export function SettingsLayout({ children }: SettingsLayoutProps) {
       </div>
 
       {/* Settings Navigation Sidebar */}
-      <aside className="w-52 flex-shrink-0 border-r border-border pr-6 py-2 overflow-auto hidden md:block">
-        <nav className="space-y-5">
+      <aside className="w-56 flex-shrink-0 border-r border-border pr-6 py-2 overflow-auto hidden md:block">
+        <nav className="space-y-6">
           {NAV.map((section) => {
             const visibleItems = section.items.filter(
               (item) =>
@@ -202,8 +198,8 @@ export function SettingsLayout({ children }: SettingsLayoutProps) {
             if (visibleItems.length === 0) return null;
 
             return (
-              <div key={section.group} className="space-y-1">
-                <p className="px-2 mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <div key={section.group} className="space-y-1.5">
+                <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 select-none">
                   {section.group}
                 </p>
                 <div className="space-y-0.5">
@@ -214,18 +210,21 @@ export function SettingsLayout({ children }: SettingsLayoutProps) {
                         key={item.id}
                         onClick={() => navigateTo(item.id)}
                         className={cn(
-                          'w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 text-left',
+                          'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 text-left relative group',
                           isActive
-                            ? 'bg-primary text-white font-semibold shadow-sm'
-                            : 'text-muted-foreground hover:bg-[#f1f5f9]/70 hover:text-foreground',
+                            ? 'bg-primary/8 text-primary font-semibold border-l-2 border-primary rounded-l-none pl-2.5 shadow-[inset_1px_0_0_0_rgba(29,78,216,0.05)]'
+                            : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground pl-3 hover:translate-x-0.5',
                         )}
                       >
                         <item.icon
                           size={14}
-                          strokeWidth={isActive ? 2 : 1.75}
-                          className={isActive ? 'text-fin-orange' : 'text-muted-foreground'}
+                          strokeWidth={isActive ? 2.25 : 1.75}
+                          className={cn(
+                            'transition-transform duration-200 group-hover:scale-105',
+                            isActive ? 'text-primary' : 'text-muted-foreground/70 group-hover:text-foreground'
+                          )}
                         />
-                        <span className="flex-1">{item.label}</span>
+                        <span className="flex-1 truncate">{item.label}</span>
                       </button>
                     );
                   })}
