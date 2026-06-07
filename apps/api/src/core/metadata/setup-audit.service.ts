@@ -36,7 +36,7 @@ export class SetupAuditTrailService {
             select: { email: true },
           });
           if (tenantUser) {
-            userEmail = tenantUser.email;
+            userEmail = tenantUser.email || '';
           }
         }
       }

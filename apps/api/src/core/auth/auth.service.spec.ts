@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { JwtService } from '@nestjs/jwt';
-import { AuthService } from './auth.service';
+import { AuthService, type LoginResponse } from './auth.service';
 import type { PrismaService } from './prisma.service';
 
 const { mockCompare } = vi.hoisted(() => {
@@ -20,7 +20,7 @@ vi.mock('bcrypt', () => ({
 function createMockDb() {
   return {
     tenant: { findUnique: vi.fn() },
-    user: { findUnique: vi.fn(), findFirst: vi.fn() },
+    user: { findUnique: vi.fn(), findFirst: vi.fn(), findMany: vi.fn() },
     platformUser: { findUnique: vi.fn() },
     refreshToken: {
       findFirst: vi.fn(),
@@ -29,6 +29,7 @@ function createMockDb() {
     },
     branchBrandAssignment: { findMany: vi.fn().mockResolvedValue([]) },
     vertical: { findMany: vi.fn().mockResolvedValue([]) },
+    userVertical: { findMany: vi.fn().mockResolvedValue([]) },
   } as unknown as PrismaService;
 }
 
@@ -124,6 +125,7 @@ describe('AuthService', () => {
       mockCompare.mockResolvedValue(true);
       (db.tenant.findUnique as any).mockResolvedValue(TENANT);
       (db.user.findUnique as any).mockResolvedValue(USER);
+      (db.user.findFirst as any).mockResolvedValue(USER);
       (db.refreshToken.create as any).mockResolvedValue({ id: 'rt-new' });
 
       const result = await authService.login({
@@ -133,13 +135,14 @@ describe('AuthService', () => {
       });
 
       expect(result.isOk()).toBe(true);
-      if (result.isOk()) {
-        expect(result.value.access_token).toBe('mock-access-token');
-        expect(result.value.refresh_token).toBeTruthy();
-        expect(result.value.user.name).toBe('John Doe');
-        expect(result.value.user.role).toBe('branch_user');
-        expect(result.value.user.assignment_ids).toEqual(['assignment-1']);
-        expect((result.value.user as any).password_hash).toBeUndefined();
+      if (result.isOk() && !('multiple_workspaces' in result.value)) {
+        const val = result.value as LoginResponse;
+        expect(val.access_token).toBe('mock-access-token');
+        expect(val.refresh_token).toBeTruthy();
+        expect(val.user.name).toBe('John Doe');
+        expect(val.user.role).toBe('branch_user');
+        expect(val.user.assignment_ids).toEqual(['assignment-1']);
+        expect((val.user as any).password_hash).toBeUndefined();
       }
     });
 
@@ -162,6 +165,7 @@ describe('AuthService', () => {
       mockCompare.mockResolvedValue(false);
       (db.tenant.findUnique as any).mockResolvedValue(TENANT);
       (db.user.findUnique as any).mockResolvedValue(USER);
+      (db.user.findFirst as any).mockResolvedValue(USER);
 
       const result = await authService.login({
         email: 'john@example.com',
@@ -206,10 +210,11 @@ describe('AuthService', () => {
       });
 
       expect(result.isOk()).toBe(true);
-      if (result.isOk()) {
-        expect(result.value.user.role).toBe('platform_admin');
-        expect(result.value.user.assignment_ids).toEqual([]);
-        expect((result.value.user as any).password_hash).toBeUndefined();
+      if (result.isOk() && !('multiple_workspaces' in result.value)) {
+        const val = result.value as LoginResponse;
+        expect(val.user.role).toBe('platform_admin');
+        expect(val.user.assignment_ids).toEqual([]);
+        expect((val.user as any).password_hash).toBeUndefined();
       }
     });
   });
@@ -218,6 +223,7 @@ describe('AuthService', () => {
     it('successfully logs in a tenant user by auto-resolving the slug from email', async () => {
       mockCompare.mockResolvedValue(true);
       (db.platformUser.findUnique as any).mockResolvedValue(null);
+      (db.user.findMany as any).mockResolvedValue([USER]);
       (db.user.findFirst as any).mockResolvedValue(USER);
       (db.tenant.findUnique as any).mockResolvedValue(TENANT);
       (db.user.findUnique as any).mockResolvedValue(USER);
@@ -229,15 +235,16 @@ describe('AuthService', () => {
       });
 
       expect(result.isOk()).toBe(true);
-      if (result.isOk()) {
-        expect(result.value.access_token).toBe('mock-access-token');
-        expect(result.value.user.name).toBe('John Doe');
+      if (result.isOk() && !('multiple_workspaces' in result.value)) {
+        const val = result.value as LoginResponse;
+        expect(val.access_token).toBe('mock-access-token');
+        expect(val.user.name).toBe('John Doe');
       }
     });
 
     it('returns INVALID_CREDENTIALS if user is not found in either table', async () => {
       (db.platformUser.findUnique as any).mockResolvedValue(null);
-      (db.user.findFirst as any).mockResolvedValue(null);
+      (db.user.findMany as any).mockResolvedValue([]);
 
       const result = await authService.login({
         email: 'unknown@example.com',

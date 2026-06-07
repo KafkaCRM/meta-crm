@@ -245,20 +245,23 @@ export class TemplateService {
             where: { tenant_id: tenantId, slug: 'owner' },
           });
           if (ownerRole) {
-            await tx.userRole.upsert({
+            const existingUserRole = await tx.userRole.findFirst({
               where: {
-                user_id_role_id: {
-                  user_id: firstUser.id,
-                  role_id: ownerRole.id,
-                },
-              },
-              update: {},
-              create: {
                 user_id: firstUser.id,
                 role_id: ownerRole.id,
-                tenant_id: tenantId,
+                assignment_id: null,
               },
             });
+            if (!existingUserRole) {
+              await tx.userRole.create({
+                data: {
+                  user_id: firstUser.id,
+                  role_id: ownerRole.id,
+                  tenant_id: tenantId,
+                  assignment_id: null,
+                },
+              });
+            }
           }
         }
       }, {

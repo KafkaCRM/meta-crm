@@ -6,11 +6,12 @@ import * as bcrypt from 'bcrypt';
 
 export interface InviteUserInput {
   name: string;
-  email: string;
-  phone_number?: string;
+  email?: string;
+  phone_number: string;
   password?: string;
   role_ids: string[];
   assignment_ids?: string[];
+  vertical_ids?: string[];
 }
 
 export interface UpdateUserInput {
@@ -18,6 +19,7 @@ export interface UpdateUserInput {
   phone_number?: string;
   role_ids?: string[];
   assignment_ids?: string[];
+  vertical_ids?: string[];
 }
 
 const BCRYPT_COST = 12;
@@ -91,13 +93,19 @@ export class UserService {
       );
     }
 
-    // 2. Duplicate checking
+    // 2. Duplicate checking (Check email if provided, and check phone number)
     const existing = await this.tenantDb.getClient().user.findFirst({
-      where: { email: input.email, tenant_id: tenantId },
+      where: {
+        tenant_id: tenantId,
+        OR: [
+          ...(input.email ? [{ email: input.email }] : []),
+          { phone_number: input.phone_number },
+        ],
+      },
     });
 
     if (existing) {
-      throw new ConflictException('User with this email already exists in this workspace');
+      throw new ConflictException('User with this email or phone number already exists in this workspace');
     }
 
     // Generate temporary password hash for new user
@@ -109,8 +117,8 @@ export class UserService {
         data: {
           tenant_id: tenantId,
           name: input.name,
-          email: input.email,
-          phone_number: input.phone_number ?? null,
+          email: input.email ?? null,
+          phone_number: input.phone_number,
           password_hash: passwordHash,
           status: 'active',
         },
@@ -128,16 +136,35 @@ export class UserService {
         resolvedAssignmentId = singleAssignment?.id ?? null;
       }
 
-      // Connect selected roles
+      const assignedIds = input.assignment_ids && input.assignment_ids.length > 0
+        ? input.assignment_ids
+        : (resolvedAssignmentId ? [resolvedAssignmentId] : [null]);
+
+      // Connect selected roles to each assignment
       for (const roleId of input.role_ids) {
-        await tx.userRole.create({
-          data: {
-            tenant_id: tenantId,
-            user_id: user.id,
-            role_id: roleId,
-            assignment_id: resolvedAssignmentId,
-          },
-        });
+        for (const asgId of assignedIds) {
+          await tx.userRole.create({
+            data: {
+              tenant_id: tenantId,
+              user_id: user.id,
+              role_id: roleId,
+              assignment_id: asgId,
+            },
+          });
+        }
+      }
+
+      // Connect selected verticals
+      if (input.vertical_ids) {
+        for (const vertId of input.vertical_ids) {
+          await tx.userVertical.create({
+            data: {
+              tenant_id: tenantId,
+              user_id: user.id,
+              vertical_id: vertId,
+            },
+          });
+        }
       }
 
       const res = {
@@ -173,7 +200,8 @@ export class UserService {
         },
       });
 
-      if (input.role_ids) {
+      // Handle roles and assignments updates
+      if (input.role_ids || input.assignment_ids) {
         // Resolve auto-assignment if single-entity workspace
         const assignmentsCount = await tx.branchBrandAssignment.count({
           where: { tenant_id: tenantId },
@@ -186,19 +214,54 @@ export class UserService {
           resolvedAssignmentId = singleAssignment?.id ?? null;
         }
 
-        // Clear existing mappings
+        // Fetch current roles if only assignment_ids changed
+        let roleIdsToUse = input.role_ids;
+        if (!roleIdsToUse) {
+          const currentRoles = await tx.userRole.findMany({
+            where: { user_id: id, tenant_id: tenantId },
+            select: { role_id: true },
+          });
+          roleIdsToUse = Array.from(new Set(currentRoles.map((r) => r.role_id)));
+        }
+
+        const assignedIds = input.assignment_ids && input.assignment_ids.length > 0
+          ? input.assignment_ids
+          : (resolvedAssignmentId ? [resolvedAssignmentId] : [null]);
+
+        // Clear existing role mappings
         await tx.userRole.deleteMany({
           where: { user_id: id, tenant_id: tenantId },
         });
 
         // Add updated mappings
-        for (const roleId of input.role_ids) {
-          await tx.userRole.create({
+        for (const roleId of roleIdsToUse) {
+          for (const asgId of assignedIds) {
+            await tx.userRole.create({
+              data: {
+                tenant_id: tenantId,
+                user_id: id,
+                role_id: roleId,
+                assignment_id: asgId,
+              },
+            });
+          }
+        }
+      }
+
+      // Handle verticals updates
+      if (input.vertical_ids) {
+        // Clear existing mappings
+        await tx.userVertical.deleteMany({
+          where: { user_id: id, tenant_id: tenantId },
+        });
+
+        // Add updated mappings
+        for (const vertId of input.vertical_ids) {
+          await tx.userVertical.create({
             data: {
               tenant_id: tenantId,
               user_id: id,
-              role_id: roleId,
-              assignment_id: resolvedAssignmentId,
+              vertical_id: vertId,
             },
           });
         }

@@ -219,6 +219,15 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
     });
   }, [assignments, branches, brands]);
 
+  // Filtered pipelines based on selected vertical
+  const filteredPipelines = useMemo(() => {
+    if (!verticalId) return pipelines;
+    return pipelines.filter((p: any) => !p.vertical_id || p.vertical_id === verticalId);
+  }, [pipelines, verticalId]);
+
+  // Show team access step only if there are multiple users
+  const showAccessTab = users.length > 1;
+
   // Silent default initialization helper
   const ensureDefaults = useCallback(async () => {
     if (assignmentsLoading || verticalsLoading || pipelinesLoading) return;
@@ -305,11 +314,17 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
       if (verticals.length > 0 && !verticalId) {
         setVerticalId(verticals[0]!.id);
       }
-      if (pipelines.length > 0 && !pipelineId) {
-        setPipelineId(pipelines[0].id);
+    }
+  }, [isOpen, assignmentOptions, assignmentId, assignments, verticals, verticalId]);
+
+  // Auto-sync pipeline if it becomes invalid for the selected vertical or when loaded
+  useEffect(() => {
+    if (isOpen && filteredPipelines.length > 0) {
+      if (!pipelineId || !filteredPipelines.some((p: any) => p.id === pipelineId)) {
+        setPipelineId(filteredPipelines[0].id);
       }
     }
-  }, [isOpen, assignmentOptions, assignmentId, assignments, verticals, verticalId, pipelines, pipelineId]);
+  }, [isOpen, filteredPipelines, pipelineId]);
 
   // Reset form upon close/re-open
   useEffect(() => {
@@ -382,7 +397,11 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
   const handleNextStep = () => {
     if (activeTab === 'basics') {
       if (!validate('basics')) return;
-      setActiveTab('agents');
+      if (showAccessTab) {
+        setActiveTab('agents');
+      } else {
+        setActiveTab('routing');
+      }
     } else if (activeTab === 'agents') {
       setActiveTab('routing');
     } else if (activeTab === 'routing') {
@@ -391,9 +410,17 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
   };
 
   const handlePrevStep = () => {
-    if (activeTab === 'agents') setActiveTab('basics');
-    else if (activeTab === 'routing') setActiveTab('agents');
-    else if (activeTab === 'dupes') setActiveTab('routing');
+    if (activeTab === 'agents') {
+      setActiveTab('basics');
+    } else if (activeTab === 'routing') {
+      if (showAccessTab) {
+        setActiveTab('agents');
+      } else {
+        setActiveTab('basics');
+      }
+    } else if (activeTab === 'dupes') {
+      setActiveTab('routing');
+    }
   };
 
   const handleSubmit = useCallback(
@@ -411,6 +438,18 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
         return;
       }
 
+      let finalManagers = selectedManagers;
+      let finalSupervisors = selectedSupervisors;
+      let finalAgents = selectedAgents;
+
+      // Auto-assign when the team access tab is dynamically hidden (single user)
+      if (!showAccessTab && users.length > 0) {
+        const primaryUserId = users[0]?.id || '';
+        finalManagers = [primaryUserId];
+        finalSupervisors = [primaryUserId];
+        finalAgents = [primaryUserId];
+      }
+
       createMutation.mutate({
         name: name.trim(),
         channel: 'direct',
@@ -422,9 +461,9 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
         start_date: new Date().toISOString(),
         ...(targetLeads ? { target_leads: parseInt(targetLeads, 10) } : {}),
         attributes: {
-          selected_managers: selectedManagers,
-          selected_supervisors: selectedSupervisors,
-          selected_agents: selectedAgents,
+          selected_managers: finalManagers,
+          selected_supervisors: finalSupervisors,
+          selected_agents: finalAgents,
           distribution,
           priority,
           allow_spillover: allowSpillover,
@@ -437,7 +476,7 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
       name, status, assignmentId, verticalId, pipelineId, targetLeads, 
       assignmentOptions, createMutation, selectedManagers, 
       selectedSupervisors, selectedAgents, distribution, priority, allowSpillover, 
-      dupCheckScope, dupResolution
+      dupCheckScope, dupResolution, showAccessTab, users
     ]
   );
 
@@ -480,18 +519,23 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
               <Tabs value={activeTab} onValueChange={(v) => validate() && setActiveTab(v)} className="w-full flex-grow flex flex-col gap-6">
                 
                 {/* Horizontal Wizard Stepper Controls */}
-                <TabsList className="grid w-full grid-cols-4 bg-slate-100/70 p-1 rounded-xl h-10 border border-slate-200/50 shrink-0">
+                <TabsList className={cn(
+                  "grid w-full bg-slate-100/70 p-1 rounded-xl h-10 border border-slate-200/50 shrink-0",
+                  showAccessTab ? "grid-cols-4" : "grid-cols-3"
+                )}>
                   <TabsTrigger value="basics" className="text-[11px] font-bold tracking-wide uppercase rounded-lg">
                     1. Basics
                   </TabsTrigger>
-                  <TabsTrigger value="agents" className="text-[11px] font-bold tracking-wide uppercase rounded-lg">
-                    2. Access
-                  </TabsTrigger>
+                  {showAccessTab && (
+                    <TabsTrigger value="agents" className="text-[11px] font-bold tracking-wide uppercase rounded-lg">
+                      2. Access
+                    </TabsTrigger>
+                  )}
                   <TabsTrigger value="routing" className="text-[11px] font-bold tracking-wide uppercase rounded-lg">
-                    3. Routing
+                    {showAccessTab ? '3. Routing' : '2. Routing'}
                   </TabsTrigger>
                   <TabsTrigger value="dupes" className="text-[11px] font-bold tracking-wide uppercase rounded-lg">
-                    4. Safety
+                    {showAccessTab ? '4. Safety' : '3. Safety'}
                   </TabsTrigger>
                 </TabsList>
 
@@ -500,9 +544,12 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
                   <div 
                     className="h-full bg-gradient-to-r from-cyan-500 to-primary transition-all duration-300 rounded-full"
                     style={{
-                      width: activeTab === 'basics' ? '25%' :
-                             activeTab === 'agents' ? '50%' :
-                             activeTab === 'routing' ? '75%' : '100%'
+                      width: showAccessTab 
+                        ? (activeTab === 'basics' ? '25%' :
+                           activeTab === 'agents' ? '50%' :
+                           activeTab === 'routing' ? '75%' : '100%')
+                        : (activeTab === 'basics' ? '33.3%' :
+                           activeTab === 'routing' ? '66.6%' : '100%')
                     }}
                   />
                 </div>
@@ -539,25 +586,107 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
                         {errors.name && <p className="text-[10px] text-red-600 mt-1 font-semibold">⚠️ {errors.name}</p>}
                       </div>
 
+                      {/* Brand/Branch & Vertical Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Branch & Brand Assignment */}
+                        {assignmentOptions.length > 1 ? (
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">
+                              Store Location / Entity <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value={assignmentId}
+                              onChange={(e) => setAssignmentId(e.target.value)}
+                              className="w-full h-10 rounded-xl border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-colors font-medium text-foreground cursor-pointer shadow-xs"
+                              required
+                            >
+                              <option value="" disabled>Select Location...</option>
+                              {assignmentOptions.map((opt) => (
+                                <option key={opt.id} value={opt.id}>{opt.label}</option>
+                              ))}
+                            </select>
+                          </div>
+                        ) : assignmentOptions.length === 1 ? (
+                          <div className="bg-slate-100/50 border border-slate-200/50 rounded-xl p-2.5 flex items-center justify-between h-10">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider leading-none">Store Location</span>
+                              <span className="text-[11px] font-semibold text-slate-700 truncate max-w-[150px] leading-none">{assignmentOptions[0]?.label || ''}</span>
+                            </div>
+                            <Badge variant="outline" className="text-[8px] scale-90 origin-right bg-slate-50 text-slate-500 py-0 px-1 border-slate-200">Auto</Badge>
+                          </div>
+                        ) : null}
+
+                        {/* Vertical Selection */}
+                        {verticals.length > 1 ? (
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">
+                              Category / Vertical <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value={verticalId}
+                              onChange={(e) => setVerticalId(e.target.value)}
+                              className="w-full h-10 rounded-xl border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-colors font-medium text-foreground cursor-pointer shadow-xs"
+                              required
+                            >
+                              <option value="" disabled>Select Vertical...</option>
+                              {verticals.map((v: any) => (
+                                <option key={v.id} value={v.id}>{v.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        ) : verticals.length === 1 ? (
+                          <div className="bg-slate-100/50 border border-slate-200/50 rounded-xl p-2.5 flex items-center justify-between h-10">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider leading-none">Category / Vertical</span>
+                              <span className="text-[11px] font-semibold text-slate-700 truncate max-w-[150px] leading-none">{verticals[0]?.name || ''}</span>
+                            </div>
+                            <Badge variant="outline" className="text-[8px] scale-90 origin-right bg-slate-50 text-slate-500 py-0 px-1 border-slate-200">Auto</Badge>
+                          </div>
+                        ) : null}
+                      </div>
+
                       {/* Side-by-Side Pipeline & Status */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">
-                            Target Pipeline <span className="text-red-500">*</span>
-                          </label>
-                          <select
-                            value={pipelineId}
-                            onChange={(e) => setPipelineId(e.target.value)}
-                            className="w-full h-10 rounded-xl border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-colors font-medium text-foreground cursor-pointer shadow-xs"
-                            required
-                          >
-                            <option value="" disabled>Select Pipeline...</option>
-                            {pipelines.map((p: any) => (
-                              <option key={p.id} value={p.id}>{p.name}</option>
-                            ))}
-                          </select>
-                          {errors.pipelineId && <p className="text-[10px] text-red-600 mt-1 font-semibold">⚠️ {errors.pipelineId}</p>}
-                        </div>
+                        {filteredPipelines.length > 1 ? (
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">
+                              Target Pipeline <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value={pipelineId}
+                              onChange={(e) => setPipelineId(e.target.value)}
+                              className="w-full h-10 rounded-xl border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-colors font-medium text-foreground cursor-pointer shadow-xs"
+                              required
+                            >
+                              <option value="" disabled>Select Pipeline...</option>
+                              {filteredPipelines.map((p: any) => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                              ))}
+                            </select>
+                            {errors.pipelineId && <p className="text-[10px] text-red-600 mt-1 font-semibold">⚠️ {errors.pipelineId}</p>}
+                          </div>
+                        ) : filteredPipelines.length === 1 ? (
+                          <div className="bg-slate-100/50 border border-slate-200/50 rounded-xl p-2.5 flex items-center justify-between h-10">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider leading-none">Target Pipeline</span>
+                              <span className="text-[11px] font-semibold text-slate-700 truncate max-w-[150px] leading-none">{filteredPipelines[0]?.name || ''}</span>
+                            </div>
+                            <Badge variant="outline" className="text-[8px] scale-90 origin-right bg-slate-50 text-slate-500 py-0 px-1 border-slate-200">Auto</Badge>
+                          </div>
+                        ) : (
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">
+                              Target Pipeline <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value=""
+                              disabled
+                              className="w-full h-10 rounded-xl border border-border bg-background px-3 text-sm transition-colors font-medium text-muted-foreground opacity-55 cursor-not-allowed shadow-xs"
+                            >
+                              <option value="">No Pipelines Found</option>
+                            </select>
+                          </div>
+                        )}
 
                         <div className="space-y-1.5">
                           <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">Campaign State</label>

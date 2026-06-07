@@ -41,7 +41,7 @@ export interface User {
   id: string;
   tenant_id: string;
   name: string;
-  email: string;
+  email?: string | null;
   phone_number?: string;
   status: string;
   created_at: string;
@@ -165,11 +165,12 @@ export const settingsApi = {
     list: () => apiCall<User[]>('/users'),
     invite: (data: {
       name: string;
-      email: string;
-      phone_number?: string;
+      email?: string;
+      phone_number: string;
       password?: string;
       role_ids: string[];
       assignment_ids?: string[];
+      vertical_ids?: string[];
     }) =>
       apiCall<User & { temporary_password?: string }>('/users/invite', {
         method: 'POST',
@@ -182,6 +183,7 @@ export const settingsApi = {
         phone_number?: string;
         role_ids?: string[];
         assignment_ids?: string[];
+        vertical_ids?: string[];
       },
     ) =>
       apiCall<User>(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),

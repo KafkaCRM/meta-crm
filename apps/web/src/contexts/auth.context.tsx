@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useCallback, useEffect, useRef, ty
 import { Ability } from '@casl/ability';
 import { buildTenantAbility } from '@meta-crm/permissions';
 import type { TenantRoleEntry, TenantAbility } from '@meta-crm/permissions';
-import { login as apiLogin, refreshToken as apiRefresh, logout as apiLogout } from '@/api/auth';
+import { login as apiLogin, refreshToken as apiRefresh, logout as apiLogout, type LoginResult } from '@/api/auth';
 import { initAuthHelpers, apiCall } from '@/lib/api';
 import { initSocket, disconnectSocket, onReconnecting, onDisconnect } from '@/lib/socket';
 import { queryClient } from '@/lib/query-client';
@@ -28,7 +28,7 @@ interface AuthState {
 }
 
 interface AuthContextValue extends AuthState {
-  login: (email: string, password: string, tenantSlug?: string) => Promise<void>;
+  login: (email: string, password: string, tenantSlug?: string) => Promise<LoginResult>;
   logout: () => Promise<void>;
   impersonate: (token: string, user: AuthUser) => void;
 }
@@ -63,10 +63,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isImpersonating: localStorage.getItem('meta_crm_is_impersonating') === 'true',
   });
 
-  const login = useCallback(async (email: string, password: string, tenantSlug?: string) => {
+  const login = useCallback(async (email: string, password: string, tenantSlug?: string): Promise<LoginResult> => {
     setState((s) => ({ ...s, isLoading: true }));
     try {
       const result = await apiLogin({ email, password, tenant_slug: tenantSlug });
+
+      if ('multiple_workspaces' in result) {
+        setState((s) => ({ ...s, isLoading: false }));
+        return result;
+      }
 
       const roles: TenantRoleEntry[] = [{ role: result.user.role as TenantRoleEntry['role'] }];
       const ability = buildTenantAbility(roles, result.user.assignment_ids);
@@ -88,9 +93,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       initSocket(result.access_token);
-    } catch {
+      return result;
+    } catch (err: any) {
       setState((s) => ({ ...s, isLoading: false }));
-      throw new Error('INVALID_CREDENTIALS');
+      throw err;
     }
   }, []);
 

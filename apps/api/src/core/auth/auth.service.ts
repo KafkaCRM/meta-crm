@@ -33,6 +33,16 @@ export interface LoginResponse {
   };
 }
 
+export interface MultipleWorkspacesResponse {
+  multiple_workspaces: true;
+  workspaces: {
+    slug: string;
+    name: string;
+  }[];
+}
+
+export type LoginResultPayload = LoginResponse | MultipleWorkspacesResponse;
+
 export interface RefreshResponse {
   access_token: string;
 }
@@ -57,7 +67,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async login(input: LoginInput): Promise<Result<LoginResponse, AuthError>> {
+  async login(input: LoginInput): Promise<Result<LoginResultPayload, AuthError>> {
     if (input.tenant_slug) {
       return this.loginTenantUser(input.email, input.password, input.tenant_slug);
     }
@@ -67,19 +77,50 @@ export class AuthService {
       where: { email: input.email },
     });
     if (platformUser) {
-      return this.loginPlatformUser(input.email, input.password);
+      const isPasswordValid = await bcrypt.compare(input.password, platformUser.password_hash);
+      if (isPasswordValid) {
+        return this.loginPlatformUser(input.email, input.password);
+      }
     }
 
-    // Fallback: auto-resolve tenant workspace from email
-    const tenantUser = await this.db.user.findFirst({
-      where: { email: input.email },
+    // Query all matching active tenant users
+    const matchingUsers = await this.db.user.findMany({
+      where: {
+        OR: [
+          { email: input.email },
+          { phone_number: input.email }
+        ],
+        status: 'active',
+        tenant: { status: 'active' },
+      },
       include: { tenant: true },
     });
-    if (tenantUser) {
-      return this.loginTenantUser(input.email, input.password, tenantUser.tenant.slug);
+
+    const verifiedUsers = [];
+    for (const u of matchingUsers) {
+      const isPasswordValid = await bcrypt.compare(input.password, u.password_hash);
+      if (isPasswordValid) {
+        verifiedUsers.push(u);
+      }
     }
 
-    return err({ code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' });
+    if (verifiedUsers.length === 0) {
+      return err({ code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' });
+    }
+
+    if (verifiedUsers.length === 1) {
+      const u = verifiedUsers[0]!;
+      return this.loginTenantUser(input.email, input.password, u.tenant.slug);
+    }
+
+    // Return multiple workspaces to let the client select
+    return ok({
+      multiple_workspaces: true,
+      workspaces: verifiedUsers.map((u) => ({
+        slug: u.tenant.slug,
+        name: u.tenant.name,
+      })),
+    });
   }
 
   private async loginTenantUser(
@@ -96,8 +137,14 @@ export class AuthService {
       return err({ code: 'ACCOUNT_SUSPENDED', message: 'Account is suspended' });
     }
 
-    const user = await this.db.user.findUnique({
-      where: { email_tenant_id: { email, tenant_id: tenant.id } },
+    const user = await this.db.user.findFirst({
+      where: {
+        tenant_id: tenant.id,
+        OR: [
+          { email },
+          { phone_number: email }
+        ]
+      },
       include: {
         userRoles: {
           include: { role: true },
@@ -123,7 +170,7 @@ export class AuthService {
       .map((r) => r.assignment_id)
       .filter((id): id is string => id !== null);
 
-    const verticalIds = await this.resolveVerticalIds(tenant.id, roleSlug, assignmentIds);
+    const verticalIds = await this.resolveVerticalIds(user.id, tenant.id, roleSlug, assignmentIds);
 
     const accessToken = this.jwtService.sign({
       sub: user.id,
@@ -144,7 +191,7 @@ export class AuthService {
       user: {
         id: user.id,
         name: user.name,
-        email: user.email,
+        email: user.email || '',
         role: roleSlug,
         assignment_ids: assignmentIds,
       },
@@ -240,7 +287,7 @@ export class AuthService {
         .map((r) => r.assignment_id)
         .filter((id): id is string => id !== null);
 
-      const verticalIds = await this.resolveVerticalIds(user.tenant_id, roleSlug, assignmentIds);
+      const verticalIds = await this.resolveVerticalIds(user.id, user.tenant_id, roleSlug, assignmentIds);
 
       payload = {
         sub: user.id,
@@ -391,7 +438,7 @@ export class AuthService {
       .map((r) => r.assignment_id)
       .filter((id): id is string => id !== null);
 
-    const verticalIds = await this.resolveVerticalIds(tenant.id, roleSlug, assignmentIds);
+    const verticalIds = await this.resolveVerticalIds(user.id, tenant.id, roleSlug, assignmentIds);
 
     const accessToken = this.jwtService.sign({
       sub: user.id,
@@ -400,7 +447,7 @@ export class AuthService {
       role: roleSlug,
       vertical_ids: verticalIds,
       name: user.name,
-      email: user.email,
+      email: user.email || '',
       is_impersonating: true,
       admin_user_id: adminUserId,
     });
@@ -411,7 +458,7 @@ export class AuthService {
       user: {
         id: user.id,
         name: user.name,
-        email: user.email,
+        email: user.email || '',
         role: roleSlug,
         assignment_ids: assignmentIds,
       },
@@ -419,15 +466,27 @@ export class AuthService {
   }
 
   private async resolveVerticalIds(
+    userId: string,
     tenantId: string,
     role: string,
     assignmentIds: string[],
   ): Promise<string[]> {
+    if (!tenantId) return [];
+
+    // 1. Fetch explicit user-vertical mappings from UserVertical table
+    const userVerticals = await this.db.userVertical.findMany({
+      where: { user_id: userId, tenant_id: tenantId },
+      select: { vertical_id: true }
+    });
+    if (userVerticals.length > 0) {
+      return userVerticals.map((uv) => uv.vertical_id);
+    }
+
+    // 2. Fallback to branch-based inheritance for backwards compatibility
     if (
       role === TenantRole.Manager ||
       role === TenantRole.Admin ||
       role === TenantRole.Owner ||
-      !tenantId ||
       assignmentIds.length === 0
     ) {
       return [];

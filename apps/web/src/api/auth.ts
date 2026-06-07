@@ -16,6 +16,16 @@ export interface LoginResponse {
   };
 }
 
+export interface MultipleWorkspacesResponse {
+  multiple_workspaces: true;
+  workspaces: {
+    slug: string;
+    name: string;
+  }[];
+}
+
+export type LoginResult = LoginResponse | MultipleWorkspacesResponse;
+
 export interface RefreshRequest {
   refresh_token: string;
 }
@@ -24,7 +34,7 @@ export interface RefreshResponse {
   access_token: string;
 }
 
-export async function login(data: LoginRequest): Promise<LoginResponse> {
+export async function login(data: LoginRequest): Promise<LoginResult> {
   const response = await fetch('/api/v1/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -39,7 +49,7 @@ export async function login(data: LoginRequest): Promise<LoginResponse> {
     );
   }
 
-  return response.json() as Promise<LoginResponse>;
+  return response.json() as Promise<LoginResult>;
 }
 
 export async function refreshToken(token?: string): Promise<RefreshResponse> {

@@ -347,7 +347,7 @@ export class PlatformTenantsService {
       }
 
       return ok({
-        email: owner.email,
+        email: owner.email || '',
         temporary_password: temporaryPassword,
       });
     } catch (e: any) {
@@ -849,23 +849,23 @@ export class PlatformTenantsService {
           where: { tenant_id: id, slug: 'owner' },
         });
         if (ownerRole && defaultAssignment) {
-          await this.db.client.userRole.upsert({
+          const existingUserRole = await this.db.client.userRole.findFirst({
             where: {
-              user_id_role_id: {
-                user_id: firstUser.id,
-                role_id: ownerRole.id,
-              },
-            },
-            update: {
-              assignment_id: defaultAssignment.id,
-            },
-            create: {
               user_id: firstUser.id,
               role_id: ownerRole.id,
-              tenant_id: id,
               assignment_id: defaultAssignment.id,
             },
           });
+          if (!existingUserRole) {
+            await this.db.client.userRole.create({
+              data: {
+                user_id: firstUser.id,
+                role_id: ownerRole.id,
+                tenant_id: id,
+                assignment_id: defaultAssignment.id,
+              },
+            });
+          }
         }
       }
 

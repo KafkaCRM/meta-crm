@@ -18,6 +18,7 @@ model Tenant {
   labelOverrides         LabelOverride[]
   pipelineDefinitions    PipelineDefinition[]
   integrationConfigs     IntegrationConfig[]
+  userVerticals          UserVertical[]
   webhookSubscriptions   WebhookSubscription[]
   tenantPlugins          TenantPlugin[]
   tenantPlans            TenantPlan[]
@@ -76,20 +77,22 @@ model User {
   id            String   @id @default(cuid())
   tenant_id     String
   name          String
-  email         String
+  email         String?
   phone_number  String?
   password_hash String
   status        String   @default("active")
   created_at    DateTime @default(now())
 
-  tenant    Tenant       @relation(fields: [tenant_id], references: [id])
-  userRoles UserRole[]
-  parties   Party[]
-  cases     Case[]       @relation("AssignedCases")
-  appointments Appointment[]
-  leads     Lead[]
+  tenant        Tenant       @relation(fields: [tenant_id], references: [id])
+  userRoles     UserRole[]
+  parties       Party[]
+  cases         Case[]       @relation("AssignedCases")
+  appointments  Appointment[]
+  leads         Lead[]
+  userVerticals UserVertical[]
 
   @@unique([email, tenant_id])
+  @@unique([phone_number, tenant_id])
 }
 
 model PlatformUser {
@@ -138,5 +141,18 @@ model Vertical {
 
   @@index([tenant_id, branch_id])
   @@index([tenant_id, status])
+}
+
+model UserVertical {
+  id          String   @id @default(cuid())
+  user_id     String
+  vertical_id String
+  tenant_id   String
+  created_at  DateTime @default(now())
+
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, vertical_id])
 }
 

@@ -3,7 +3,7 @@ import { PlatformPrismaService } from '../tenant/platform-prisma.service';
 import { HooksService } from '../hooks/hooks.service';
 import { RoomManagerService } from '../realtime/room-manager.service';
 import * as dayjsImport from 'dayjs';
-const dayjs = (dayjsImport.default || dayjsImport) as any;
+const dayjs = ((dayjsImport as any).default || dayjsImport) as any;
 
 @Injectable()
 export class SlaEscalationService implements OnApplicationBootstrap, OnApplicationShutdown {

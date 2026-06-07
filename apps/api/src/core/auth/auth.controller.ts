@@ -14,13 +14,13 @@ import {
 import { IsString, IsOptional, IsEmail } from 'class-validator';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { AuthService } from './auth.service';
-import type { LoginResponse, RefreshResponse, AuthError } from './auth.service';
+import type { LoginResponse, RefreshResponse, AuthError, LoginResultPayload } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import type { RequestScope } from '../tenant/request-scope.interface';
 
 export class LoginDto {
-  @IsEmail()
+  @IsString()
   email!: string;
 
   @IsString()
@@ -67,10 +67,14 @@ export class AuthController {
   async login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) reply: FastifyReply,
-  ): Promise<LoginResponse> {
+  ): Promise<LoginResultPayload> {
     const result = await this.authService.login(dto);
     if (result.isErr()) {
       mapError(result.error);
+    }
+
+    if ('multiple_workspaces' in result.value) {
+      return result.value;
     }
 
     const { access_token, refresh_token } = result.value;

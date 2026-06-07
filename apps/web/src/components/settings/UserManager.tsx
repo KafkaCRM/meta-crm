@@ -22,13 +22,14 @@ export function UserManager() {
     phone_number: '',
     password: '',
     autoGeneratePassword: true,
-    assignment_id: '',
+    assignment_ids: [] as string[],
     roleIds: [] as string[],
+    vertical_ids: [] as string[],
   });
 
   const [createdUserCredentials, setCreatedUserCredentials] = useState<{
     name: string;
-    email: string;
+    email?: string | null;
     phone_number?: string;
     password?: string;
   } | null>(null);
@@ -60,6 +61,12 @@ export function UserManager() {
   const { data: brands } = useQuery({
     queryKey: ['settings', 'brands'],
     queryFn: () => settingsApi.brands.list(),
+    staleTime: 30_000,
+  });
+
+  const { data: verticals } = useQuery({
+    queryKey: ['settings', 'verticals'],
+    queryFn: () => settingsApi.verticals.list({ status: 'active' }),
     staleTime: 30_000,
   });
 
@@ -95,11 +102,12 @@ export function UserManager() {
   const inviteMutation = useMutation({
     mutationFn: (data: {
       name: string;
-      email: string;
-      phone_number?: string;
+      email?: string;
+      phone_number: string;
       password?: string;
       role_ids: string[];
       assignment_ids?: string[];
+      vertical_ids?: string[];
     }) => settingsApi.users.invite(data),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['settings', 'users'] });
@@ -116,8 +124,9 @@ export function UserManager() {
         phone_number: '',
         password: '',
         autoGeneratePassword: true,
-        assignment_id: '',
+        assignment_ids: [],
         roleIds: [],
+        vertical_ids: [],
       });
     },
     onError: () => toast.error('Failed to send invitation'),
@@ -135,26 +144,27 @@ export function UserManager() {
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      if (!inviteForm.name.trim() || !inviteForm.email.trim() || inviteForm.roleIds.length === 0) {
-        toast.error('Please fill out all fields and select at least one role');
+      if (!inviteForm.name.trim() || !inviteForm.phone_number.trim() || inviteForm.roleIds.length === 0) {
+        toast.error('Please fill out all required fields and select at least one role');
         return;
       }
       if (!inviteForm.autoGeneratePassword && !inviteForm.password.trim()) {
         toast.error('Please enter a custom password or select auto-generate');
         return;
       }
-      if (assignmentOptions.length > 1 && !inviteForm.assignment_id) {
-        toast.error('Please select a Branch / Brand Assignment');
+      if (assignmentOptions.length > 1 && inviteForm.assignment_ids.length === 0) {
+        toast.error('Please select at least one Store Location');
         return;
       }
 
       inviteMutation.mutate({
         name: inviteForm.name,
-        email: inviteForm.email,
-        phone_number: inviteForm.phone_number.trim() || undefined,
+        email: inviteForm.email.trim() || undefined,
+        phone_number: inviteForm.phone_number.trim(),
         password: inviteForm.autoGeneratePassword ? undefined : inviteForm.password,
         role_ids: inviteForm.roleIds,
-        assignment_ids: inviteForm.assignment_id ? [inviteForm.assignment_id] : undefined,
+        assignment_ids: inviteForm.assignment_ids.length > 0 ? inviteForm.assignment_ids : undefined,
+        vertical_ids: inviteForm.vertical_ids.length > 0 ? inviteForm.vertical_ids : undefined,
       });
     },
     [inviteForm, inviteMutation, assignmentOptions],
@@ -231,7 +241,7 @@ export function UserManager() {
                         <div className="flex flex-col gap-0.5 mt-0.5">
                           <p className="text-xs text-muted-foreground flex items-center gap-1">
                             <Mail size={12} className="text-muted-foreground/85" />
-                            <span className="truncate">{user.email}</span>
+                            <span className="truncate">{user.email || 'No email'}</span>
                           </p>
                           {user.phone_number && (
                             <p className="text-xs text-muted-foreground flex items-center gap-1">
@@ -309,24 +319,24 @@ export function UserManager() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Email Address</label>
+                  <label className="text-xs font-medium text-muted-foreground">Email Address (Optional)</label>
                   <Input
                     type="email"
                     placeholder="e.g. john@company.com"
                     value={inviteForm.email}
                     onChange={(e) => setInviteForm((f) => ({ ...f, email: e.target.value }))}
-                    required
                     className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Phone Number (Optional)</label>
+                  <label className="text-xs font-medium text-muted-foreground">Phone Number <span className="text-red-500">*</span></label>
                   <Input
                     type="tel"
                     placeholder="e.g. +1 555-0199"
                     value={inviteForm.phone_number}
                     onChange={(e) => setInviteForm((f) => ({ ...f, phone_number: e.target.value }))}
+                    required
                     className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
                   />
                 </div>
@@ -365,21 +375,37 @@ export function UserManager() {
                 </div>
 
                 {assignmentOptions.length > 1 && (
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">Branch / Brand Assignment</label>
-                    <select
-                      value={inviteForm.assignment_id}
-                      onChange={(e) => setInviteForm((f) => ({ ...f, assignment_id: e.target.value }))}
-                      required
-                      className="w-full h-9 rounded-lg border border-border bg-card text-foreground px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring animate-in fade-in-50 duration-200"
-                    >
-                      <option value="">Select Assignment...</option>
-                      {assignmentOptions.map((opt) => (
-                        <option key={opt.id} value={opt.id}>
-                          {opt.name}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                      Store Locations / Assignments <span className="text-red-500">*</span>
+                    </label>
+                    <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1.5 border border-border rounded-lg bg-background/50">
+                      {assignmentOptions.map((opt) => {
+                        const isSelected = inviteForm.assignment_ids.includes(opt.id);
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => {
+                              setInviteForm((f) => ({
+                                ...f,
+                                assignment_ids: f.assignment_ids.includes(opt.id)
+                                  ? f.assignment_ids.filter((id) => id !== opt.id)
+                                  : [...f.assignment_ids, opt.id],
+                              }));
+                            }}
+                            className={cn(
+                              "text-xs px-2.5 py-1 rounded-md border transition-all text-left font-medium",
+                              isSelected
+                                ? "bg-primary text-white border-[#0f172a] shadow-sm"
+                                : "bg-card text-muted-foreground border-border hover:border-slate-400 hover:text-foreground"
+                            )}
+                          >
+                            {opt.name}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
 
@@ -390,6 +416,52 @@ export function UserManager() {
                     </label>
                     <span className="text-xs text-foreground font-medium block">
                       {assignmentOptions[0]?.name ?? ''}
+                    </span>
+                  </div>
+                )}
+
+                {verticals && verticals.length > 1 && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                      Assigned Verticals / Departments
+                    </label>
+                    <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1.5 border border-border rounded-lg bg-background/50">
+                      {verticals.map((vert: any) => {
+                        const isSelected = inviteForm.vertical_ids.includes(vert.id);
+                        return (
+                          <button
+                            key={vert.id}
+                            type="button"
+                            onClick={() => {
+                              setInviteForm((f) => ({
+                                ...f,
+                                vertical_ids: f.vertical_ids.includes(vert.id)
+                                  ? f.vertical_ids.filter((id) => id !== vert.id)
+                                  : [...f.vertical_ids, vert.id],
+                              }));
+                            }}
+                            className={cn(
+                              "text-xs px-2.5 py-1 rounded-md border transition-all text-left font-medium",
+                              isSelected
+                                ? "bg-primary text-white border-[#0f172a] shadow-sm"
+                                : "bg-card text-muted-foreground border-border hover:border-slate-400 hover:text-foreground"
+                            )}
+                          >
+                            {vert.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {verticals && verticals.length === 1 && (
+                  <div className="space-y-1 mt-1 bg-background/30 p-2 rounded border border-border/40">
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                      Vertical / Product Scoping (Auto-selected)
+                    </label>
+                    <span className="text-xs text-foreground font-medium block">
+                      {verticals[0]?.name ?? ''}
                     </span>
                   </div>
                 )}
@@ -464,7 +536,7 @@ export function UserManager() {
               <span className="col-span-2 font-semibold text-foreground">{createdUserCredentials?.name}</span>
 
               <span className="font-medium text-muted-foreground">Email:</span>
-              <span className="col-span-2 font-mono text-foreground select-all break-all">{createdUserCredentials?.email}</span>
+              <span className="col-span-2 font-mono text-foreground select-all break-all">{createdUserCredentials?.email || 'None'}</span>
 
               {createdUserCredentials?.phone_number && (
                 <>
@@ -485,7 +557,7 @@ export function UserManager() {
               type="button"
               variant="outline"
               onClick={() => {
-                const text = `Operator Credentials:\nName: ${createdUserCredentials?.name}\nEmail: ${createdUserCredentials?.email}${createdUserCredentials?.phone_number ? `\nPhone: ${createdUserCredentials?.phone_number}` : ''}\nPassword: ${createdUserCredentials?.password}`;
+                const text = `Operator Credentials:\nName: ${createdUserCredentials?.name}\nEmail: ${createdUserCredentials?.email || 'None'}${createdUserCredentials?.phone_number ? `\nPhone: ${createdUserCredentials?.phone_number}` : ''}\nPassword: ${createdUserCredentials?.password}`;
                 navigator.clipboard.writeText(text);
                 toast.success('Credentials copied to clipboard');
               }}

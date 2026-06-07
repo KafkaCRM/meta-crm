@@ -22,12 +22,12 @@ class InviteUserDto {
   @IsString()
   name!: string;
 
-  @IsEmail()
-  email!: string;
-
   @IsOptional()
+  @IsEmail()
+  email?: string;
+
   @IsString()
-  phone_number?: string;
+  phone_number!: string;
 
   @IsOptional()
   @IsString()
@@ -41,6 +41,11 @@ class InviteUserDto {
   @IsArray()
   @IsString({ each: true })
   assignment_ids?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  vertical_ids?: string[];
 }
 
 class UpdateUserDto {
@@ -61,6 +66,11 @@ class UpdateUserDto {
   @IsArray()
   @IsString({ each: true })
   assignment_ids?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  vertical_ids?: string[];
 }
 
 @Controller('users')
