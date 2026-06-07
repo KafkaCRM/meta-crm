@@ -130,7 +130,6 @@ export function UserManager() {
         roleIds: [],
         vertical_ids: [],
       });
-      setIsInviteModalOpen(false);
     },
     onError: (error: any) => toast.error(error?.message || 'Failed to send invitation'),
   });
@@ -307,292 +306,299 @@ export function UserManager() {
       </Card>
 
       {/* Invite Member Dialog Modal */}
-      <Dialog open={isInviteModalOpen} onOpenChange={setIsInviteModalOpen}>
-        <DialogContent className="sm:max-w-[480px] bg-card border border-border rounded-xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-semibold text-foreground flex items-center gap-1.5">
-              <UserPlus size={18} className="text-muted-foreground" />
-              Invite Member
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Grant workspace access by sending an invitation
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Full Name</label>
-              <Input
-                type="text"
-                placeholder="e.g. John Doe"
-                value={inviteForm.name}
-                onChange={(e) => setInviteForm((f) => ({ ...f, name: e.target.value }))}
-                required
-                className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Email Address (Optional)</label>
-              <Input
-                type="email"
-                placeholder="e.g. john@company.com"
-                value={inviteForm.email}
-                onChange={(e) => setInviteForm((f) => ({ ...f, email: e.target.value }))}
-                className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Phone Number <span className="text-red-500">*</span></label>
-              <Input
-                type="tel"
-                placeholder="e.g. +1 555-0199"
-                value={inviteForm.phone_number}
-                onChange={(e) => setInviteForm((f) => ({ ...f, phone_number: e.target.value }))}
-                required
-                className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                <Key size={12} className="text-muted-foreground" />
-                Security Credentials
-              </label>
-              <div className="space-y-2 p-3 border border-border rounded-lg bg-background/50">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="autoGeneratePassword"
-                    checked={inviteForm.autoGeneratePassword}
-                    onChange={(e) => setInviteForm((f) => ({ ...f, autoGeneratePassword: e.target.checked }))}
-                    className="rounded border-border bg-card text-primary focus:ring-ring h-4 w-4"
-                  />
-                  <label htmlFor="autoGeneratePassword" className="text-xs font-medium text-foreground cursor-pointer select-none">
-                    Auto-generate random 8-character password
-                  </label>
-                </div>
-                {!inviteForm.autoGeneratePassword && (
-                  <div className="space-y-1.5 pt-1 animate-in fade-in-50 duration-200">
-                    <Input
-                      type="password"
-                      placeholder="Enter custom password"
-                      value={inviteForm.password}
-                      onChange={(e) => setInviteForm((f) => ({ ...f, password: e.target.value }))}
-                      required
-                      className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {assignmentOptions.length > 1 && (
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                  Store Locations / Assignments <span className="text-red-500">*</span>
-                </label>
-                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1.5 border border-border rounded-lg bg-background/50">
-                  {assignmentOptions.map((opt) => {
-                    const isSelected = inviteForm.assignment_ids.includes(opt.id);
-                    return (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        onClick={() => {
-                          setInviteForm((f) => ({
-                            ...f,
-                            assignment_ids: f.assignment_ids.includes(opt.id)
-                              ? f.assignment_ids.filter((id) => id !== opt.id)
-                              : [...f.assignment_ids, opt.id],
-                          }));
-                        }}
-                        className={cn(
-                          "text-xs px-2.5 py-1 rounded-md border transition-all text-left font-medium",
-                          isSelected
-                            ? "bg-primary text-white border-[#0f172a] shadow-sm"
-                            : "bg-card text-muted-foreground border-border hover:border-slate-400 hover:text-foreground"
-                        )}
-                      >
-                        {opt.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {assignmentOptions.length === 1 && (
-              <div className="space-y-1 mt-1 bg-background/30 p-2 rounded border border-border/40">
-                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
-                  Branch / Brand Assignment (Auto-selected)
-                </label>
-                <span className="text-xs text-foreground font-medium block">
-                  {assignmentOptions[0]?.name ?? ''}
-                </span>
-              </div>
-            )}
-
-            {verticals && verticals.length > 1 && (
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                  Assigned Verticals / Departments
-                </label>
-                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1.5 border border-border rounded-lg bg-background/50">
-                  {verticals.map((vert: any) => {
-                    const isSelected = inviteForm.vertical_ids.includes(vert.id);
-                    return (
-                      <button
-                        key={vert.id}
-                        type="button"
-                        onClick={() => {
-                          setInviteForm((f) => ({
-                            ...f,
-                            vertical_ids: f.vertical_ids.includes(vert.id)
-                              ? f.vertical_ids.filter((id) => id !== vert.id)
-                              : [...f.vertical_ids, vert.id],
-                          }));
-                        }}
-                        className={cn(
-                          "text-xs px-2.5 py-1 rounded-md border transition-all text-left font-medium",
-                          isSelected
-                            ? "bg-primary text-white border-[#0f172a] shadow-sm"
-                            : "bg-card text-muted-foreground border-border hover:border-slate-400 hover:text-foreground"
-                        )}
-                      >
-                        {vert.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {verticals && verticals.length === 1 && (
-              <div className="space-y-1 mt-1 bg-background/30 p-2 rounded border border-border/40">
-                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
-                  Vertical / Product Scoping (Auto-selected)
-                </label>
-                <span className="text-xs text-foreground font-medium block">
-                  {verticals[0]?.name ?? ''}
-                </span>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                <Shield size={12} className="text-muted-foreground" />
-                Assigned Roles
-              </label>
-              <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1.5 border border-border rounded-lg bg-background/50">
-                {sortedRoles.map((role) => {
-                  const isSelected = inviteForm.roleIds.includes(role.id);
-                  return (
-                    <button
-                      key={role.id}
-                      type="button"
-                      onClick={() => toggleRole(role.id)}
-                      className={`text-xs px-2.5 py-1 rounded-md border transition-all text-left font-medium ${
-                        isSelected
-                          ? 'bg-primary text-white border-[#0f172a] shadow-sm'
-                          : 'bg-card text-muted-foreground border-border hover:border-slate-400 hover:text-foreground'
-                      }`}
-                    >
-                      {role.name}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <DialogFooter className="pt-4 flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsInviteModalOpen(false)}
-                className="w-full sm:w-auto h-9 text-xs border-border text-muted-foreground bg-card hover:bg-muted"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={inviteMutation.isPending}
-                className="bg-primary hover:bg-[#1e293b] text-white w-full sm:w-auto h-9 text-xs flex items-center justify-center gap-1.5"
-              >
-                {inviteMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Plus size={14} />
-                )}
-                Send Invitation
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Success Dialog showing created user credentials */}
-      <Dialog
-        open={!!createdUserCredentials}
+      <Dialog 
+        open={isInviteModalOpen} 
         onOpenChange={(open) => {
-          if (!open) setCreatedUserCredentials(null);
+          setIsInviteModalOpen(open);
+          if (!open) {
+            setCreatedUserCredentials(null);
+          }
         }}
       >
-        <DialogContent className="sm:max-w-md bg-card border border-border rounded-xl">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
-              <Shield className="text-emerald-500 h-5 w-5" />
-              Operator Created Successfully
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground mt-1">
-              The user has been successfully provisioned. Please copy their credentials below. For security reasons, the password will not be shown again.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-[480px] bg-card border border-border rounded-xl max-h-[90vh] overflow-y-auto">
+          {!createdUserCredentials ? (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-foreground flex items-center gap-1.5">
+                  <UserPlus size={18} className="text-muted-foreground" />
+                  Invite Member
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground">
+                  Grant workspace access by sending an invitation
+                </DialogDescription>
+              </DialogHeader>
 
-          <div className="space-y-4 my-2 p-4 rounded-lg bg-background/50 border border-border/60">
-            <div className="grid grid-cols-3 gap-2 text-xs">
-              <span className="font-medium text-muted-foreground">Full Name:</span>
-              <span className="col-span-2 font-semibold text-foreground">{createdUserCredentials?.name}</span>
+              <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Full Name</label>
+                  <Input
+                    type="text"
+                    placeholder="e.g. John Doe"
+                    value={inviteForm.name}
+                    onChange={(e) => setInviteForm((f) => ({ ...f, name: e.target.value }))}
+                    required
+                    className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
+                  />
+                </div>
 
-              <span className="font-medium text-muted-foreground">Email:</span>
-              <span className="col-span-2 font-mono text-foreground select-all break-all">{createdUserCredentials?.email || 'None'}</span>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Email Address (Optional)</label>
+                  <Input
+                    type="email"
+                    placeholder="e.g. john@company.com"
+                    value={inviteForm.email}
+                    onChange={(e) => setInviteForm((f) => ({ ...f, email: e.target.value }))}
+                    className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
+                  />
+                </div>
 
-              {createdUserCredentials?.phone_number && (
-                <>
-                  <span className="font-medium text-muted-foreground">Phone:</span>
-                  <span className="col-span-2 font-mono text-foreground select-all">{createdUserCredentials?.phone_number}</span>
-                </>
-              )}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Phone Number <span className="text-red-500">*</span></label>
+                  <Input
+                    type="tel"
+                    placeholder="e.g. +1 555-0199"
+                    value={inviteForm.phone_number}
+                    onChange={(e) => setInviteForm((f) => ({ ...f, phone_number: e.target.value }))}
+                    required
+                    className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
+                  />
+                </div>
 
-              <span className="font-medium text-muted-foreground">Password:</span>
-              <span className="col-span-2 font-mono text-foreground font-semibold select-all break-all bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 w-fit">
-                {createdUserCredentials?.password}
-              </span>
-            </div>
-          </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                    <Key size={12} className="text-muted-foreground" />
+                    Security Credentials
+                  </label>
+                  <div className="space-y-2 p-3 border border-border rounded-lg bg-background/50">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="autoGeneratePassword"
+                        checked={inviteForm.autoGeneratePassword}
+                        onChange={(e) => setInviteForm((f) => ({ ...f, autoGeneratePassword: e.target.checked }))}
+                        className="rounded border-border bg-card text-primary focus:ring-ring h-4 w-4"
+                      />
+                      <label htmlFor="autoGeneratePassword" className="text-xs font-medium text-foreground cursor-pointer select-none">
+                        Auto-generate random 8-character password
+                      </label>
+                    </div>
+                    {!inviteForm.autoGeneratePassword && (
+                      <div className="space-y-1.5 pt-1 animate-in fade-in-50 duration-200">
+                        <Input
+                          type="password"
+                          placeholder="Enter custom password"
+                          value={inviteForm.password}
+                          onChange={(e) => setInviteForm((f) => ({ ...f, password: e.target.value }))}
+                          required
+                          className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-          <DialogFooter className="flex flex-col sm:flex-row gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                const text = `Operator Credentials:\nName: ${createdUserCredentials?.name}\nEmail: ${createdUserCredentials?.email || 'None'}${createdUserCredentials?.phone_number ? `\nPhone: ${createdUserCredentials?.phone_number}` : ''}\nPassword: ${createdUserCredentials?.password}`;
-                navigator.clipboard.writeText(text);
-                toast.success('Credentials copied to clipboard');
-              }}
-              className="w-full sm:w-auto flex items-center justify-center gap-1.5"
-            >
-              Copy Credentials
-            </Button>
-            <Button
-              type="button"
-              onClick={() => setCreatedUserCredentials(null)}
-              className="w-full sm:w-auto bg-primary text-white hover:bg-[#1e293b]"
-            >
-              Done
-            </Button>
-          </DialogFooter>
+                {assignmentOptions.length > 1 && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                      Store Locations / Assignments <span className="text-red-500">*</span>
+                    </label>
+                    <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1.5 border border-border rounded-lg bg-background/50">
+                      {assignmentOptions.map((opt) => {
+                        const isSelected = inviteForm.assignment_ids.includes(opt.id);
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => {
+                              setInviteForm((f) => ({
+                                ...f,
+                                assignment_ids: f.assignment_ids.includes(opt.id)
+                                  ? f.assignment_ids.filter((id) => id !== opt.id)
+                                  : [...f.assignment_ids, opt.id],
+                              }));
+                            }}
+                            className={cn(
+                              "text-xs px-2.5 py-1 rounded-md border transition-all text-left font-medium",
+                              isSelected
+                                ? "bg-primary text-white border-[#0f172a] shadow-sm"
+                                : "bg-card text-muted-foreground border-border hover:border-slate-400 hover:text-foreground"
+                            )}
+                          >
+                            {opt.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {assignmentOptions.length === 1 && (
+                  <div className="space-y-1 mt-1 bg-background/30 p-2 rounded border border-border/40">
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                      Branch / Brand Assignment (Auto-selected)
+                    </label>
+                    <span className="text-xs text-foreground font-medium block">
+                      {assignmentOptions[0]?.name ?? ''}
+                    </span>
+                  </div>
+                )}
+
+                {verticals && verticals.length > 1 && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                      Assigned Verticals / Departments
+                    </label>
+                    <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1.5 border border-border rounded-lg bg-background/50">
+                      {verticals.map((vert: any) => {
+                        const isSelected = inviteForm.vertical_ids.includes(vert.id);
+                        return (
+                          <button
+                            key={vert.id}
+                            type="button"
+                            onClick={() => {
+                              setInviteForm((f) => ({
+                                ...f,
+                                vertical_ids: f.vertical_ids.includes(vert.id)
+                                  ? f.vertical_ids.filter((id) => id !== vert.id)
+                                  : [...f.vertical_ids, vert.id],
+                              }));
+                            }}
+                            className={cn(
+                              "text-xs px-2.5 py-1 rounded-md border transition-all text-left font-medium",
+                              isSelected
+                                ? "bg-primary text-white border-[#0f172a] shadow-sm"
+                                : "bg-card text-muted-foreground border-border hover:border-slate-400 hover:text-foreground"
+                            )}
+                          >
+                            {vert.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {verticals && verticals.length === 1 && (
+                  <div className="space-y-1 mt-1 bg-background/30 p-2 rounded border border-border/40">
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                      Vertical / Product Scoping (Auto-selected)
+                    </label>
+                    <span className="text-xs text-foreground font-medium block">
+                      {verticals[0]?.name ?? ''}
+                    </span>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                    <Shield size={12} className="text-muted-foreground" />
+                    Assigned Roles
+                  </label>
+                  <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1.5 border border-border rounded-lg bg-background/50">
+                    {sortedRoles.map((role) => {
+                      const isSelected = inviteForm.roleIds.includes(role.id);
+                      return (
+                        <button
+                          key={role.id}
+                          type="button"
+                          onClick={() => toggleRole(role.id)}
+                          className={`text-xs px-2.5 py-1 rounded-md border transition-all text-left font-medium ${
+                            isSelected
+                              ? 'bg-primary text-white border-[#0f172a] shadow-sm'
+                              : 'bg-card text-muted-foreground border-border hover:border-slate-400 hover:text-foreground'
+                          }`}
+                        >
+                          {role.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <DialogFooter className="pt-4 flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsInviteModalOpen(false)}
+                    className="w-full sm:w-auto h-9 text-xs border-border text-muted-foreground bg-card hover:bg-muted"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={inviteMutation.isPending}
+                    className="bg-primary hover:bg-[#1e293b] text-white w-full sm:w-auto h-9 text-xs flex items-center justify-center gap-1.5"
+                  >
+                    {inviteMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Plus size={14} />
+                    )}
+                    Send Invitation
+                  </Button>
+                </DialogFooter>
+              </form>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  <Shield className="text-emerald-500 h-5 w-5" />
+                  Operator Created Successfully
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground mt-1">
+                  The user has been successfully provisioned. Please copy their credentials below. For security reasons, the password will not be shown again.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 my-2 p-4 rounded-lg bg-background/50 border border-border/60">
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <span className="font-medium text-muted-foreground">Full Name:</span>
+                  <span className="col-span-2 font-semibold text-foreground">{createdUserCredentials.name}</span>
+
+                  <span className="font-medium text-muted-foreground">Email:</span>
+                  <span className="col-span-2 font-mono text-foreground select-all break-all">{createdUserCredentials.email || 'None'}</span>
+
+                  {createdUserCredentials.phone_number && (
+                    <>
+                      <span className="font-medium text-muted-foreground">Phone:</span>
+                      <span className="col-span-2 font-mono text-foreground select-all">{createdUserCredentials.phone_number}</span>
+                    </>
+                  )}
+
+                  <span className="font-medium text-muted-foreground">Password:</span>
+                  <span className="col-span-2 font-mono text-foreground font-semibold select-all break-all bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 w-fit">
+                    {createdUserCredentials.password}
+                  </span>
+                </div>
+              </div>
+
+              <DialogFooter className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const text = `Operator Credentials:\nName: ${createdUserCredentials.name}\nEmail: ${createdUserCredentials.email || 'None'}${createdUserCredentials.phone_number ? `\nPhone: ${createdUserCredentials.phone_number}` : ''}\nPassword: ${createdUserCredentials.password}`;
+                    navigator.clipboard.writeText(text);
+                    toast.success('Credentials copied to clipboard');
+                  }}
+                  className="w-full sm:w-auto flex items-center justify-center gap-1.5 text-xs h-9"
+                >
+                  Copy Credentials
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setCreatedUserCredentials(null);
+                    setIsInviteModalOpen(false);
+                  }}
+                  className="w-full sm:w-auto bg-primary text-white hover:bg-[#1e293b] text-xs h-9"
+                >
+                  Done
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>
