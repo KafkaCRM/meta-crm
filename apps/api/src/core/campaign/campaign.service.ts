@@ -386,6 +386,7 @@ export class CampaignService {
         take: limit + 1,
         ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
         orderBy: { created_at: 'desc' },
+        include: { party: true },
       });
 
       const hasMore = cases.length > limit;
