@@ -113,7 +113,7 @@ export function UserManager() {
     }) => settingsApi.users.invite(data),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['settings', 'users'] });
-      toast.success('User invited successfully');
+      toast.success('User created successfully');
       setCreatedUserCredentials({
         name: data.name,
         email: data.email,
@@ -131,7 +131,7 @@ export function UserManager() {
         vertical_ids: [],
       });
     },
-    onError: (error: any) => toast.error(error?.message || 'Failed to send invitation'),
+    onError: (error: any) => toast.error(error?.message || 'Failed to create user'),
   });
 
   const removeMutation = useMutation({
@@ -203,7 +203,7 @@ export function UserManager() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">Users</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Manage your team members, invite new workspace operators, and control system permissions
+            Manage your team members, create new workspace users, and control system permissions
           </p>
         </div>
         {canManage && (
@@ -213,7 +213,7 @@ export function UserManager() {
             className="h-9 text-xs gap-1.5 bg-primary hover:bg-[#1e293b] text-white"
           >
             <UserPlus size={15} />
-            Invite Operator
+            Create User
           </Button>
         )}
       </div>
@@ -222,10 +222,10 @@ export function UserManager() {
       <Card className="bg-card border-border rounded-xl shadow-none">
         <CardHeader className="pb-3 border-b border-border">
           <CardTitle className="text-base font-medium text-foreground">
-            Active Operators
+            Active Users
           </CardTitle>
           <CardDescription className="text-xs text-muted-foreground">
-            {users?.length ?? 0} operators active in this tenant
+            {users?.length ?? 0} users active in this tenant
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
@@ -298,7 +298,7 @@ export function UserManager() {
             })}
             {users?.length === 0 && (
               <div className="p-8 text-center text-sm text-muted-foreground">
-                No active operators found. {canManage && 'Use the Invite Operator button to add your first member.'}
+                No active users found. {canManage && 'Use the Create User button to add your first member.'}
               </div>
             )}
           </div>
@@ -321,10 +321,10 @@ export function UserManager() {
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-foreground flex items-center gap-1.5">
                   <UserPlus size={18} className="text-muted-foreground" />
-                  Invite Member
+                  Create User
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground">
-                  Grant workspace access by sending an invitation
+                  Create a new workspace user and assign their roles and permissions
                 </DialogDescription>
               </DialogHeader>
 
@@ -534,7 +534,7 @@ export function UserManager() {
                     ) : (
                       <Plus size={14} />
                     )}
-                    Send Invitation
+                    Create User
                   </Button>
                 </DialogFooter>
               </form>
@@ -544,10 +544,10 @@ export function UserManager() {
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
                   <Shield className="text-emerald-500 h-5 w-5" />
-                  Operator Created Successfully
+                  User Created Successfully
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground mt-1">
-                  The user has been successfully provisioned. Please copy their credentials below. For security reasons, the password will not be shown again.
+                  The user has been successfully created. Please copy their credentials below. For security reasons, the password will not be shown again.
                 </DialogDescription>
               </DialogHeader>
 
@@ -578,7 +578,7 @@ export function UserManager() {
                   type="button"
                   variant="outline"
                   onClick={() => {
-                    const text = `Operator Credentials:\nName: ${createdUserCredentials.name}\nEmail: ${createdUserCredentials.email || 'None'}${createdUserCredentials.phone_number ? `\nPhone: ${createdUserCredentials.phone_number}` : ''}\nPassword: ${createdUserCredentials.password}`;
+                    const text = `User Credentials:\nName: ${createdUserCredentials.name}\nEmail: ${createdUserCredentials.email || 'None'}${createdUserCredentials.phone_number ? `\nPhone: ${createdUserCredentials.phone_number}` : ''}\nPassword: ${createdUserCredentials.password}`;
                     navigator.clipboard.writeText(text);
                     toast.success('Credentials copied to clipboard');
                   }}

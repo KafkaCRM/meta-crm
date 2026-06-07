@@ -9,20 +9,37 @@ export class PermissionCacheService implements OnModuleDestroy {
   constructor(@Inject(REDIS_CLIENT) private readonly redis: Redis) {}
 
   async onModuleDestroy() {
-    await this.redis.quit();
+    try {
+      await this.redis.quit();
+    } catch (err) {
+      console.error('PermissionCacheService.onModuleDestroy failed:', err);
+    }
   }
 
   async getRules(userId: string, tenantId: string): Promise<unknown[] | null> {
-    const raw = await this.redis.get(`perm:${userId}:${tenantId}`);
-    if (!raw) return null;
-    return JSON.parse(raw) as unknown[];
+    try {
+      const raw = await this.redis.get(`perm:${userId}:${tenantId}`);
+      if (!raw) return null;
+      return JSON.parse(raw) as unknown[];
+    } catch (err) {
+      console.error('PermissionCacheService.getRules failed:', err);
+      return null;
+    }
   }
 
   async setRules(userId: string, tenantId: string, rules: unknown[]): Promise<void> {
-    await this.redis.set(`perm:${userId}:${tenantId}`, JSON.stringify(rules), 'EX', CACHE_TTL);
+    try {
+      await this.redis.set(`perm:${userId}:${tenantId}`, JSON.stringify(rules), 'EX', CACHE_TTL);
+    } catch (err) {
+      console.error('PermissionCacheService.setRules failed:', err);
+    }
   }
 
   async invalidate(userId: string, tenantId: string): Promise<void> {
-    await this.redis.del(`perm:${userId}:${tenantId}`);
+    try {
+      await this.redis.del(`perm:${userId}:${tenantId}`);
+    } catch (err) {
+      console.error('PermissionCacheService.invalidate failed:', err);
+    }
   }
 }
