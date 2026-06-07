@@ -60,6 +60,14 @@ interface WebhookDeliveryFailedPayload {
   error: string;
 }
 
+interface CaseSlaBreachedPayload {
+  case_id: string;
+  case_title: string;
+  stage_id: string;
+  stage_name: string;
+  hours_spent: number;
+}
+
 export function NotificationToast() {
   const { t } = useLabels();
   const openCaseIdsRef = useRef<Set<string>>(new Set());
@@ -214,8 +222,34 @@ export function NotificationToast() {
     [t],
   );
 
+  const handleCaseSlaBreached = useCallback(
+    (payload: CaseSlaBreachedPayload) => {
+      queryClient.invalidateQueries({ queryKey: ['cases'] });
+      if (openCaseIdsRef.current.has(payload.case_id)) {
+        queryClient.invalidateQueries({ queryKey: ['case', payload.case_id] });
+      }
+
+      const id = toast.error(
+        `SLA Breached: ${payload.case_title}`,
+        {
+          description: `Case spent ${payload.hours_spent} hours in "${payload.stage_name}" stage.`,
+          duration: 10000,
+          action: {
+            label: 'View',
+            onClick: () => {
+              window.location.href = `/cases/${payload.case_id}`;
+            },
+          },
+        },
+      );
+      enqueueToast(id);
+    },
+    [],
+  );
+
   useRealtime<CaseAssignedPayload>('case:assigned', handleCaseAssigned);
   useRealtime<CaseStageChangedPayload>('case:stage_changed', handleCaseStageChanged);
+  useRealtime<CaseSlaBreachedPayload>('case:sla_breached', handleCaseSlaBreached);
   useRealtime<InteractionReceivedPayload>('interaction:received', handleInteractionReceived);
   useRealtime<PartyMergedPayload>('party:merged', handlePartyMerged);
   useRealtime<TriggerFailedPayload>('trigger:failed', handleTriggerFailed);

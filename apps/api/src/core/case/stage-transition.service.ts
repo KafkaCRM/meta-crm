@@ -111,7 +111,7 @@ export class StageTransitionService {
       await this.db.getClient().$transaction([
         this.db.getClient().case.update({
           where: { id: caseId },
-          data: { stage: toStageId },
+          data: { stage: toStageId, last_stage_changed_at: new Date() },
         }),
         this.db.getClient().caseEvent.create({
           data: {

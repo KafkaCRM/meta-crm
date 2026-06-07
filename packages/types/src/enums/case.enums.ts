@@ -16,4 +16,5 @@ export enum EventType {
   TriggerFailed = 'trigger_failed',
   CaseCreated = 'case_created',
   CaseMerged = 'case_merged',
+  SlaBreached = 'sla_breached',
 }

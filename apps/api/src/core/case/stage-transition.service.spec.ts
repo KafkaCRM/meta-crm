@@ -181,7 +181,7 @@ describe('StageTransitionService', () => {
       expect(client.case.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'case-1' },
-          data: { stage: 'stage-2' },
+          data: { stage: 'stage-2', last_stage_changed_at: expect.any(Date) },
         }),
       );
       expect(client.caseEvent.create).toHaveBeenCalledWith(
@@ -223,7 +223,7 @@ describe('StageTransitionService', () => {
       expect(client.case.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'case-1' },
-          data: { stage: 'stage-2' },
+          data: { stage: 'stage-2', last_stage_changed_at: expect.any(Date) },
         }),
       );
       expect(client.caseEvent.create).toHaveBeenCalled();

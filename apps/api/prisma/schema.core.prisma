@@ -44,6 +44,7 @@ model Case {
   attributes                Json     @default("{}")
   created_at                DateTime @default(now())
   updated_at                DateTime @updatedAt
+  last_stage_changed_at     DateTime @default(now())
 
   party             Party          @relation(fields: [party_id], references: [id])
   pipelineDefinition PipelineDefinition @relation(fields: [pipeline_definition_id], references: [id])

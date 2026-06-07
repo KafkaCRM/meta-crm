@@ -10,6 +10,7 @@ export interface CaseResponse {
   attributes: Record<string, unknown>;
   created_at: Date;
   updated_at: Date;
+  last_stage_changed_at: Date;
   vertical_id: string | null;
   campaign_id: string | null;
   campaign?: {
