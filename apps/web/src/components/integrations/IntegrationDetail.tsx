@@ -410,6 +410,13 @@ function MappingTab({ connectionId, canManage }: { connectionId: string; canMana
 
   const [rows, setRows] = useState<Partial<FieldMapping>[]>([]);
   const [initialized, setInitialized] = useState(false);
+  const [activeEntity, setActiveEntity] = useState<string>('lead');
+
+  const { data: customFields = [] } = useQuery({
+    queryKey: ['settings', 'field-definitions', activeEntity],
+    queryFn: () => settingsApi.fieldDefinitions.list(activeEntity),
+    staleTime: 60_000,
+  });
 
   if (!initialized && mappings.length > 0) {
     setRows(mappings);
@@ -428,6 +435,18 @@ function MappingTab({ connectionId, canManage }: { connectionId: string; canMana
 
   if (isLoading) return <div className="py-10 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
 
+  const STANDARD_FIELDS: Record<string, string[]> = {
+    lead: ['name', 'email', 'phone', 'source', 'status', 'notes', 'campaign_id', 'assigned_to_id'],
+    party: ['name', 'email', 'phone_raw', 'type', 'source'],
+    case: ['title', 'type', 'stage', 'assigned_to_id'],
+  };
+
+  const getTargetFieldOptions = (entity: string) => {
+    const standard = (STANDARD_FIELDS[entity] ?? []).map((f) => ({ value: f, label: `${f} (standard)` }));
+    const custom = customFields.map((f) => ({ value: f.name, label: `${f.label} (custom)` }));
+    return [...standard, ...custom];
+  };
+
   const addRow = () => setRows([...rows, { source_field: '', target_entity: 'lead', target_field: '', transform: 'direct', is_required: false }]);
   const updateRow = (i: number, update: Partial<FieldMapping>) => {
     const next = [...rows];
@@ -441,7 +460,7 @@ function MappingTab({ connectionId, canManage }: { connectionId: string; canMana
       <CardHeader className="pb-3 flex-row items-center justify-between">
         <div>
           <CardTitle className="text-base font-medium">Field Mappings</CardTitle>
-          <CardDescription className="text-xs">Map provider fields to CRM fields</CardDescription>
+          <CardDescription className="text-xs">Map provider fields to CRM fields. Standard and custom fields from Field Definitions are listed.</CardDescription>
         </div>
         {canManage && (
           <Button variant="outline" size="sm" onClick={addRow} className="h-8 rounded-lg text-xs">
@@ -463,7 +482,11 @@ function MappingTab({ connectionId, canManage }: { connectionId: string; canMana
               </tr>
             </thead>
             <tbody>
-              {rows.map((row, i) => (
+              {rows.map((row, i) => {
+                const entity = row.target_entity ?? 'lead';
+                const fieldOptions = getTargetFieldOptions(entity);
+                const datalistId = `fields-${i}`;
+                return (
                 <tr key={i} className="border-b border-border/50">
                   <td className="py-1.5 px-2">
                     <input value={row.source_field ?? ''} disabled={!canManage}
@@ -473,7 +496,7 @@ function MappingTab({ connectionId, canManage }: { connectionId: string; canMana
                   </td>
                   <td className="py-1.5 px-2">
                     <select value={row.target_entity ?? 'lead'} disabled={!canManage}
-                      onChange={(e) => updateRow(i, { target_entity: e.target.value })}
+                      onChange={(e) => { updateRow(i, { target_entity: e.target.value, target_field: '' }); setActiveEntity(e.target.value); }}
                       className="w-full bg-transparent border border-border rounded px-2 py-1 text-xs">
                       <option value="lead">Lead</option>
                       <option value="party">Party</option>
@@ -481,10 +504,19 @@ function MappingTab({ connectionId, canManage }: { connectionId: string; canMana
                     </select>
                   </td>
                   <td className="py-1.5 px-2">
-                    <input value={row.target_field ?? ''} disabled={!canManage}
+                    <input
+                      list={datalistId}
+                      value={row.target_field ?? ''}
+                      disabled={!canManage}
                       onChange={(e) => updateRow(i, { target_field: e.target.value })}
-                      placeholder="e.g. email"
-                      className="w-full bg-transparent border border-border rounded px-2 py-1 text-xs" />
+                      placeholder="Pick or type field name"
+                      className="w-full bg-transparent border border-border rounded px-2 py-1 text-xs"
+                    />
+                    <datalist id={datalistId}>
+                      {fieldOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </datalist>
                   </td>
                   <td className="py-1.5 px-2">
                     <select value={row.transform ?? 'direct'} disabled={!canManage}
@@ -506,7 +538,7 @@ function MappingTab({ connectionId, canManage }: { connectionId: string; canMana
                     </td>
                   )}
                 </tr>
-              ))}
+              )})}
               {rows.length === 0 && (
                 <tr>
                   <td colSpan={6} className="py-8 text-center text-muted-foreground">

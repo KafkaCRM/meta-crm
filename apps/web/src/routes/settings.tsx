@@ -11,7 +11,6 @@ import { FieldEditor } from '@/components/settings/FieldEditor';
 import { LabelEditor } from '@/components/settings/LabelEditor';
 import { CapabilityToggle } from '@/components/settings/CapabilityToggle';
 import { PluginStore } from '@/components/settings/PluginStore';
-import { IntegrationSettings } from '@/components/settings/IntegrationSettings';
 import { ObjectManager } from '@/components/settings/ObjectManager';
 import { SetupAuditTrail } from '@/components/settings/SetupAuditTrail';
 import { LayoutBuilder } from '@/components/settings/LayoutBuilder';
@@ -108,7 +107,9 @@ export const settingsPluginsRoute = createRoute({
 export const settingsIntegrationsRoute = createRoute({
   getParentRoute: () => settingsRoute,
   path: 'integrations',
-  component: IntegrationSettings,
+  beforeLoad: () => {
+    throw redirect({ to: '/integrations' });
+  },
 });
 
 export const settingsObjectsRoute = createRoute({

@@ -48,16 +48,12 @@ export class IntegrationController {
     @Param('provider') provider: string,
     @Body() body: Record<string, string>,
   ) {
-    // Separate credential fields from any non-credential meta
     const result = await this.integrationService.configure(provider, body);
     if (result.isErr()) {
       if (result.error.code === 'PROVIDER_NOT_FOUND') {
         throw new NotFoundException(result.error);
       }
-      if (result.error.code === 'ENCRYPTION_FAILED') {
-        throw new BadRequestException(result.error);
-      }
-      throw new InternalServerErrorException(result.error);
+      throw new BadRequestException(result.error);
     }
     return result.value;
   }
@@ -71,7 +67,7 @@ export class IntegrationController {
       if (result.error.code === 'PROVIDER_NOT_FOUND') {
         throw new NotFoundException(result.error);
       }
-      if (result.error.code === 'NOT_CONNECTED' || result.error.code === 'DECRYPTION_FAILED') {
+      if (result.error.code === 'NOT_CONNECTED') {
         throw new BadRequestException(result.error);
       }
       throw new InternalServerErrorException(result.error);

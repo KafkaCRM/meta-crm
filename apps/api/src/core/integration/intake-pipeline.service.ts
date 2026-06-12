@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { ok, err } from 'neverthrow';
 import type { Result } from 'neverthrow';
+import { TenantRole } from '@meta-crm/types';
 import { TenantScopedPrismaService } from '../tenant/tenant-scoped-prisma.service';
 import type { RequestScope } from '../tenant/request-scope.interface';
 
@@ -40,6 +41,28 @@ export class IntakePipelineService {
   ) {}
 
   async processInboundEvent(params: {
+    connectionId: string;
+    providerEventId: string;
+    eventType: string;
+    rawPayload: Record<string, unknown>;
+    parsedFields: Record<string, string>;
+    tenantId: string;
+  }): Promise<Result<PipelineResult, PipelineError>> {
+    return this.cls.run(async () => {
+      const syntheticScope: RequestScope = {
+        tenant_id: params.tenantId,
+        user_id: 'system',
+        assignment_ids: [],
+        role: TenantRole.Member,
+        vertical_ids: [],
+      };
+      this.cls.set('scope', syntheticScope);
+
+      return this.runPipeline(params);
+    });
+  }
+
+  private async runPipeline(params: {
     connectionId: string;
     providerEventId: string;
     eventType: string;
