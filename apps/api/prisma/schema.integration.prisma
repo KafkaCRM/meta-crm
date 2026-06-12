@@ -1,3 +1,126 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// Phase 2 — New Integration Domain Models
+// Replaces the fragmented IntegrationConfig / TenantExtension / SecureCredential
+// sprawl with a single-source-of-truth connection + intake-routing model.
+// ═══════════════════════════════════════════════════════════════════════════
+
+model IntegrationConnection {
+  id                    String    @id @default(cuid())
+  tenant_id             String
+  provider              String
+  name                  String
+  status                String    @default("disconnected") // disconnected | connected | error
+  config_json           Json      @default("{}")
+  credentials_cipher_text String?
+  credentials_iv          String?
+  credentials_tag         String?
+  last_tested_at        DateTime?
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+
+  tenant             Tenant                   @relation(fields: [tenant_id], references: [id])
+  intakeRoute        IntegrationIntakeRoute?
+  inboundEvents      InboundEvent[]
+  syncCursors        IntegrationSyncCursor[]
+
+  @@unique([tenant_id, provider])
+  @@index([tenant_id, status])
+}
+
+model IntegrationIntakeRoute {
+  id                        String   @id @default(cuid())
+  connection_id             String
+  mode                      String   @default("create_lead") // create_lead | create_contact_opportunity
+  campaign_id               String?
+  branch_brand_assignment_id String?
+  vertical_id               String?
+  pipeline_id               String?
+  entry_stage_id            String?
+  owner_id                  String?
+  assignment_rule           Json     @default("{\"type\":\"fixed\"}")
+  duplicate_strategy        String   @default("skip") // skip | update | always_create
+  duplicate_match_fields    Json     @default("[\"email\",\"phone\"]")
+  is_default                Boolean  @default(false)
+  created_at                DateTime @default(now())
+  updated_at                DateTime @updatedAt
+
+  connection   IntegrationConnection @relation(fields: [connection_id], references: [id])
+  campaign     Campaign?             @relation(fields: [campaign_id], references: [id])
+  pipeline     PipelineDefinition?   @relation(fields: [pipeline_id], references: [id])
+  entryStage   PipelineStage?        @relation(fields: [entry_stage_id], references: [id])
+  owner        User?                 @relation(fields: [owner_id], references: [id])
+  fieldMappings IntegrationFieldMapping[]
+
+  @@unique([connection_id])
+  @@index([campaign_id])
+}
+
+model IntegrationFieldMapping {
+  id            String   @id @default(cuid())
+  route_id      String
+  source_field  String   // e.g. "ad_lead.email", "ad_lead.full_name"
+  target_entity String   // lead | party | case
+  target_field  String
+  transform     String?  // "direct" or expression (e.g. "split(' ',0)" for first name)
+  is_required   Boolean  @default(false)
+  created_at    DateTime @default(now())
+
+  route IntegrationIntakeRoute @relation(fields: [route_id], references: [id])
+
+  @@index([route_id])
+}
+
+model InboundEvent {
+  id                String    @id @default(cuid())
+  connection_id     String
+  provider_event_id String
+  event_type        String
+  raw_payload       Json
+  status            String    @default("received") // received | deduplicated | processing | routed | failed | dead_lettered
+  result_entity_type String?  // lead | party | case
+  result_entity_id  String?
+  error_message     String?
+  received_at       DateTime  @default(now())
+  processed_at      DateTime?
+
+  connection    IntegrationConnection       @relation(fields: [connection_id], references: [id])
+  deliveryAttempts IntegrationDeliveryAttempt[]
+
+  @@unique([connection_id, provider_event_id])
+  @@index([connection_id, status])
+  @@index([received_at])
+}
+
+model IntegrationDeliveryAttempt {
+  id               String   @id @default(cuid())
+  inbound_event_id String
+  attempt_number   Int
+  action           String
+  status           String   // success | failure | retry
+  error_detail     Json?
+  duration_ms      Int?
+  attempted_at     DateTime @default(now())
+
+  inboundEvent InboundEvent @relation(fields: [inbound_event_id], references: [id])
+
+  @@index([inbound_event_id])
+  @@index([status])
+}
+
+model IntegrationSyncCursor {
+  id            String   @id @default(cuid())
+  connection_id String
+  cursor_value  String
+  last_synced_at DateTime @default(now())
+  created_at    DateTime @default(now())
+
+  connection IntegrationConnection @relation(fields: [connection_id], references: [id])
+
+  @@unique([connection_id])
+}
+
+// ─── Legacy Models (Phase 1 — kept for backward compat) ──────────────────────
+
 model IntegrationConfig {
   id              String   @id @default(cuid())
   tenant_id       String

@@ -37,16 +37,27 @@ export class WhatsAppWebhookController {
     if (scope?.tenant_id) {
       await this.whatsappService.processIncoming(parsed, scope);
     } else {
+      // Bug fix: resolve tenant from phone_number_id in IntegrationConnection config_json
+      const phoneNumberId = parsed.metadata.phone_number_id;
+      const resolvedTenantId = phoneNumberId
+        ? await this.whatsappService.resolveTenantFromPhoneNumberId(phoneNumberId)
+        : null;
+
+      if (!resolvedTenantId) {
+        this.logger.error('WhatsApp webhook received but tenant could not be resolved — rejecting');
+        return { success: false };
+      }
+
       await this.cls.run(async () => {
-        const syntheticScope = {
-          tenant_id: '',
+        const resolvedScope = {
+          tenant_id: resolvedTenantId,
           user_id: '',
           assignment_ids: [],
           role: TenantRole.Member,
           vertical_ids: [],
         } as RequestScope;
-        this.cls.set('scope', syntheticScope);
-        await this.whatsappService.processIncoming(parsed, syntheticScope);
+        this.cls.set('scope', resolvedScope);
+        await this.whatsappService.processIncoming(parsed, resolvedScope);
       });
     }
 

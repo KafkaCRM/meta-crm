@@ -125,6 +125,7 @@ function AppSidebar() {
     { label: t('party.plural') ?? 'Contacts', path: '/parties', icon: Users },
     { label: 'Pipeline', path: '/cases', icon: Workflow },
     { label: 'Campaigns', path: '/campaigns', icon: Megaphone },
+    { label: 'Integrations', path: '/integrations', icon: Link2 },
     ...(isEnabled('capability/appointment')
       ? [{ label: 'Appointments', path: '/appointments', icon: Calendar }]
       : []),
@@ -1031,6 +1032,7 @@ import { ordersRoute } from './routes/orders';
 import { onboardingsRoute } from './routes/onboardings';
 import { campaignsRoute } from './routes/campaigns';
 import { leadsRoute } from './routes/leads';
+import { integrationsRoute } from './routes/integrations';
 
 /* ------------------------------------------------------------------ */
 /*  Route tree + router                                                */
@@ -1054,6 +1056,7 @@ export const routeTree = rootRoute.addChildren([
   ordersRoute,
   onboardingsRoute,
   campaignsRoute,
+  integrationsRoute,
   settingsRoute,
   settingsBranchesRoute,
   settingsBrandsRoute,

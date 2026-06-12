@@ -20,6 +20,7 @@ model Campaign {
   updated_at    DateTime  @updatedAt
 
   pipeline      PipelineDefinition @relation(fields: [pipeline_id], references: [id])
+  intakeRoutes  IntegrationIntakeRoute[]
 
   @@index([tenant_id, status])
   @@index([tenant_id, vertical_id])

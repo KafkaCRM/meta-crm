@@ -68,7 +68,6 @@ const NAV: SettingsNavSection[] = [
     items: [
       { id: 'capabilities', label: 'Capabilities', icon: Layers, permission: ['manage', 'Plugin'] },
       { id: 'plugins', label: 'Plugins', icon: Puzzle, permission: ['manage', 'Plugin'] },
-      { id: 'integrations', label: 'Integrations', icon: Link2, permission: ['manage', 'Integration'] },
     ],
   },
 ];

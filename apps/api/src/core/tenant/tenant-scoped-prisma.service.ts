@@ -30,7 +30,11 @@ export const TENANT_SCOPED_MODELS: readonly string[] = [
   // Phase 2 — Extension Registry
   'TenantExtension',
   'SecureCredential',
+  'IntegrationConnection',
   // NOTE: ExtensionRegistry is a GLOBAL catalog (no tenant_id) — intentionally excluded
+  // NOTE: IntegrationIntakeRoute, IntegrationFieldMapping, InboundEvent,
+  //       IntegrationDeliveryAttempt, IntegrationSyncCursor inherit tenant
+  //       scope through their parent IntegrationConnection — intentionally excluded
 ];
 
 

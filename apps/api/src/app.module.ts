@@ -16,6 +16,8 @@ import { PluginModule } from './core/plugin/plugin.module';
 import { PlatformModule } from './platform/platform.module';
 import { GenericWebhookModule } from './integrations/generic-webhook/generic-webhook.module';
 import { WhatsAppModule } from './integrations/whatsapp/whatsapp.module';
+import { FacebookModule } from './integrations/facebook/facebook.module';
+import { JustDialModule } from './integrations/justdial/justdial.module';
 import { EnrollmentModule } from './capabilities/enrollment/enrollment.module';
 import { CapabilityModule } from './core/capability/capability.module';
 import { AppointmentModule } from './capabilities/appointment/appointment.module';
@@ -69,6 +71,8 @@ const CAPABILITY_MODULES = [
     PlatformModule,
     GenericWebhookModule,
     WhatsAppModule,
+    FacebookModule,
+    JustDialModule,
     CapabilityModule,
     UserModule,
     BranchModule,

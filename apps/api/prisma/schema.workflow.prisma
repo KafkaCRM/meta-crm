@@ -5,11 +5,12 @@ model PipelineDefinition {
   entity_type String
   vertical_id String?
 
-  tenant     Tenant              @relation(fields: [tenant_id], references: [id])
-  stages     PipelineStage[]
-  transitions PipelineTransition[]
-  cases      Case[]
-  campaigns  Campaign[]
+  tenant        Tenant              @relation(fields: [tenant_id], references: [id])
+  stages        PipelineStage[]
+  transitions   PipelineTransition[]
+  cases         Case[]
+  campaigns     Campaign[]
+  intakeRoutes  IntegrationIntakeRoute[]
 }
 
 model PipelineStage {
@@ -22,6 +23,7 @@ model PipelineStage {
   terminal_outcome       String? // "won" | "lost" | null
 
   pipelineDefinition PipelineDefinition @relation(fields: [pipeline_definition_id], references: [id])
+  intakeRoutes       IntegrationIntakeRoute[]
 }
 
 model PipelineTransition {
@@ -49,4 +51,3 @@ model AutomationWorkflow {
 
   @@index([tenant_id, trigger_event])
 }
-

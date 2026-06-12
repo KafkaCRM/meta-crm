@@ -1,14 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { Result } from 'neverthrow';
 import { ok, err } from 'neverthrow';
-import { SecretsService } from '../../core/secrets/secrets.service';
+import { ConnectionService } from '../../core/integration/connection.service';
 import type { MessagingAdapter, AdapterError } from '../../core/communication/messaging-adapter.interface';
 
 @Injectable()
 export class WhatsAppAdapter implements MessagingAdapter {
   private readonly logger = new Logger(WhatsAppAdapter.name);
 
-  constructor(private readonly secrets: SecretsService) {}
+  constructor(private readonly connectionService: ConnectionService) {}
 
   async send(params: {
     to: string;
@@ -16,29 +16,30 @@ export class WhatsAppAdapter implements MessagingAdapter {
     tenant_id: string;
     metadata?: Record<string, unknown>;
   }): Promise<Result<{ message_id: string }, AdapterError>> {
-    const apiKeyRef = `secret/tenants/${params.tenant_id}/whatsapp/api_key`;
-    const phoneNumberIdRef = `secret/tenants/${params.tenant_id}/whatsapp/phone_number_id`;
+    const credsResult = await this.connectionService.getDecryptedCredentialsByProvider(
+      params.tenant_id,
+      'whatsapp',
+    );
 
-    const apiKeyResult = await this.secrets.get(apiKeyRef);
-    if (apiKeyResult.isErr()) {
+    if (credsResult.isErr()) {
       return err({
         code: 'ADAPTER_CREDENTIALS_MISSING',
         provider: 'whatsapp',
-        detail: `Failed to resolve API key: ${apiKeyResult.error.code}`,
+        detail: `Failed to resolve credentials: ${credsResult.error.message}`,
       });
     }
 
-    const phoneNumberIdResult = await this.secrets.get(phoneNumberIdRef);
-    if (phoneNumberIdResult.isErr()) {
+    const creds = credsResult.value;
+    const apiKey = creds.api_key;
+    const phoneNumberId = creds.phone_number_id;
+
+    if (!apiKey || !phoneNumberId) {
       return err({
         code: 'ADAPTER_CREDENTIALS_MISSING',
         provider: 'whatsapp',
-        detail: `Failed to resolve phone number ID: ${phoneNumberIdResult.error.code}`,
+        detail: 'Missing api_key or phone_number_id in stored credentials',
       });
     }
-
-    const apiKey = apiKeyResult.value;
-    const phoneNumberId = phoneNumberIdResult.value;
 
     const url = `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`;
 

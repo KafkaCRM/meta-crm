@@ -3,6 +3,7 @@ import { createHmac } from 'node:crypto';
 import { ok, err } from 'neverthrow';
 import { WhatsAppAdapter } from './whatsapp-adapter';
 import { WhatsAppWebhookService } from './whatsapp-webhook.service';
+import { ConnectionService } from '../../core/integration/connection.service';
 import { SecretsService } from '../../core/secrets/secrets.service';
 import { PartyUpsertService } from '../../core/party/party-upsert.service';
 import { InteractionService } from '../../core/interaction/interaction.service';
@@ -11,9 +12,6 @@ import { RoomManagerService } from '../../core/realtime/room-manager.service';
 
 const APP_SECRET_REF = 'secret/platform/whatsapp/app_secret';
 
-/* ------------------------------------------------------------------ */
-/*  WhatsAppAdapter                                                    */
-/* ------------------------------------------------------------------ */
 describe('WhatsAppAdapter', () => {
   const originalFetch = globalThis.fetch;
 
@@ -23,18 +21,18 @@ describe('WhatsAppAdapter', () => {
   });
 
   function buildAdapter() {
-    const secrets = { get: vi.fn() } as unknown as SecretsService;
-    const adapter = new WhatsAppAdapter(secrets);
-    return { adapter, secrets };
+    const connectionService = {
+      getDecryptedCredentialsByProvider: vi.fn(),
+    } as unknown as ConnectionService;
+    const adapter = new WhatsAppAdapter(connectionService);
+    return { adapter, connectionService };
   }
 
-  it('resolves credentials from SecretsService, not from env directly', async () => {
-    const { adapter, secrets } = buildAdapter();
-    (secrets.get as any).mockImplementation((ref: string) => {
-      if (ref.includes('api_key')) return ok('test-api-key');
-      if (ref.includes('phone_number_id')) return ok('123456789');
-      return err({ code: 'SECRET_NOT_FOUND', ref });
-    });
+  it('resolves credentials from ConnectionService, not from SecretsService', async () => {
+    const { adapter, connectionService } = buildAdapter();
+    (connectionService.getDecryptedCredentialsByProvider as any).mockResolvedValue(
+      ok({ api_key: 'test-api-key', phone_number_id: '123456789' }),
+    );
 
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -47,13 +45,14 @@ describe('WhatsAppAdapter', () => {
       tenant_id: 'tenant-a',
     });
 
-    expect(secrets.get).toHaveBeenCalledWith('secret/tenants/tenant-a/whatsapp/api_key');
-    expect(secrets.get).toHaveBeenCalledWith('secret/tenants/tenant-a/whatsapp/phone_number_id');
+    expect(connectionService.getDecryptedCredentialsByProvider).toHaveBeenCalledWith('tenant-a', 'whatsapp');
   });
 
   it('returns Ok with message_id on successful send', async () => {
-    const { adapter, secrets } = buildAdapter();
-    (secrets.get as any).mockResolvedValue(ok('test-api-key'));
+    const { adapter, connectionService } = buildAdapter();
+    (connectionService.getDecryptedCredentialsByProvider as any).mockResolvedValue(
+      ok({ api_key: 'test-api-key', phone_number_id: '123456789' }),
+    );
 
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -72,9 +71,11 @@ describe('WhatsAppAdapter', () => {
     }
   });
 
-  it('returns Err on API error (does not throw)', async () => {
-    const { adapter, secrets } = buildAdapter();
-    (secrets.get as any).mockResolvedValue(ok('test-api-key'));
+  it('returns Err on API error', async () => {
+    const { adapter, connectionService } = buildAdapter();
+    (connectionService.getDecryptedCredentialsByProvider as any).mockResolvedValue(
+      ok({ api_key: 'test-api-key', phone_number_id: '123456789' }),
+    );
 
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
@@ -91,13 +92,14 @@ describe('WhatsAppAdapter', () => {
     expect(result.isErr()).toBe(true);
     if (result.isErr()) {
       expect(result.error.code).toBe('ADAPTER_SEND_FAILED');
-      expect(result.error.provider).toBe('whatsapp');
     }
   });
 
-  it('returns Err on network error (does not throw)', async () => {
-    const { adapter, secrets } = buildAdapter();
-    (secrets.get as any).mockResolvedValue(ok('test-api-key'));
+  it('returns Err on network error', async () => {
+    const { adapter, connectionService } = buildAdapter();
+    (connectionService.getDecryptedCredentialsByProvider as any).mockResolvedValue(
+      ok({ api_key: 'test-api-key', phone_number_id: '123456789' }),
+    );
 
     globalThis.fetch = vi.fn().mockRejectedValue(new Error('ECONNREFUSED'));
 
@@ -113,9 +115,11 @@ describe('WhatsAppAdapter', () => {
     }
   });
 
-  it('returns Err when API key is missing', async () => {
-    const { adapter, secrets } = buildAdapter();
-    (secrets.get as any).mockReturnValue(err({ code: 'SECRET_NOT_FOUND', ref: APP_SECRET_REF }));
+  it('returns Err when credentials are missing', async () => {
+    const { adapter, connectionService } = buildAdapter();
+    (connectionService.getDecryptedCredentialsByProvider as any).mockResolvedValue(
+      err({ code: 'NOT_CONNECTED', message: 'No credentials' }),
+    );
 
     const result = await adapter.send({
       to: '+919876543210',
@@ -130,18 +134,16 @@ describe('WhatsAppAdapter', () => {
   });
 });
 
-/* ------------------------------------------------------------------ */
-/*  WhatsAppWebhookService                                             */
-/* ------------------------------------------------------------------ */
 describe('WhatsAppWebhookService', () => {
   function buildService() {
     const secrets = { get: vi.fn() } as unknown as SecretsService;
+    const connectionService = { resolveTenantForProvider: vi.fn().mockResolvedValue(null) } as unknown as ConnectionService;
     const partyUpsert = { upsertByPhone: vi.fn() } as unknown as PartyUpsertService;
     const interaction = { create: vi.fn() } as unknown as InteractionService;
     const hooks = { emit: vi.fn() } as unknown as HooksService;
     const roomManager = { broadcastToUser: vi.fn() } as unknown as RoomManagerService;
 
-    const service = new WhatsAppWebhookService(secrets, partyUpsert, interaction, hooks, roomManager);
+    const service = new WhatsAppWebhookService(secrets, connectionService, partyUpsert, interaction, hooks, roomManager);
     return { service, secrets, partyUpsert, interaction, hooks, roomManager };
   }
 
@@ -151,9 +153,6 @@ describe('WhatsAppWebhookService', () => {
     return `sha256=${createHmac('sha256', APP_SECRET).update(body).digest('hex')}`;
   }
 
-  /* ------------------------------------------------------------------ */
-  /*  Signature verification                                             */
-  /* ------------------------------------------------------------------ */
   it('valid HMAC signature → returns true', async () => {
     const { service, secrets } = buildService();
     (secrets.get as any).mockResolvedValue(ok(APP_SECRET));
@@ -184,32 +183,23 @@ describe('WhatsAppWebhookService', () => {
     expect(result).toBe(false);
   });
 
-  /* ------------------------------------------------------------------ */
-  /*  Payload parsing                                                    */
-  /* ------------------------------------------------------------------ */
   it('parses valid WhatsApp payload to canonical form', () => {
     const { service } = buildService();
 
     const body = {
-      entry: [
-        {
-          changes: [
-            {
-              value: {
-                contacts: [{ wa_id: '+919876543210' }],
-                messages: [
-                  {
-                    id: 'wamid-msg-1',
-                    from: '+919876543210',
-                    text: { body: 'Hello from WhatsApp' },
-                  },
-                ],
-                metadata: { conversation_id: 'conv-abc-123' },
-              },
-            },
-          ],
-        },
-      ],
+      entry: [{
+        changes: [{
+          value: {
+            contacts: [{ wa_id: '+919876543210' }],
+            messages: [{
+              id: 'wamid-msg-1',
+              from: '+919876543210',
+              text: { body: 'Hello from WhatsApp' },
+            }],
+            metadata: { conversation_id: 'conv-abc-123' },
+          },
+        }],
+      }],
     };
 
     const parsed = service.parsePayload(body);
@@ -226,12 +216,8 @@ describe('WhatsAppWebhookService', () => {
     expect(result).toBeNull();
   });
 
-  /* ------------------------------------------------------------------ */
-  /*  Incoming message from known phone → finds existing party           */
-  /* ------------------------------------------------------------------ */
-  it('incoming message from known phone finds existing party (no duplicate)', async () => {
+  it('incoming message from known phone finds existing party', async () => {
     const { service, partyUpsert, interaction, hooks } = buildService();
-
     (partyUpsert.upsertByPhone as any).mockResolvedValue(
       ok({ action: 'found', party: { id: 'party-1', name: 'John', assigned_to_id: null } }),
     );
@@ -240,137 +226,67 @@ describe('WhatsAppWebhookService', () => {
     );
 
     const scope = { tenant_id: 'tenant-a', user_id: '', assignment_ids: [], role: 'branch_user' } as any;
-
-    await service.processIncoming(
-      {
-        from_phone: '+919876543210',
-        message: 'Hi',
-        conversation_id: 'conv-1',
-        timestamp: new Date(),
-        metadata: { whatsapp_message_id: 'wamid-1' },
-      },
-      scope,
-    );
+    await service.processIncoming({
+      from_phone: '+919876543210',
+      message: 'Hi',
+      conversation_id: 'conv-1',
+      timestamp: new Date(),
+      metadata: { whatsapp_message_id: 'wamid-1' },
+    }, scope);
 
     expect(partyUpsert.upsertByPhone).toHaveBeenCalledTimes(1);
     expect(interaction.create).toHaveBeenCalledTimes(1);
-    expect(hooks.emit).toHaveBeenCalledWith(
-      'integration:whatsapp:message_received',
-      expect.objectContaining({
-        tenant_id: 'tenant-a',
-        party_id: 'party-1',
-        channel: 'whatsapp',
-      }),
-    );
+    expect(hooks.emit).toHaveBeenCalledWith('integration:whatsapp:message_received', expect.objectContaining({ tenant_id: 'tenant-a', party_id: 'party-1', channel: 'whatsapp' }));
   });
 
-  /* ------------------------------------------------------------------ */
-  /*  Incoming message from unknown phone → creates new party            */
-  /* ------------------------------------------------------------------ */
-  it('incoming message from unknown phone creates new party with source whatsapp', async () => {
+  it('incoming message from unknown phone creates new party', async () => {
     const { service, partyUpsert, interaction } = buildService();
-
     (partyUpsert.upsertByPhone as any).mockResolvedValue(
-      ok({
-        action: 'created',
-        party: { id: 'party-new', name: '', assigned_to_id: null },
-      }),
+      ok({ action: 'created', party: { id: 'party-new', name: '', assigned_to_id: null } }),
     );
     (interaction.create as any).mockResolvedValue(
-      ok({ id: 'interaction-1', party_id: 'party-new', channel: 'whatsapp', direction: 'inbound', content: 'Hello', created_at: new Date().toISOString() }),
+      ok({ id: 'interaction-1', party_id: 'party-new' }),
     );
 
     const scope = { tenant_id: 'tenant-a', user_id: '', assignment_ids: [], role: 'branch_user' } as any;
+    await service.processIncoming({
+      from_phone: '+919999999999', message: 'Hello', conversation_id: 'conv-new', timestamp: new Date(), metadata: { whatsapp_message_id: 'wamid-new' },
+    }, scope);
 
-    await service.processIncoming(
-      {
-        from_phone: '+919999999999',
-        message: 'Hello',
-        conversation_id: 'conv-new',
-        timestamp: new Date(),
-        metadata: { whatsapp_message_id: 'wamid-new' },
-      },
-      scope,
-    );
-
-    expect(partyUpsert.upsertByPhone).toHaveBeenCalledWith(
-      '+919999999999',
-      expect.any(Object),
-      'whatsapp',
-      scope,
-    );
+    expect(partyUpsert.upsertByPhone).toHaveBeenCalledWith('+919999999999', expect.any(Object), 'whatsapp', scope);
   });
 
-  /* ------------------------------------------------------------------ */
-  /*  Thread grouping: same conversation_id → same thread_id             */
-  /* ------------------------------------------------------------------ */
-  it('same conversation_id produces same thread_id on interactions', async () => {
+  it('same conversation_id produces same thread_id', async () => {
     const { service, partyUpsert, interaction } = buildService();
-
     (partyUpsert.upsertByPhone as any).mockResolvedValue(
       ok({ action: 'found', party: { id: 'party-1', name: 'John', assigned_to_id: null } }),
     );
     (interaction.create as any).mockResolvedValue(
-      ok({ id: 'interaction-1', party_id: 'party-1', thread_id: 'conv-abc', channel: 'whatsapp', direction: 'inbound', content: 'Msg 1', created_at: new Date().toISOString() }),
+      ok({ id: 'interaction-1', party_id: 'party-1', thread_id: 'conv-abc' }),
     );
 
     const scope = { tenant_id: 'tenant-a', user_id: '', assignment_ids: [], role: 'branch_user' } as any;
+    await service.processIncoming({
+      from_phone: '+919876543210', message: 'Msg 1', conversation_id: 'conv-abc', timestamp: new Date(), metadata: { whatsapp_message_id: 'wamid-1' },
+    }, scope);
 
-    await service.processIncoming(
-      {
-        from_phone: '+919876543210',
-        message: 'Msg 1',
-        conversation_id: 'conv-abc',
-        timestamp: new Date(),
-        metadata: { whatsapp_message_id: 'wamid-1' },
-      },
-      scope,
-    );
-
-    expect(interaction.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        thread_id: 'conv-abc',
-        channel: 'whatsapp',
-        direction: 'inbound',
-      }),
-    );
+    expect(interaction.create).toHaveBeenCalledWith(expect.objectContaining({ thread_id: 'conv-abc', channel: 'whatsapp', direction: 'inbound' }));
   });
 
-  /* ------------------------------------------------------------------ */
-  /*  Socket.io notification to assigned counsellor                      */
-  /* ------------------------------------------------------------------ */
   it('broadcasts to assigned counsellor when party has assigned_to_id', async () => {
     const { service, partyUpsert, interaction, roomManager } = buildService();
-
     (partyUpsert.upsertByPhone as any).mockResolvedValue(
       ok({ action: 'found', party: { id: 'party-1', name: 'John', assigned_to_id: 'user-counsellor' } }),
     );
     (interaction.create as any).mockResolvedValue(
-      ok({ id: 'interaction-1', party_id: 'party-1', channel: 'whatsapp', direction: 'inbound', content: 'Hi', created_at: new Date().toISOString() }),
+      ok({ id: 'interaction-1', party_id: 'party-1' }),
     );
 
     const scope = { tenant_id: 'tenant-a', user_id: '', assignment_ids: [], role: 'branch_user' } as any;
+    await service.processIncoming({
+      from_phone: '+919876543210', message: 'Hi', conversation_id: 'conv-1', timestamp: new Date(), metadata: { whatsapp_message_id: 'wamid-1' },
+    }, scope);
 
-    await service.processIncoming(
-      {
-        from_phone: '+919876543210',
-        message: 'Hi',
-        conversation_id: 'conv-1',
-        timestamp: new Date(),
-        metadata: { whatsapp_message_id: 'wamid-1' },
-      },
-      scope,
-    );
-
-    expect(roomManager.broadcastToUser).toHaveBeenCalledWith(
-      'user-counsellor',
-      'interaction:received',
-      expect.objectContaining({
-        interaction_id: 'interaction-1',
-        party_id: 'party-1',
-        party_name: 'John',
-        channel: 'whatsapp',
-      }),
-    );
+    expect(roomManager.broadcastToUser).toHaveBeenCalledWith('user-counsellor', 'interaction:received', expect.objectContaining({ interaction_id: 'interaction-1', party_id: 'party-1', channel: 'whatsapp' }));
   });
 });

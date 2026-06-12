@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { SecretsService } from '../../core/secrets/secrets.service';
+import { ConnectionService } from '../../core/integration/connection.service';
 import { PartyUpsertService } from '../../core/party/party-upsert.service';
 import { InteractionService } from '../../core/interaction/interaction.service';
 import { HooksService } from '../../core/hooks/hooks.service';
@@ -15,7 +16,7 @@ export interface WhatsAppIncomingMessage {
   message: string;
   conversation_id: string;
   timestamp: Date;
-  metadata: { whatsapp_message_id: string };
+  metadata: { whatsapp_message_id: string; phone_number_id?: string };
 }
 
 @Injectable()
@@ -24,6 +25,7 @@ export class WhatsAppWebhookService {
 
   constructor(
     private readonly secrets: SecretsService,
+    private readonly connectionService: ConnectionService,
     private readonly partyUpsert: PartyUpsertService,
     private readonly interaction: InteractionService,
     private readonly hooks: HooksService,
@@ -58,6 +60,9 @@ export class WhatsAppWebhookService {
     const value = changes['value'] as Record<string, unknown> | undefined;
     if (!value) return null;
 
+    const metadataField = value['metadata'] as Record<string, unknown> | undefined;
+    const phoneNumberId = metadataField?.['phone_number_id'] as string | undefined;
+
     const messages = value['messages'] as Array<Record<string, unknown>> | undefined;
     if (!messages || messages.length === 0) return null;
 
@@ -76,8 +81,14 @@ export class WhatsAppWebhookService {
       message: textBody,
       conversation_id: conversationId,
       timestamp: new Date(),
-      metadata: { whatsapp_message_id: whatsappMsgId ?? '' },
+      metadata: { whatsapp_message_id: whatsappMsgId ?? '', phone_number_id: phoneNumberId },
     };
+  }
+
+  async resolveTenantFromPhoneNumberId(phoneNumberId: string): Promise<string | null> {
+    return this.connectionService.resolveTenantForProvider('whatsapp', {
+      phone_number_id: phoneNumberId,
+    });
   }
 
   async processIncoming(

@@ -18,6 +18,7 @@ model Tenant {
   labelOverrides         LabelOverride[]
   pipelineDefinitions    PipelineDefinition[]
   integrationConfigs     IntegrationConfig[]
+  integrationConnections IntegrationConnection[]
   userVerticals          UserVertical[]
   webhookSubscriptions   WebhookSubscription[]
   tenantPlugins          TenantPlugin[]
@@ -87,6 +88,7 @@ model User {
   userRoles     UserRole[]
   parties       Party[]
   cases         Case[]       @relation("AssignedCases")
+  assignedIntakeRoutes IntegrationIntakeRoute[]
   appointments  Appointment[]
   leads         Lead[]
   userVerticals UserVertical[]
