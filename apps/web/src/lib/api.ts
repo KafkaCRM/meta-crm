@@ -78,10 +78,15 @@ export async function apiCall<T>(
   }
 
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
     ...(init?.headers as Record<string, string> ?? {}),
   };
+
+  const method = (init?.method ?? 'GET').toUpperCase();
+
+  if (method !== 'GET' && method !== 'DELETE') {
+    headers['Content-Type'] = 'application/json';
+  }
 
   const response = await fetch(`/api/v1${path}`, {
     ...init,

@@ -146,23 +146,7 @@ export class ConnectionService {
       where: { tenant_id: scope.tenant_id },
     });
 
-    const result: ConnectionDto[] = INTEGRATION_MANIFESTS.map((manifest) => {
-      const row = rows.find((r) => r.provider === manifest.provider);
-      return row ? this.toDto(row) : {
-        id: '',
-        tenant_id: scope.tenant_id,
-        provider: manifest.provider,
-        name: manifest.name,
-        status: 'disconnected',
-        config_json: {},
-        has_credentials: false,
-        last_tested_at: null,
-        created_at: '',
-        updated_at: '',
-      };
-    });
-
-    return ok(result);
+    return ok(rows.map((r) => this.toDto(r)));
   }
 
   async getConnection(id: string): Promise<Result<ConnectionDto, ConnectionError>> {
@@ -188,8 +172,9 @@ export class ConnectionService {
       return err({ code: 'TENANT_NOT_FOUND', message: 'Tenant context missing' });
     }
 
-    const row = await this.db.getClient().integrationConnection.findUnique({
-      where: { tenant_id_provider: { tenant_id: scope.tenant_id, provider } },
+    const row = await this.db.getClient().integrationConnection.findFirst({
+      where: { tenant_id: scope.tenant_id, provider },
+      orderBy: { created_at: 'desc' },
     });
 
     if (!row) {
@@ -228,16 +213,10 @@ export class ConnectionService {
         url_token: urlToken,
       };
 
-      const connection = await this.db.getClient().integrationConnection.upsert({
-        where: { tenant_id_provider: { tenant_id: tenantId, provider } },
-        create: {
+      const connection = await this.db.getClient().integrationConnection.create({
+        data: {
           tenant_id: tenantId,
           provider,
-          name: manifest.name,
-          status: 'connected',
-          config_json: mergedConfig as Prisma.InputJsonValue,
-        },
-        update: {
           name: manifest.name,
           status: 'connected',
           config_json: mergedConfig as Prisma.InputJsonValue,
@@ -263,9 +242,8 @@ export class ConnectionService {
       tag = encResult.value.tag;
     }
 
-    const connection = await this.db.getClient().integrationConnection.upsert({
-      where: { tenant_id_provider: { tenant_id: tenantId, provider } },
-      create: {
+    const connection = await this.db.getClient().integrationConnection.create({
+      data: {
         tenant_id: tenantId,
         provider,
         name: manifest.name,
@@ -274,14 +252,6 @@ export class ConnectionService {
         credentials_cipher_text: cipherText,
         credentials_iv: iv,
         credentials_tag: tag,
-      },
-      update: {
-        name: manifest.name,
-        status: 'connected',
-        config_json: configJson as Prisma.InputJsonValue,
-        credentials_cipher_text: cipherText ?? undefined,
-        credentials_iv: iv ?? undefined,
-        credentials_tag: tag ?? undefined,
       },
     });
 
@@ -326,19 +296,13 @@ export class ConnectionService {
       return err({ code: 'CONNECTION_NOT_FOUND', message: `Connection ${id} not found` });
     }
 
-    await this.db.getClient().integrationConnection.update({
-      where: { id },
-      data: {
-        status: 'disconnected',
-        credentials_cipher_text: null,
-        credentials_iv: null,
-        credentials_tag: null,
-      },
+    await this.db.getClient().integrationConnection.deleteMany({
+      where: { id, provider: connection.provider },
     });
 
-    this.logger.log(`Tenant ${scope.tenant_id} disconnected ${connection.provider}`);
+    this.logger.log(`Tenant ${scope.tenant_id} deleted connection ${connection.provider} (${id})`);
 
-    return ok({ message: `${connection.name} disconnected` });
+    return ok({ message: `${connection.name} deleted` });
   }
 
   // ═══════════════════════════════════════════════════════════════════

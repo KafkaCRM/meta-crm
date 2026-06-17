@@ -17,8 +17,6 @@ import {
   Check,
   Calendar,
   Mail,
-  Zap,
-  Globe,
 } from 'lucide-react';
 import { integrationsApi } from '@/api/integrations';
 import { campaignsApi, type CreateCampaignDto } from '@/api/campaigns';
@@ -33,26 +31,46 @@ import { cn } from '@/lib/utils';
 
 const NEEDS_FIELD_MAPPING = new Set(['facebook', 'web-to-lead', 'zapier']);
 
+const DEFAULT_FIELD_MAPPINGS: Partial<FieldMapping>[] = [
+  { source_field: 'name', target_entity: 'lead', target_field: 'name', is_required: true },
+  { source_field: 'email', target_entity: 'lead', target_field: 'email', is_required: false },
+  { source_field: 'phone', target_entity: 'lead', target_field: 'phone', is_required: false },
+];
+
 interface Props {
   connectionId: string;
   manifest: IntegrationManifest;
   onBack: () => void;
 }
 
-export function IntegrationDetail({ connectionId: _connectionId, manifest, onBack }: Props) {
+export function IntegrationDetail({ connectionId, manifest, onBack }: Props) {
   const { can } = usePermissions();
   const canManage = can('manage', 'Integration');
   const queryClient = useQueryClient();
 
-  const { data: listData, isLoading } = useQuery({
+  const { data: listData, isLoading: listLoading } = useQuery({
     queryKey: ['integrations', 'connections'],
     queryFn: () => integrationsApi.connections.list(),
     staleTime: 10_000,
+    enabled: !connectionId,
   });
 
-  const connection = (listData?.data ?? []).find((c) => c.provider === manifest.provider) ?? null;
+  const { data: singleConnection, isLoading: singleLoading } = useQuery({
+    queryKey: ['integrations', 'connection', connectionId],
+    queryFn: () => integrationsApi.connections.get(connectionId),
+    enabled: !!connectionId,
+  });
 
-  const refetch = () => queryClient.invalidateQueries({ queryKey: ['integrations', 'connections'] });
+  const connection = connectionId
+    ? (singleConnection ?? null)
+    : null;
+
+  const isLoading = connectionId ? singleLoading : listLoading;
+
+  const refetch = () => {
+    queryClient.invalidateQueries({ queryKey: ['integrations', 'connections'] });
+    if (connectionId) queryClient.invalidateQueries({ queryKey: ['integrations', 'connection', connectionId] });
+  };
 
   if (isLoading) {
     return (
@@ -113,15 +131,6 @@ function UrlGeneratorSetup({ connection, manifest, canManage, onChanged }: {
     ? `${window.location.origin}/api/v1/intake/${manifest.provider}/${urlToken}`
     : '';
 
-  const connectMutation = useMutation({
-    mutationFn: () => integrationsApi.connections.connect(manifest.provider, {}),
-    onSuccess: () => {
-      onChanged();
-      toast.success(`${manifest.name} enabled`);
-    },
-    onError: () => toast.error(`Failed to enable ${manifest.name}`),
-  });
-
   const disconnectMutation = useMutation({
     mutationFn: () => integrationsApi.connections.disconnect(connection!.id),
     onSuccess: () => {
@@ -131,17 +140,7 @@ function UrlGeneratorSetup({ connection, manifest, canManage, onChanged }: {
     onError: () => toast.error('Failed to disconnect'),
   });
 
-  const testMutation = useMutation({
-    mutationFn: () => integrationsApi.connections.test(connection!.id),
-    onSuccess: (result) => {
-      if (result.status === 'healthy') {
-        toast.success(result.message);
-      } else {
-        toast.error(result.message);
-      }
-    },
-    onError: (err: Error) => toast.error(err.message),
-  });
+  const [embedCopied, setEmbedCopied] = useState(false);
 
   const handleCopy = async () => {
     try {
@@ -149,6 +148,24 @@ function UrlGeneratorSetup({ connection, manifest, canManage, onChanged }: {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
       toast.success('URL copied');
+    } catch {
+      toast.error('Failed to copy');
+    }
+  };
+
+  const embedHtml = `<form action="${endpointUrl}" method="POST">
+  <input name="name" placeholder="Full Name" required />
+  <input name="email" placeholder="Email" required />
+  <input name="phone" placeholder="Phone" />
+  <button type="submit">Submit</button>
+</form>`;
+
+  const handleCopyEmbed = async () => {
+    try {
+      await navigator.clipboard.writeText(embedHtml);
+      setEmbedCopied(true);
+      setTimeout(() => setEmbedCopied(false), 2000);
+      toast.success('Embed code copied');
     } catch {
       toast.error('Failed to copy');
     }
@@ -197,7 +214,7 @@ function UrlGeneratorSetup({ connection, manifest, canManage, onChanged }: {
     }
   }, [existingRoute]);
 
-  const [fieldMappingRows, setFieldMappingRows] = useState<Partial<FieldMapping>[]>([]);
+  const [fieldMappingRows, setFieldMappingRows] = useState<Partial<FieldMapping>[]>(DEFAULT_FIELD_MAPPINGS);
 
   const { data: customFields = [] } = useQuery({
     queryKey: ['settings', 'field-definitions', 'lead'],
@@ -287,29 +304,31 @@ function UrlGeneratorSetup({ connection, manifest, canManage, onChanged }: {
     saveMutation.mutate();
   };
 
-  /* ── Not connected state ── */
+  /* ── Not connected state (setup mode) ── */
   if (!connection || connection.status !== 'connected') {
+    if (connectionId) {
+      return (
+        <Card className="bg-card border-border rounded-xl shadow-none">
+          <CardContent className="py-12 text-center">
+            <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
+            <p className="text-sm text-muted-foreground mt-3">Loading connection...</p>
+          </CardContent>
+        </Card>
+      );
+    }
+
     return (
       <Card className="bg-card border-border rounded-xl shadow-none">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base font-medium">Enable {manifest.name}</CardTitle>
-          <CardDescription className="text-xs">
-            No credentials needed — we'll generate a unique endpoint URL for you.
-          </CardDescription>
+          <CardTitle className="text-base font-medium">{manifest.name}</CardTitle>
+          <CardDescription className="text-xs">{manifest.description}</CardDescription>
         </CardHeader>
         <CardContent>
-          {canManage && (
-            <Button size="sm" onClick={() => connectMutation.mutate()} disabled={connectMutation.isPending}
-              className="h-8 rounded-lg text-xs font-semibold">
-              {connectMutation.isPending ? (
-                <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
-              ) : manifest.provider === 'web-to-lead' ? (
-                <Globe className="mr-1.5 h-3 w-3" />
-              ) : (
-                <Zap className="mr-1.5 h-3 w-3" />
-              )}
-              Enable {manifest.name}
-            </Button>
+          {canManage && manifest.url_generator && (
+            <div className="flex items-center">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Creating connection...</span>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -339,17 +358,10 @@ function UrlGeneratorSetup({ connection, manifest, canManage, onChanged }: {
             </div>
             <div className="flex gap-2 ml-auto">
               {canManage && (
-                <>
-                  <Button variant="outline" size="sm" disabled={testMutation.isPending} onClick={() => testMutation.mutate()}
-                    className="h-7 rounded-lg text-[11px]">
-                    {testMutation.isPending ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-1 h-3 w-3" />}
-                    Test
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => { if (window.confirm('Disconnect this integration?')) disconnectMutation.mutate(); }}
-                    className="h-7 rounded-lg text-[11px] text-red-600 border-red-100 hover:bg-red-50">
-                    <Trash2 className="mr-1 h-3 w-3" /> Disconnect
-                  </Button>
-                </>
+                <Button variant="outline" size="sm" onClick={() => { if (window.confirm('Disconnect this integration?')) disconnectMutation.mutate(); }}
+                  className="h-7 rounded-lg text-[11px] text-red-600 border-red-100 hover:bg-red-50">
+                  <Trash2 className="mr-1 h-3 w-3" /> Disconnect
+                </Button>
               )}
             </div>
           </div>
@@ -381,22 +393,18 @@ function UrlGeneratorSetup({ connection, manifest, canManage, onChanged }: {
           </div>
 
           {manifest.provider === 'web-to-lead' && (
-            <details className="border border-border rounded-lg overflow-hidden">
-              <summary className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none">
-                <ChevronRight size={12} className="summary-chevron" />
-                HTML form example
-              </summary>
-              <div className="px-3 pb-3">
-                <pre className="p-2.5 rounded-lg bg-muted border border-border text-[11px] font-mono overflow-x-auto whitespace-pre-wrap">
-{`<form action="${endpointUrl}" method="POST">
-  <input name="name" placeholder="Full Name" />
-  <input name="email" placeholder="Email" />
-  <input name="phone" placeholder="Phone" />
-  <button>Submit</button>
-</form>`}
-                </pre>
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-2 bg-muted/30 border-b border-border">
+                <span className="text-xs font-medium text-muted-foreground">Embed code</span>
+                <Button variant="outline" size="sm" onClick={handleCopyEmbed} className="h-7 rounded-md text-[11px]">
+                  {embedCopied ? <Check className="mr-1 h-3 w-3 text-emerald-600" /> : <Copy className="mr-1 h-3 w-3" />}
+                  {embedCopied ? 'Copied' : 'Copy code'}
+                </Button>
               </div>
-            </details>
+              <pre className="p-3 text-[11px] font-mono leading-relaxed overflow-x-auto whitespace-pre-wrap select-all">
+{embedHtml}
+              </pre>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -573,7 +581,7 @@ function OAuthPostConnect({ connection, manifest, canManage, onChanged }: {
   const existingRoute = routes[0];
   const [selectedCampaignId, setSelectedCampaignId] = useState('');
   const [showFieldMapping, setShowFieldMapping] = useState(true);
-  const [fieldMappingRows, setFieldMappingRows] = useState<Partial<FieldMapping>[]>([]);
+  const [fieldMappingRows, setFieldMappingRows] = useState<Partial<FieldMapping>[]>(DEFAULT_FIELD_MAPPINGS);
 
   useEffect(() => {
     if (existingRoute) {
@@ -763,7 +771,7 @@ function CredentialsSetup({ connection, manifest, canManage, onChanged }: {
   const existingRoute = routes[0];
   const [selectedCampaignId, setSelectedCampaignId] = useState('');
   const [showFieldMapping, setShowFieldMapping] = useState(false);
-  const [fieldMappingRows, setFieldMappingRows] = useState<Partial<FieldMapping>[]>([]);
+  const [fieldMappingRows, setFieldMappingRows] = useState<Partial<FieldMapping>[]>(DEFAULT_FIELD_MAPPINGS);
 
   useEffect(() => {
     if (existingRoute) {
@@ -1054,7 +1062,7 @@ function FieldMappingSection({ show, onToggle, rows, setRows, customFields, STAN
   manifestName: string;
 }) {
   const addRow = () => setRows([...rows, {
-    source_field: '', target_entity: 'lead', target_field: '', transform: 'direct', is_required: false,
+    source_field: '', target_entity: 'lead', target_field: '', is_required: false,
   }]);
   const updateRow = (i: number, update: Partial<FieldMapping>) => {
     const next = [...rows];
