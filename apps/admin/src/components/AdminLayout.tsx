@@ -139,22 +139,22 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                 <button
                   type="button"
                   onClick={() => setCmdkOpen(true)}
-                  className="flex items-center justify-between w-full bg-card hover:bg-muted border border-border rounded-lg px-2.5 py-1.5 transition-colors cursor-pointer text-left group"
+                  className="flex items-center justify-between w-full bg-muted hover:bg-accent border border-border rounded-xl px-3 py-2 transition-colors cursor-pointer text-left group"
                 >
                   <div className="flex items-center gap-2">
                     <Search size={12} className="text-muted-foreground group-hover:text-foreground flex-shrink-0" />
                     <span className="text-muted-foreground group-hover:text-foreground text-xs font-medium py-0.5">Quick Search...</span>
                   </div>
-                  <div className="flex items-center gap-0.5 bg-muted border border-border rounded px-1.5 py-0.5 text-[9px] text-muted-foreground font-semibold tracking-wider">
+                  <kbd className="flex items-center gap-0.5 bg-muted border border-border rounded-md px-1.5 py-0.5 text-[9px] text-muted-foreground font-semibold tracking-wider">
                     <span>Ctrl</span>
                     <span>K</span>
-                  </div>
+                  </kbd>
                 </button>
               </div>
  
               {/* Sidebar Quick Find (Fallback Sidebar Filter) */}
               <div className="px-2 mb-4">
-                <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-2.5 py-1">
+                <div className="flex items-center gap-2 bg-muted border border-border rounded-xl px-2.5 py-1">
                   <Search size={12} className="text-muted-foreground flex-shrink-0" />
                   <input 
                     type="text" 
@@ -186,13 +186,13 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                           <SidebarMenuButton asChild isActive={isActive}>
                             <Link
                               to={item.path}
-                              className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-all duration-150 ${
+                              className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-sm transition-all duration-150 ${
                                 isActive
-                                  ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-xs border border-sidebar-border/60'
+                                  ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-sm border border-sidebar-border/50'
                                   : 'text-sidebar-foreground hover:bg-sidebar-accent/55 hover:text-sidebar-accent-foreground'
                               }`}
                             >
-                              <item.icon size={15} strokeWidth={isActive ? 2 : 1.75} className={isActive ? 'text-fin-orange' : 'text-sidebar-foreground/65'} />
+                              <item.icon size={15} strokeWidth={isActive ? 2.5 : 1.75} className={isActive ? 'text-sidebar-accent-foreground' : 'text-sidebar-foreground/65'} />
                               <span className="flex-1">{item.label}</span>
                               {item.badge && (
                                 <Badge className="bg-fin-orange text-white text-[10px] px-1.5 py-0 rounded-md border-0">
@@ -243,7 +243,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           {/* Main content area */}
           <div className="flex-1 flex flex-col min-w-0">
             {/* Top bar */}
-            <header className="h-14 bg-background border-b border-border flex items-center gap-3 px-4 sticky top-0 z-10">
+            <header className="h-14 bg-background border-b border-border/60 flex items-center gap-3 px-6 sticky top-0 z-10">
               <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
               <Separator orientation="vertical" className="h-4 bg-border" />
               <h2 className="text-sm font-semibold text-foreground tracking-tight">{currentLabel}</h2>
@@ -258,7 +258,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             </header>
 
             {/* Page content */}
-            <main className="flex-1 p-6 overflow-auto">
+            <main className="flex-1 p-8 overflow-auto">
               {children}
             </main>
           </div>

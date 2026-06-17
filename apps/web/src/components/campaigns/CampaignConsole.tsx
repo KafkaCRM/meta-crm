@@ -24,7 +24,7 @@ import { Input } from '@/components/ui/input';
 import { usePermissions } from '@/hooks/usePermissions';
 import { CampaignFormModal } from './CampaignFormModal';
 import { VirtualTable } from '@/components/shared/VirtualTable';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LeadDetail } from '../leads/LeadDetail';
 import { cn } from '@/lib/utils';
 import dayjs from 'dayjs';
@@ -107,7 +107,7 @@ export function CampaignConsole() {
 
   // Client side filtering for campaign leads table
   const filteredLeads = useMemo(() => {
-    const list = campaignLeads?.items ?? [];
+    const list = campaignLeads?.data ?? [];
     let filtered = [...list];
 
     // Search Query (Name/Phone)
@@ -135,7 +135,7 @@ export function CampaignConsole() {
       {
         id: 'name',
         header: 'Name',
-        accessorFn: (row: any) => row.party?.name,
+        accessorFn: (row: any) => row.name,
         cell: (info: any) => (
           <span className="font-semibold text-foreground">{info.getValue()}</span>
         ),
@@ -143,41 +143,18 @@ export function CampaignConsole() {
       {
         id: 'phone',
         header: 'Phone',
-        accessorFn: (row: any) => row.party?.phone_raw,
+        accessorFn: (row: any) => row.phone,
         cell: (info: any) => (
           <span className="text-sm font-mono text-muted-foreground">{info.getValue()}</span>
         ),
       },
       {
-        id: 'dual_badge',
-        header: 'Dual-Badge Scope',
-        cell: () => {
-          const branchName = activeBranch?.name ?? 'Branch';
-          const brandName = activeBrand?.name ?? 'Brand';
-          return (
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold border border-indigo-200/60 bg-indigo-50/40 text-indigo-700 px-2 py-0.5 rounded-full uppercase">
-              {brandName} <span className="text-slate-300">|</span> {branchName}
-            </span>
-          );
-        },
-      },
-      {
-        id: 'tags',
-        header: 'Tags / Labels',
-        cell: ({ row }: { row: any }) => {
-          const item = row.original;
-          const tags = (item.party?.attributes as any)?.tags ?? [];
-          return (
-            <div className="flex gap-1 flex-wrap">
-              {tags.map((t: string) => (
-                <span key={t} className="text-[10px] px-1.5 py-0.2 rounded bg-muted border border-border text-muted-foreground font-semibold">
-                  {t}
-                </span>
-              ))}
-              {tags.length === 0 && <span className="text-[10px] italic text-slate-400">No tags</span>}
-            </div>
-          );
-        },
+        id: 'source',
+        header: 'Source',
+        accessorFn: (row: any) => row.source,
+        cell: (info: any) => (
+          <span className="text-xs text-muted-foreground capitalize">{info.getValue()}</span>
+        ),
       },
       {
         id: 'stage',
@@ -200,6 +177,14 @@ export function CampaignConsole() {
         },
       },
       {
+        id: 'assigned_to',
+        header: 'Assigned To',
+        accessorFn: (row: any) => row.assigned_to?.name,
+        cell: (info: any) => (
+          <span className="text-xs text-muted-foreground">{info.getValue() || '—'}</span>
+        ),
+      },
+      {
         id: 'created_at',
         header: 'Created',
         accessorFn: (row: any) => row.created_at,
@@ -210,7 +195,7 @@ export function CampaignConsole() {
         ),
       },
     ],
-    [activeBranch, activeBrand],
+    [],
   );
 
   const handleRowClick = (row: any) => {
@@ -460,24 +445,24 @@ export function CampaignConsole() {
         </Card>
 
         {/* Slide-out Preview Panel */}
-        <Sheet open={previewOpen} onOpenChange={setPreviewOpen}>
-          <SheetContent className="sm:max-w-[460px] overflow-y-auto">
-            <SheetHeader>
-              <SheetTitle>Campaign Case Details</SheetTitle>
-            </SheetHeader>
-            <div className="mt-6">
-              {previewId && (
-                <LeadDetail
-                  leadId={previewId}
-                  onClose={() => setPreviewOpen(false)}
-                  onChanged={() => {
-                    refetchLeads();
-                  }}
-                />
-              )}
-            </div>
-          </SheetContent>
-        </Sheet>
+<Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+  <DialogContent className="sm:max-w-[520px] max-h-[85vh] overflow-y-auto">
+    <DialogHeader>
+      <DialogTitle>Lead Details</DialogTitle>
+    </DialogHeader>
+    <div className="px-1">
+      {previewId && (
+        <LeadDetail
+          leadId={previewId}
+          onClose={() => setPreviewOpen(false)}
+          onChanged={() => {
+            refetchLeads();
+          }}
+        />
+      )}
+    </div>
+  </DialogContent>
+</Dialog>
       </div>
     );
   }

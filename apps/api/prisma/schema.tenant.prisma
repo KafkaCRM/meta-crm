@@ -88,7 +88,6 @@ model User {
   userRoles     UserRole[]
   parties       Party[]
   cases         Case[]       @relation("AssignedCases")
-  assignedIntakeRoutes IntegrationIntakeRoute[]
   appointments  Appointment[]
   leads         Lead[]
   userVerticals UserVertical[]

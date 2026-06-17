@@ -9,7 +9,13 @@ import { UpdateLeadDto } from './dto/update-lead.dto';
 import { ConvertLeadDto } from './dto/convert-lead.dto';
 import { PartySource } from '@meta-crm/types';
 
-export type LeadErrorCode = 'NOT_FOUND' | 'ALREADY_CONVERTED' | 'CONVERSION_FAILED' | 'VALIDATION_FAILED';
+export type LeadErrorCode =
+  | 'NOT_FOUND'
+  | 'ALREADY_CONVERTED'
+  | 'CONVERSION_FAILED'
+  | 'VALIDATION_FAILED'
+  | 'INVALID_TRANSITION'
+  | 'NO_PIPELINE';
 
 export interface LeadError {
   code: LeadErrorCode;
@@ -31,6 +37,8 @@ export class LeadService {
     source?: string;
     name?: string;
     assigned_to_id?: string;
+    pipeline_definition_id?: string;
+    stage?: string;
   }): Promise<Result<{ data: any[]; next_cursor?: string }, LeadError>> {
     const limit = Math.min(params.limit ?? 50, 100);
 
@@ -46,6 +54,8 @@ export class LeadService {
     }
     if (params.source) where.source = params.source;
     if (params.name) where.name = { contains: params.name, mode: 'insensitive' };
+    if (params.pipeline_definition_id) where.pipeline_definition_id = params.pipeline_definition_id;
+    if (params.stage) where.stage = params.stage;
     
     if (params.assigned_to_id) {
       if (params.assigned_to_id === 'unassigned' || params.assigned_to_id === 'null') {
@@ -60,11 +70,10 @@ export class LeadService {
       take: limit + 1,
       include: {
         assigned_to: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
+          select: { id: true, name: true, email: true },
+        },
+        party: {
+          select: { id: true, name: true, email: true, phone_raw: true },
         },
       },
       ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
@@ -74,39 +83,37 @@ export class LeadService {
     const hasMore = leads.length > limit;
     const rawData = hasMore ? leads.slice(0, limit) : leads;
 
-    // Check duplicate risks in database by phone match
     let dataWithFlags = rawData;
     if (rawData.length > 0) {
-      const phones = rawData.map(l => l.phone);
-      const normalizedPhones = phones.map(p => p.replace(/[^\d+]/g, ''));
+      try {
+        const phones = rawData.map(l => l.phone);
+        const normalizedPhones = phones.map(p => p.replace(/[^\d+]/g, ''));
 
-      // Check against existing canonical parties
-      const existingParties = await this.db.getClient().party.findMany({
-        where: {
-          phone_normalized: { in: normalizedPhones },
-          merge_status: { not: 'merged' },
-        },
-        select: {
-          phone_normalized: true,
-        },
-      });
+        const existingParties = await this.db.getClient().party.findMany({
+          where: {
+            phone_normalized: { in: normalizedPhones },
+            merge_status: { not: 'merged' },
+          },
+          select: { phone_normalized: true },
+        });
 
-      const duplicatePartyPhones = new Set(existingParties.map(p => p.phone_normalized));
+        const duplicatePartyPhones = new Set(existingParties.map(p => p.phone_normalized));
 
-      dataWithFlags = rawData.map(lead => {
-        const normalized = lead.phone.replace(/[^\d+]/g, '');
-        const hasPartyMatch = duplicatePartyPhones.has(normalized);
+        dataWithFlags = rawData.map(lead => {
+          const normalized = lead.phone.replace(/[^\d+]/g, '');
+          const hasPartyMatch = duplicatePartyPhones.has(normalized);
+          const digits = lead.phone.replace(/\D/g, '');
+          const phoneValid = digits.length >= 10 && digits.length <= 15;
 
-        // Simple length check: Indian numbers should have 10+ digits raw
-        const digits = lead.phone.replace(/\D/g, '');
-        const phoneValid = digits.length >= 10 && digits.length <= 15;
-
-        return {
-          ...lead,
-          duplicate_risk: hasPartyMatch,
-          phone_valid: phoneValid,
-        };
-      });
+          return {
+            ...lead,
+            duplicate_risk: hasPartyMatch,
+            phone_valid: phoneValid,
+          };
+        });
+      } catch {
+        // Gracefully degrade
+      }
     }
 
     return ok({
@@ -118,6 +125,21 @@ export class LeadService {
   async findOne(id: string): Promise<Result<any, LeadError>> {
     const lead = await this.db.getClient().lead.findUnique({
       where: { id },
+      include: {
+        assigned_to: {
+          select: { id: true, name: true, email: true },
+        },
+        party: {
+          select: { id: true, name: true, email: true, phone_raw: true, source: true },
+        },
+        pipelineDefinition: {
+          select: { id: true, name: true, stages: { orderBy: { order: 'asc' } } },
+        },
+        events: {
+          orderBy: { occurred_at: 'desc' },
+          take: 50,
+        },
+      },
     });
 
     if (!lead) {
@@ -125,6 +147,57 @@ export class LeadService {
     }
 
     return ok(lead);
+  }
+
+  async findByStage(pipelineDefinitionId: string): Promise<Result<any, LeadError>> {
+    const scope = this.cls.get<RequestScope>('scope');
+    if (!scope || !scope.tenant_id) {
+      return err({ code: 'VALIDATION_FAILED', message: 'Tenant context missing' });
+    }
+
+    const workflow = await this.db.getClient().pipelineDefinition.findFirst({
+      where: { id: pipelineDefinitionId },
+      include: { stages: { orderBy: { order: 'asc' } } },
+    });
+
+    if (!workflow) {
+      return err({ code: 'NO_PIPELINE', message: 'Pipeline not found' });
+    }
+
+    const stageIds = workflow.stages.map((s) => s.id);
+    const leads = await this.db.getClient().lead.findMany({
+      where: {
+        pipeline_definition_id: pipelineDefinitionId,
+        stage: { in: stageIds },
+      },
+      include: {
+        assigned_to: {
+          select: { id: true, name: true, email: true },
+        },
+        party: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+      orderBy: { created_at: 'desc' },
+    });
+
+    const leadsByStage: Record<string, any[]> = {};
+    for (const stage of workflow.stages) {
+      leadsByStage[stage.id] = [];
+    }
+
+    for (const lead of leads) {
+      const stageKey = lead.stage;
+      if (stageKey) {
+        const bucket = leadsByStage[stageKey];
+        if (bucket) bucket.push(lead);
+      }
+    }
+
+    return ok({
+      stages: workflow.stages,
+      leads: leadsByStage,
+    });
   }
 
   async create(dto: CreateLeadDto): Promise<Result<any, LeadError>> {
@@ -145,6 +218,14 @@ export class LeadService {
         assigned_to_id: dto.assigned_to_id,
         attributes: (dto.attributes ?? {}) as any,
         tenant_id: scope.tenant_id,
+        events: {
+          create: {
+            event_type: 'lead_created',
+            actor_id: scope.user_id ?? 'system',
+            tenant_id: scope.tenant_id,
+            metadata: { source: dto.source, campaign_id: dto.campaign_id } as any,
+          },
+        },
       },
     });
 
@@ -164,7 +245,6 @@ export class LeadService {
         ...(dto.email !== undefined && { email: dto.email }),
         ...(dto.phone !== undefined && { phone: dto.phone }),
         ...(dto.source !== undefined && { source: dto.source }),
-        ...(dto.status !== undefined && { status: dto.status }),
         ...(dto.notes !== undefined && { notes: dto.notes }),
         ...(dto.campaign_id !== undefined && { campaign_id: dto.campaign_id }),
         ...(dto.assigned_to_id !== undefined && { assigned_to_id: dto.assigned_to_id }),
@@ -181,14 +261,129 @@ export class LeadService {
       return err({ code: 'NOT_FOUND', message: `Lead not found with ID: ${id}` });
     }
 
-    await this.db.getClient().lead.delete({
-      where: { id },
-    });
+    await this.db.getClient().lead.delete({ where: { id } });
 
     return ok(undefined);
   }
 
-  async convert(id: string, dto: ConvertLeadDto): Promise<Result<{ party_id: string; case_id?: string }, LeadError>> {
+  async addToPipeline(
+    id: string,
+    pipelineDefinitionId: string,
+  ): Promise<Result<any, LeadError>> {
+    const scope = this.cls.get<RequestScope>('scope');
+    const lead = await this.db.getClient().lead.findUnique({ where: { id } });
+    if (!lead) {
+      return err({ code: 'NOT_FOUND', message: `Lead not found with ID: ${id}` });
+    }
+
+    const pipeline = await this.db.getClient().pipelineDefinition.findUnique({
+      where: { id: pipelineDefinitionId },
+      include: { stages: { orderBy: { order: 'asc' }, take: 1 } },
+    });
+    if (!pipeline) {
+      return err({ code: 'NO_PIPELINE', message: 'Pipeline definition not found' });
+    }
+
+    const firstStage = pipeline.stages[0]?.id;
+
+    const updated = await this.db.getClient().lead.update({
+      where: { id },
+      data: {
+        pipeline_definition_id: pipelineDefinitionId,
+        stage: firstStage,
+        status: lead.status === 'new' ? 'active' : lead.status,
+        events: {
+          create: {
+            event_type: 'stage_changed',
+            from_stage: null,
+            to_stage: firstStage,
+            actor_id: scope?.user_id ?? 'system',
+            tenant_id: lead.tenant_id,
+            metadata: { pipeline_name: pipeline.name } as any,
+          },
+        },
+      },
+      include: {
+        pipelineDefinition: {
+          select: { id: true, name: true, stages: { orderBy: { order: 'asc' } } },
+        },
+      },
+    });
+
+    return ok(updated);
+  }
+
+  async transitionStage(
+    id: string,
+    toStageId: string,
+  ): Promise<Result<any, LeadError>> {
+    const scope = this.cls.get<RequestScope>('scope');
+    const lead = await this.db.getClient().lead.findUnique({ where: { id } });
+    if (!lead) {
+      return err({ code: 'NOT_FOUND', message: `Lead not found with ID: ${id}` });
+    }
+
+    if (!lead.pipeline_definition_id) {
+      return err({ code: 'NO_PIPELINE', message: 'Lead is not assigned to a pipeline' });
+    }
+
+    const stage = await this.db.getClient().pipelineStage.findUnique({
+      where: { id: toStageId },
+    });
+    if (!stage || stage.pipeline_definition_id !== lead.pipeline_definition_id) {
+      return err({ code: 'INVALID_TRANSITION', message: 'Invalid stage for this pipeline' });
+    }
+
+    const updated = await this.db.getClient().lead.update({
+      where: { id },
+      data: {
+        stage: toStageId,
+        events: {
+          create: {
+            event_type: 'stage_changed',
+            from_stage: lead.stage,
+            to_stage: toStageId,
+            actor_id: scope?.user_id ?? 'system',
+            tenant_id: lead.tenant_id,
+            metadata: {} as any,
+          },
+        },
+      },
+      include: {
+        pipelineDefinition: {
+          select: { id: true, name: true, stages: { orderBy: { order: 'asc' } } },
+        },
+      },
+    });
+
+    return ok(updated);
+  }
+
+  async findEvents(
+    leadId: string,
+    params: { cursor?: string; limit?: number },
+  ): Promise<Result<{ data: any[]; next_cursor?: string }, LeadError>> {
+    const limit = Math.min(params.limit ?? 50, 100);
+    const events = await this.db.getClient().leadEvent.findMany({
+      where: { lead_id: leadId },
+      take: limit + 1,
+      orderBy: { occurred_at: 'desc' },
+      ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
+    });
+
+    const hasMore = events.length > limit;
+    const data = hasMore ? events.slice(0, limit) : events;
+
+    return ok({
+      data,
+      ...(hasMore ? { next_cursor: data[data.length - 1]?.id } : {}),
+    });
+  }
+
+  async convert(
+    id: string,
+    dto: ConvertLeadDto,
+  ): Promise<Result<{ party_id: string }, LeadError>> {
     const scope = this.cls.get<RequestScope>('scope');
     if (!scope) {
       return err({ code: 'VALIDATION_FAILED', message: 'User context missing' });
@@ -200,7 +395,7 @@ export class LeadService {
     }
 
     if (lead.status === 'converted') {
-      return err({ code: 'ALREADY_CONVERTED', message: `Lead with ID: ${id} has already been converted` });
+      return err({ code: 'ALREADY_CONVERTED', message: 'This lead has already been converted' });
     }
 
     try {
@@ -212,7 +407,7 @@ export class LeadService {
 
         const party = await tx.party.create({
           data: {
-            tenant_id: scope.tenant_id,
+            tenant_id: scope!.tenant_id,
             branch_brand_assignment_id: dto.branch_brand_assignment_id,
             type: 'individual',
             name: lead.name,
@@ -225,53 +420,24 @@ export class LeadService {
           },
         });
 
-        let createdCaseId: string | undefined = undefined;
-        if (dto.create_case !== false) {
-          let workflow = await tx.pipelineDefinition.findFirst({
-            where: { id: dto.pipeline_definition_id || undefined },
-          });
-          if (!workflow) {
-            workflow = await tx.pipelineDefinition.findFirst();
-          }
-          if (!workflow) {
-            throw new Error('No workflow definition found to associate with the case');
-          }
-
-          const stages = await tx.pipelineStage.findMany({
-            where: { pipeline_definition_id: workflow.id },
-            orderBy: { order: 'asc' },
-          });
-          const defaultStage = stages[0]?.id || '';
-
-          const c = await tx.case.create({
-            data: {
-              tenant_id: scope.tenant_id,
-              branch_brand_assignment_id: dto.branch_brand_assignment_id,
-              party_id: party.id,
-              type: dto.case_type ?? 'sales',
-              title: dto.case_title ?? `Opportunity: ${lead.name}`,
-              stage: dto.case_stage && dto.case_stage !== 'new' ? dto.case_stage : defaultStage,
-              pipeline_definition_id: workflow.id,
-              assigned_to_id: dto.assigned_to_id ?? scope.user_id,
-              vertical_id: dto.vertical_id ?? workflow.vertical_id,
-              campaign_id: dto.campaign_id ?? lead.campaign_id,
-              attributes: {},
-            },
-          });
-          createdCaseId = c.id;
-        }
-
         await tx.lead.update({
           where: { id },
           data: {
             status: 'converted',
-            converted_party_id: party.id,
-            converted_case_id: createdCaseId,
-            campaign_id: dto.campaign_id ?? lead.campaign_id,
+            party_id: party.id,
+            events: {
+              create: {
+                event_type: 'promoted',
+                to_stage: lead.stage,
+                actor_id: scope!.user_id,
+                tenant_id: scope!.tenant_id,
+                metadata: { party_id: party.id } as any,
+              },
+            },
           },
         });
 
-        return { party_id: party.id, case_id: createdCaseId };
+        return { party_id: party.id };
       });
 
       return ok(result);

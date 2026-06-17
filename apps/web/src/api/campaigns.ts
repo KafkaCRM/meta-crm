@@ -112,7 +112,7 @@ export const campaignsApi = {
     if (params.cursor) qs.set('cursor', params.cursor);
     if (params.limit) qs.set('limit', String(params.limit));
     const query = qs.toString();
-    return apiCall<{ items: any[]; next_cursor: string | null }>(`/campaigns/${id}/leads${query ? `?${query}` : ''}`);
+    return apiCall<{ data: any[]; next_cursor?: string }>(`/campaigns/${id}/leads${query ? `?${query}` : ''}`);
   },
 
   getAggregateStats: () => apiCall<CampaignsStatsSummary>('/campaigns/stats'),

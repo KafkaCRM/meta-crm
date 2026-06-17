@@ -112,20 +112,17 @@ describe('LeadService', () => {
   });
 
   describe('convert', () => {
-    it('successfully converts lead to party and case in transaction', async () => {
+    it('successfully converts lead to party', async () => {
       const client = db.getClient();
       (client.lead.findUnique as any).mockResolvedValue(LEAD);
 
       const result = await svc.convert('lead-1', {
         branch_brand_assignment_id: 'assign-1',
-        create_case: true,
-        case_title: 'Custom Opportunity',
       });
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         expect(result.value.party_id).toBe('party-1');
-        expect(result.value.case_id).toBe('case-1');
       }
     });
 

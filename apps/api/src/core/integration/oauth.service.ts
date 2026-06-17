@@ -37,14 +37,14 @@ export class OAuthService {
     return configs[provider] ?? null;
   }
 
-  getAuthorizationUrl(provider: OAuthProvider, tenantId: string, redirectUri: string): string | null {
+  getAuthorizationUrl(provider: OAuthProvider, tenantId: string, redirectUri: string, frontendRedirect?: string): string | null {
     const config = this.getProviderConfig(provider);
     if (!config || !config.clientId) {
       this.logger.warn(`OAuth not configured for provider: ${provider}`);
       return null;
     }
 
-    const state = Buffer.from(JSON.stringify({ tenant_id: tenantId, provider })).toString('base64url');
+    const state = Buffer.from(JSON.stringify({ tenant_id: tenantId, provider, redirect_to: frontendRedirect ?? '' })).toString('base64url');
     const params = new URLSearchParams({
       client_id: config.clientId,
       redirect_uri: redirectUri,
@@ -61,16 +61,18 @@ export class OAuthService {
     code: string,
     state: string,
     redirectUri: string,
-  ): Promise<{ success: boolean; message: string }> {
+  ): Promise<{ success: boolean; message: string; redirect_to?: string }> {
     const config = this.getProviderConfig(provider);
     if (!config || !config.clientId || !config.clientSecret) {
       return { success: false, message: `OAuth not configured for ${provider}` };
     }
 
     let tenantId: string;
+    let frontendRedirect = '';
     try {
       const stateData = JSON.parse(Buffer.from(state, 'base64url').toString());
       tenantId = stateData.tenant_id;
+      frontendRedirect = stateData.redirect_to ?? '';
       if (stateData.provider !== provider) {
         return { success: false, message: 'OAuth state mismatch' };
       }
@@ -147,6 +149,6 @@ export class OAuthService {
     }
 
     this.logger.log(`OAuth connected for tenant ${tenantId} with ${provider}`);
-    return { success: true, message: `${provider} connected via OAuth` };
+    return { success: true, message: `${provider} connected via OAuth`, redirect_to: frontendRedirect };
   }
 }

@@ -24,6 +24,7 @@ export interface IntegrationDto {
   description: string;
   icon: string;
   credential_fields: string[];
+  oauth_supported?: boolean;
   status: 'connected' | 'disconnected' | 'error';
   has_credentials: boolean;
   configured_at?: string;
@@ -71,6 +72,7 @@ export class IntegrationService {
         description: manifest.description,
         icon: manifest.icon,
         credential_fields: manifest.credential_fields,
+        oauth_supported: (manifest as any).oauth_supported,
         status: connection?.status === 'connected' ? 'connected' : 'disconnected',
         has_credentials: !!(connection?.credentials_cipher_text),
         configured_at: connection?.updated_at?.toISOString(),

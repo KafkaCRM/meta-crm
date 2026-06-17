@@ -2,13 +2,9 @@ import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { leadsApi } from '@/api/leads';
 import { settingsApi } from '@/api/settings';
-import { campaignsApi } from '@/api/campaigns';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -33,13 +29,6 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
 
   // Form State
   const [assignmentId, setAssignmentId] = useState('');
-  const [createCase, setCreateCase] = useState(true);
-  const [caseTitle, setCaseTitle] = useState('');
-  const [caseType, setCaseType] = useState('sales');
-  const [pipelineDefinitionId, setPipelineDefinitionId] = useState('');
-  const [caseStage, setCaseStage] = useState('');
-  const [campaignId, setCampaignId] = useState('');
-
   const { data: lead, isLoading: leadLoading } = useQuery({
     queryKey: ['lead', leadId],
     queryFn: () => leadsApi.get(leadId),
@@ -60,18 +49,6 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
     queryFn: () => settingsApi.brands.list(),
   });
 
-  const { data: defaultWorkflow } = useQuery({
-    queryKey: ['settings', 'pipelines', 'default'],
-    queryFn: () => settingsApi.pipelines.getDefault(),
-    staleTime: 60_000,
-  });
-
-  const { data: campaigns = [] } = useQuery({
-    queryKey: ['campaigns', 'list-active'],
-    queryFn: () => campaignsApi.list({ status: 'active' }),
-    staleTime: 60_000,
-  });
-
   // Map assignment options
   const assignmentOptions = useMemo(() => {
     return assignments.map((ass) => {
@@ -84,25 +61,7 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
     });
   }, [assignments, branches, brands]);
 
-  // Set default case title, campaign, workflow, and stage when loaded
-  useMemo(() => {
-    if (lead) {
-      setCaseTitle(`Opportunity: ${lead.name}`);
-      if (lead.campaign_id) {
-        setCampaignId(lead.campaign_id);
-      }
-    }
-  }, [lead]);
-
-  useMemo(() => {
-    if (defaultWorkflow) {
-      setPipelineDefinitionId(defaultWorkflow.id);
-      if (defaultWorkflow.stages && defaultWorkflow.stages.length > 0) {
-        setCaseStage(defaultWorkflow.stages[0].id);
-      }
-    }
-  }, [defaultWorkflow]);
-
+  // Set default assignment from first option
   useMemo(() => {
     if (assignments.length > 0 && !assignmentId) {
       setAssignmentId(assignments[0]?.id || '');
@@ -110,16 +69,16 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
   }, [assignments, assignmentId]);
 
   const convertMutation = useMutation({
-    mutationFn: (data: any) => leadsApi.convert(leadId, data),
-    onSuccess: (res) => {
-      toast.success('Lead converted successfully');
+    mutationFn: (data: { branch_brand_assignment_id: string }) => leadsApi.convert(leadId, data),
+    onSuccess: () => {
+      toast.success('Lead promoted to Contact!');
       queryClient.invalidateQueries({ queryKey: ['lead', leadId] });
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       if (onChanged) onChanged();
       setShowConvertForm(false);
     },
     onError: (err: any) => {
-      toast.error(err?.message ?? 'Failed to convert lead');
+      toast.error(err?.message ?? 'Failed to promote lead');
     },
   });
 
@@ -131,12 +90,6 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
     }
     convertMutation.mutate({
       branch_brand_assignment_id: assignmentId,
-      create_case: createCase,
-      case_title: createCase ? caseTitle : undefined,
-      case_type: createCase ? caseType : undefined,
-      pipeline_definition_id: createCase && pipelineDefinitionId ? pipelineDefinitionId : undefined,
-      case_stage: createCase && caseStage ? caseStage : undefined,
-      campaign_id: campaignId || undefined,
     });
   };
 
@@ -186,12 +139,6 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
                   }
                   convertMutation.mutate({
                     branch_brand_assignment_id: defaultAssignmentId,
-                    create_case: true,
-                    case_title: `Opportunity: ${lead.name}`,
-                    case_type: 'sales',
-                    pipeline_definition_id: defaultWorkflow?.id,
-                    case_stage: defaultWorkflow?.stages?.[0]?.id,
-                    campaign_id: lead.campaign_id || undefined,
                   });
                 }}
                 disabled={convertMutation.isPending}
@@ -261,42 +208,30 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
         <div className="bg-emerald-50/50 border border-emerald-100 p-4 rounded-xl space-y-3">
           <div className="flex items-center gap-2 text-emerald-800">
             <UserCheck size={16} />
-            <span className="text-xs font-bold uppercase tracking-wide">Successfully Converted</span>
+            <span className="text-xs font-bold uppercase tracking-wide">Promoted to Contact</span>
           </div>
           <p className="text-xs text-emerald-700">
-            This prospect has been promoted to a primary Contact and Deal:
+            This lead has been promoted to a Contact in your workspace.
           </p>
-          <div className="flex flex-col gap-2">
-            {lead.converted_party_id && (
-              <Link
-                to={`/parties`}
-                className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1.5"
-                onClick={onClose}
-              >
-                <ArrowRight size={12} />
-                View Converted Contact ({lead.name})
-              </Link>
-            )}
-            {lead.converted_case_id && (
-              <Link
-                to={`/cases`}
-                className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1.5"
-                onClick={onClose}
-              >
-                <ArrowRight size={12} />
-                View Converted Case/Opportunity
-              </Link>
-            )}
-          </div>
+          {lead.party_id && (
+            <Link
+              to={`/parties/$id`}
+              params={{ id: lead.party_id }}
+              className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1.5"
+              onClick={onClose}
+            >
+              <ArrowRight size={12} />
+              View Contact Profile
+            </Link>
+          )}
         </div>
       )}
 
       {/* Inline Convert Form */}
       {showConvertForm && (
         <form onSubmit={handleConvert} className="bg-background p-4 rounded-xl border border-border shadow-xs space-y-4 pt-4">
-          <h3 className="text-sm font-bold text-foreground">Lead Conversion Settings</h3>
+          <h3 className="text-sm font-bold text-foreground">Promote to Contact</h3>
 
-          {/* Branch / Brand Assignment selection */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-foreground uppercase tracking-wider">
               Assign to Branch / Brand Office
@@ -315,82 +250,6 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
             </Select>
           </div>
 
-          {/* Case Toggle */}
-          <div className="flex items-center gap-2 pt-1.5">
-            <Checkbox
-              id="create_case"
-              checked={createCase}
-              onCheckedChange={(checked) => setCreateCase(!!checked)}
-            />
-            <label htmlFor="create_case" className="text-xs font-semibold text-foreground select-none cursor-pointer">
-              Create an Opportunity (Case) for this client
-            </label>
-          </div>
-
-          {/* Optional Opportunity Config */}
-          {createCase && (
-            <div className="space-y-3 pl-6 border-l border-border/80 ml-2 pt-1.5">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground uppercase tracking-wider">Opportunity Title</Label>
-                <Input
-                  value={caseTitle}
-                  onChange={(e) => setCaseTitle(e.target.value)}
-                  className="h-9 border-border bg-card"
-                  placeholder="e.g. Sales Opportunity: John"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground uppercase tracking-wider">Opportunity Type</Label>
-                <Select value={caseType} onValueChange={setCaseType}>
-                  <SelectTrigger className="h-9 border-border bg-card">
-                    <SelectValue placeholder="Select type..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sales">Sales Opportunity</SelectItem>
-                    <SelectItem value="service">Service Ticket</SelectItem>
-                    <SelectItem value="onboarding">Customer Onboarding</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {defaultWorkflow && defaultWorkflow.stages && defaultWorkflow.stages.length > 0 && (
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground uppercase tracking-wider">Target Pipeline Stage</Label>
-                  <Select value={caseStage} onValueChange={setCaseStage}>
-                    <SelectTrigger className="h-9 border-border bg-card">
-                      <SelectValue placeholder="Select stage..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {defaultWorkflow.stages.map((stage: any) => (
-                        <SelectItem key={stage.id} value={stage.id}>
-                          {stage.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground uppercase tracking-wider">Campaign Attribution</Label>
-                <Select value={campaignId || 'none'} onValueChange={setCampaignId}>
-                  <SelectTrigger className="h-9 border-border bg-card">
-                    <SelectValue placeholder="Select campaign..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No Campaign Association</SelectItem>
-                    {campaigns.map((camp: any) => (
-                      <SelectItem key={camp.id} value={camp.id}>
-                        {camp.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-
           <div className="flex items-center justify-end gap-2 pt-2">
             <Button
               type="button"
@@ -404,9 +263,9 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
             <Button
               type="submit"
               disabled={convertMutation.isPending}
-              className="bg-primary hover:bg-[#1e293b] text-white shadow-sm flex items-center gap-1.5 h-8 text-xs rounded-lg font-bold"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center gap-1.5 h-8 text-xs rounded-lg font-bold"
             >
-              Confirm & Promote
+              {convertMutation.isPending ? 'Promoting...' : 'Confirm & Promote'}
             </Button>
           </div>
         </form>

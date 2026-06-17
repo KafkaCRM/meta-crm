@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Delete,
   Patch,
   Body,
@@ -100,20 +101,42 @@ export class ConnectionController {
   // OAuth
   // ═══════════════════════════════════════════════════════════════════
 
-  @Get('oauth/:provider/authorize')
+  @Get('oauth/:provider/url')
   @CheckPermissions('manage', 'Integration')
+  getOAuthUrl(
+    @Param('provider') provider: OAuthProvider,
+    @Query('redirect_to') frontendRedirect: string | undefined,
+    @Req() req: any,
+  ) {
+    const scope = req.user ?? {};
+    const tenantId = scope.tenant_id ?? '';
+    const host = process.env['API_HOST'] || 'localhost:3000';
+    const protocol = process.env['API_PROTOCOL'] || 'http';
+
+    const redirectUri = `${protocol}://${host}/api/v1/connections/oauth/${provider}/callback`;
+    const url = this.oauthService.getAuthorizationUrl(provider, tenantId, redirectUri, frontendRedirect);
+
+    if (!url) {
+      throw new BadRequestException(`OAuth not configured for ${provider}`);
+    }
+
+    return { url };
+  }
+
+  @Get('oauth/:provider/authorize')
   authorize(
     @Param('provider') provider: OAuthProvider,
+    @Query('redirect_to') frontendRedirect: string | undefined,
     @Req() req: any,
     @Res() res: any,
   ) {
     const scope = req.user ?? {};
     const tenantId = scope.tenant_id ?? '';
-    const host = req.hostname || req.headers?.host || 'localhost:3000';
-    const protocol = (req.protocol || 'http') as string;
+    const host = process.env['API_HOST'] || 'localhost:3000';
+    const protocol = process.env['API_PROTOCOL'] || 'http';
 
     const redirectUri = `${protocol}://${host}/api/v1/connections/oauth/${provider}/callback`;
-    const url = this.oauthService.getAuthorizationUrl(provider, tenantId, redirectUri);
+    const url = this.oauthService.getAuthorizationUrl(provider, tenantId, redirectUri, frontendRedirect);
 
     if (!url) {
       throw new BadRequestException(`OAuth not configured for ${provider}`);
@@ -123,113 +146,135 @@ export class ConnectionController {
   }
 
   @Get('oauth/:provider/callback')
-  @CheckPermissions('manage', 'Integration')
   async oauthCallback(
     @Param('provider') provider: OAuthProvider,
     @Query('code') code: string,
     @Query('state') state: string,
-    @Req() req: any,
+    @Res() res: any,
   ) {
-    const host = req.hostname || req.headers?.host || 'localhost:3000';
-    const protocol = (req.protocol || 'http') as string;
+    const host = process.env['API_HOST'] || 'localhost:3000';
+    const protocol = process.env['API_PROTOCOL'] || 'http';
     const redirectUri = `${protocol}://${host}/api/v1/connections/oauth/${provider}/callback`;
     const result = await this.oauthService.handleCallback(provider, code, state, redirectUri);
 
+    const frontendUrl = result.redirect_to || 'http://localhost:5173';
+
     if (result.success) {
-      return { success: true, message: result.message };
+      res.header('Content-Type', 'text/html').send(
+        `<script>window.opener?.postMessage(${JSON.stringify({ type: 'oauth', provider, success: true })}, '*'); window.close();</script>`,
+      );
+    } else {
+      res.header('Content-Type', 'text/html').send(
+        `<script>window.opener?.postMessage(${JSON.stringify({ type: 'oauth', provider, success: false, message: result.message })}, '*'); window.close();</script>`,
+      );
     }
-    throw new BadRequestException(result.message);
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  // Intake Routes
+  // Intake Routes (multi-route: priority + match conditions)
   // ═══════════════════════════════════════════════════════════════════
 
-  @Get(':id/route')
+  @Get(':id/routes')
   @CheckPermissions('read', 'Integration')
-  async getRoute(@Param('id') id: string) {
-    const route = await this.db.getClient().integrationIntakeRoute.findUnique({
+  async listRoutes(@Param('id') id: string) {
+    const routes = await this.db.getClient().integrationIntakeRoute.findMany({
       where: { connection_id: id },
+      orderBy: { priority: 'asc' },
       include: { fieldMappings: true },
     });
-    if (!route) throw new NotFoundException('No intake route configured for this connection');
-    return route;
+    return routes;
   }
 
-  @Post(':id/route')
+  @Put(':id/routes')
   @CheckPermissions('manage', 'Integration')
-  async upsertRoute(
+  async replaceRoutes(
     @Param('id') id: string,
-    @Body() body: {
-      mode?: 'create_lead' | 'create_contact_opportunity';
+    @Body() body: Array<{
+      priority: number;
+      conditions?: Record<string, string> | null;
+      mode: 'create_lead' | 'create_contact_opportunity';
       campaign_id?: string | null;
-      branch_brand_assignment_id?: string | null;
-      vertical_id?: string | null;
-      pipeline_id?: string | null;
-      entry_stage_id?: string | null;
       owner_id?: string | null;
       assignment_rule?: Record<string, unknown>;
       duplicate_strategy?: 'skip' | 'update' | 'always_create';
       duplicate_match_fields?: string[];
-      is_default?: boolean;
-    },
+      fieldMappings?: Array<{
+        source_field: string;
+        target_entity: string;
+        target_field: string;
+        transform?: string | null;
+        is_required?: boolean;
+      }>;
+    }>,
   ) {
-    const route = await this.db.getClient().integrationIntakeRoute.upsert({
-      where: { connection_id: id },
-      create: {
-        connection_id: id,
-        mode: body.mode ?? 'create_lead',
-        campaign_id: body.campaign_id ?? null,
-        branch_brand_assignment_id: body.branch_brand_assignment_id ?? null,
-        vertical_id: body.vertical_id ?? null,
-        pipeline_id: body.pipeline_id ?? null,
-        entry_stage_id: body.entry_stage_id ?? null,
-        owner_id: body.owner_id ?? null,
-        assignment_rule: (body.assignment_rule ?? { type: 'fixed' }) as Prisma.InputJsonValue,
-        duplicate_strategy: body.duplicate_strategy ?? 'skip',
-        duplicate_match_fields: (body.duplicate_match_fields ?? ['email', 'phone']) as Prisma.InputJsonValue,
-        is_default: body.is_default ?? false,
-      },
-      update: {
-        mode: body.mode ?? undefined,
-        campaign_id: body.campaign_id,
-        branch_brand_assignment_id: body.branch_brand_assignment_id,
-        vertical_id: body.vertical_id,
-        pipeline_id: body.pipeline_id,
-        entry_stage_id: body.entry_stage_id,
-        owner_id: body.owner_id,
-        assignment_rule: (body.assignment_rule ?? undefined) as Prisma.InputJsonValue | undefined,
-        duplicate_strategy: body.duplicate_strategy,
-        duplicate_match_fields: body.duplicate_match_fields as Prisma.InputJsonValue | undefined,
-        is_default: body.is_default,
-      },
+    const client = this.db.getClient();
+
+    const routes = await client.$transaction(async (tx) => {
+      await tx.integrationFieldMapping.deleteMany({
+        where: { route: { connection_id: id } },
+      });
+      await tx.integrationIntakeRoute.deleteMany({
+        where: { connection_id: id },
+      });
+
+      if (body.length === 0) return [];
+
+      const created = [];
+      for (let i = 0; i < body.length; i++) {
+        const r = body[i]!;
+        const route = await tx.integrationIntakeRoute.create({
+          data: {
+            connection_id: id,
+            priority: r.priority,
+            conditions: (r.conditions ?? {}) as Prisma.InputJsonValue,
+            mode: r.mode,
+            campaign_id: r.campaign_id ?? null,
+            owner_id: r.owner_id ?? null,
+            assignment_rule: (r.assignment_rule ?? { type: 'fixed' }) as Prisma.InputJsonValue,
+            duplicate_strategy: r.duplicate_strategy ?? 'skip',
+            duplicate_match_fields: (r.duplicate_match_fields ?? ['email', 'phone']) as Prisma.InputJsonValue,
+            fieldMappings: r.fieldMappings
+              ? {
+                  createMany: {
+                    data: r.fieldMappings.map((m) => ({
+                      source_field: m.source_field,
+                      target_entity: m.target_entity,
+                      target_field: m.target_field,
+                      transform: m.transform ?? 'direct',
+                      is_required: m.is_required ?? false,
+                    })),
+                  },
+                }
+              : undefined,
+          },
+          include: { fieldMappings: true },
+        });
+        created.push(route);
+      }
+      return created;
     });
 
-    return route;
+    return routes;
   }
 
   // ═══════════════════════════════════════════════════════════════════
   // Field Mappings
   // ═══════════════════════════════════════════════════════════════════
 
-  @Get(':id/mappings')
+  @Get('routes/:routeId/mappings')
   @CheckPermissions('read', 'Integration')
-  async listMappings(@Param('id') id: string) {
-    const route = await this.db.getClient().integrationIntakeRoute.findUnique({
-      where: { connection_id: id },
-    });
-    if (!route) throw new NotFoundException('No intake route configured');
-
-    return this.db.getClient().integrationFieldMapping.findMany({
-      where: { route_id: route.id },
+  async listMappings(@Param('routeId') routeId: string) {
+    const mappings = await this.db.getClient().integrationFieldMapping.findMany({
+      where: { route_id: routeId },
       orderBy: { created_at: 'asc' },
     });
+    return mappings;
   }
 
-  @Post(':id/mappings')
+  @Put('routes/:routeId/mappings')
   @CheckPermissions('manage', 'Integration')
-  async upsertMappings(
-    @Param('id') id: string,
+  async replaceMappings(
+    @Param('routeId') routeId: string,
     @Body() body: Array<{
       source_field: string;
       target_entity: string;
@@ -238,20 +283,21 @@ export class ConnectionController {
       is_required?: boolean;
     }>,
   ) {
-    const route = await this.db.getClient().integrationIntakeRoute.findUnique({
-      where: { connection_id: id },
-    });
-    if (!route) throw new NotFoundException('No intake route configured');
+    const client = this.db.getClient();
 
-    // Delete existing mappings and replace with new set
-    await this.db.getClient().integrationFieldMapping.deleteMany({
-      where: { route_id: route.id },
+    const route = await client.integrationIntakeRoute.findUnique({
+      where: { id: routeId },
+    });
+    if (!route) throw new NotFoundException('Route not found');
+
+    await client.integrationFieldMapping.deleteMany({
+      where: { route_id: routeId },
     });
 
     if (body.length > 0) {
-      await this.db.getClient().integrationFieldMapping.createMany({
+      await client.integrationFieldMapping.createMany({
         data: body.map((m) => ({
-          route_id: route.id,
+          route_id: routeId,
           source_field: m.source_field,
           target_entity: m.target_entity,
           target_field: m.target_field,
@@ -261,8 +307,8 @@ export class ConnectionController {
       });
     }
 
-    return this.db.getClient().integrationFieldMapping.findMany({
-      where: { route_id: route.id },
+    return client.integrationFieldMapping.findMany({
+      where: { route_id: routeId },
       orderBy: { created_at: 'asc' },
     });
   }

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { ok, err } from 'neverthrow';
 import type { Result } from 'neverthrow';
+import * as crypto from 'crypto';
 import { Prisma } from '@prisma/client';
 import { TenantScopedPrismaService } from '../tenant/tenant-scoped-prisma.service';
 import { PlatformPrismaService } from '../tenant/platform-prisma.service';
@@ -49,7 +50,7 @@ export const INTEGRATION_MANIFESTS = [
     name: 'WhatsApp Business',
     description: 'WhatsApp Business API — send and receive messages, trigger automated follow-ups.',
     icon: 'MessageSquare',
-    credential_fields: ['api_key', 'phone_number_id'],
+    credential_fields: ['access_token', 'phone_number_id', 'whatsapp_business_account_id'],
   },
   {
     id: 'integration/facebook',
@@ -57,7 +58,8 @@ export const INTEGRATION_MANIFESTS = [
     name: 'Facebook Lead Ads',
     description: 'Facebook Lead Ads webhook — auto-capture leads from Facebook ad campaigns.',
     icon: 'Share2',
-    credential_fields: ['access_token', 'page_id', 'app_secret'],
+    credential_fields: ['page_id'],
+    oauth_supported: true,
   },
   {
     id: 'integration/justdial',
@@ -81,7 +83,8 @@ export const INTEGRATION_MANIFESTS = [
     name: 'Zapier',
     description: 'Zapier Integration — sync cases, leads, and events with 5,000+ apps.',
     icon: 'Zap',
-    credential_fields: ['webhook_url'],
+    credential_fields: [],
+    url_generator: true,
   },
   {
     id: 'integration/google-calendar',
@@ -105,7 +108,8 @@ export const INTEGRATION_MANIFESTS = [
     name: 'Web-to-Lead',
     description: 'Web-to-Lead — accept leads from public web forms with source-key authentication.',
     icon: 'Link',
-    credential_fields: ['source_key'],
+    credential_fields: [],
+    url_generator: true,
   },
 ];
 
@@ -216,6 +220,34 @@ export class ConnectionService {
 
     const tenantId = scope.tenant_id;
 
+    // Auto-generate URL token for URL generator providers (web-to-lead, zapier)
+    if ((manifest as any).url_generator) {
+      const urlToken = crypto.randomUUID();
+      const mergedConfig = {
+        ...configJson,
+        url_token: urlToken,
+      };
+
+      const connection = await this.db.getClient().integrationConnection.upsert({
+        where: { tenant_id_provider: { tenant_id: tenantId, provider } },
+        create: {
+          tenant_id: tenantId,
+          provider,
+          name: manifest.name,
+          status: 'connected',
+          config_json: mergedConfig as Prisma.InputJsonValue,
+        },
+        update: {
+          name: manifest.name,
+          status: 'connected',
+          config_json: mergedConfig as Prisma.InputJsonValue,
+        },
+      });
+
+      this.logger.log(`Tenant ${tenantId} connected ${provider} (url_token generated)`);
+      return ok(this.toDto(connection));
+    }
+
     let cipherText: string | null = null;
     let iv: string | null = null;
     let tag: string | null = null;
@@ -256,6 +288,24 @@ export class ConnectionService {
     this.logger.log(`Tenant ${tenantId} connected ${provider}`);
 
     return ok(this.toDto(connection));
+  }
+
+  /**
+   * Find a connection by its URL token (used by URL generator providers).
+   */
+  async findByUrlToken(provider: string, token: string): Promise<ConnectionDto | null> {
+    const connections = await this.platformDb.client.integrationConnection.findMany({
+      where: { provider, status: 'connected' },
+    });
+
+    for (const conn of connections) {
+      const config = (conn.config_json as Record<string, unknown>) ?? {};
+      if (config['url_token'] === token) {
+        return this.toDto(conn);
+      }
+    }
+
+    return null;
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -448,16 +498,19 @@ export class ConnectionService {
     }
 
     const creds = credsResult.value;
-    const missingFields = manifest.credential_fields.filter((f) => !creds[f]?.trim());
-    if (missingFields.length > 0) {
-      const result: ConnectionTestResult = {
-        connection_id: id,
-        status: 'error',
-        message: `Missing required credentials: ${missingFields.join(', ')}`,
-        last_tested_at: checkedAt,
-      };
-      await this.saveTestResult(id, result);
-      return ok(result);
+
+    if (!(manifest as any).oauth_supported) {
+      const missingFields = manifest.credential_fields.filter((f) => !creds[f]?.trim());
+      if (missingFields.length > 0) {
+        const result: ConnectionTestResult = {
+          connection_id: id,
+          status: 'error',
+          message: `Missing required credentials: ${missingFields.join(', ')}`,
+          last_tested_at: checkedAt,
+        };
+        await this.saveTestResult(id, result);
+        return ok(result);
+      }
     }
 
     // Provider-specific real connectivity test
@@ -539,16 +592,62 @@ export class ConnectionService {
   }
 
   private async testWhatsApp(
-    _creds: Record<string, string>,
+    creds: Record<string, string>,
     connectionId: string,
   ): Promise<ConnectionTestResult> {
     const checkedAt = new Date().toISOString();
-    return {
-      connection_id: connectionId,
-      status: 'healthy',
-      message: 'WhatsApp credentials are valid. Webhook verification requires Meta callback.',
-      last_tested_at: checkedAt,
-    };
+    const token = creds.api_key ?? creds.access_token ?? '';
+    const phoneNumberId = creds.phone_number_id ?? '';
+
+    if (!token) {
+      return {
+        connection_id: connectionId,
+        status: 'error',
+        message: 'No API token configured for WhatsApp',
+        last_tested_at: checkedAt,
+      };
+    }
+
+    if (!phoneNumberId) {
+      return {
+        connection_id: connectionId,
+        status: 'error',
+        message: 'No phone number ID configured for WhatsApp',
+        last_tested_at: checkedAt,
+      };
+    }
+
+    try {
+      const response = await fetch(
+        `https://graph.facebook.com/v19.0/${phoneNumberId}?fields=id,name,display_phone_number&access_token=${encodeURIComponent(token)}`,
+        { signal: AbortSignal.timeout(10000) },
+      );
+
+      if (!response.ok) {
+        const body = await response.text().catch(() => '');
+        return {
+          connection_id: connectionId,
+          status: 'error',
+          message: `WhatsApp API error (${response.status}): ${body.substring(0, 200)}`,
+          last_tested_at: checkedAt,
+        };
+      }
+
+      const data = (await response.json()) as Record<string, unknown>;
+      return {
+        connection_id: connectionId,
+        status: 'healthy',
+        message: `Connected to WhatsApp Business number: ${data['display_phone_number'] || data['name'] || 'Unknown'}`,
+        last_tested_at: checkedAt,
+      };
+    } catch (e) {
+      return {
+        connection_id: connectionId,
+        status: 'error',
+        message: `WhatsApp connection test failed: ${(e as Error).message}`,
+        last_tested_at: checkedAt,
+      };
+    }
   }
 
   private testSmtp(

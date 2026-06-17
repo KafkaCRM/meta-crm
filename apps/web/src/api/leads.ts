@@ -6,6 +6,26 @@ export interface LeadListParams {
   status?: string;
   source?: string;
   name?: string;
+  assigned_to_id?: string;
+  pipeline_definition_id?: string;
+  stage?: string;
+}
+
+export interface LeadEventResponse {
+  id: string;
+  lead_id: string;
+  event_type: string;
+  from_stage: string | null;
+  to_stage: string | null;
+  metadata: Record<string, any>;
+  actor_id: string;
+  occurred_at: string;
+}
+
+export interface LeadPipelineInfo {
+  id: string;
+  name: string;
+  stages: { id: string; name: string; order: number }[];
 }
 
 export interface LeadResponse {
@@ -16,11 +36,12 @@ export interface LeadResponse {
   phone: string;
   source: string;
   status: string;
+  stage: string | null;
+  pipeline_definition_id: string | null;
   notes: string | null;
-  converted_party_id: string | null;
-  converted_case_id: string | null;
-  campaign_id?: string | null;
-  assigned_to_id?: string | null;
+  campaign_id: string | null;
+  assigned_to_id: string | null;
+  party_id: string | null;
   duplicate_risk?: boolean;
   phone_valid?: boolean;
   assigned_to?: {
@@ -28,6 +49,15 @@ export interface LeadResponse {
     name: string;
     email: string;
   } | null;
+  party?: {
+    id: string;
+    name: string;
+    email: string;
+    phone_raw: string;
+    source: string;
+  } | null;
+  pipelineDefinition?: LeadPipelineInfo | null;
+  events?: LeadEventResponse[];
   attributes: Record<string, any>;
   created_at: string;
   updated_at: string;
@@ -40,19 +70,11 @@ export interface CursorPaginatedLeads {
 
 export interface ConvertLeadInput {
   branch_brand_assignment_id: string;
-  create_case?: boolean;
-  case_title?: string;
-  case_type?: string;
-  case_stage?: string;
-  pipeline_definition_id?: string;
   assigned_to_id?: string;
-  vertical_id?: string;
-  campaign_id?: string;
 }
 
 export interface ConvertLeadResult {
   party_id: string;
-  case_id?: string;
 }
 
 export const leadsApi = {
@@ -63,6 +85,9 @@ export const leadsApi = {
     if (params.status) qs.set('status', params.status);
     if (params.source) qs.set('source', params.source);
     if (params.name) qs.set('name', params.name);
+    if (params.assigned_to_id) qs.set('assigned_to_id', params.assigned_to_id);
+    if (params.pipeline_definition_id) qs.set('pipeline_definition_id', params.pipeline_definition_id);
+    if (params.stage) qs.set('stage', params.stage);
     const query = qs.toString();
     return apiCall<CursorPaginatedLeads>(`/leads${query ? `?${query}` : ''}`);
   },
@@ -85,6 +110,33 @@ export const leadsApi = {
     apiCall<{ success: boolean }>(`/leads/${id}`, {
       method: 'DELETE',
     }),
+
+  addToPipeline: (id: string, pipeline_definition_id: string) =>
+    apiCall<LeadResponse>(`/leads/${id}/pipeline`, {
+      method: 'POST',
+      body: JSON.stringify({ pipeline_definition_id }),
+    }),
+
+  transitionStage: (id: string, to_stage_id: string) =>
+    apiCall<LeadResponse>(`/leads/${id}/transition`, {
+      method: 'POST',
+      body: JSON.stringify({ to_stage_id }),
+    }),
+
+  byStage: (pipelineDefinitionId: string) =>
+    apiCall<{ stages: any[]; leads: Record<string, any[]> }>(
+      `/leads/by-stage?pipeline_definition_id=${pipelineDefinitionId}`,
+    ),
+
+  getEvents: (id: string, params?: { cursor?: string; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.cursor) qs.set('cursor', params.cursor);
+    if (params?.limit) qs.set('limit', String(params.limit));
+    const query = qs.toString();
+    return apiCall<{ data: LeadEventResponse[]; next_cursor?: string }>(
+      `/leads/${id}/events${query ? `?${query}` : ''}`,
+    );
+  },
 
   convert: (id: string, data: ConvertLeadInput) =>
     apiCall<ConvertLeadResult>(`/leads/${id}/convert`, {

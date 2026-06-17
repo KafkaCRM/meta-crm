@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PageShell } from '@/components/shared/PageShell';
 import { Card, CardContent } from '@/components/ui/card';
-import { Search, Megaphone, Plus, Phone, MessageSquare, AlertTriangle, AlertCircle, Clock, ExternalLink } from 'lucide-react';
+import { Search, Megaphone, Plus, Phone, MessageSquare, AlertTriangle, AlertCircle, Clock, ExternalLink, FileText } from 'lucide-react';
 import {
   CompactRecordRow,
   DEFAULT_RECORD_ACTIONS,
@@ -73,10 +73,10 @@ export function LeadList() {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [searchQuery]);
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['leads', debouncedSearch, activeTab],
     queryFn: () => {
-      const params: Record<string, string | number> = { limit: 500 };
+      const params: Record<string, string | number> = {};
       if (debouncedSearch) {
         params.name = debouncedSearch;
       }
@@ -315,6 +315,17 @@ export function LeadList() {
               <div className="flex items-center justify-center py-24 text-sm text-muted-foreground">
                 Loading leads...
               </div>
+            ) : isError ? (
+              <div className="flex flex-col items-center justify-center py-24 text-center">
+                <AlertCircle size={36} className="text-red-400/60 mb-3" />
+                <p className="font-semibold text-foreground">Failed to load leads</p>
+                <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+                  There was an error fetching leads. Please try again.
+                </p>
+                <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-4 h-8 text-xs">
+                  Retry
+                </Button>
+              </div>
             ) : leads.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-24 text-center">
                 <Megaphone size={36} className="text-muted-foreground/40 mb-3" />
@@ -322,7 +333,7 @@ export function LeadList() {
                 <p className="text-xs text-muted-foreground mt-1 max-w-xs">
                   {activeTab !== 'all' 
                     ? `No leads match the "${activeTab === 'duplicate' ? 'duplicate risk' : activeTab}" filter right now.` 
-                    : 'Leads from connected third-party integrations will appear here automatically.'}
+                    : 'Add a lead manually or connect a third-party integration to start capturing leads.'}
                 </p>
               </div>
             ) : (
@@ -374,9 +385,18 @@ export function LeadList() {
                             size="icon"
                             className="h-6 w-6 rounded bg-muted hover:bg-blue-50 hover:text-blue-600 text-muted-foreground transition-all duration-200"
                             onClick={viewDetail}
-                            title="View Detail"
+                            title="Quick View"
                           >
                             <ExternalLink size={11} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 rounded bg-muted hover:bg-indigo-50 hover:text-indigo-600 text-muted-foreground transition-all duration-200"
+                            onClick={(e) => { e.stopPropagation(); navigate({ to: '/leads/$id', params: { id: row.id } }); }}
+                            title="Full Page"
+                          >
+                            <FileText size={11} />
                           </Button>
                         </div>
                       );

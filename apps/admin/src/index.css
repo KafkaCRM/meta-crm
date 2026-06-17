@@ -82,59 +82,59 @@
 }
 
 :root {
-  /* Intercom Editorial Cream-White ground Theme definitions */
-  --background: oklch(0.978 0.004 240);        /* #f7f8fa canvas */
+  /* Pure white canvas — clinic admin style */
+  --background: oklch(1 0 0);                  /* #ffffff */
   --foreground: oklch(0.21 0.03 260);          /* #111827 ink */
 
-  /* Cards = pure white */
+  /* Cards = pure white with subtle separation */
   --card: oklch(1 0 0);                        /* #ffffff */
   --card-foreground: oklch(0.21 0.03 260);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.21 0.03 260);
 
-  /* Primary = charcoal ink */
-  --primary: oklch(0.53 0.19 260);             /* #1d4ed8 */
+  /* Primary = warm blue (clinic style #175cdd) */
+  --primary: oklch(0.48 0.18 265);             /* #175cdd */
   --primary-foreground: oklch(1 0 0);          /* #ffffff */
 
-  /* Secondary = surface-2 cream */
-  --secondary: oklch(0.94 0.01 250);           /* #eef1f5 */
+  /* Secondary = light gray */
+  --secondary: oklch(0.97 0 0);                /* #f7f8fa */
   --secondary-foreground: oklch(0.21 0.03 260);
 
   /* Muted */
-  --muted: oklch(0.94 0.01 250);               /* #eef1f5 */
+  --muted: oklch(0.97 0 0);                    /* #f7f8fa */
   --muted-foreground: oklch(0.49 0.03 260);    /* #667085 */
 
   /* Accent */
-  --accent: oklch(0.94 0.01 250);
-  --accent-foreground: oklch(0.21 0.03 260);
+  --accent: oklch(0.95 0.02 260);              /* #eff6ff */
+  --accent-foreground: oklch(0.48 0.18 265);   /* #175cdd */
 
   /* Destructive */
   --destructive: oklch(0.58 0.22 27);          /* #dc2626 */
 
-  /* Borders — hairline warm gray */
-  --border: oklch(0.88 0.012 250);             /* #d9dee7 */
-  --input: oklch(0.88 0.012 250);
-  --ring: oklch(0.53 0.19 260);
+  /* Borders — lighter, softer */
+  --border: oklch(0.93 0.005 260);             /* #e5e7eb */
+  --input: oklch(0.93 0.005 260);
+  --ring: oklch(0.48 0.18 265);                /* #175cdd */
 
-  /* Border radius */
-  --radius: 0.5rem;                            /* 8px for operational UI */
+  /* Border radius — consistent rounded-xl like clinic */
+  --radius: 0.75rem;                           /* 12px for operational UI */
 
-  /* Chart colors - Intercom report palette */
-  --chart-1: #2563eb;
+  /* Chart colors */
+  --chart-1: #175cdd;
   --chart-2: #059669;
   --chart-3: #f59e0b;
   --chart-4: #db2777;
   --chart-5: #0891b2;
 
-  /* Sidebar — beautiful warm cream canvas with charcoal text, matching the editorial styling */
-  --sidebar: oklch(0.978 0.004 240);
-  --sidebar-foreground: oklch(0.49 0.03 260);
-  --sidebar-primary: oklch(0.21 0.03 260);
+  /* Sidebar — pure white (clinic style), dark text, blue accent */
+  --sidebar: oklch(1 0 0);                     /* #ffffff */
+  --sidebar-foreground: oklch(0.45 0.02 260);  /* #6b7280 */
+  --sidebar-primary: oklch(0.21 0.03 260);     /* #111827 */
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.94 0.01 250);
-  --sidebar-accent-foreground: oklch(0.21 0.03 260);
-  --sidebar-border: oklch(0.88 0.012 250);
-  --sidebar-ring: oklch(0.53 0.19 260);
+  --sidebar-accent: oklch(0.95 0.02 260);      /* #eff6ff (light blue) */
+  --sidebar-accent-foreground: oklch(0.48 0.18 265); /* #175cdd */
+  --sidebar-border: oklch(0.93 0.005 260);     /* #e5e7eb */
+  --sidebar-ring: oklch(0.48 0.18 265);
 }
 
 @layer base {

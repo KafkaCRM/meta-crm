@@ -19,6 +19,7 @@ model Party {
   interactions            Interaction[]
   mergeQueuePrimary       PartyMergeQueue[]  @relation("PrimaryParty")
   mergeQueueDuplicate     PartyMergeQueue[]  @relation("DuplicateParty")
+  leads                   Lead[]
   appointments            Appointment[]
   invoices                Invoice[]
   orders                  Order[]

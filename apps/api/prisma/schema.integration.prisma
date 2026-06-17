@@ -19,7 +19,7 @@ model IntegrationConnection {
   updated_at            DateTime  @updatedAt
 
   tenant             Tenant                   @relation(fields: [tenant_id], references: [id])
-  intakeRoute        IntegrationIntakeRoute?
+  intakeRoutes       IntegrationIntakeRoute[]
   inboundEvents      InboundEvent[]
   syncCursors        IntegrationSyncCursor[]
 
@@ -28,30 +28,24 @@ model IntegrationConnection {
 }
 
 model IntegrationIntakeRoute {
-  id                        String   @id @default(cuid())
-  connection_id             String
-  mode                      String   @default("create_lead") // create_lead | create_contact_opportunity
-  campaign_id               String?
-  branch_brand_assignment_id String?
-  vertical_id               String?
-  pipeline_id               String?
-  entry_stage_id            String?
-  owner_id                  String?
-  assignment_rule           Json     @default("{\"type\":\"fixed\"}")
-  duplicate_strategy        String   @default("skip") // skip | update | always_create
-  duplicate_match_fields    Json     @default("[\"email\",\"phone\"]")
-  is_default                Boolean  @default(false)
-  created_at                DateTime @default(now())
-  updated_at                DateTime @updatedAt
+  id                     String   @id @default(cuid())
+  connection_id          String
+  priority               Int      @default(0)
+  mode                   String   @default("create_lead") // create_lead | create_contact_opportunity
+  campaign_id            String?
+  conditions             Json     @default("{}")
+  owner_id               String?
+  assignment_rule        Json     @default("{\"type\":\"fixed\"}")
+  duplicate_strategy     String   @default("skip") // skip | update | always_create
+  duplicate_match_fields Json     @default("[\"email\",\"phone\"]")
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
 
   connection   IntegrationConnection @relation(fields: [connection_id], references: [id])
   campaign     Campaign?             @relation(fields: [campaign_id], references: [id])
-  pipeline     PipelineDefinition?   @relation(fields: [pipeline_id], references: [id])
-  entryStage   PipelineStage?        @relation(fields: [entry_stage_id], references: [id])
-  owner        User?                 @relation(fields: [owner_id], references: [id])
   fieldMappings IntegrationFieldMapping[]
 
-  @@unique([connection_id])
+  @@index([connection_id])
   @@index([campaign_id])
 }
 

@@ -27,22 +27,22 @@ export interface IntegrationManifest {
   description: string;
   icon: string;
   credential_fields: string[];
+  oauth_supported?: boolean;
+  url_generator?: boolean;
 }
 
 export interface IntakeRoute {
   id: string;
   connection_id: string;
+  priority: number;
+  conditions: Record<string, string>;
   mode: 'create_lead' | 'create_contact_opportunity';
   campaign_id: string | null;
-  branch_brand_assignment_id: string | null;
-  vertical_id: string | null;
-  pipeline_id: string | null;
-  entry_stage_id: string | null;
   owner_id: string | null;
   assignment_rule: Record<string, unknown>;
   duplicate_strategy: 'skip' | 'update' | 'always_create';
   duplicate_match_fields: string[];
-  is_default: boolean;
+  fieldMappings?: FieldMapping[];
   created_at: string;
   updated_at: string;
 }
@@ -99,22 +99,47 @@ export const integrationsApi = {
 
     test: (id: string) =>
       apiCall<ConnectionTestResult>(`/connections/${id}/test`, { method: 'POST' }),
+
+    getOAuthUrl: (provider: string, redirectTo?: string) =>
+      apiCall<{ url: string }>(`/connections/oauth/${provider}/url${redirectTo ? `?redirect_to=${encodeURIComponent(redirectTo)}` : ''}`),
   },
 
   routes: {
-    get: (connectionId: string) =>
-      apiCall<IntakeRoute>(`/connections/${connectionId}/route`),
+    list: (connectionId: string) =>
+      apiCall<IntakeRoute[]>(`/connections/${connectionId}/routes`),
 
-    upsert: (connectionId: string, data: Partial<IntakeRoute>) =>
-      apiCall<IntakeRoute>(`/connections/${connectionId}/route`, { method: 'POST', body: JSON.stringify(data) }),
+    replace: (connectionId: string, data: Array<{
+      priority: number;
+      conditions?: Record<string, string> | null;
+      mode: string;
+      campaign_id?: string | null;
+      owner_id?: string | null;
+      assignment_rule?: Record<string, unknown>;
+      duplicate_strategy?: string;
+      duplicate_match_fields?: string[];
+      fieldMappings?: Array<{
+        source_field: string;
+        target_entity: string;
+        target_field: string;
+        transform?: string | null;
+        is_required?: boolean;
+      }>;
+    }>) =>
+      apiCall<IntakeRoute[]>(`/connections/${connectionId}/routes`, { method: 'PUT', body: JSON.stringify(data) }),
   },
 
   mappings: {
-    list: (connectionId: string) =>
-      apiCall<FieldMapping[]>(`/connections/${connectionId}/mappings`),
+    list: (routeId: string) =>
+      apiCall<FieldMapping[]>(`/connections/routes/${routeId}/mappings`),
 
-    upsert: (connectionId: string, mappings: Partial<FieldMapping>[]) =>
-      apiCall<FieldMapping[]>(`/connections/${connectionId}/mappings`, { method: 'POST', body: JSON.stringify(mappings) }),
+    replace: (routeId: string, mappings: Array<{
+      source_field: string;
+      target_entity: string;
+      target_field: string;
+      transform?: string | null;
+      is_required?: boolean;
+    }>) =>
+      apiCall<FieldMapping[]>(`/connections/routes/${routeId}/mappings`, { method: 'PUT', body: JSON.stringify(mappings) }),
   },
 
   events: {

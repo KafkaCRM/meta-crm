@@ -150,8 +150,9 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
   const [dupCheckScope, setDupCheckScope] = useState<'none' | 'campaign' | 'pipeline' | 'global'>('none');
   const [dupResolution, setDupResolution] = useState<'ignore' | 'merge' | 'create_new' | 'reopen'>('ignore');
 
-  // Hidden default scopes (Seeded automatically)
-  const [assignmentId, setAssignmentId] = useState('');
+  // Form State - Location & Vertical
+  const [branchId, setBranchId] = useState('');
+  const [brandId, setBrandId] = useState('');
   const [verticalId, setVerticalId] = useState('');
 
   const [isInitializing, setIsInitializing] = useState(false);
@@ -231,14 +232,13 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
   // Silent default initialization helper
   const ensureDefaults = useCallback(async () => {
     if (assignmentsLoading || verticalsLoading || pipelinesLoading) return;
-    if (assignmentOptions.length > 0 && verticals.length > 0 && pipelines.length > 0) return;
+    if (branches.length > 0 && brands.length > 0 && verticals.length > 0 && pipelines.length > 0) return;
     
     try {
       setIsInitializing(true);
       
       let activeBranchId = branches[0]?.id;
       let activeBrandId = brands[0]?.id;
-      let activeAsgId = assignments[0]?.id;
       let activeVerticalId = verticals[0]?.id;
       let activePipelineId = pipelines[0]?.id;
 
@@ -257,15 +257,6 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
         activeBrandId = brandRes.id;
       }
 
-      if (!activeAsgId) {
-        const assignmentRes = await settingsApi.assignments.create({
-          branch_id: activeBranchId,
-          brand_id: activeBrandId,
-          is_primary: true,
-        });
-        activeAsgId = assignmentRes.id;
-      }
-
       if (!activeVerticalId) {
         const verticalRes = await settingsApi.verticals.create({
           brand_id: activeBrandId,
@@ -282,7 +273,8 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
 
       await queryClient.invalidateQueries({ queryKey: ['settings'] });
       
-      setAssignmentId(activeAsgId);
+      setBranchId(activeBranchId);
+      setBrandId(activeBrandId);
       setVerticalId(activeVerticalId);
       setPipelineId(activePipelineId);
     } catch (err) {
@@ -290,32 +282,34 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
     } finally {
       setIsInitializing(false);
     }
-  }, [assignmentsLoading, verticalsLoading, pipelinesLoading, assignmentOptions, verticals, pipelines, branches, brands, assignments, queryClient]);
+  }, [assignmentsLoading, verticalsLoading, pipelinesLoading, verticals, pipelines, branches, brands, queryClient]);
 
   // Silently trigger background check when opened
   useEffect(() => {
     if (isOpen && !assignmentsLoading && !verticalsLoading && !pipelinesLoading && !hasAttemptedInit) {
-      if (assignmentOptions.length > 0 && verticals.length > 0 && pipelines.length > 0) {
+      if (branches.length > 0 && brands.length > 0 && verticals.length > 0 && pipelines.length > 0) {
         setHasAttemptedInit(true);
         return;
       }
       setHasAttemptedInit(true);
       ensureDefaults();
     }
-  }, [isOpen, assignmentsLoading, verticalsLoading, pipelinesLoading, hasAttemptedInit, assignmentOptions, verticals, pipelines, ensureDefaults]);
+  }, [isOpen, assignmentsLoading, verticalsLoading, pipelinesLoading, hasAttemptedInit, branches, brands, verticals, pipelines, ensureDefaults]);
 
   // Sync default options
   useEffect(() => {
     if (isOpen) {
-      if (assignmentOptions.length > 0 && !assignmentId) {
-        const primary = assignments.find((a) => a.is_primary);
-        setAssignmentId(primary ? primary.id : assignmentOptions[0]!.id);
+      if (branches.length > 0 && !branchId) {
+        setBranchId(branches[0]?.id || '');
+      }
+      if (brands.length > 0 && !brandId) {
+        setBrandId(brands[0]?.id || '');
       }
       if (verticals.length > 0 && !verticalId) {
-        setVerticalId(verticals[0]!.id);
+        setVerticalId(verticals[0]?.id || '');
       }
     }
-  }, [isOpen, assignmentOptions, assignmentId, assignments, verticals, verticalId]);
+  }, [isOpen, branches, branchId, brands, brandId, verticals, verticalId]);
 
   // Auto-sync pipeline if it becomes invalid for the selected vertical or when loaded
   useEffect(() => {
@@ -331,7 +325,8 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
     if (!isOpen) {
       setName('');
       setStatus('active');
-      setAssignmentId('');
+      setBranchId('');
+      setBrandId('');
       setVerticalId('');
       setPipelineId('');
       setTargetLeads('');
@@ -378,16 +373,13 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
   const validate = (tab?: string): boolean => {
     const nextErrors: Record<string, string> = {};
     
-    // Step 1 validation (Basics & Pipeline)
-    if (!tab || tab === 'basics') {
+    // Validate all critical fields on basics step or final submit to prevent invalid transitions
+    if (!tab || tab === 'basics' || tab === 'submit') {
       if (!name.trim()) nextErrors.name = 'Campaign Name is required';
       if (!pipelineId) nextErrors.pipelineId = 'Target Pipeline is required';
-    }
-    
-    // System integrity verification - ONLY validated on final submit
-    if (tab === 'submit') {
-      if (!assignmentId) nextErrors.assignmentId = 'Store location link is missing';
-      if (!verticalId) nextErrors.verticalId = 'Category Vertical is missing';
+      if (branches.length > 1 && !branchId) nextErrors.branchId = 'Branch is required';
+      if (brands.length > 1 && !brandId) nextErrors.brandId = 'Brand is required';
+      if (verticals.length > 1 && !verticalId) nextErrors.verticalId = 'Category Vertical is required';
     }
 
     setErrors(nextErrors);
@@ -432,12 +424,6 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
         return;
       }
 
-      const activeAssignment = assignmentOptions.find((o) => o.id === assignmentId);
-      if (!activeAssignment) {
-        toast.error('Location configuration initialization incomplete.');
-        return;
-      }
-
       let finalManagers = selectedManagers;
       let finalSupervisors = selectedSupervisors;
       let finalAgents = selectedAgents;
@@ -454,8 +440,8 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
         name: name.trim(),
         channel: 'direct',
         status,
-        branch_id: activeAssignment.branchId,
-        brand_id: activeAssignment.brandId,
+        branch_id: branchId,
+        brand_id: brandId,
         vertical_id: verticalId,
         pipeline_id: pipelineId,
         start_date: new Date().toISOString(),
@@ -473,10 +459,10 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
       });
     },
     [
-      name, status, assignmentId, verticalId, pipelineId, targetLeads, 
-      assignmentOptions, createMutation, selectedManagers, 
+      name, status, branchId, brandId, verticalId, pipelineId, targetLeads, 
+      createMutation, selectedManagers, 
       selectedSupervisors, selectedAgents, distribution, priority, allowSpillover, 
-      dupCheckScope, dupResolution, showAccessTab, users
+      dupCheckScope, dupResolution, showAccessTab, users, branches, brands, verticals
     ]
   );
 
@@ -587,35 +573,97 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
                       </div>
 
                       {/* Brand/Branch & Vertical Grid */}
+                      {/* Branch & Brand Select */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {/* Branch & Brand Assignment */}
-                        {assignmentOptions.length > 1 ? (
+                        {/* Branch Selection */}
+                        {branches.length > 1 ? (
                           <div className="space-y-1.5">
                             <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">
-                              Store Location / Entity <span className="text-red-500">*</span>
+                              Branch <span className="text-red-500">*</span>
                             </label>
                             <select
-                              value={assignmentId}
-                              onChange={(e) => setAssignmentId(e.target.value)}
+                              value={branchId}
+                              onChange={(e) => setBranchId(e.target.value)}
                               className="w-full h-10 rounded-xl border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-colors font-medium text-foreground cursor-pointer shadow-xs"
                               required
                             >
-                              <option value="" disabled>Select Location...</option>
-                              {assignmentOptions.map((opt) => (
-                                <option key={opt.id} value={opt.id}>{opt.label}</option>
+                              <option value="" disabled>Select Branch...</option>
+                              {branches.map((b: any) => (
+                                <option key={b.id} value={b.id}>{b.name}</option>
                               ))}
                             </select>
+                            {errors.branchId && <p className="text-[10px] text-red-600 mt-1 font-semibold">⚠️ {errors.branchId}</p>}
                           </div>
-                        ) : assignmentOptions.length === 1 ? (
+                        ) : branches.length === 1 ? (
                           <div className="bg-slate-100/50 border border-slate-200/50 rounded-xl p-2.5 flex items-center justify-between h-10">
                             <div className="flex flex-col gap-0.5">
-                              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider leading-none">Store Location</span>
-                              <span className="text-[11px] font-semibold text-slate-700 truncate max-w-[150px] leading-none">{assignmentOptions[0]?.label || ''}</span>
+                              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider leading-none">Branch</span>
+                              <span className="text-[11px] font-semibold text-slate-700 truncate max-w-[150px] leading-none">{branches[0]?.name || ''}</span>
                             </div>
                             <Badge variant="outline" className="text-[8px] scale-90 origin-right bg-slate-50 text-slate-500 py-0 px-1 border-slate-200">Auto</Badge>
                           </div>
-                        ) : null}
+                        ) : (
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">
+                              Branch <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value=""
+                              disabled
+                              className="w-full h-10 rounded-xl border border-border bg-background px-3 text-sm transition-colors font-medium text-muted-foreground opacity-55 cursor-not-allowed shadow-xs"
+                            >
+                              <option value="">No Branches Found</option>
+                            </select>
+                            {errors.branchId && <p className="text-[10px] text-red-600 mt-1 font-semibold">⚠️ {errors.branchId}</p>}
+                          </div>
+                        )}
 
+                        {/* Brand Selection */}
+                        {brands.length > 1 ? (
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">
+                              Brand <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value={brandId}
+                              onChange={(e) => setBrandId(e.target.value)}
+                              className="w-full h-10 rounded-xl border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-colors font-medium text-foreground cursor-pointer shadow-xs"
+                              required
+                            >
+                              <option value="" disabled>Select Brand...</option>
+                              {brands.map((b: any) => (
+                                <option key={b.id} value={b.id}>{b.name}</option>
+                              ))}
+                            </select>
+                            {errors.brandId && <p className="text-[10px] text-red-600 mt-1 font-semibold">⚠️ {errors.brandId}</p>}
+                          </div>
+                        ) : brands.length === 1 ? (
+                          <div className="bg-slate-100/50 border border-slate-200/50 rounded-xl p-2.5 flex items-center justify-between h-10">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider leading-none">Brand</span>
+                              <span className="text-[11px] font-semibold text-slate-700 truncate max-w-[150px] leading-none">{brands[0]?.name || ''}</span>
+                            </div>
+                            <Badge variant="outline" className="text-[8px] scale-90 origin-right bg-slate-50 text-slate-500 py-0 px-1 border-slate-200">Auto</Badge>
+                          </div>
+                        ) : (
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">
+                              Brand <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value=""
+                              disabled
+                              className="w-full h-10 rounded-xl border border-border bg-background px-3 text-sm transition-colors font-medium text-muted-foreground opacity-55 cursor-not-allowed shadow-xs"
+                            >
+                              <option value="">No Brands Found</option>
+                            </select>
+                            {errors.brandId && <p className="text-[10px] text-red-600 mt-1 font-semibold">⚠️ {errors.brandId}</p>}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Vertical & Pipeline Selection */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {/* Vertical Selection */}
                         {verticals.length > 1 ? (
                           <div className="space-y-1.5">
@@ -633,6 +681,7 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
                                 <option key={v.id} value={v.id}>{v.name}</option>
                               ))}
                             </select>
+                            {errors.verticalId && <p className="text-[10px] text-red-600 mt-1 font-semibold">⚠️ {errors.verticalId}</p>}
                           </div>
                         ) : verticals.length === 1 ? (
                           <div className="bg-slate-100/50 border border-slate-200/50 rounded-xl p-2.5 flex items-center justify-between h-10">
@@ -642,11 +691,23 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
                             </div>
                             <Badge variant="outline" className="text-[8px] scale-90 origin-right bg-slate-50 text-slate-500 py-0 px-1 border-slate-200">Auto</Badge>
                           </div>
-                        ) : null}
-                      </div>
+                        ) : (
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">
+                              Category / Vertical <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value=""
+                              disabled
+                              className="w-full h-10 rounded-xl border border-border bg-background px-3 text-sm transition-colors font-medium text-muted-foreground opacity-55 cursor-not-allowed shadow-xs"
+                            >
+                              <option value="">No Verticals Found</option>
+                            </select>
+                            {errors.verticalId && <p className="text-[10px] text-red-600 mt-1 font-semibold">⚠️ {errors.verticalId}</p>}
+                          </div>
+                        )}
 
-                      {/* Side-by-Side Pipeline & Status */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Pipeline Selection */}
                         {filteredPipelines.length > 1 ? (
                           <div className="space-y-1.5">
                             <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">
@@ -685,9 +746,13 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
                             >
                               <option value="">No Pipelines Found</option>
                             </select>
+                            {errors.pipelineId && <p className="text-[10px] text-red-600 mt-1 font-semibold">⚠️ {errors.pipelineId}</p>}
                           </div>
                         )}
+                      </div>
 
+                      {/* Campaign State & Lead Goal */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                           <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">Campaign State</label>
                           <select
@@ -701,23 +766,23 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
                             <option value="completed">Completed</option>
                           </select>
                         </div>
-                      </div>
 
-                      {/* Lead Goal */}
-                      <div className="space-y-1.5 max-w-sm">
-                        <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest flex items-center gap-1">
-                          <Target size={12} className="text-slate-400" />
-                          Target Lead Ingress Goal (Optional)
-                        </label>
-                        <div className="relative flex items-center">
-                          <Input
-                            type="number"
-                            placeholder="e.g. 500 leads"
-                            value={targetLeads}
-                            onChange={(e) => setTargetLeads(e.target.value)}
-                            className="bg-background border-border placeholder:text-muted-foreground/60 h-10 text-sm shadow-xs rounded-xl focus-visible:ring-primary pr-12"
-                          />
-                          <span className="absolute right-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Leads</span>
+                        {/* Lead Goal */}
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-slate-800 uppercase tracking-widest flex items-center gap-1">
+                            <Target size={12} className="text-slate-400" />
+                            Target Lead Ingress Goal (Optional)
+                          </label>
+                          <div className="relative flex items-center">
+                            <Input
+                              type="number"
+                              placeholder="e.g. 500 leads"
+                              value={targetLeads}
+                              onChange={(e) => setTargetLeads(e.target.value)}
+                              className="bg-background border-border placeholder:text-muted-foreground/60 h-10 text-sm shadow-xs rounded-xl focus-visible:ring-primary pr-12 w-full"
+                            />
+                            <span className="absolute right-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Leads</span>
+                          </div>
                         </div>
                       </div>
                     </div>

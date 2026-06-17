@@ -7,10 +7,11 @@ import { ConnectionService } from './connection.service';
 import { ConnectionController } from './connection.controller';
 import { IntakePipelineService } from './intake-pipeline.service';
 import { WebToLeadController } from './web-to-lead.controller';
+import { IntakeController } from './intake.controller';
 import { OAuthService } from './oauth.service';
 
 @Module({
-  controllers: [IntegrationController, ConnectionController, WebToLeadController],
+  controllers: [IntegrationController, ConnectionController, WebToLeadController, IntakeController],
   providers: [EncryptionService, IntegrationService, IntegrationHandlersService, ConnectionService, IntakePipelineService, OAuthService],
   exports: [EncryptionService, IntegrationService, IntegrationHandlersService, ConnectionService, IntakePipelineService, OAuthService],
 })

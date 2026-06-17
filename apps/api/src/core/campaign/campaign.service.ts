@@ -381,16 +381,20 @@ export class CampaignService {
 
       const limit = Math.min(params.limit ?? 50, 100);
 
-      const cases = await this.db.getClient().case.findMany({
+      const leads = await this.db.getClient().lead.findMany({
         where: { campaign_id: id },
         take: limit + 1,
         ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
         orderBy: { created_at: 'desc' },
-        include: { party: true },
+        include: {
+          party: {
+            select: { id: true, name: true, email: true, phone_raw: true },
+          },
+        },
       });
 
-      const hasMore = cases.length > limit;
-      const data = hasMore ? cases.slice(0, limit) : cases;
+      const hasMore = leads.length > limit;
+      const data = hasMore ? leads.slice(0, limit) : leads;
 
       return ok({
         data,
@@ -474,7 +478,7 @@ export class CampaignService {
   }
 
   private async calculateCampaignStats(campaignId: string, pipelineId: string): Promise<CampaignStats> {
-    const total_leads = await this.db.getClient().case.count({
+    const total_leads = await this.db.getClient().lead.count({
       where: { campaign_id: campaignId },
     });
 
@@ -494,7 +498,7 @@ export class CampaignService {
       let idle_agents = 0;
       if (selectedAgents.length > 0) {
         const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
-        const activeAgentEvents = await this.db.getClient().caseEvent.groupBy({
+        const activeAgentEvents = await this.db.getClient().leadEvent.groupBy({
           by: ['actor_id'],
           where: {
             actor_id: { in: selectedAgents },
@@ -545,7 +549,7 @@ export class CampaignService {
       }
     }
 
-    const contacted = await this.db.getClient().case.count({
+    const contacted = await this.db.getClient().lead.count({
       where: {
         campaign_id: campaignId,
         stage: { not: initialStageId },
@@ -554,7 +558,7 @@ export class CampaignService {
 
     const converted =
       finalPositiveStageIds.length > 0
-        ? await this.db.getClient().case.count({
+        ? await this.db.getClient().lead.count({
             where: {
               campaign_id: campaignId,
               stage: { in: finalPositiveStageIds },
@@ -564,7 +568,7 @@ export class CampaignService {
 
     const lost =
       finalNegativeStageIds.length > 0
-        ? await this.db.getClient().case.count({
+        ? await this.db.getClient().lead.count({
             where: {
               campaign_id: campaignId,
               stage: { in: finalNegativeStageIds },
@@ -577,7 +581,7 @@ export class CampaignService {
 
     let avg_days_to_convert = 0;
     if (converted > 0 && finalPositiveStageIds.length > 0) {
-      const convertedCases = await this.db.getClient().case.findMany({
+      const convertedLeads = await this.db.getClient().lead.findMany({
         where: {
           campaign_id: campaignId,
           stage: { in: finalPositiveStageIds },
@@ -588,46 +592,46 @@ export class CampaignService {
         },
       });
 
-      const caseIds = convertedCases.map((c) => c.id);
-      const events = await this.db.getClient().caseEvent.findMany({
+      const leadIds = convertedLeads.map((l) => l.id);
+      const events = await this.db.getClient().leadEvent.findMany({
         where: {
-          case_id: { in: caseIds },
+          lead_id: { in: leadIds },
           to_stage: { in: finalPositiveStageIds },
           event_type: 'stage_changed',
         },
         orderBy: { occurred_at: 'asc' },
       });
 
-      const earliestEventPerCase = new Map<string, Date>();
+      const earliestEventPerLead = new Map<string, Date>();
       for (const event of events) {
-        if (!earliestEventPerCase.has(event.case_id)) {
-          earliestEventPerCase.set(event.case_id, event.occurred_at);
+        if (!earliestEventPerLead.has(event.lead_id)) {
+          earliestEventPerLead.set(event.lead_id, event.occurred_at);
         }
       }
 
       let totalDays = 0;
-      for (const c of convertedCases) {
-        const convertDate = earliestEventPerCase.get(c.id) || c.created_at;
-        const diffMs = convertDate.getTime() - c.created_at.getTime();
+      for (const l of convertedLeads) {
+        const convertDate = earliestEventPerLead.get(l.id) || l.created_at;
+        const diffMs = convertDate.getTime() - l.created_at.getTime();
         const diffDays = Math.max(0, diffMs / (1000 * 60 * 60 * 24));
         totalDays += diffDays;
       }
-      avg_days_to_convert = Math.round((totalDays / convertedCases.length) * 100) / 100;
+      avg_days_to_convert = Math.round((totalDays / convertedLeads.length) * 100) / 100;
     }
 
-    const caseGroups = await this.db.getClient().case.groupBy({
+    const leadGroups = await this.db.getClient().lead.groupBy({
       by: ['stage'],
       where: { campaign_id: campaignId },
       _count: { id: true },
     });
 
-    const caseCountsByStage = new Map<string, number>();
-    for (const cg of caseGroups) {
-      caseCountsByStage.set(cg.stage, cg._count.id);
+    const leadCountsByStage = new Map<string, number>();
+    for (const lg of leadGroups) {
+      if (lg.stage) leadCountsByStage.set(lg.stage, lg._count.id);
     }
 
     const by_stage = stages.map((s) => {
-      const count = caseCountsByStage.get(s.id) || 0;
+      const count = leadCountsByStage.get(s.id) || 0;
       const percentage = total_leads > 0 ? Math.round((count / total_leads) * 10000) / 100 : 0;
       return {
         stage_name: s.name,
@@ -636,60 +640,12 @@ export class CampaignService {
       };
     });
 
-    const untouched_leads = await this.db.getClient().case.count({
+    const untouched_leads = await this.db.getClient().lead.count({
       where: {
         campaign_id: campaignId,
-        interactions: { none: {} },
+        stage: initialStageId,
       },
     });
-
-    const totalCalls = await this.db.getClient().interaction.count({
-      where: {
-        case: { campaign_id: campaignId },
-        channel: 'call',
-      },
-    });
-
-    let call_connect_rate = 0;
-    if (totalCalls > 0) {
-      const connectedCalls = await this.db.getClient().interaction.count({
-        where: {
-          case: { campaign_id: campaignId },
-          channel: 'call',
-          NOT: {
-            OR: [
-              { content: { contains: 'no answer', mode: 'insensitive' } },
-              { content: { contains: 'no-answer', mode: 'insensitive' } },
-              { content: { contains: 'busy', mode: 'insensitive' } },
-              { content: { contains: 'missed', mode: 'insensitive' } },
-              { content: { contains: 'failed', mode: 'insensitive' } },
-            ],
-          },
-        },
-      });
-      call_connect_rate = Math.round((connectedCalls / totalCalls) * 100);
-    }
-
-    const campaign = await this.db.getClient().campaign.findUnique({
-      where: { id: campaignId },
-      select: { attributes: true },
-    });
-    const attributes = (campaign?.attributes || {}) as Record<string, any>;
-    const selectedAgents = (attributes.selected_agents || []) as string[];
-
-    let idle_agents = 0;
-    if (selectedAgents.length > 0) {
-      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
-      const activeAgentEvents = await this.db.getClient().caseEvent.groupBy({
-        by: ['actor_id'],
-        where: {
-          actor_id: { in: selectedAgents },
-          occurred_at: { gte: twoHoursAgo },
-        },
-      });
-      const activeAgentIds = new Set(activeAgentEvents.map((e) => e.actor_id));
-      idle_agents = selectedAgents.filter((agentId) => !activeAgentIds.has(agentId)).length;
-    }
 
     return {
       total_leads,
@@ -699,9 +655,9 @@ export class CampaignService {
       conversion_rate,
       avg_days_to_convert,
       by_stage,
-      call_connect_rate,
+      call_connect_rate: 0,
       untouched_leads,
-      idle_agents,
+      idle_agents: 0,
     };
   }
 }

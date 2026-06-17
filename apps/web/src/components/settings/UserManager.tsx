@@ -36,6 +36,8 @@ export function UserManager() {
     password?: string;
   } | null>(null);
 
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
   const { data: users, isLoading } = useQuery({
     queryKey: ['settings', 'users'],
     queryFn: () => settingsApi.users.list(),
@@ -146,18 +148,20 @@ export function UserManager() {
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      if (!inviteForm.name.trim() || !inviteForm.phone_number.trim() || inviteForm.roleIds.length === 0) {
-        toast.error('Please fill out all required fields and select at least one role');
+      const errors: Record<string, string> = {};
+
+      if (!inviteForm.name.trim()) errors.name = 'Name is required';
+      if (!inviteForm.phone_number.trim()) errors.phone_number = 'Phone number is required';
+      if (inviteForm.roleIds.length === 0) errors.roleIds = 'Select at least one role';
+      if (!inviteForm.autoGeneratePassword && !inviteForm.password.trim()) errors.password = 'Enter a password or enable auto-generate';
+      if (assignmentOptions.length > 1 && inviteForm.assignment_ids.length === 0) errors.assignment_ids = 'Select at least one location';
+
+      if (Object.keys(errors).length > 0) {
+        setValidationErrors(errors);
         return;
       }
-      if (!inviteForm.autoGeneratePassword && !inviteForm.password.trim()) {
-        toast.error('Please enter a custom password or select auto-generate');
-        return;
-      }
-      if (assignmentOptions.length > 1 && inviteForm.assignment_ids.length === 0) {
-        toast.error('Please select at least one Store Location');
-        return;
-      }
+
+      setValidationErrors({});
 
       inviteMutation.mutate({
         name: inviteForm.name,
@@ -305,17 +309,20 @@ export function UserManager() {
         </CardContent>
       </Card>
 
-      {/* Invite Member Dialog Modal */}
-      <Dialog 
-        open={isInviteModalOpen} 
+      {/* Create User Dialog Modal */}
+      <Dialog
+        open={isInviteModalOpen}
         onOpenChange={(open) => {
+          if (!open) {
+            setValidationErrors({});
+          }
           setIsInviteModalOpen(open);
           if (!open) {
             setCreatedUserCredentials(null);
           }
         }}
       >
-        <DialogContent className="sm:max-w-[480px] bg-card border border-border rounded-xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[560px] bg-card border border-border rounded-xl max-h-[90vh] overflow-y-auto">
           {!createdUserCredentials ? (
             <>
               <DialogHeader>
@@ -324,104 +331,101 @@ export function UserManager() {
                   Create User
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground">
-                  Create a new workspace user and assign their roles and permissions
+                  Add a new workspace member with roles and permissions
                 </DialogDescription>
               </DialogHeader>
 
               <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Full Name</label>
-                  <Input
-                    type="text"
-                    placeholder="e.g. John Doe"
-                    value={inviteForm.name}
-                    onChange={(e) => setInviteForm((f) => ({ ...f, name: e.target.value }))}
-                    required
-                    className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
-                  />
-                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Full Name <span className="text-red-500">*</span></label>
+                    <Input
+                      type="text"
+                      placeholder="John Doe"
+                      value={inviteForm.name}
+                      onChange={(e) => { setInviteForm((f) => ({ ...f, name: e.target.value })); setValidationErrors((p) => ({ ...p, name: '' })); }}
+                      required
+                      className={cn("h-9 border-border bg-card text-foreground placeholder:text-muted-foreground", validationErrors.name && "border-red-300")}
+                    />
+                    {validationErrors.name && <p className="text-[10px] text-red-500">{validationErrors.name}</p>}
+                  </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Email Address (Optional)</label>
-                  <Input
-                    type="email"
-                    placeholder="e.g. john@company.com"
-                    value={inviteForm.email}
-                    onChange={(e) => setInviteForm((f) => ({ ...f, email: e.target.value }))}
-                    className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
-                  />
-                </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Email Address</label>
+                    <Input
+                      type="email"
+                      placeholder="john@company.com"
+                      value={inviteForm.email}
+                      onChange={(e) => setInviteForm((f) => ({ ...f, email: e.target.value }))}
+                      className="h-9 border-border bg-card text-foreground placeholder:text-muted-foreground"
+                    />
+                  </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Phone Number <span className="text-red-500">*</span></label>
-                  <Input
-                    type="tel"
-                    placeholder="e.g. +1 555-0199"
-                    value={inviteForm.phone_number}
-                    onChange={(e) => setInviteForm((f) => ({ ...f, phone_number: e.target.value }))}
-                    required
-                    className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
-                  />
-                </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Phone Number <span className="text-red-500">*</span></label>
+                    <Input
+                      type="tel"
+                      placeholder="+1 555-0199"
+                      value={inviteForm.phone_number}
+                      onChange={(e) => { setInviteForm((f) => ({ ...f, phone_number: e.target.value })); setValidationErrors((p) => ({ ...p, phone_number: '' })); }}
+                      required
+                      className={cn("h-9 border-border bg-card text-foreground placeholder:text-muted-foreground", validationErrors.phone_number && "border-red-300")}
+                    />
+                    {validationErrors.phone_number && <p className="text-[10px] text-red-500">{validationErrors.phone_number}</p>}
+                  </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                    <Key size={12} className="text-muted-foreground" />
-                    Security Credentials
-                  </label>
-                  <div className="space-y-2 p-3 border border-border rounded-lg bg-background/50">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="autoGeneratePassword"
-                        checked={inviteForm.autoGeneratePassword}
-                        onChange={(e) => setInviteForm((f) => ({ ...f, autoGeneratePassword: e.target.checked }))}
-                        className="rounded border-border bg-card text-primary focus:ring-ring h-4 w-4"
-                      />
-                      <label htmlFor="autoGeneratePassword" className="text-xs font-medium text-foreground cursor-pointer select-none">
-                        Auto-generate random 8-character password
-                      </label>
-                    </div>
-                    {!inviteForm.autoGeneratePassword && (
-                      <div className="space-y-1.5 pt-1 animate-in fade-in-50 duration-200">
-                        <Input
-                          type="password"
-                          placeholder="Enter custom password"
-                          value={inviteForm.password}
-                          onChange={(e) => setInviteForm((f) => ({ ...f, password: e.target.value }))}
-                          required
-                          className="h-9 border-border bg-card text-foreground placeholder-[#94a3b8]"
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                      <Key size={12} className="text-muted-foreground" />
+                      Password
+                    </label>
+                    <div className="space-y-2 p-3 border border-border rounded-lg bg-background/50">
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={inviteForm.autoGeneratePassword}
+                          onChange={(e) => setInviteForm((f) => ({ ...f, autoGeneratePassword: e.target.checked }))}
+                          className="rounded border-border bg-card accent-primary h-4 w-4"
                         />
-                      </div>
-                    )}
+                        <span className="text-xs font-medium text-foreground">Auto-generate secure password</span>
+                      </label>
+                      {!inviteForm.autoGeneratePassword && (
+                        <div className="animate-in fade-in-50 duration-200">
+                          <Input
+                            type="password"
+                            placeholder="Enter custom password"
+                            value={inviteForm.password}
+                            onChange={(e) => setInviteForm((f) => ({ ...f, password: e.target.value }))}
+                            required
+                            className="h-9 border-border bg-card text-foreground placeholder:text-muted-foreground"
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {assignmentOptions.length > 1 && (
+                {/* Assignments Selector */}
+                {assignmentOptions.length > 1 ? (
                   <div className="space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                      Store Locations / Assignments <span className="text-red-500">*</span>
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Store Location <span className="text-red-500">*</span>
                     </label>
-                    <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1.5 border border-border rounded-lg bg-background/50">
+                    <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1.5 border border-border rounded-lg bg-background/50">
                       {assignmentOptions.map((opt) => {
                         const isSelected = inviteForm.assignment_ids.includes(opt.id);
                         return (
                           <button
-                            key={opt.id}
-                            type="button"
-                            onClick={() => {
-                              setInviteForm((f) => ({
-                                ...f,
-                                assignment_ids: f.assignment_ids.includes(opt.id)
-                                  ? f.assignment_ids.filter((id) => id !== opt.id)
-                                  : [...f.assignment_ids, opt.id],
-                              }));
-                            }}
+                            key={opt.id} type="button"
+                            onClick={() => setInviteForm((f) => ({
+                              ...f,
+                              assignment_ids: f.assignment_ids.includes(opt.id)
+                                ? f.assignment_ids.filter((id) => id !== opt.id)
+                                : [...f.assignment_ids, opt.id],
+                            }))}
                             className={cn(
-                              "text-xs px-2.5 py-1 rounded-md border transition-all text-left font-medium",
-                              isSelected
-                                ? "bg-primary text-white border-[#0f172a] shadow-sm"
-                                : "bg-card text-muted-foreground border-border hover:border-slate-400 hover:text-foreground"
+                              "text-xs px-2.5 py-1 rounded-md border transition-all font-medium",
+                              isSelected ? "bg-primary text-white border-primary shadow-sm" : "bg-card text-muted-foreground border-border hover:border-slate-400 hover:text-foreground",
                             )}
                           >
                             {opt.name}
@@ -429,45 +433,34 @@ export function UserManager() {
                         );
                       })}
                     </div>
+                    {validationErrors.assignment_ids && <p className="text-[10px] text-red-500">{validationErrors.assignment_ids}</p>}
                   </div>
-                )}
-
-                {assignmentOptions.length === 1 && (
-                  <div className="space-y-1 mt-1 bg-background/30 p-2 rounded border border-border/40">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
-                      Branch / Brand Assignment (Auto-selected)
-                    </label>
-                    <span className="text-xs text-foreground font-medium block">
-                      {assignmentOptions[0]?.name ?? ''}
-                    </span>
+                ) : assignmentOptions.length === 1 ? (
+                  <div className="bg-background/30 p-2 rounded border border-border/40 flex items-center gap-2">
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase">Location:</span>
+                    <span className="text-xs text-foreground font-medium">{assignmentOptions[0]?.name}</span>
                   </div>
-                )}
+                ) : null}
 
-                {verticals && verticals.length > 1 && (
+                {/* Verticals Selector */}
+                {verticals && verticals.length > 1 ? (
                   <div className="space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                      Assigned Verticals / Departments
-                    </label>
-                    <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1.5 border border-border rounded-lg bg-background/50">
+                    <label className="text-xs font-medium text-muted-foreground">Department / Vertical</label>
+                    <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1.5 border border-border rounded-lg bg-background/50">
                       {verticals.map((vert: any) => {
                         const isSelected = inviteForm.vertical_ids.includes(vert.id);
                         return (
                           <button
-                            key={vert.id}
-                            type="button"
-                            onClick={() => {
-                              setInviteForm((f) => ({
-                                ...f,
-                                vertical_ids: f.vertical_ids.includes(vert.id)
-                                  ? f.vertical_ids.filter((id) => id !== vert.id)
-                                  : [...f.vertical_ids, vert.id],
-                              }));
-                            }}
+                            key={vert.id} type="button"
+                            onClick={() => setInviteForm((f) => ({
+                              ...f,
+                              vertical_ids: f.vertical_ids.includes(vert.id)
+                                ? f.vertical_ids.filter((id) => id !== vert.id)
+                                : [...f.vertical_ids, vert.id],
+                            }))}
                             className={cn(
-                              "text-xs px-2.5 py-1 rounded-md border transition-all text-left font-medium",
-                              isSelected
-                                ? "bg-primary text-white border-[#0f172a] shadow-sm"
-                                : "bg-card text-muted-foreground border-border hover:border-slate-400 hover:text-foreground"
+                              "text-xs px-2.5 py-1 rounded-md border transition-all font-medium",
+                              isSelected ? "bg-primary text-white border-primary shadow-sm" : "bg-card text-muted-foreground border-border hover:border-slate-400 hover:text-foreground",
                             )}
                           >
                             {vert.name}
@@ -476,64 +469,46 @@ export function UserManager() {
                       })}
                     </div>
                   </div>
-                )}
-
-                {verticals && verticals.length === 1 && (
-                  <div className="space-y-1 mt-1 bg-background/30 p-2 rounded border border-border/40">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
-                      Vertical / Product Scoping (Auto-selected)
-                    </label>
-                    <span className="text-xs text-foreground font-medium block">
-                      {verticals[0]?.name ?? ''}
-                    </span>
+                ) : verticals?.length === 1 ? (
+                  <div className="bg-background/30 p-2 rounded border border-border/40 flex items-center gap-2">
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase">Vertical:</span>
+                    <span className="text-xs text-foreground font-medium">{verticals[0]?.name}</span>
                   </div>
-                )}
+                ) : null}
 
+                {/* Roles Selector */}
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                    <Shield size={12} className="text-muted-foreground" />
-                    Assigned Roles
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Assigned Roles <span className="text-red-500">*</span>
                   </label>
-                  <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1.5 border border-border rounded-lg bg-background/50">
+                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1.5 border border-border rounded-lg bg-background/50">
                     {sortedRoles.map((role) => {
                       const isSelected = inviteForm.roleIds.includes(role.id);
                       return (
                         <button
-                          key={role.id}
-                          type="button"
+                          key={role.id} type="button"
                           onClick={() => toggleRole(role.id)}
-                          className={`text-xs px-2.5 py-1 rounded-md border transition-all text-left font-medium ${
-                            isSelected
-                              ? 'bg-primary text-white border-[#0f172a] shadow-sm'
-                              : 'bg-card text-muted-foreground border-border hover:border-slate-400 hover:text-foreground'
-                          }`}
+                          className={cn(
+                            "text-xs px-2.5 py-1 rounded-md border transition-all font-medium",
+                            isSelected ? "bg-primary text-white border-primary shadow-sm" : "bg-card text-muted-foreground border-border hover:border-slate-400 hover:text-foreground",
+                          )}
                         >
                           {role.name}
                         </button>
                       );
                     })}
                   </div>
+                  {validationErrors.roleIds && <p className="text-[10px] text-red-500">{validationErrors.roleIds}</p>}
                 </div>
 
-                <DialogFooter className="pt-4 flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsInviteModalOpen(false)}
-                    className="w-full sm:w-auto h-9 text-xs border-border text-muted-foreground bg-card hover:bg-muted"
-                  >
+                <DialogFooter className="pt-2 flex gap-2">
+                  <Button type="button" variant="outline" onClick={() => { setIsInviteModalOpen(false); setValidationErrors({}); }}
+                    className="flex-1 h-9 text-xs border-border text-muted-foreground bg-card hover:bg-muted">
                     Cancel
                   </Button>
-                  <Button
-                    type="submit"
-                    disabled={inviteMutation.isPending}
-                    className="bg-primary hover:bg-[#1e293b] text-white w-full sm:w-auto h-9 text-xs flex items-center justify-center gap-1.5"
-                  >
-                    {inviteMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Plus size={14} />
-                    )}
+                  <Button type="submit" disabled={inviteMutation.isPending}
+                    className="flex-1 bg-primary hover:bg-primary/90 text-white h-9 text-xs flex items-center justify-center gap-1.5">
+                    {inviteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus size={14} />}
                     Create User
                   </Button>
                 </DialogFooter>
@@ -544,57 +519,48 @@ export function UserManager() {
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
                   <Shield className="text-emerald-500 h-5 w-5" />
-                  User Created Successfully
+                  User Created
                 </DialogTitle>
-                <DialogDescription className="text-xs text-muted-foreground mt-1">
-                  The user has been successfully created. Please copy their credentials below. For security reasons, the password will not be shown again.
+                <DialogDescription className="text-xs text-muted-foreground">
+                  Copy these credentials now — the password won't be shown again.
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-4 my-2 p-4 rounded-lg bg-background/50 border border-border/60">
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  <span className="font-medium text-muted-foreground">Full Name:</span>
-                  <span className="col-span-2 font-semibold text-foreground">{createdUserCredentials.name}</span>
+              <div className="space-y-3 my-2 p-4 rounded-lg bg-emerald-50/30 border border-emerald-100">
+                <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-xs">
+                  <span className="font-medium text-muted-foreground">Name:</span>
+                  <span className="font-semibold text-foreground">{createdUserCredentials.name}</span>
 
                   <span className="font-medium text-muted-foreground">Email:</span>
-                  <span className="col-span-2 font-mono text-foreground select-all break-all">{createdUserCredentials.email || 'None'}</span>
+                  <span className="font-mono text-foreground select-all">{createdUserCredentials.email || '—'}</span>
 
                   {createdUserCredentials.phone_number && (
                     <>
                       <span className="font-medium text-muted-foreground">Phone:</span>
-                      <span className="col-span-2 font-mono text-foreground select-all">{createdUserCredentials.phone_number}</span>
+                      <span className="font-mono text-foreground select-all">{createdUserCredentials.phone_number}</span>
                     </>
                   )}
 
                   <span className="font-medium text-muted-foreground">Password:</span>
-                  <span className="col-span-2 font-mono text-foreground font-semibold select-all break-all bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 w-fit">
+                  <span className="font-mono text-foreground font-bold select-all bg-white px-2 py-0.5 rounded border border-emerald-200 w-fit">
                     {createdUserCredentials.password}
                   </span>
                 </div>
               </div>
 
-              <DialogFooter className="flex flex-col sm:flex-row gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    const text = `User Credentials:\nName: ${createdUserCredentials.name}\nEmail: ${createdUserCredentials.email || 'None'}${createdUserCredentials.phone_number ? `\nPhone: ${createdUserCredentials.phone_number}` : ''}\nPassword: ${createdUserCredentials.password}`;
-                    navigator.clipboard.writeText(text);
-                    toast.success('Credentials copied to clipboard');
-                  }}
-                  className="w-full sm:w-auto flex items-center justify-center gap-1.5 text-xs h-9"
-                >
-                  Copy Credentials
+              <DialogFooter className="flex gap-2">
+                <Button type="button" variant="outline" onClick={() => {
+                  const text = `Name: ${createdUserCredentials.name}\nEmail: ${createdUserCredentials.email || 'None'}${createdUserCredentials.phone_number ? `\nPhone: ${createdUserCredentials.phone_number}` : ''}\nPassword: ${createdUserCredentials.password}`;
+                  navigator.clipboard.writeText(text);
+                  toast.success('Copied to clipboard');
+                }} className="flex-1 text-xs h-9">
+                  Copy All
                 </Button>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    setCreatedUserCredentials(null);
-                    setIsInviteModalOpen(false);
-                  }}
-                  className="w-full sm:w-auto bg-primary text-white hover:bg-[#1e293b] text-xs h-9"
-                >
-                  Done
+                <Button type="button" onClick={() => {
+                  setCreatedUserCredentials(null);
+                  setInviteForm({ name: '', email: '', phone_number: '', password: '', autoGeneratePassword: true, assignment_ids: [], roleIds: [], vertical_ids: [] });
+                }} className="flex-1 bg-primary text-white hover:bg-primary/90 text-xs h-9">
+                  Create Another
                 </Button>
               </DialogFooter>
             </>

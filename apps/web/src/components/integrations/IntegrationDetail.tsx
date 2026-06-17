@@ -1,25 +1,29 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   Loader2,
-  Plug,
-  Link2,
-  Settings2,
-  ArrowLeftRight,
-  Workflow,
-  History,
   RefreshCw,
   Trash2,
   Eye,
   EyeOff,
   ShieldCheck,
-  Plus,
   Save,
   ArrowLeft,
+  ChevronDown,
+  ChevronRight,
+  Plus,
+  Copy,
+  Check,
+  Calendar,
+  Mail,
+  Zap,
+  Globe,
 } from 'lucide-react';
 import { integrationsApi } from '@/api/integrations';
-import type { ConnectionDto, IntegrationManifest, IntakeRoute, FieldMapping, InboundEvent } from '@/api/integrations';
+import { campaignsApi, type CreateCampaignDto } from '@/api/campaigns';
+import { settingsApi } from '@/api/settings';
+import type { ConnectionDto, IntegrationManifest, FieldMapping } from '@/api/integrations';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,9 +31,7 @@ import { Badge } from '@/components/ui/badge';
 import { usePermissions } from '@/hooks/usePermissions';
 import { cn } from '@/lib/utils';
 
-import { settingsApi } from '@/api/settings';
-
-type Tab = 'connection' | 'routing' | 'mapping' | 'automation' | 'activity';
+const NEEDS_FIELD_MAPPING = new Set(['facebook', 'web-to-lead', 'zapier']);
 
 interface Props {
   connectionId: string;
@@ -37,19 +39,22 @@ interface Props {
   onBack: () => void;
 }
 
-export function IntegrationDetail({ connectionId, manifest, onBack }: Props) {
+export function IntegrationDetail({ connectionId: _connectionId, manifest, onBack }: Props) {
   const { can } = usePermissions();
   const canManage = can('manage', 'Integration');
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<Tab>('connection');
 
-  const { data: connection, isLoading } = useQuery({
-    queryKey: ['integrations', 'connections', connectionId],
-    queryFn: () => integrationsApi.connections.get(connectionId),
-    enabled: !!connectionId,
+  const { data: listData, isLoading } = useQuery({
+    queryKey: ['integrations', 'connections'],
+    queryFn: () => integrationsApi.connections.list(),
+    staleTime: 10_000,
   });
 
-  if (isLoading || !connection) {
+  const connection = (listData?.data ?? []).find((c) => c.provider === manifest.provider) ?? null;
+
+  const refetch = () => queryClient.invalidateQueries({ queryKey: ['integrations', 'connections'] });
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -57,16 +62,8 @@ export function IntegrationDetail({ connectionId, manifest, onBack }: Props) {
     );
   }
 
-  const tabs: { id: Tab; label: string; icon: React.ComponentType<any> }[] = [
-    { id: 'connection', label: 'Connection', icon: Plug },
-    { id: 'routing', label: 'Lead Routing', icon: ArrowLeftRight },
-    { id: 'mapping', label: 'Field Mapping', icon: Link2 },
-    { id: 'automation', label: 'Automation', icon: Workflow },
-    { id: 'activity', label: 'Activity & Errors', icon: History },
-  ];
-
   return (
-    <div className="space-y-5 max-w-[1100px]">
+    <div className="space-y-5 max-w-[900px]">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon-sm" onClick={onBack} className="h-8 w-8">
           <ArrowLeft size={16} />
@@ -75,59 +72,639 @@ export function IntegrationDetail({ connectionId, manifest, onBack }: Props) {
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">{manifest.name}</h1>
           <p className="text-sm text-muted-foreground mt-0.5">{manifest.description}</p>
         </div>
-        <Badge variant="outline" className={cn(
-          'ml-auto rounded-md text-xs font-semibold',
-          connection.status === 'connected'
-            ? 'border-emerald-100 bg-emerald-50 text-emerald-700'
-            : 'border-border text-muted-foreground',
-        )}>
-          {connection.status}
-        </Badge>
+        {connection && (
+          <Badge variant="outline" className={cn(
+            'ml-auto rounded-md text-xs font-semibold',
+            connection.status === 'connected'
+              ? 'border-emerald-100 bg-emerald-50 text-emerald-700'
+              : 'border-border text-muted-foreground',
+          )}>
+            {connection.status === 'connected' ? 'Connected' : 'Disconnected'}
+          </Badge>
+        )}
       </div>
 
-      <div className="flex gap-1 border-b border-border">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold transition-colors border-b-2 -mb-px',
-              activeTab === tab.id
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground',
-            )}
-          >
-            <tab.icon size={13} />
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {activeTab === 'connection' && (
-        <ConnectionTab connection={connection} manifest={manifest} canManage={canManage} onChanged={() => queryClient.invalidateQueries({ queryKey: ['integrations', 'connections', connectionId] })} />
-      )}
-      {activeTab === 'routing' && (
-        <RoutingTab connectionId={connectionId} canManage={canManage} />
-      )}
-      {activeTab === 'mapping' && (
-        <MappingTab connectionId={connectionId} canManage={canManage} />
-      )}
-      {activeTab === 'automation' && (
-        <AutomationTab canManage={canManage} />
-      )}
-      {activeTab === 'activity' && (
-        <ActivityTab connectionId={connectionId} />
+      {manifest.url_generator ? (
+        <UrlGeneratorSetup connection={connection} manifest={manifest} canManage={canManage} onChanged={refetch} />
+      ) : manifest.oauth_supported ? (
+        <OAuthSetup connection={connection} manifest={manifest} canManage={canManage} onChanged={refetch} />
+      ) : manifest.provider === 'email-to-case' ? (
+        <ServiceSetup connection={connection} manifest={manifest} canManage={canManage} onChanged={refetch} />
+      ) : (
+        <CredentialsSetup connection={connection} manifest={manifest} canManage={canManage} onChanged={refetch} />
       )}
     </div>
   );
 }
 
-function ConnectionTab({ connection, manifest, canManage, onChanged }: {
+/* ───────── URL Generator (Web-to-Lead, Zapier) ───────── */
+
+function UrlGeneratorSetup({ connection, manifest, canManage, onChanged }: {
+  connection: ConnectionDto | null;
+  manifest: IntegrationManifest;
+  canManage: boolean;
+  onChanged: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [copied, setCopied] = useState(false);
+
+  const urlToken = (connection?.config_json?.url_token as string) ?? '';
+  const endpointUrl = urlToken
+    ? `${window.location.origin}/api/v1/intake/${manifest.provider}/${urlToken}`
+    : '';
+
+  const connectMutation = useMutation({
+    mutationFn: () => integrationsApi.connections.connect(manifest.provider, {}),
+    onSuccess: () => {
+      onChanged();
+      toast.success(`${manifest.name} enabled`);
+    },
+    onError: () => toast.error(`Failed to enable ${manifest.name}`),
+  });
+
+  const disconnectMutation = useMutation({
+    mutationFn: () => integrationsApi.connections.disconnect(connection!.id),
+    onSuccess: () => {
+      onChanged();
+      toast.success(`${manifest.name} disconnected`);
+    },
+    onError: () => toast.error('Failed to disconnect'),
+  });
+
+  const testMutation = useMutation({
+    mutationFn: () => integrationsApi.connections.test(connection!.id),
+    onSuccess: (result) => {
+      if (result.status === 'healthy') {
+        toast.success(result.message);
+      } else {
+        toast.error(result.message);
+      }
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(endpointUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      toast.success('URL copied');
+    } catch {
+      toast.error('Failed to copy');
+    }
+  };
+
+  /* ── Routing state ── */
+  const { data: campaigns = [] } = useQuery({
+    queryKey: ['campaigns'],
+    queryFn: () => campaignsApi.list(),
+  });
+
+  const { data: pipelines = [] } = useQuery({
+    queryKey: ['pipelines'],
+    queryFn: () => settingsApi.pipelines.list(),
+  });
+
+  const { data: routes = [] } = useQuery({
+    queryKey: ['integrations', 'routes', connection?.id],
+    queryFn: () => integrationsApi.routes.list(connection!.id),
+    enabled: !!connection?.id,
+  });
+
+  const existingRoute = routes[0];
+
+  const [destination, setDestination] = useState<'campaign' | 'pipeline'>('campaign');
+  const [campaignAction, setCampaignAction] = useState<'existing' | 'new'>('existing');
+  const [selectedCampaignId, setSelectedCampaignId] = useState('');
+  const [newCampaignName, setNewCampaignName] = useState('');
+  const [selectedPipelineId, setSelectedPipelineId] = useState('');
+  const [showFieldMapping, setShowFieldMapping] = useState(NEEDS_FIELD_MAPPING.has(manifest.provider));
+
+  useEffect(() => {
+    if (existingRoute) {
+      const assignRule = existingRoute.assignment_rule as Record<string, unknown> ?? {};
+      if (assignRule['pipeline_definition_id'] && !existingRoute.campaign_id) {
+        setDestination('pipeline');
+        setSelectedPipelineId(assignRule['pipeline_definition_id'] as string);
+      } else {
+        setDestination('campaign');
+        setSelectedCampaignId(existingRoute.campaign_id ?? '');
+      }
+      if (existingRoute.fieldMappings && existingRoute.fieldMappings.length > 0) {
+        setFieldMappingRows(existingRoute.fieldMappings);
+        setShowFieldMapping(true);
+      }
+    }
+  }, [existingRoute]);
+
+  const [fieldMappingRows, setFieldMappingRows] = useState<Partial<FieldMapping>[]>([]);
+
+  const { data: customFields = [] } = useQuery({
+    queryKey: ['settings', 'field-definitions', 'lead'],
+    queryFn: () => settingsApi.fieldDefinitions.list('lead'),
+    staleTime: 60_000,
+    enabled: showFieldMapping,
+  });
+
+  const STANDARD_FIELDS: Record<string, string[]> = {
+    lead: ['name', 'email', 'phone', 'source', 'status', 'notes'],
+  };
+
+  const saveMutation = useMutation({
+    mutationFn: () => {
+      let campaignId: string | null = null;
+      let assignmentRule: Record<string, unknown> = { type: 'fixed' };
+
+      return (async () => {
+        if (destination === 'campaign') {
+          if (campaignAction === 'new' && newCampaignName.trim()) {
+            const branchId = (connection?.config_json?.branch_id as string) ?? '';
+            const brandId = (connection?.config_json?.brand_id as string) ?? '';
+            const verticalId = (connection?.config_json?.vertical_id as string) ?? '';
+            const pipelineId = selectedPipelineId || '';
+
+            const campaign = await campaignsApi.create({
+              name: newCampaignName.trim(),
+              channel: manifest.provider,
+              status: 'active',
+              pipeline_id: pipelineId || undefined,
+              branch_id: branchId || undefined,
+              brand_id: brandId || undefined,
+              vertical_id: verticalId || undefined,
+              start_date: new Date().toISOString(),
+            } as unknown as CreateCampaignDto);
+            campaignId = campaign.id;
+          } else {
+            campaignId = selectedCampaignId || null;
+          }
+        } else {
+          assignmentRule = { type: 'pipeline', pipeline_definition_id: selectedPipelineId };
+        }
+
+        return integrationsApi.routes.replace(connection!.id, [{
+          priority: 0,
+          mode: 'create_lead',
+          campaign_id: campaignId,
+          owner_id: null,
+          assignment_rule: assignmentRule,
+          duplicate_strategy: 'skip',
+          duplicate_match_fields: ['email', 'phone'],
+          fieldMappings: fieldMappingRows.length > 0
+            ? fieldMappingRows.map((r) => ({
+                source_field: r.source_field ?? '',
+                target_entity: r.target_entity ?? 'lead',
+                target_field: r.target_field ?? '',
+                transform: r.transform ?? null,
+                is_required: r.is_required ?? false,
+              }))
+            : undefined,
+        }]);
+      })();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['integrations', 'routes', connection?.id] });
+      toast.success('Integration setup saved');
+    },
+    onError: () => toast.error('Failed to save integration setup'),
+  });
+
+  const handleSave = () => {
+    if (destination === 'campaign') {
+      if (campaignAction === 'existing' && !selectedCampaignId) {
+        toast.error('Select a campaign to route leads into');
+        return;
+      }
+      if (campaignAction === 'new' && !newCampaignName.trim()) {
+        toast.error('Enter a name for the new campaign');
+        return;
+      }
+    } else {
+      if (!selectedPipelineId) {
+        toast.error('Select a pipeline to route leads into');
+        return;
+      }
+    }
+    saveMutation.mutate();
+  };
+
+  /* ── Not connected state ── */
+  if (!connection || connection.status !== 'connected') {
+    return (
+      <Card className="bg-card border-border rounded-xl shadow-none">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-medium">Enable {manifest.name}</CardTitle>
+          <CardDescription className="text-xs">
+            No credentials needed — we'll generate a unique endpoint URL for you.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {canManage && (
+            <Button size="sm" onClick={() => connectMutation.mutate()} disabled={connectMutation.isPending}
+              className="h-8 rounded-lg text-xs font-semibold">
+              {connectMutation.isPending ? (
+                <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+              ) : manifest.provider === 'web-to-lead' ? (
+                <Globe className="mr-1.5 h-3 w-3" />
+              ) : (
+                <Zap className="mr-1.5 h-3 w-3" />
+              )}
+              Enable {manifest.name}
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const health = (connection.config_json?.health as { status?: string; last_tested_at?: string; message?: string } | undefined) ?? null;
+  const isSetupComplete = !!(routes.length > 0);
+
+  return (
+    <div className="space-y-4">
+      {/* Connection controls */}
+      <Card className="bg-card border-border rounded-xl shadow-none">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-medium">Connection</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-muted-foreground">Status:</span>
+              <Badge variant="outline" className={cn(
+                'rounded-md text-xs',
+                'border-emerald-100 bg-emerald-50 text-emerald-700',
+              )}>
+                active
+              </Badge>
+            </div>
+            <div className="flex gap-2 ml-auto">
+              {canManage && (
+                <>
+                  <Button variant="outline" size="sm" disabled={testMutation.isPending} onClick={() => testMutation.mutate()}
+                    className="h-7 rounded-lg text-[11px]">
+                    {testMutation.isPending ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-1 h-3 w-3" />}
+                    Test
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => { if (window.confirm('Disconnect this integration?')) disconnectMutation.mutate(); }}
+                    className="h-7 rounded-lg text-[11px] text-red-600 border-red-100 hover:bg-red-50">
+                    <Trash2 className="mr-1 h-3 w-3" /> Disconnect
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+          {health?.message && (
+            <p className="text-xs p-2 rounded-md bg-muted/50 mt-3">{health.message}</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Endpoint URL card */}
+      <Card className="bg-card border-border rounded-xl shadow-none">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-medium">Your Endpoint URL</CardTitle>
+          <CardDescription className="text-xs">
+            {manifest.provider === 'web-to-lead'
+              ? 'Send form submissions to this URL. Set your HTML form\'s action attribute to this URL, or POST JSON directly.'
+              : 'Use this webhook URL as the destination in your Zapier Zap.'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex gap-2">
+            <code className="flex-1 p-2.5 rounded-lg bg-muted border border-border text-xs font-mono break-all select-all">
+              {endpointUrl}
+            </code>
+            <Button variant="outline" size="sm" onClick={handleCopy} className="h-8 rounded-lg text-xs shrink-0">
+              {copied ? <Check className="mr-1 h-3 w-3 text-emerald-600" /> : <Copy className="mr-1 h-3 w-3" />}
+              {copied ? 'Copied' : 'Copy'}
+            </Button>
+          </div>
+
+          {manifest.provider === 'web-to-lead' && (
+            <details className="border border-border rounded-lg overflow-hidden">
+              <summary className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none">
+                <ChevronRight size={12} className="summary-chevron" />
+                HTML form example
+              </summary>
+              <div className="px-3 pb-3">
+                <pre className="p-2.5 rounded-lg bg-muted border border-border text-[11px] font-mono overflow-x-auto whitespace-pre-wrap">
+{`<form action="${endpointUrl}" method="POST">
+  <input name="name" placeholder="Full Name" />
+  <input name="email" placeholder="Email" />
+  <input name="phone" placeholder="Phone" />
+  <button>Submit</button>
+</form>`}
+                </pre>
+              </div>
+            </details>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Routing */}
+      {isSetupComplete && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-800 text-sm">
+          <ShieldCheck size={16} />
+          <span className="text-xs font-medium">Setup complete — leads will be routed to the campaign below</span>
+        </div>
+      )}
+
+      <RoutingForm
+        destination={destination}
+        setDestination={setDestination}
+        campaignAction={campaignAction}
+        setCampaignAction={setCampaignAction}
+        selectedCampaignId={selectedCampaignId}
+        setSelectedCampaignId={setSelectedCampaignId}
+        newCampaignName={newCampaignName}
+        setNewCampaignName={setNewCampaignName}
+        selectedPipelineId={selectedPipelineId}
+        setSelectedPipelineId={setSelectedPipelineId}
+        campaigns={campaigns}
+        pipelines={pipelines}
+        showFieldMapping={showFieldMapping}
+        setShowFieldMapping={setShowFieldMapping}
+        fieldMappingRows={fieldMappingRows}
+        setFieldMappingRows={setFieldMappingRows}
+        customFields={customFields}
+        STANDARD_FIELDS={STANDARD_FIELDS}
+        canManage={canManage}
+        manifestName={manifest.name}
+        needsFieldMapping={NEEDS_FIELD_MAPPING.has(manifest.provider)}
+        handleSave={handleSave}
+        savePending={saveMutation.isPending}
+      />
+    </div>
+  );
+}
+
+/* ───────── OAuth Setup (Facebook, Google Calendar) ───────── */
+
+function OAuthSetup({ connection, manifest, canManage, onChanged }: {
+  connection: ConnectionDto | null;
+  manifest: IntegrationManifest;
+  canManage: boolean;
+  onChanged: () => void;
+}) {
+  const [oauthConnecting, setOauthConnecting] = useState(false);
+
+  const handleOAuth = useCallback(async () => {
+    setOauthConnecting(true);
+    const width = 600;
+    const height = 700;
+    const left = window.screenX + (window.innerWidth - width) / 2;
+    const top = window.screenY + (window.innerHeight - height) / 2;
+    const popup = window.open('', `oauth-${manifest.provider}`, `width=${width},height=${height},left=${left},top=${top}`);
+
+    if (!popup) {
+      toast.error('Popup blocked. Allow popups for this site and try again.');
+      setOauthConnecting(false);
+      return;
+    }
+
+    popup.document.write('<html><body style="display:flex;align-items:center;justify-content:center;font-family:sans-serif;font-size:14px;color:#666"><p>Connecting…</p></body></html>');
+
+    try {
+      const { url } = await integrationsApi.connections.getOAuthUrl(manifest.provider, window.location.href);
+      popup.location.href = url;
+    } catch {
+      popup.close();
+      toast.error('Failed to initiate OAuth. Check provider configuration.');
+      setOauthConnecting(false);
+      return;
+    }
+
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === 'oauth' && event.data?.provider === manifest.provider) {
+        window.removeEventListener('message', handler);
+        setOauthConnecting(false);
+        if (event.data.success) {
+          onChanged();
+          toast.success(`${manifest.name} connected`);
+        } else {
+          toast.error(event.data.message || 'OAuth failed');
+        }
+      }
+    };
+
+    window.addEventListener('message', handler);
+    const interval = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(interval);
+        window.removeEventListener('message', handler);
+        setOauthConnecting(false);
+      }
+    }, 500);
+  }, [manifest, onChanged]);
+
+  if (!connection || connection.status !== 'connected') {
+    return (
+      <Card className="bg-card border-border rounded-xl shadow-none">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-medium">Connect {manifest.name}</CardTitle>
+          <CardDescription className="text-xs">Authenticate using OAuth</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-xs text-muted-foreground mb-4">
+            Click below to authorize Meta CRM to access your {manifest.name} data.
+          </p>
+          {canManage && (
+            <Button size="sm" onClick={handleOAuth} disabled={oauthConnecting}
+              className="h-8 rounded-lg text-xs font-semibold">
+              {oauthConnecting ? (
+                <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+              ) : (
+                <ShieldCheck className="mr-1.5 h-3 w-3" />
+              )}
+              Connect with {manifest.name}
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (manifest.provider === 'google-calendar') {
+    return <ServiceSetup connection={connection} manifest={manifest} canManage={canManage} onChanged={onChanged} />;
+  }
+
+  return <OAuthPostConnect connection={connection} manifest={manifest} canManage={canManage} onChanged={onChanged} />;
+}
+
+function OAuthPostConnect({ connection, manifest, canManage, onChanged }: {
   connection: ConnectionDto;
   manifest: IntegrationManifest;
   canManage: boolean;
   onChanged: () => void;
 }) {
+  const queryClient = useQueryClient();
+
+  const disconnectMutation = useMutation({
+    mutationFn: () => integrationsApi.connections.disconnect(connection.id),
+    onSuccess: () => {
+      onChanged();
+      toast.success(`${manifest.name} disconnected`);
+    },
+    onError: () => toast.error('Failed to disconnect'),
+  });
+
+  const testMutation = useMutation({
+    mutationFn: () => integrationsApi.connections.test(connection.id),
+    onSuccess: (result) => {
+      onChanged();
+      if (result.status === 'healthy') toast.success(result.message);
+      else toast.error(result.message);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const health = (connection.config_json?.health as any) ?? null;
+
+  const { data: campaigns = [] } = useQuery({
+    queryKey: ['campaigns'],
+    queryFn: () => campaignsApi.list(),
+  });
+
+  const { data: routes = [] } = useQuery({
+    queryKey: ['integrations', 'routes', connection.id],
+    queryFn: () => integrationsApi.routes.list(connection.id),
+  });
+
+  const existingRoute = routes[0];
+  const [selectedCampaignId, setSelectedCampaignId] = useState('');
+  const [showFieldMapping, setShowFieldMapping] = useState(true);
+  const [fieldMappingRows, setFieldMappingRows] = useState<Partial<FieldMapping>[]>([]);
+
+  useEffect(() => {
+    if (existingRoute) {
+      setSelectedCampaignId(existingRoute.campaign_id ?? '');
+      if (existingRoute.fieldMappings && existingRoute.fieldMappings.length > 0) {
+        setFieldMappingRows(existingRoute.fieldMappings);
+      }
+    }
+  }, [existingRoute]);
+
+  const { data: customFields = [] } = useQuery({
+    queryKey: ['settings', 'field-definitions', 'lead'],
+    queryFn: () => settingsApi.fieldDefinitions.list('lead'),
+    staleTime: 60_000,
+    enabled: showFieldMapping,
+  });
+
+  const STANDARD_FIELDS: Record<string, string[]> = {
+    lead: ['name', 'email', 'phone', 'source', 'status', 'notes'],
+  };
+
+  const saveMutation = useMutation({
+    mutationFn: () => integrationsApi.routes.replace(connection.id, [{
+      priority: 0,
+      mode: 'create_lead',
+      campaign_id: selectedCampaignId || null,
+      owner_id: null,
+      assignment_rule: { type: 'fixed' },
+      duplicate_strategy: 'skip',
+      duplicate_match_fields: ['email', 'phone'],
+      fieldMappings: fieldMappingRows.length > 0
+        ? fieldMappingRows.map((r) => ({
+            source_field: r.source_field ?? '',
+            target_entity: 'lead',
+            target_field: r.target_field ?? '',
+            transform: r.transform ?? null,
+            is_required: r.is_required ?? false,
+          }))
+        : undefined,
+    }]),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['integrations', 'routes', connection.id] });
+      toast.success('Integration setup saved');
+    },
+    onError: () => toast.error('Failed to save'),
+  });
+
+  return (
+    <div className="space-y-4">
+      <Card className="bg-card border-border rounded-xl shadow-none">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-medium">Connection</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-muted-foreground">Status:</span>
+              <Badge variant="outline" className="border-emerald-100 bg-emerald-50 text-emerald-700 rounded-md text-xs">connected</Badge>
+            </div>
+            <div className="flex gap-2 ml-auto">
+              {canManage && (
+                <>
+                  <Button variant="outline" size="sm" disabled={testMutation.isPending} onClick={() => testMutation.mutate()}
+                    className="h-7 rounded-lg text-[11px]">
+                    {testMutation.isPending ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-1 h-3 w-3" />}
+                    Test
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => { if (window.confirm('Disconnect?')) disconnectMutation.mutate(); }}
+                    className="h-7 rounded-lg text-[11px] text-red-600 border-red-100 hover:bg-red-50">
+                    <Trash2 className="mr-1 h-3 w-3" /> Disconnect
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+          {health?.message && <p className="text-xs p-2 rounded-md bg-muted/50 mt-3">{health.message}</p>}
+        </CardContent>
+      </Card>
+
+      <Card className="bg-card border-border rounded-xl shadow-none">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-medium">Routing</CardTitle>
+          <CardDescription className="text-xs">Where incoming leads from {manifest.name} should go</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Campaign</label>
+            <select value={selectedCampaignId} onChange={(e) => setSelectedCampaignId(e.target.value)}
+              className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground">
+              <option value="">Select a campaign…</option>
+              {campaigns.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <FieldMappingSection
+            show={showFieldMapping}
+            onToggle={() => setShowFieldMapping(!showFieldMapping)}
+            rows={fieldMappingRows}
+            setRows={setFieldMappingRows}
+            customFields={customFields}
+            STANDARD_FIELDS={STANDARD_FIELDS}
+            canManage={canManage}
+            manifestName={manifest.name}
+          />
+
+          {canManage && (
+            <div className="flex justify-end pt-2">
+              <Button size="sm" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}
+                className="h-8 rounded-lg text-xs font-semibold">
+                {saveMutation.isPending ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <Save className="mr-1.5 h-3 w-3" />}
+                Save Setup
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ───────── Credentials Setup (WhatsApp, JustDial, Email) ───────── */
+
+function CredentialsSetup({ connection, manifest, canManage, onChanged }: {
+  connection: ConnectionDto | null;
+  manifest: IntegrationManifest;
+  canManage: boolean;
+  onChanged: () => void;
+}) {
+  const queryClient = useQueryClient();
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [showValues, setShowValues] = useState<Record<string, boolean>>({});
 
@@ -141,28 +718,6 @@ function ConnectionTab({ connection, manifest, canManage, onChanged }: {
     onError: () => toast.error(`Failed to connect ${manifest.name}`),
   });
 
-  const disconnectMutation = useMutation({
-    mutationFn: () => integrationsApi.connections.disconnect(connection.id),
-    onSuccess: () => {
-      onChanged();
-      toast.success(`${manifest.name} disconnected`);
-    },
-    onError: () => toast.error(`Failed to disconnect ${manifest.name}`),
-  });
-
-  const testMutation = useMutation({
-    mutationFn: () => integrationsApi.connections.test(connection.id),
-    onSuccess: (result) => {
-      onChanged();
-      if (result.status === 'healthy') {
-        toast.success(result.message);
-      } else {
-        toast.error(result.message);
-      }
-    },
-    onError: (err: Error) => toast.error(err.message),
-  });
-
   const handleSave = () => {
     const missing = manifest.credential_fields.filter((f) => !fieldValues[f]?.trim());
     if (missing.length > 0) {
@@ -172,282 +727,335 @@ function ConnectionTab({ connection, manifest, canManage, onChanged }: {
     connectMutation.mutate(fieldValues);
   };
 
-  const health = (connection.config_json?.health as { status?: string; last_tested_at?: string; message?: string } | undefined) ?? null;
+  /* ── Post-connect state ── */
+  const disconnectMutation = useMutation({
+    mutationFn: () => integrationsApi.connections.disconnect(connection!.id),
+    onSuccess: () => {
+      onChanged();
+      toast.success(`${manifest.name} disconnected`);
+    },
+    onError: () => toast.error('Failed to disconnect'),
+  });
 
-  return (
-    <div className="grid gap-5 md:grid-cols-2">
-      <Card className="bg-card border-border rounded-xl shadow-none">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-medium">Credentials</CardTitle>
-          <CardDescription className="text-xs">Encrypted at rest with AES-256-GCM</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {manifest.credential_fields.map((field) => (
-            <div key={field} className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground capitalize">
-                {field.replace(/_/g, ' ')}
-              </label>
-              <div className="relative">
-                <Input
-                  type={showValues[field] ? 'text' : 'password'}
-                  value={fieldValues[field] ?? ''}
-                  onChange={(e) => setFieldValues((v) => ({ ...v, [field]: e.target.value }))}
-                  placeholder={`Enter ${field.replace(/_/g, ' ')}`}
-                  className="h-9 border-border bg-card pr-10 text-sm"
-                  disabled={!canManage}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowValues((v) => ({ ...v, [field]: !v[field] }))}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showValues[field] ? <EyeOff size={14} /> : <Eye size={14} />}
-                </button>
+  const testMutation = useMutation({
+    mutationFn: () => integrationsApi.connections.test(connection!.id),
+    onSuccess: (result) => {
+      onChanged();
+      if (result.status === 'healthy') toast.success(result.message);
+      else toast.error(result.message);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const health = (connection?.config_json?.health as any) ?? null;
+
+  const { data: campaigns = [] } = useQuery({
+    queryKey: ['campaigns'],
+    queryFn: () => campaignsApi.list(),
+  });
+
+  const { data: routes = [] } = useQuery({
+    queryKey: ['integrations', 'routes', connection?.id],
+    queryFn: () => integrationsApi.routes.list(connection!.id),
+    enabled: !!connection?.id,
+  });
+
+  const existingRoute = routes[0];
+  const [selectedCampaignId, setSelectedCampaignId] = useState('');
+  const [showFieldMapping, setShowFieldMapping] = useState(false);
+  const [fieldMappingRows, setFieldMappingRows] = useState<Partial<FieldMapping>[]>([]);
+
+  useEffect(() => {
+    if (existingRoute) {
+      setSelectedCampaignId(existingRoute.campaign_id ?? '');
+      if (existingRoute.fieldMappings && existingRoute.fieldMappings.length > 0) {
+        setFieldMappingRows(existingRoute.fieldMappings);
+        setShowFieldMapping(true);
+      }
+    }
+  }, [existingRoute]);
+
+  const { data: customFields = [] } = useQuery({
+    queryKey: ['settings', 'field-definitions', 'lead'],
+    queryFn: () => settingsApi.fieldDefinitions.list('lead'),
+    staleTime: 60_000,
+    enabled: showFieldMapping,
+  });
+
+  const STANDARD_FIELDS: Record<string, string[]> = {
+    lead: ['name', 'email', 'phone', 'source', 'status', 'notes'],
+  };
+
+  const saveMutation = useMutation({
+    mutationFn: () => integrationsApi.routes.replace(connection!.id, [{
+      priority: 0,
+      mode: 'create_lead',
+      campaign_id: selectedCampaignId || null,
+      owner_id: null,
+      assignment_rule: { type: 'fixed' },
+      duplicate_strategy: 'skip',
+      duplicate_match_fields: ['email', 'phone'],
+      fieldMappings: fieldMappingRows.length > 0
+        ? fieldMappingRows.map((r) => ({
+            source_field: r.source_field ?? '',
+            target_entity: 'lead',
+            target_field: r.target_field ?? '',
+            transform: r.transform ?? null,
+            is_required: r.is_required ?? false,
+          }))
+        : undefined,
+    }]),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['integrations', 'routes', connection?.id] });
+      toast.success('Integration setup saved');
+    },
+    onError: () => toast.error('Failed to save'),
+  });
+
+  /* ── Not connected state ── */
+  if (!connection || connection.status !== 'connected') {
+    return (
+      <div className="space-y-4">
+        <Card className="bg-card border-border rounded-xl shadow-none">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-medium">Credentials</CardTitle>
+            <CardDescription className="text-xs">Encrypted at rest with AES-256-GCM</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {manifest.credential_fields.map((field) => (
+              <div key={field} className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground capitalize">
+                  {field.replace(/_/g, ' ')}
+                </label>
+                <div className="relative">
+                  <Input
+                    type={showValues[field] ? 'text' : 'password'}
+                    value={fieldValues[field] ?? ''}
+                    onChange={(e) => setFieldValues((v) => ({ ...v, [field]: e.target.value }))}
+                    placeholder={`Enter ${field.replace(/_/g, ' ')}`}
+                    className="h-9 border-border bg-card pr-10 text-sm"
+                    disabled={!canManage}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowValues((v) => ({ ...v, [field]: !v[field] }))}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showValues[field] ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
-
-          {canManage && (
-            <div className="flex gap-2 pt-2">
+            ))}
+            {canManage && (
               <Button size="sm" onClick={handleSave} disabled={connectMutation.isPending} className="h-8 rounded-lg text-xs font-semibold">
                 {connectMutation.isPending ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <Save className="mr-1.5 h-3 w-3" />}
                 Save Credentials
               </Button>
-              {connection.status === 'connected' && (
-                <Button variant="outline" size="sm" onClick={() => { if (window.confirm(`Disconnect ${manifest.name}?`)) disconnectMutation.mutate(); }}
-                  className="h-8 rounded-lg text-xs text-red-600 border-red-100 hover:bg-red-50">
-                  <Trash2 className="mr-1.5 h-3 w-3" /> Disconnect
-                </Button>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card className="bg-card border-border rounded-xl shadow-none">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-medium">Connection Test</CardTitle>
-          <CardDescription className="text-xs">Verify provider connectivity</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground">Status:</span>
-            <Badge variant="outline" className={cn(
-              'rounded-md text-xs',
-              health?.status === 'healthy'
-                ? 'border-emerald-100 bg-emerald-50 text-emerald-700'
-                : 'border-amber-100 bg-amber-50 text-amber-700',
-            )}>
-              {health?.status ?? 'untested'}
-            </Badge>
-          </div>
-          {health?.last_tested_at && (
-            <p className="text-xs text-muted-foreground">
-              Last tested: {new Date(health.last_tested_at as string).toLocaleString()}
-            </p>
-          )}
-          {health?.message && (
-            <p className="text-xs p-2 rounded-md bg-muted/50">{health.message as string}</p>
-          )}
-          {canManage && (
-            <Button variant="outline" size="sm" disabled={testMutation.isPending} onClick={() => testMutation.mutate()}
-              className="h-8 rounded-lg text-xs font-semibold">
-              {testMutation.isPending ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-1.5 h-3 w-3" />}
-              Test Connection
-            </Button>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function RoutingTab({ connectionId, canManage }: { connectionId: string; canManage: boolean }) {
-  const queryClient = useQueryClient();
-
-  const { data: route, isLoading, isError } = useQuery({
-    queryKey: ['integrations', 'routes', connectionId],
-    queryFn: () => integrationsApi.routes.get(connectionId),
-    retry: false,
-  });
-
-  const { data: campaigns = [] } = useQuery({
-    queryKey: ['campaigns'],
-    queryFn: async () => {
-      const res = await settingsApi.integrations.list();
-      return [] as any[];
-    },
-    enabled: false,
-  });
-
-  const { data: pipelines = [] } = useQuery({
-    queryKey: ['settings', 'pipelines'],
-    queryFn: () => settingsApi.pipelines.list(),
-    staleTime: 30_000,
-  });
-
-  const [mode, setMode] = useState<string>(route?.mode ?? 'create_lead');
-  const [campaignId, setCampaignId] = useState(route?.campaign_id ?? '');
-  const [pipelineId, setPipelineId] = useState(route?.pipeline_id ?? '');
-  const [assignmentType, setAssignmentType] = useState<string>(
-    (route?.assignment_rule as any)?.type ?? 'fixed',
-  );
-  const [duplicateStrategy, setDuplicateStrategy] = useState<string>(
-    route?.duplicate_strategy ?? 'skip',
-  );
-
-  const upsertMutation = useMutation({
-    mutationFn: (data: Partial<IntakeRoute>) =>
-      integrationsApi.routes.upsert(connectionId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['integrations', 'routes', connectionId] });
-      toast.success('Routing configuration saved');
-    },
-    onError: () => toast.error('Failed to save routing configuration'),
-  });
-
-  if (isLoading) return <div className="py-10 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
-
-  const handleSave = () => {
-    upsertMutation.mutate({
-      mode: mode as any,
-      ...(campaignId ? { campaign_id: campaignId } : { campaign_id: null }),
-      ...(pipelineId ? { pipeline_id: pipelineId } : { pipeline_id: null }),
-      assignment_rule: { type: assignmentType },
-      duplicate_strategy: duplicateStrategy as any,
-    });
-  };
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="grid gap-5 md:grid-cols-2">
+    <div className="space-y-4">
       <Card className="bg-card border-border rounded-xl shadow-none">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base font-medium">Intake Policy</CardTitle>
-          <CardDescription className="text-xs">How incoming events should be routed</CardDescription>
+          <CardTitle className="text-base font-medium">Connection</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-muted-foreground">Status:</span>
+              <Badge variant="outline" className={cn(
+                'rounded-md text-xs',
+                health?.status === 'healthy'
+                  ? 'border-emerald-100 bg-emerald-50 text-emerald-700'
+                  : 'border-amber-100 bg-amber-50 text-amber-700',
+              )}>
+                {health?.status ?? 'connected'}
+              </Badge>
+            </div>
+            {health?.last_tested_at && (
+              <span className="text-[10px] text-muted-foreground">
+                Last tested: {new Date(health.last_tested_at).toLocaleString()}
+              </span>
+            )}
+            <div className="flex gap-2 ml-auto">
+              {canManage && (
+                <>
+                  <Button variant="outline" size="sm" disabled={testMutation.isPending} onClick={() => testMutation.mutate()}
+                    className="h-7 rounded-lg text-[11px]">
+                    {testMutation.isPending ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-1 h-3 w-3" />}
+                    Test
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => { if (window.confirm('Disconnect?')) disconnectMutation.mutate(); }}
+                    className="h-7 rounded-lg text-[11px] text-red-600 border-red-100 hover:bg-red-50">
+                    <Trash2 className="mr-1 h-3 w-3" /> Disconnect
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+          {health?.message && <p className="text-xs p-2 rounded-md bg-muted/50 mt-3">{health.message}</p>}
+        </CardContent>
+      </Card>
+
+      <Card className="bg-card border-border rounded-xl shadow-none">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-medium">Routing</CardTitle>
+          <CardDescription className="text-xs">Where incoming data from {manifest.name} should go</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Mode</label>
-            <select value={mode} onChange={(e) => setMode(e.target.value)} disabled={!canManage}
+            <label className="text-xs font-medium text-muted-foreground">Campaign</label>
+            <select value={selectedCampaignId} onChange={(e) => setSelectedCampaignId(e.target.value)}
               className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground">
-              <option value="create_lead">Create a Lead for qualification</option>
-              <option value="create_contact_opportunity">Create/update Contact + Opportunity</option>
-            </select>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Default Campaign</label>
-            <input value={campaignId} onChange={(e) => setCampaignId(e.target.value)}
-              placeholder="Campaign ID — auto-derives Branch, Brand, Vertical, Pipeline"
-              disabled={!canManage}
-              className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground" />
-            <p className="text-[10px] text-muted-foreground">Campaign represents attribution. Pipeline represents the sales process. Both can coexist.</p>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Pipeline (for Contact+Opportunity mode)</label>
-            <select value={pipelineId} onChange={(e) => setPipelineId(e.target.value)} disabled={!canManage}
-              className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground">
-              <option value="">Auto (from campaign or default)</option>
-              {pipelines.map((p: any) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
+              <option value="">Select a campaign…</option>
+              {campaigns.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Assignment Rule</label>
-            <select value={assignmentType} onChange={(e) => setAssignmentType(e.target.value)} disabled={!canManage}
-              className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground">
-              <option value="fixed">Fixed (specified owner)</option>
-              <option value="round_robin">Round Robin</option>
-              <option value="capacity">Capacity-based</option>
-            </select>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Duplicate Handling</label>
-            <select value={duplicateStrategy} onChange={(e) => setDuplicateStrategy(e.target.value)} disabled={!canManage}
-              className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground">
-              <option value="skip">Skip duplicates</option>
-              <option value="update">Update existing record</option>
-              <option value="always_create">Always create new</option>
-            </select>
-          </div>
+          <FieldMappingSection
+            show={showFieldMapping}
+            onToggle={() => setShowFieldMapping(!showFieldMapping)}
+            rows={fieldMappingRows}
+            setRows={setFieldMappingRows}
+            customFields={customFields}
+            STANDARD_FIELDS={STANDARD_FIELDS}
+            canManage={canManage}
+            manifestName={manifest.name}
+          />
 
           {canManage && (
-            <Button size="sm" onClick={handleSave} disabled={upsertMutation.isPending}
-              className="h-8 rounded-lg text-xs font-semibold">
-              {upsertMutation.isPending ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <Save className="mr-1.5 h-3 w-3" />}
-              Save Routing
-            </Button>
+            <div className="flex justify-end pt-2">
+              <Button size="sm" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}
+                className="h-8 rounded-lg text-xs font-semibold">
+                {saveMutation.isPending ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <Save className="mr-1.5 h-3 w-3" />}
+                Save Setup
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
-
-      {route && (
-        <Card className="bg-card border-border rounded-xl shadow-none">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base font-medium">Current Configuration</CardTitle>
-            <CardDescription className="text-xs">Saved intake policy for this integration</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <pre className="text-xs bg-muted/50 rounded-lg p-3 overflow-auto max-h-64">{JSON.stringify(route, null, 2)}</pre>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
 
-function MappingTab({ connectionId, canManage }: { connectionId: string; canManage: boolean }) {
-  const queryClient = useQueryClient();
+/* ───────── Service Setup (Email-to-Case, Google Calendar) ───────── */
 
-  const { data: mappings = [], isLoading } = useQuery({
-    queryKey: ['integrations', 'mappings', connectionId],
-    queryFn: () => integrationsApi.mappings.list(connectionId),
-  });
+function ServiceSetup({ connection, manifest, canManage, onChanged }: {
+  connection: ConnectionDto | null;
+  manifest: IntegrationManifest;
+  canManage: boolean;
+  onChanged: () => void;
+}) {
+  const Icon = manifest.provider === 'google-calendar' ? Calendar : Mail;
 
-  const [rows, setRows] = useState<Partial<FieldMapping>[]>([]);
-  const [initialized, setInitialized] = useState(false);
-  const [activeEntity, setActiveEntity] = useState<string>('lead');
-
-  const { data: customFields = [] } = useQuery({
-    queryKey: ['settings', 'field-definitions', activeEntity],
-    queryFn: () => settingsApi.fieldDefinitions.list(activeEntity),
-    staleTime: 60_000,
-  });
-
-  if (!initialized && mappings.length > 0) {
-    setRows(mappings);
-    setInitialized(true);
-  }
-
-  const upsertMutation = useMutation({
-    mutationFn: (data: Partial<FieldMapping>[]) =>
-      integrationsApi.mappings.upsert(connectionId, data),
+  const disconnectMutation = useMutation({
+    mutationFn: () => integrationsApi.connections.disconnect(connection!.id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['integrations', 'mappings', connectionId] });
-      toast.success('Field mappings saved');
+      onChanged();
+      toast.success(`${manifest.name} disconnected`);
     },
-    onError: () => toast.error('Failed to save field mappings'),
+    onError: () => toast.error('Failed to disconnect'),
   });
 
-  if (isLoading) return <div className="py-10 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
+  const testMutation = useMutation({
+    mutationFn: () => integrationsApi.connections.test(connection!.id),
+    onSuccess: (result) => {
+      onChanged();
+      if (result.status === 'healthy') toast.success(result.message);
+      else toast.error(result.message);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
 
-  const STANDARD_FIELDS: Record<string, string[]> = {
-    lead: ['name', 'email', 'phone', 'source', 'status', 'notes', 'campaign_id', 'assigned_to_id'],
-    party: ['name', 'email', 'phone_raw', 'type', 'source'],
-    case: ['title', 'type', 'stage', 'assigned_to_id'],
-  };
+  const health = (connection?.config_json?.health as any) ?? null;
 
-  const getTargetFieldOptions = (entity: string) => {
-    const standard = (STANDARD_FIELDS[entity] ?? []).map((f) => ({ value: f, label: `${f} (standard)` }));
-    const custom = customFields.map((f) => ({ value: f.name, label: `${f.label} (custom)` }));
-    return [...standard, ...custom];
-  };
+  return (
+    <div className="space-y-4">
+      {connection && (
+        <Card className="bg-card border-border rounded-xl shadow-none">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-medium">Connection</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-muted-foreground">Status:</span>
+                <Badge variant="outline" className={cn(
+                  'rounded-md text-xs',
+                  health?.status === 'healthy'
+                    ? 'border-emerald-100 bg-emerald-50 text-emerald-700'
+                    : 'border-amber-100 bg-amber-50 text-amber-700',
+                )}>
+                  {health?.status ?? 'connected'}
+                </Badge>
+              </div>
+              <div className="flex gap-2 ml-auto">
+                {canManage && (
+                  <>
+                    <Button variant="outline" size="sm" disabled={testMutation.isPending} onClick={() => testMutation.mutate()}
+                      className="h-7 rounded-lg text-[11px]">
+                      {testMutation.isPending ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-1 h-3 w-3" />}
+                      Test
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => { if (window.confirm('Disconnect?')) disconnectMutation.mutate(); }}
+                      className="h-7 rounded-lg text-[11px] text-red-600 border-red-100 hover:bg-red-50">
+                      <Trash2 className="mr-1 h-3 w-3" /> Disconnect
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+            {health?.message && <p className="text-xs p-2 rounded-md bg-muted/50 mt-3">{health.message}</p>}
+          </CardContent>
+        </Card>
+      )}
 
-  const addRow = () => setRows([...rows, { source_field: '', target_entity: 'lead', target_field: '', transform: 'direct', is_required: false }]);
+      <Card className="bg-card border-border rounded-xl shadow-none">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-medium flex items-center gap-2">
+            <Icon size={16} className="text-muted-foreground" />
+            {manifest.name} Setup
+          </CardTitle>
+          <CardDescription className="text-xs">
+            {manifest.provider === 'google-calendar'
+              ? 'Sync appointments, meetings, and availability with Google Calendar.'
+              : manifest.provider === 'email-to-case'
+              ? 'Monitor an IMAP mailbox and automatically convert incoming emails to leads/cases.'
+              : 'Configure this service integration.'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            This integration is a service connector. Dedicated setup coming soon.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ───────── Shared: Field Mapping Section ───────── */
+
+function FieldMappingSection({ show, onToggle, rows, setRows, customFields, STANDARD_FIELDS, canManage, manifestName }: {
+  show: boolean;
+  onToggle: () => void;
+  rows: Partial<FieldMapping>[];
+  setRows: (rows: Partial<FieldMapping>[]) => void;
+  customFields: any[];
+  STANDARD_FIELDS: Record<string, string[]>;
+  canManage: boolean;
+  manifestName: string;
+}) {
+  const addRow = () => setRows([...rows, {
+    source_field: '', target_entity: 'lead', target_field: '', transform: 'direct', is_required: false,
+  }]);
   const updateRow = (i: number, update: Partial<FieldMapping>) => {
     const next = [...rows];
     next[i] = { ...next[i], ...update };
@@ -455,278 +1063,260 @@ function MappingTab({ connectionId, canManage }: { connectionId: string; canMana
   };
   const removeRow = (i: number) => setRows(rows.filter((_, idx) => idx !== i));
 
+  const fieldOptions = [
+    ...(STANDARD_FIELDS['lead'] ?? []).map((f: string) => ({ value: f, label: `${f} (standard)` })),
+    ...customFields.map((f: any) => ({ value: f.name, label: `${f.label} (custom)` })),
+  ];
+
+  return (
+    <div className="border border-border rounded-lg overflow-hidden">
+      <button type="button" onClick={onToggle}
+        className="flex items-center justify-between w-full px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
+        <span>Field Mapping {!show && rows.length > 0 && (
+          <span className="ml-1.5 text-[10px] text-emerald-600">({rows.length} mapped)</span>
+        )}</span>
+        {show ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+      </button>
+
+      {show && (
+        <div className="px-3 pb-3 space-y-2">
+          <p className="text-[10px] text-muted-foreground">
+            Map {manifestName} field names to CRM Lead field names. Fields without a mapping pass through with their original names.
+          </p>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-border text-left text-muted-foreground">
+                  <th className="py-1.5 px-1 font-medium">Incoming Field</th>
+                  <th className="py-1.5 px-1 font-medium">CRM Field</th>
+                  <th className="py-1.5 px-1 font-medium">Required</th>
+                  {canManage && <th className="py-1.5 px-1 font-medium w-8" />}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, i) => {
+                  const datalistId = `fm-fields-${i}`;
+                  return (
+                    <tr key={i} className="border-b border-border/50">
+                      <td className="py-1 px-1">
+                        <input value={row.source_field ?? ''} disabled={!canManage}
+                          onChange={(e) => updateRow(i, { source_field: e.target.value })}
+                          placeholder="incoming.field.name"
+                          className="w-full bg-transparent border border-border rounded px-1.5 py-1 text-[11px]" />
+                      </td>
+                      <td className="py-1 px-1">
+                        <input list={datalistId} value={row.target_field ?? ''} disabled={!canManage}
+                          onChange={(e) => updateRow(i, { target_field: e.target.value })}
+                          placeholder="Pick or type"
+                          className="w-full bg-transparent border border-border rounded px-1.5 py-1 text-[11px]" />
+                        <datalist id={datalistId}>
+                          {fieldOptions.map((opt: any) => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </datalist>
+                      </td>
+                      <td className="py-1 px-1 text-center">
+                        <input type="checkbox" checked={row.is_required ?? false} disabled={!canManage}
+                          onChange={(e) => updateRow(i, { is_required: e.target.checked })}
+                          className="rounded" />
+                      </td>
+                      {canManage && (
+                        <td className="py-1 px-1">
+                          <button onClick={() => removeRow(i)}
+                            className="text-red-500 hover:text-red-700 text-[11px]">✕</button>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {canManage && (
+            <Button variant="outline" size="sm" onClick={addRow}
+              className="h-7 rounded-lg text-[11px]">
+              <Plus className="mr-1 h-2.5 w-2.5" /> Add Mapping
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ───────── Shared: Routing Form ───────── */
+
+function RoutingForm({
+  destination, setDestination,
+  campaignAction, setCampaignAction,
+  selectedCampaignId, setSelectedCampaignId,
+  newCampaignName, setNewCampaignName,
+  selectedPipelineId, setSelectedPipelineId,
+  campaigns, pipelines,
+  showFieldMapping, setShowFieldMapping,
+  fieldMappingRows, setFieldMappingRows,
+  customFields, STANDARD_FIELDS,
+  canManage, manifestName, needsFieldMapping, handleSave, savePending,
+}: {
+  destination: 'campaign' | 'pipeline';
+  setDestination: (v: 'campaign' | 'pipeline') => void;
+  campaignAction: 'existing' | 'new';
+  setCampaignAction: (v: 'existing' | 'new') => void;
+  selectedCampaignId: string;
+  setSelectedCampaignId: (v: string) => void;
+  newCampaignName: string;
+  setNewCampaignName: (v: string) => void;
+  selectedPipelineId: string;
+  setSelectedPipelineId: (v: string) => void;
+  campaigns: any[];
+  pipelines: any[];
+  showFieldMapping: boolean;
+  setShowFieldMapping: (v: boolean) => void;
+  fieldMappingRows: Partial<FieldMapping>[];
+  setFieldMappingRows: (rows: Partial<FieldMapping>[]) => void;
+  customFields: any[];
+  STANDARD_FIELDS: Record<string, string[]>;
+  canManage: boolean;
+  manifestName: string;
+  needsFieldMapping: boolean;
+  handleSave: () => void;
+  savePending: boolean;
+}) {
   return (
     <Card className="bg-card border-border rounded-xl shadow-none">
-      <CardHeader className="pb-3 flex-row items-center justify-between">
-        <div>
-          <CardTitle className="text-base font-medium">Field Mappings</CardTitle>
-          <CardDescription className="text-xs">Map provider fields to CRM fields. Standard and custom fields from Field Definitions are listed.</CardDescription>
-        </div>
-        {canManage && (
-          <Button variant="outline" size="sm" onClick={addRow} className="h-8 rounded-lg text-xs">
-            <Plus className="mr-1 h-3 w-3" /> Add Mapping
-          </Button>
-        )}
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base font-medium">Routing</CardTitle>
+        <CardDescription className="text-xs">
+          Choose where incoming data from {manifestName} should go
+        </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-border text-left text-muted-foreground">
-                <th className="py-2 px-2 font-medium">Source Field</th>
-                <th className="py-2 px-2 font-medium">Target Entity</th>
-                <th className="py-2 px-2 font-medium">Target Field</th>
-                <th className="py-2 px-2 font-medium">Transform</th>
-                <th className="py-2 px-2 font-medium">Required</th>
-                {canManage && <th className="py-2 px-2 font-medium w-10" />}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, i) => {
-                const entity = row.target_entity ?? 'lead';
-                const fieldOptions = getTargetFieldOptions(entity);
-                const datalistId = `fields-${i}`;
-                return (
-                <tr key={i} className="border-b border-border/50">
-                  <td className="py-1.5 px-2">
-                    <input value={row.source_field ?? ''} disabled={!canManage}
-                      onChange={(e) => updateRow(i, { source_field: e.target.value })}
-                      placeholder="e.g. ad_lead.email"
-                      className="w-full bg-transparent border border-border rounded px-2 py-1 text-xs" />
-                  </td>
-                  <td className="py-1.5 px-2">
-                    <select value={row.target_entity ?? 'lead'} disabled={!canManage}
-                      onChange={(e) => { updateRow(i, { target_entity: e.target.value, target_field: '' }); setActiveEntity(e.target.value); }}
-                      className="w-full bg-transparent border border-border rounded px-2 py-1 text-xs">
-                      <option value="lead">Lead</option>
-                      <option value="party">Party</option>
-                      <option value="case">Case</option>
-                    </select>
-                  </td>
-                  <td className="py-1.5 px-2">
-                    <input
-                      list={datalistId}
-                      value={row.target_field ?? ''}
-                      disabled={!canManage}
-                      onChange={(e) => updateRow(i, { target_field: e.target.value })}
-                      placeholder="Pick or type field name"
-                      className="w-full bg-transparent border border-border rounded px-2 py-1 text-xs"
-                    />
-                    <datalist id={datalistId}>
-                      {fieldOptions.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </datalist>
-                  </td>
-                  <td className="py-1.5 px-2">
-                    <select value={row.transform ?? 'direct'} disabled={!canManage}
-                      onChange={(e) => updateRow(i, { transform: e.target.value })}
-                      className="w-full bg-transparent border border-border rounded px-2 py-1 text-xs">
-                      <option value="direct">Direct</option>
-                      <option value="split(' ',0)">Split First Word</option>
-                      <option value="split(' ',1)">Split Second Word</option>
-                    </select>
-                  </td>
-                  <td className="py-1.5 px-2 text-center">
-                    <input type="checkbox" checked={row.is_required ?? false} disabled={!canManage}
-                      onChange={(e) => updateRow(i, { is_required: e.target.checked })}
-                      className="rounded" />
-                  </td>
-                  {canManage && (
-                    <td className="py-1.5 px-2">
-                      <button onClick={() => removeRow(i)} className="text-red-500 hover:text-red-700 text-xs">✕</button>
-                    </td>
-                  )}
-                </tr>
-              )})}
-              {rows.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="py-8 text-center text-muted-foreground">
-                    No field mappings configured.
-                    {canManage && ' Click "Add Mapping" to start.'}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      <CardContent className="space-y-4">
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-muted-foreground">Destination</label>
+          <div className="flex gap-3">
+            <label className={cn(
+              'flex-1 p-3 rounded-lg border cursor-pointer transition-colors',
+              destination === 'campaign'
+                ? 'border-primary bg-primary/5'
+                : 'border-border bg-card hover:border-muted-foreground/30',
+            )}>
+              <input type="radio" name="destination" value="campaign" checked={destination === 'campaign'}
+                onChange={() => setDestination('campaign')} className="sr-only" />
+              <span className="text-xs font-medium">Campaign</span>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Route leads into a campaign</p>
+            </label>
+            <label className={cn(
+              'flex-1 p-3 rounded-lg border cursor-pointer transition-colors',
+              destination === 'pipeline'
+                ? 'border-primary bg-primary/5'
+                : 'border-border bg-card hover:border-muted-foreground/30',
+            )}>
+              <input type="radio" name="destination" value="pipeline" checked={destination === 'pipeline'}
+                onChange={() => setDestination('pipeline')} className="sr-only" />
+              <span className="text-xs font-medium">Pipeline</span>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Route directly into a pipeline</p>
+            </label>
+          </div>
         </div>
 
-        {canManage && rows.length > 0 && (
-          <div className="mt-4">
-            <Button size="sm" onClick={() => upsertMutation.mutate(rows)} disabled={upsertMutation.isPending}
+        {destination === 'campaign' ? (
+          <>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Campaign Action</label>
+              <div className="flex gap-3">
+                <label className={cn(
+                  'flex-1 p-3 rounded-lg border cursor-pointer transition-colors',
+                  campaignAction === 'existing'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border bg-card hover:border-muted-foreground/30',
+                )}>
+                  <input type="radio" name="campaign-action" value="existing" checked={campaignAction === 'existing'}
+                    onChange={() => setCampaignAction('existing')} className="sr-only" />
+                  <span className="text-xs font-medium">Use existing</span>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Pick an active campaign</p>
+                </label>
+                <label className={cn(
+                  'flex-1 p-3 rounded-lg border cursor-pointer transition-colors',
+                  campaignAction === 'new'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border bg-card hover:border-muted-foreground/30',
+                )}>
+                  <input type="radio" name="campaign-action" value="new" checked={campaignAction === 'new'}
+                    onChange={() => setCampaignAction('new')} className="sr-only" />
+                  <span className="text-xs font-medium">Create new</span>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Start a dedicated campaign</p>
+                </label>
+              </div>
+            </div>
+
+            {campaignAction === 'existing' ? (
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Campaign</label>
+                <select value={selectedCampaignId} onChange={(e) => setSelectedCampaignId(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground">
+                  <option value="">Select a campaign…</option>
+                  {campaigns.map((c: any) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Campaign Name</label>
+                  <Input value={newCampaignName} onChange={(e) => setNewCampaignName(e.target.value)}
+                    placeholder="e.g. Website Contact Forms" className="h-9 border-border bg-card text-sm" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Pipeline</label>
+                  <select value={selectedPipelineId} onChange={(e) => setSelectedPipelineId(e.target.value)}
+                    className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground">
+                    <option value="">Select a pipeline…</option>
+                    {pipelines.map((p: any) => (
+                      <option key={p.id} value={p.id}>{p.name ?? p.id}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Pipeline</label>
+            <select value={selectedPipelineId} onChange={(e) => setSelectedPipelineId(e.target.value)}
+              className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground">
+              <option value="">Select a pipeline…</option>
+              {pipelines.map((p: any) => (
+                <option key={p.id} value={p.id}>{p.name ?? p.id}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {needsFieldMapping && (
+          <FieldMappingSection
+            show={showFieldMapping}
+            onToggle={() => setShowFieldMapping(!showFieldMapping)}
+            rows={fieldMappingRows}
+            setRows={setFieldMappingRows}
+            customFields={customFields}
+            STANDARD_FIELDS={STANDARD_FIELDS}
+            canManage={canManage}
+            manifestName={manifestName}
+          />
+        )}
+
+        {canManage && (
+          <div className="flex justify-end pt-2">
+            <Button size="sm" onClick={handleSave} disabled={savePending}
               className="h-8 rounded-lg text-xs font-semibold">
-              {upsertMutation.isPending ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <Save className="mr-1.5 h-3 w-3" />}
-              Save All Mappings
+              {savePending ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <Save className="mr-1.5 h-3 w-3" />}
+              Save Setup
             </Button>
           </div>
         )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function AutomationTab({ canManage }: { canManage: boolean }) {
-  const { data: workflows = [], isLoading } = useQuery({
-    queryKey: ['automation-workflows'],
-    queryFn: async () => {
-      try {
-        const res = await fetch('/api/v1/automation-flows');
-        if (!res.ok) return [];
-        return (await res.json()) as any[];
-      } catch { return []; }
-    },
-    staleTime: 30_000,
-  });
-
-  const toggleMutation = useMutation({
-    mutationFn: ({ id, is_active }: { id: string; is_active: boolean }) =>
-      fetch(`/api/v1/automation-flows/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_active }),
-      }).then((r) => r.json()),
-    onSuccess: () => toast.success('Workflow updated'),
-    onError: () => toast.error('Failed to update workflow'),
-  });
-
-  if (isLoading) return <div className="py-10 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
-
-  return (
-    <Card className="bg-card border-border rounded-xl shadow-none">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base font-medium">Automation Workflows</CardTitle>
-        <CardDescription className="text-xs">Workflows triggered when intake events are processed</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-border text-left text-muted-foreground">
-                <th className="py-2 px-2 font-medium">Name</th>
-                <th className="py-2 px-2 font-medium">Trigger Event</th>
-                <th className="py-2 px-2 font-medium">Status</th>
-                {canManage && <th className="py-2 px-2 font-medium w-10">Toggle</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {workflows.map((wf: any) => {
-                const relevantEvents = ['Lead:create', 'Party:create', 'Case:create', 'integration:intake'];
-                const isRelevant = relevantEvents.includes(wf.trigger_event);
-                return (
-                  <tr key={wf.id} className={cn('border-b border-border/50', !isRelevant && 'opacity-50')}>
-                    <td className="py-2 px-2 font-medium">{wf.name}</td>
-                    <td className="py-2 px-2">
-                      <Badge variant="outline" className={cn(
-                        'rounded-md text-[10px]',
-                        isRelevant ? 'border-emerald-100 bg-emerald-50 text-emerald-700' : 'border-border text-muted-foreground',
-                      )}>
-                        {wf.trigger_event}
-                      </Badge>
-                    </td>
-                    <td className="py-2 px-2">
-                      <Badge variant="outline" className={cn(
-                        'rounded-md text-[10px]',
-                        wf.is_active ? 'border-emerald-100 bg-emerald-50 text-emerald-700' : 'border-border text-muted-foreground',
-                      )}>
-                        {wf.is_active ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </td>
-                    {canManage && (
-                      <td className="py-2 px-2">
-                        <button
-                          onClick={() => toggleMutation.mutate({ id: wf.id, is_active: !wf.is_active })}
-                          className={cn(
-                            'text-xs px-2 py-0.5 rounded border transition-colors',
-                            wf.is_active
-                              ? 'border-red-100 text-red-600 hover:bg-red-50'
-                              : 'border-emerald-100 text-emerald-600 hover:bg-emerald-50',
-                          )}
-                        >
-                          {wf.is_active ? 'Disable' : 'Enable'}
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                );
-              })}
-              {workflows.length === 0 && (
-                <tr>
-                  <td colSpan={canManage ? 4 : 3} className="py-8 text-center text-muted-foreground">
-                    No automation workflows configured. Create them in Pipeline Settings → Workflows.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function ActivityTab({ connectionId }: { connectionId: string }) {
-  const { data, isLoading } = useQuery({
-    queryKey: ['integrations', 'events', connectionId],
-    queryFn: () => integrationsApi.events.list(connectionId),
-  });
-
-  const events: InboundEvent[] = (data as any)?.data ?? [];
-
-  if (isLoading) return <div className="py-10 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
-
-  return (
-    <Card className="bg-card border-border rounded-xl shadow-none">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base font-medium">Inbound Events</CardTitle>
-        <CardDescription className="text-xs">Raw events received from this provider</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-border text-left text-muted-foreground">
-                <th className="py-2 px-2 font-medium">Event ID</th>
-                <th className="py-2 px-2 font-medium">Type</th>
-                <th className="py-2 px-2 font-medium">Status</th>
-                <th className="py-2 px-2 font-medium">Result</th>
-                <th className="py-2 px-2 font-medium">Received</th>
-              </tr>
-            </thead>
-            <tbody>
-              {events.map((event) => (
-                <tr key={event.id} className="border-b border-border/50">
-                  <td className="py-1.5 px-2 font-mono text-[10px]">{event.provider_event_id.substring(0, 12)}...</td>
-                  <td className="py-1.5 px-2">{event.event_type}</td>
-                  <td className="py-1.5 px-2">
-                    <Badge variant="outline" className={cn(
-                      'rounded-md text-[10px]',
-                      event.status === 'routed' ? 'border-emerald-100 bg-emerald-50 text-emerald-700' :
-                      event.status === 'failed' ? 'border-red-100 bg-red-50 text-red-700' :
-                      event.status === 'deduplicated' ? 'border-amber-100 bg-amber-50 text-amber-700' :
-                      'border-border text-muted-foreground',
-                    )}>
-                      {event.status}
-                    </Badge>
-                  </td>
-                  <td className="py-1.5 px-2">
-                    {event.result_entity_type && `${event.result_entity_type}:${event.result_entity_id?.substring(0, 8)}`}
-                    {event.error_message && <span className="text-red-600 block text-[10px]">{event.error_message.substring(0, 60)}</span>}
-                  </td>
-                  <td className="py-1.5 px-2 text-muted-foreground">
-                    {new Date(event.received_at).toLocaleString()}
-                  </td>
-                </tr>
-              ))}
-              {events.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="py-8 text-center text-muted-foreground">
-                    No inbound events received yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
       </CardContent>
     </Card>
   );

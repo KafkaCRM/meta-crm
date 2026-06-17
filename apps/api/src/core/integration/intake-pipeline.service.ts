@@ -113,34 +113,49 @@ export class IntakePipelineService {
     });
 
     // 3. Load intake route for this connection
-    const route = await this.db.getClient().integrationIntakeRoute.findUnique({
+    // 3. Load intake routes for this connection, sorted by priority
+    const routes = await this.db.getClient().integrationIntakeRoute.findMany({
       where: { connection_id: connectionId },
+      orderBy: { priority: 'asc' },
       include: { fieldMappings: true },
     });
+
+    // 4. Find first matching route
+    const route = this.matchRoute(routes as any, parsedFields);
 
     if (!route) {
       await this.db.getClient().inboundEvent.update({
         where: { id: inboundEvent.id },
-        data: { status: 'failed', error_message: 'No intake route configured' },
+        data: { status: 'failed', error_message: 'No matching intake route' },
       });
-      return err({ code: 'NO_INTAKE_ROUTE', message: 'No intake route configured for this connection' });
+      return err({ code: 'NO_INTAKE_ROUTE', message: 'No matching intake route for this event' });
     }
 
     try {
-      // 4. Map fields
+      // 5. Map fields
       const mappedFields = this.mapFields(parsedFields, route.fieldMappings);
 
-      // 5. Resolve campaign (derives branch, brand, vertical, pipeline)
+      // 6. Resolve campaign (derives branch/brand/vertical/pipeline/stage)
       const campaignDerivations = await this.resolveCampaign(route.campaign_id);
 
-      // 6. Resolve assignment
-      const assignedToId = await this.resolveAssignment(route, scopeOf(tenantId));
+      // 6a. Resolve pipeline (for pipeline-only routing stored in assignment_rule)
+      let pipelineOverrideId: string | null = null;
+      let pipelineOverrideStageId: string | null = null;
+      const assignRule = (route.assignment_rule as Record<string, unknown>) ?? {};
+      if (assignRule['pipeline_definition_id']) {
+        pipelineOverrideId = assignRule['pipeline_definition_id'] as string;
+        const stage = await this.resolveEntryStage(pipelineOverrideId);
+        pipelineOverrideStageId = stage;
+      }
 
-      const branchBrandAssignmentId = route.branch_brand_assignment_id
-        ?? campaignDerivations?.branchBrandAssignmentId
-        ?? '';
+      // 7. Resolve assignment
+      const assignedToId = await this.resolveAssignment(route);
 
-      // 7. Create entity based on mode
+      const branchBrandAssignmentId = campaignDerivations?.branchBrandAssignmentId ?? '';
+      const pipelineId = pipelineOverrideId ?? campaignDerivations?.pipelineId ?? null;
+      const stageId = pipelineOverrideStageId ?? campaignDerivations?.entryStageId ?? null;
+
+      // 8. Create entity based on mode
       if (route.mode === 'create_lead') {
         const leadResult = await this.createLeadFromIntake({
           tenantId,
@@ -149,7 +164,9 @@ export class IntakePipelineService {
           campaignId: route.campaign_id,
           assignedToId,
           branchBrandAssignmentId,
-          verticalId: route.vertical_id ?? campaignDerivations?.verticalId ?? null,
+          verticalId: campaignDerivations?.verticalId ?? null,
+          pipelineDefinitionId: pipelineId,
+          stageId,
         });
 
         if (leadResult.isErr()) {
@@ -183,9 +200,9 @@ export class IntakePipelineService {
         campaignId: route.campaign_id,
         assignedToId,
         branchBrandAssignmentId,
-        verticalId: route.vertical_id ?? campaignDerivations?.verticalId ?? null,
-        pipelineId: route.pipeline_id ?? campaignDerivations?.pipelineId ?? null,
-        entryStageId: route.entry_stage_id ?? campaignDerivations?.entryStageId ?? null,
+        verticalId: campaignDerivations?.verticalId ?? null,
+        pipelineId: campaignDerivations?.pipelineId ?? null,
+        entryStageId: campaignDerivations?.entryStageId ?? null,
       });
 
       if (contactResult.isErr()) {
@@ -214,6 +231,44 @@ export class IntakePipelineService {
       await this.failEvent(inboundEvent.id, message);
       return err({ code: 'INTERNAL', message });
     }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // Route Matching
+  // ═══════════════════════════════════════════════════════════════════
+
+  private matchRoute(
+    routes: Array<{
+      id: string;
+      priority: number;
+      conditions: any;
+      campaign_id: string | null;
+      mode: string;
+      owner_id: string | null;
+      assignment_rule: any;
+      duplicate_strategy: string;
+      duplicate_match_fields: string[];
+      fieldMappings: Array<{
+        id: string;
+        intake_route_id: string;
+        source_field: string;
+        target_entity: string;
+        target_field: string;
+        transform: string | null;
+      }>;
+    }>,
+    parsedFields: Record<string, string>,
+  ): typeof routes[0] | null {
+    for (const route of routes) {
+      if (!route.conditions || Object.keys(route.conditions).length === 0) {
+        return route;
+      }
+      const match = Object.entries(route.conditions).every(
+        ([key, val]) => parsedFields[key] === val,
+      );
+      if (match) return route;
+    }
+    return null;
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -308,7 +363,6 @@ export class IntakePipelineService {
 
   private async resolveAssignment(
     route: { owner_id: string | null; assignment_rule: any },
-    _scope: any,
   ): Promise<string | null> {
     if (route.owner_id) return route.owner_id;
 
@@ -339,6 +393,8 @@ export class IntakePipelineService {
     assignedToId: string | null;
     branchBrandAssignmentId: string;
     verticalId: string | null;
+    pipelineDefinitionId: string | null;
+    stageId: string | null;
   }): Promise<Result<string, PipelineError>> {
     const name = params.mappedFields['lead.name'] ?? 'Unknown Lead';
     const email = params.mappedFields['lead.email'] ?? null;
@@ -362,6 +418,8 @@ export class IntakePipelineService {
           status: 'new',
           campaign_id: params.campaignId,
           assigned_to_id: params.assignedToId,
+          pipeline_definition_id: params.pipelineDefinitionId,
+          stage: params.stageId,
           attributes: attributes as any,
         },
       });
@@ -372,6 +430,15 @@ export class IntakePipelineService {
         message: (e as Error).message,
       });
     }
+  }
+
+  private async resolveEntryStage(pipelineDefinitionId: string): Promise<string | null> {
+    const stages = await this.db.getClient().pipelineStage.findMany({
+      where: { pipeline_definition_id: pipelineDefinitionId },
+      orderBy: { order: 'asc' },
+      take: 1,
+    });
+    return stages[0]?.id ?? null;
   }
 
   // ═══════════════════════════════════════════════════════════════════

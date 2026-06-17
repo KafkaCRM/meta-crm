@@ -79,6 +79,7 @@ import { Input } from '@/components/ui/input';
 import { useCapabilities } from '@/hooks/useCapabilities';
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
 import { CommandPalette } from '@/components/shared/CommandPalette';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 
 /* ------------------------------------------------------------------ */
@@ -123,7 +124,7 @@ function AppSidebar() {
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
     { label: 'Leads', path: '/leads', icon: UserCheck },
     { label: t('party.plural') ?? 'Contacts', path: '/parties', icon: Users },
-    { label: 'Pipeline', path: '/cases', icon: Workflow },
+    { label: 'Pipeline', path: '/pipeline', icon: Workflow },
     { label: 'Campaigns', path: '/campaigns', icon: Megaphone },
     { label: 'Integrations', path: '/integrations', icon: Link2 },
     ...(isEnabled('capability/appointment')
@@ -188,10 +189,10 @@ function AppSidebar() {
 
   return (
     <Sidebar className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
-      <SidebarHeader className="px-4 py-3 border-b border-sidebar-border bg-sidebar">
+      <SidebarHeader className="px-4 py-4 border-b border-sidebar-border bg-sidebar">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-md bg-fin-orange flex items-center justify-center flex-shrink-0 shadow-sm shadow-orange-500/20">
-            <span className="text-white text-xs font-bold font-mono">M</span>
+          <div className="w-7 h-7 rounded-lg bg-fin-orange flex items-center justify-center flex-shrink-0 shadow-sm shadow-primary/10">
+            <span className="text-white text-xs font-bold">M</span>
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-sidebar-primary leading-none tracking-tight">Meta CRM</p>
@@ -213,37 +214,37 @@ function AppSidebar() {
                 const isActive = location.pathname === item.path ||
                   (item.path !== '/' && location.pathname.startsWith(item.path));
                 
-                if (item.path === '/cases' && workflows.length > 0) {
-                  const isSubActive = location.pathname === '/cases';
+                if (item.path === '/pipeline' && workflows.length > 0) {
+                  const isSubActive = location.pathname === '/pipeline' || location.pathname === '/cases';
                   return (
                     <DropdownMenu key={item.path}>
                       <SidebarMenuItem>
                         <DropdownMenuTrigger asChild>
                           <SidebarMenuButton isActive={isSubActive} tooltip={item.label} className="w-full justify-between pr-2.5">
                             <div className="flex items-center gap-2.5 font-medium">
-                              <item.icon size={15} strokeWidth={isSubActive ? 2 : 1.75} className={isSubActive ? 'text-fin-orange' : 'text-sidebar-foreground/60'} />
+                              <item.icon size={15} strokeWidth={isSubActive ? 2.5 : 1.75} className={isSubActive ? 'text-sidebar-accent-foreground' : 'text-sidebar-foreground/60'} />
                               <span className="text-sm font-medium">{item.label}</span>
                             </div>
                             <ChevronRight size={13} className="text-sidebar-foreground/50 ml-auto" />
                           </SidebarMenuButton>
                         </DropdownMenuTrigger>
                         
-                        <DropdownMenuContent side="right" align="start" alignOffset={-6} className="w-56 bg-sidebar border border-sidebar-border shadow-md rounded-xl p-1.5 space-y-0.5 animate-in slide-in-from-left-2 duration-150">
+                          <DropdownMenuContent side="right" align="start" alignOffset={-6} className="w-56 bg-popover border border-border shadow-md rounded-xl p-1.5 space-y-0.5 animate-in slide-in-from-left-2 duration-150">
                           <DropdownMenuLabel className="text-[10px] text-sidebar-foreground/50 font-bold uppercase tracking-wider px-2.5 py-1.5">
                             Select Pipeline
                           </DropdownMenuLabel>
                           <DropdownMenuSeparator className="bg-sidebar-border/40 mx-1" />
                           
                           {workflows.map((wf: any) => {
-                            const isWfActive = location.pathname === '/cases' && search.workflowId === wf.id;
+                            const isWfActive = (location.pathname === '/pipeline' || location.pathname === '/cases') && search.pipelineId === wf.id;
                             return (
                               <DropdownMenuItem key={wf.id} asChild className="p-0 focus:bg-transparent">
                                 <Link
-                                  to="/cases"
-                                  search={{ workflowId: wf.id }}
-                                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all w-full duration-150 cursor-pointer ${
+                                  to="/pipeline"
+                                  search={{ pipelineId: wf.id }}
+                                  className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all w-full duration-150 cursor-pointer ${
                                     isWfActive
-                                      ? 'text-sidebar-accent-foreground bg-sidebar-accent/70 font-bold'
+                                      ? 'text-sidebar-accent-foreground bg-sidebar-accent font-bold'
                                       : 'text-sidebar-foreground/90 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/40'
                                   }`}
                                 >
@@ -264,13 +265,13 @@ function AppSidebar() {
                     <SidebarMenuButton asChild isActive={isActive}>
                       <Link
                         to={item.path}
-                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-all duration-150 ${
+                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-sm transition-all duration-150 ${
                           isActive
-                            ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-xs border border-sidebar-border/60'
+                            ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-sm border border-sidebar-border/50'
                             : 'text-sidebar-foreground hover:bg-sidebar-accent/55 hover:text-sidebar-accent-foreground'
                         }`}
                       >
-                        <item.icon size={15} strokeWidth={isActive ? 2 : 1.75} className={isActive ? 'text-fin-orange' : 'text-sidebar-foreground/60'} />
+                        <item.icon size={15} strokeWidth={isActive ? 2.5 : 1.75} className={isActive ? 'text-sidebar-accent-foreground' : 'text-sidebar-foreground/60'} />
                         <span className="flex-1">{item.label}</span>
                       </Link>
                     </SidebarMenuButton>
@@ -295,13 +296,13 @@ function AppSidebar() {
                   <SidebarMenuButton asChild isActive={isSettingsActive}>
                     <Link
                       to="/settings"
-                      className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm w-full transition-all duration-150 ${
+                      className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-sm w-full transition-all duration-150 ${
                         isSettingsActive
-                          ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-xs border border-sidebar-border/60'
+                          ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-sm border border-sidebar-border/50'
                           : 'text-sidebar-foreground hover:bg-sidebar-accent/55 hover:text-sidebar-accent-foreground'
                       }`}
                     >
-                      <Settings size={15} strokeWidth={isSettingsActive ? 2 : 1.75} className={isSettingsActive ? 'text-fin-orange' : 'text-sidebar-foreground/60'} />
+                      <Settings size={15} strokeWidth={isSettingsActive ? 2.5 : 1.75} className={isSettingsActive ? 'text-sidebar-accent-foreground' : 'text-sidebar-foreground/60'} />
                       <span className="flex-1">Settings</span>
                     </Link>
                   </SidebarMenuButton>
@@ -315,7 +316,7 @@ function AppSidebar() {
       <SidebarFooter className="border-t border-sidebar-border p-3 bg-sidebar">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2.5 w-full px-2 py-2 rounded-lg hover:bg-sidebar-accent/55 transition-colors text-left text-sidebar-foreground cursor-pointer">
+            <button className="flex items-center gap-2.5 w-full px-2 py-2 rounded-xl hover:bg-sidebar-accent/55 transition-colors text-left text-sidebar-foreground cursor-pointer">
               <Avatar className="w-7 h-7 flex-shrink-0">
                 <AvatarFallback className="bg-fin-orange text-white text-xs font-semibold shadow-sm">
                   {initials}
@@ -357,7 +358,7 @@ function CurrencySelector() {
       <select
         value={currency}
         onChange={(e) => setCurrency(e.target.value as 'USD' | 'INR')}
-        className="text-xs font-semibold text-foreground border border-border px-2.5 py-1 rounded-lg bg-card focus:outline-none focus:ring-1 focus:ring-primary select-none shadow-xs cursor-pointer"
+        className="text-xs font-semibold text-foreground border border-border px-2.5 py-1 rounded-xl bg-muted focus:outline-none focus:ring-1 focus:ring-primary select-none cursor-pointer"
       >
         <option value="INR">₹ INR</option>
         <option value="USD">$ USD</option>
@@ -426,7 +427,7 @@ function RootLayout() {
                 <AppSidebar />
                 <div className="flex-1 flex flex-col min-w-0">
               {/* Top bar */}
-              <header className="h-14 bg-background border-b border-border flex items-center justify-between px-4 sticky top-0 z-10">
+              <header className="h-14 bg-background border-b border-border/60 flex items-center justify-between px-6 sticky top-0 z-10">
                 <div className="flex items-center gap-3">
                   <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
                   <Separator orientation="vertical" className="h-4 bg-border" />
@@ -437,35 +438,38 @@ function RootLayout() {
                   {/* Command search launcher trigger */}
                   <button
                     onClick={() => setCommandPaletteOpen(true)}
-                    className="relative w-full sm:w-[240px] h-8 bg-card border border-border hover:border-border/80 rounded-lg flex items-center justify-between px-3 text-muted-foreground text-xs font-medium select-none cursor-pointer transition-all shadow-xs"
+                    className="relative w-full sm:w-[240px] h-8 bg-muted border border-border hover:bg-accent rounded-xl flex items-center justify-between px-3 text-muted-foreground text-xs font-medium select-none cursor-pointer transition-all"
                   >
                     <span className="flex items-center gap-2">
                       <Search size={13} className="text-muted-foreground" />
                       Search console...
                     </span>
-                    <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded border border-border bg-muted px-1.5 font-mono text-[9px] font-bold text-muted-foreground leading-none">
+                    <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded border border-border bg-muted px-1.5 text-[9px] font-bold text-muted-foreground leading-none">
                       <span>⌘</span>K
                     </kbd>
                   </button>
 
-                  {/* Sandbox Environment Badge */}
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/10 border border-amber-500/25 rounded-md">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                    <span className="text-[9px] font-bold text-amber-700 uppercase tracking-wider font-mono">Sandbox</span>
-                  </div>
+                  {import.meta.env.DEV && (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 border border-blue-200 rounded-full">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                      <span className="text-[9px] font-bold text-blue-700 uppercase tracking-wider">Sandbox</span>
+                    </div>
+                  )}
+
+                  <ThemeToggle />
 
                   {/* Currency Selector */}
                   <CurrencySelector />
 
                   {/* Tenant Workspace Selector */}
-                  <div className="text-xs font-semibold text-foreground border border-border px-2.5 py-1 rounded-lg bg-card select-none shadow-xs">
-                    Workspace: Acme Corp
+                  <div className="text-xs font-semibold text-foreground border border-border px-2.5 py-1 rounded-xl bg-muted select-none">
+                    Workspace: {localStorage.getItem('meta_crm_tenant_name') || 'Workspace'}
                   </div>
                 </div>
               </header>
               <CommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
               {/* Page content */}
-              <main className="flex-1 p-6 overflow-auto">
+              <main className="flex-1 p-8 overflow-auto">
                 <Outlet />
               </main>
             </div>
@@ -554,6 +558,8 @@ function LoginPage() {
   const handleSelectWorkspace = async (slug: string) => {
     setError('');
     setIsLoading(true);
+    const ws = workspaces.find((w) => w.slug === slug);
+    if (ws) localStorage.setItem('meta_crm_tenant_name', ws.name);
     try {
       await login(email, password, slug);
     } catch (err) {
@@ -602,9 +608,9 @@ function LoginPage() {
 
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground select-none font-sans">
-      <div className="grid w-full">
+      <div className="grid w-full lg:grid-cols-2">
         {/* Left Column: Form Panel */}
-        <div className="flex min-h-screen flex-col justify-between px-6 py-6 sm:px-10">
+        <div className="flex min-h-screen flex-col justify-between px-6 py-6 sm:px-10 lg:max-w-lg">
           {/* Logo Branding */}
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-9 h-9 rounded-md bg-primary">
@@ -819,7 +825,7 @@ function LoginPage() {
         </div>
  
         {/* Right Column: Visual Showcase Panel (Premium warm canvas with crisp mockup cards) */}
-        <div className="hidden">
+        <div className="hidden lg:flex lg:flex-col lg:justify-between lg:px-10 lg:py-6 bg-[#faf8f5]">
           {/* Quiet branding top bar */}
           <div className="relative z-10 flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-[#ff5600] flex items-center justify-center">
@@ -1031,7 +1037,8 @@ import { propertiesRoute } from './routes/properties';
 import { ordersRoute } from './routes/orders';
 import { onboardingsRoute } from './routes/onboardings';
 import { campaignsRoute } from './routes/campaigns';
-import { leadsRoute } from './routes/leads';
+import { leadsRoute, leadDetailRoute } from './routes/leads';
+import { pipelineRoute } from './routes/pipeline';
 import { integrationsRoute } from './routes/integrations';
 
 /* ------------------------------------------------------------------ */
@@ -1044,6 +1051,8 @@ export const routeTree = rootRoute.addChildren([
   impersonateRoute,
   partiesRoute,
   leadsRoute,
+  leadDetailRoute,
+  pipelineRoute,
   partiesNewRoute,
   partyDetailRoute,
   partyEditRoute,

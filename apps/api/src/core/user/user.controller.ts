@@ -10,7 +10,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { IsString, IsEmail, IsArray, IsOptional } from 'class-validator';
+import { IsString, IsArray, IsOptional, ValidateIf } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../permissions/permissions.guard';
 import { CheckPermissions } from '../permissions/permissions.decorator';
@@ -23,7 +23,8 @@ class InviteUserDto {
   name!: string;
 
   @IsOptional()
-  @IsEmail()
+  @ValidateIf((o: any) => o.email && o.email.trim() !== '')
+  @IsString()
   email?: string;
 
   @IsString()

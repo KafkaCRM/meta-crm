@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, Plug, ChevronRight } from 'lucide-react';
+import { Loader2, MessageSquare, Share2, PhoneCall, Mail, Zap, Calendar, Inbox, Link, ChevronRight } from 'lucide-react';
 import { integrationsApi } from '@/api/integrations';
 import type { ConnectionDto, IntegrationManifest } from '@/api/integrations';
 import { IntegrationDetail } from './IntegrationDetail';
@@ -8,18 +8,19 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
+const iconMap: Record<string, any> = {
+  MessageSquare,
+  Share2,
+  PhoneCall,
+  Mail,
+  Zap,
+  Calendar,
+  Inbox,
+  Link,
+};
+
 function resolveIcon(icon: string) {
-  switch (icon) {
-    case 'MessageSquare': return Plug;
-    case 'Share2': return Plug;
-    case 'PhoneCall': return Plug;
-    case 'Mail': return Plug;
-    case 'Zap': return Plug;
-    case 'Calendar': return Plug;
-    case 'Inbox': return Plug;
-    case 'Link': return Plug;
-    default: return Plug;
-  }
+  return iconMap[icon] ?? Link;
 }
 
 export function IntegrationsLayout() {

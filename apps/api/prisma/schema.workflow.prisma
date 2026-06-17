@@ -9,8 +9,8 @@ model PipelineDefinition {
   stages        PipelineStage[]
   transitions   PipelineTransition[]
   cases         Case[]
+  leads         Lead[]
   campaigns     Campaign[]
-  intakeRoutes  IntegrationIntakeRoute[]
 }
 
 model PipelineStage {
@@ -23,7 +23,6 @@ model PipelineStage {
   terminal_outcome       String? // "won" | "lost" | null
 
   pipelineDefinition PipelineDefinition @relation(fields: [pipeline_definition_id], references: [id])
-  intakeRoutes       IntegrationIntakeRoute[]
 }
 
 model PipelineTransition {

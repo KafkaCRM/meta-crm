@@ -1,25 +1,49 @@
 model Lead {
-  id                 String   @id @default(cuid())
-  tenant_id          String
-  name               String
-  email              String?
-  phone              String
-  source             String   // e.g. "facebook", "justdial", "web"
-  status             String   @default("new") // e.g. "new", "contacted", "unqualified", "qualified", "converted"
-  notes              String?
-  campaign_id        String?
-  assigned_to_id     String?
-  converted_party_id String?
-  converted_case_id  String?
-  attributes         Json     @default("{}")
-  created_at         DateTime @default(now())
-  updated_at         DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  tenant_id             String
+  name                  String
+  email                 String?
+  phone                 String
+  source                String
+  status                String   @default("new")
+  stage                 String?
+  pipeline_definition_id String?
+  notes                 String?
+  campaign_id           String?
+  assigned_to_id        String?
+  party_id              String?
+  attributes            Json     @default("{}")
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
 
-  tenant             Tenant   @relation(fields: [tenant_id], references: [id])
-  assigned_to        User?    @relation(fields: [assigned_to_id], references: [id])
+  tenant              Tenant              @relation(fields: [tenant_id], references: [id])
+  assigned_to         User?               @relation(fields: [assigned_to_id], references: [id])
+  party               Party?              @relation(fields: [party_id], references: [id])
+  pipelineDefinition  PipelineDefinition? @relation(fields: [pipeline_definition_id], references: [id])
+  events              LeadEvent[]
 
   @@index([tenant_id, status])
-  @@index([tenant_id, created_at])
+  @@index([tenant_id, stage])
+  @@index([tenant_id, pipeline_definition_id])
+  @@index([tenant_id, party_id])
   @@index([tenant_id, campaign_id])
   @@index([tenant_id, assigned_to_id])
+  @@index([tenant_id, created_at])
+}
+
+model LeadEvent {
+  id          String   @id @default(cuid())
+  lead_id     String
+  tenant_id   String
+  event_type  String
+  from_stage  String?
+  to_stage    String?
+  metadata    Json     @default("{}")
+  actor_id    String
+  occurred_at DateTime @default(now())
+
+  lead Lead @relation(fields: [lead_id], references: [id])
+
+  @@index([lead_id, occurred_at])
+  @@index([tenant_id, occurred_at])
 }
