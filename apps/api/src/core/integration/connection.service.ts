@@ -223,7 +223,31 @@ export class ConnectionService {
         },
       });
 
-      this.logger.log(`Tenant ${tenantId} connected ${provider} (url_token generated)`);
+      // Auto-create default intake route with field mappings
+      await this.db.getClient().integrationIntakeRoute.create({
+        data: {
+          connection_id: connection.id,
+          priority: 1,
+          conditions: Prisma.JsonNull,
+          mode: 'create_lead',
+          assignment_rule: { type: 'fixed' } as Prisma.InputJsonValue,
+          duplicate_strategy: 'skip',
+          duplicate_match_fields: ['email', 'phone'] as Prisma.InputJsonValue,
+          owner_id: null,
+          campaign_id: null,
+          fieldMappings: {
+            createMany: {
+              data: [
+                { source_field: 'name', target_entity: 'lead', target_field: 'name', transform: 'direct', is_required: true },
+                { source_field: 'email', target_entity: 'lead', target_field: 'email', transform: 'direct', is_required: false },
+                { source_field: 'phone', target_entity: 'lead', target_field: 'phone', transform: 'direct', is_required: false },
+              ],
+            },
+          },
+        },
+      });
+
+      this.logger.log(`Tenant ${tenantId} connected ${provider} (url_token generated, default route created)`);
       return ok(this.toDto(connection));
     }
 

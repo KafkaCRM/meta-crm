@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { ok, err } from 'neverthrow';
 import type { Result } from 'neverthrow';
+import { Prisma } from '@prisma/client';
 import { TenantRole } from '@meta-crm/types';
 import { TenantScopedPrismaService } from '../tenant/tenant-scoped-prisma.service';
 import type { RequestScope } from '../tenant/request-scope.interface';
@@ -120,16 +121,33 @@ export class IntakePipelineService {
       include: { fieldMappings: true },
     });
 
-    // 4. Find first matching route
-    const route = this.matchRoute(routes as any, parsedFields);
-
-    if (!route) {
-      await this.db.getClient().inboundEvent.update({
-        where: { id: inboundEvent.id },
-        data: { status: 'failed', error_message: 'No matching intake route' },
+    // 4. Find first matching route, fallback: create default route
+    const route: any = this.matchRoute(routes as any, parsedFields)
+      ?? await this.db.getClient().integrationIntakeRoute.create({
+        data: {
+          connection_id: connectionId,
+          priority: 1,
+          conditions: Prisma.JsonNull,
+          mode: 'create_lead',
+          assignment_rule: { type: 'fixed' } as Prisma.InputJsonValue,
+          duplicate_strategy: 'skip',
+          duplicate_match_fields: ['email', 'phone'] as Prisma.InputJsonValue,
+          owner_id: null,
+          campaign_id: null,
+          fieldMappings: {
+            createMany: {
+              data: [
+                { source_field: 'name', target_entity: 'lead', target_field: 'name', transform: 'direct', is_required: true },
+                { source_field: 'email', target_entity: 'lead', target_field: 'email', transform: 'direct', is_required: false },
+                { source_field: 'phone', target_entity: 'lead', target_field: 'phone', transform: 'direct', is_required: false },
+              ],
+            },
+          },
+        },
+        include: { fieldMappings: true },
       });
-      return err({ code: 'NO_INTAKE_ROUTE', message: 'No matching intake route for this event' });
-    }
+
+    this.logger.log(`Matched intake route ${route.id} for connection ${connectionId}`);
 
     try {
       // 5. Map fields
