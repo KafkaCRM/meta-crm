@@ -33,6 +33,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Toaster } from '@/components/ui/sonner';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -144,9 +145,11 @@ function AppSidebar() {
   const { isEnabled } = useCapabilities();
   const { t } = useLabels();
 
+  const { selectedVerticalIds } = useBranch();
+
   const { data: workflows = [] } = useQuery({
-    queryKey: ['settings', 'pipelines'],
-    queryFn: () => settingsApi.pipelines.list(),
+    queryKey: ['settings', 'pipelines', ...(selectedVerticalIds.length > 0 ? selectedVerticalIds : ['all'])],
+    queryFn: () => settingsApi.pipelines.list(selectedVerticalIds.length > 0 ? { vertical_ids: selectedVerticalIds.join(',') } : undefined),
   });
 
   const initials = user?.name
@@ -524,6 +527,7 @@ function RootLayout() {
           </LabelsProvider>
         </CurrencyProvider>
       </AbilityProvider>
+        <Toaster />
     </TooltipProvider>
   );
 }
