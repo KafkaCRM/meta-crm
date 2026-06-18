@@ -75,10 +75,24 @@ export async function applyTenantScope<T>(
   }
 
   const verticalScopedModels = ['Party', 'Campaign', 'PipelineDefinition', 'Lead'];
-  const verticalFilter =
-    scope.vertical_ids && scope.vertical_ids.length > 0 && verticalScopedModels.includes(model)
-      ? { vertical_id: { in: scope.vertical_ids } }
-      : {};
+  let verticalFilter: Record<string, unknown> = {};
+  if (scope.vertical_ids && scope.vertical_ids.length > 0 && verticalScopedModels.includes(model)) {
+    const existingVerticalId = args.where?.vertical_id;
+    if (existingVerticalId) {
+      if (typeof existingVerticalId === 'object' && Array.isArray(existingVerticalId.in)) {
+        const intersection = existingVerticalId.in.filter((id: string) => scope.vertical_ids!.includes(id));
+        verticalFilter = { vertical_id: { in: intersection } };
+      } else if (typeof existingVerticalId === 'string') {
+        verticalFilter = scope.vertical_ids.includes(existingVerticalId)
+          ? { vertical_id: existingVerticalId }
+          : { vertical_id: { in: [] } };
+      } else {
+        verticalFilter = { vertical_id: { in: scope.vertical_ids } };
+      }
+    } else {
+      verticalFilter = { vertical_id: { in: scope.vertical_ids } };
+    }
+  }
 
   if (operation === 'upsert') {
     return query({

@@ -3,6 +3,19 @@ import { useQuery } from '@tanstack/react-query';
 import { settingsApi } from '@/api/settings';
 import { toast } from 'sonner';
 
+const STORAGE_KEY = 'mc_selected_branch';
+
+function loadPersistedBranchId(): string {
+  try { return localStorage.getItem(STORAGE_KEY) || ''; } catch { return ''; }
+}
+
+function persistBranchId(id: string) {
+  try {
+    if (id) localStorage.setItem(STORAGE_KEY, id);
+    else localStorage.removeItem(STORAGE_KEY);
+  } catch { /* noop */ }
+}
+
 interface BranchContextValue {
   selectedBranchId: string;
   setSelectedBranchId: (id: string) => void;
@@ -20,7 +33,7 @@ const BranchContext = createContext<BranchContextValue>({
 });
 
 export function BranchProvider({ children }: { children: ReactNode }) {
-  const [selectedBranchId, setSelectedBranchId] = useState('');
+  const [selectedBranchId, setSelectedBranchId] = useState(loadPersistedBranchId);
   const pendingBranchRef = useRef(false);
   const prevBranchRef = useRef(selectedBranchId);
 
@@ -56,6 +69,7 @@ export function BranchProvider({ children }: { children: ReactNode }) {
     if (id !== selectedBranchId) {
       prevBranchRef.current = selectedBranchId;
       setSelectedBranchId(id);
+      persistBranchId(id);
       if (id) {
         pendingBranchRef.current = true;
       }
