@@ -37,10 +37,12 @@ export class CampaignController {
   @CheckPermissions('read', 'Campaign')
   async list(
     @Query('vertical_id') verticalId?: string,
+    @Query('vertical_ids') verticalIdsParam?: string,
     @Query('status') status?: string,
     @Query('channel') channel?: string,
   ) {
-    const result = await this.service.list({ vertical_id: verticalId, status, channel });
+    const verticalIds = verticalIdsParam ? verticalIdsParam.split(',').filter(Boolean) : undefined;
+    const result = await this.service.list({ vertical_id: verticalId, vertical_ids: verticalIds, status, channel });
     if (result.isErr()) {
       throw new InternalServerErrorException(result.error);
     }
@@ -49,8 +51,9 @@ export class CampaignController {
 
   @Get('stats')
   @CheckPermissions('read', 'Campaign')
-  async getAggregateStats() {
-    const result = await this.service.getAggregateStats();
+  async getAggregateStats(@Query('vertical_ids') verticalIdsParam?: string) {
+    const verticalIds = verticalIdsParam ? verticalIdsParam.split(',').filter(Boolean) : undefined;
+    const result = await this.service.getAggregateStats(verticalIds);
     if (result.isErr()) {
       throw new InternalServerErrorException(result.error);
     }

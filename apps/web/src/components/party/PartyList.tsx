@@ -7,6 +7,7 @@ import type { PartyResponse } from '@meta-crm/types';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useLabels } from '@/hooks/useLabels';
 import { partiesApi } from '@/api/parties';
+import { useBranch } from '@/contexts/branch.context';
 import { VirtualTable } from '@/components/shared/VirtualTable';
 import { SidePanelPreview } from '@/components/shared/SidePanelPreview';
 import { BulkActionBar, type BulkAction } from '@/components/shared/BulkActionBar';
@@ -75,6 +76,7 @@ export function PartyList() {
   const [selectedRows, setSelectedRows] = useState<PartyResponse[]>([]);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const { selectedVerticalIds } = useBranch();
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -86,10 +88,13 @@ export function PartyList() {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [searchQuery]);
 
+  const verticalIdsStr = selectedVerticalIds.length > 0 ? selectedVerticalIds.join(',') : '';
+
   const { data, isLoading } = useQuery({
-    queryKey: ['parties', debouncedSearch, filterSources, filterCounsellor, dateFrom, dateTo],
+    queryKey: ['parties', verticalIdsStr, debouncedSearch, filterSources, filterCounsellor, dateFrom, dateTo],
     queryFn: () => {
       const params: Record<string, string | number> = { limit: 500 };
+      if (verticalIdsStr) params.vertical_ids = verticalIdsStr;
       if (debouncedSearch) {
         if (/^\+?\d/.test(debouncedSearch)) {
           params.phone = debouncedSearch;

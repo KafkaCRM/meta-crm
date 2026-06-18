@@ -8,9 +8,8 @@ model Tenant {
   status      String   @default("active")
   created_at  DateTime @default(now())
 
-  brands                 Brand[]
   branches               Branch[]
-  branchBrandAssignments BranchBrandAssignment[]
+  verticals              Vertical[]
   users                  User[]
   roles                  Role[]
   userRoles              UserRole[]
@@ -20,6 +19,7 @@ model Tenant {
   integrationConfigs     IntegrationConfig[]
   integrationConnections IntegrationConnection[]
   userVerticals          UserVertical[]
+  userBranches           UserBranch[]
   webhookSubscriptions   WebhookSubscription[]
   tenantPlugins          TenantPlugin[]
   tenantPlans            TenantPlan[]
@@ -32,20 +32,6 @@ model Tenant {
   leads                  Lead[]
 }
 
-model Brand {
-  id              String   @id @default(cuid())
-  tenant_id       String
-  name            String
-  logo_url        String?
-  primary_color   String?
-  whatsapp_number String?
-  email_from      String?
-  created_at      DateTime @default(now())
-
-  tenant                   Tenant                   @relation(fields: [tenant_id], references: [id])
-  branchBrandAssignments   BranchBrandAssignment[]
-}
-
 model Branch {
   id         String   @id @default(cuid())
   tenant_id  String
@@ -55,28 +41,34 @@ model Branch {
   manager_id String?
   created_at DateTime @default(now())
 
-  tenant                   Tenant                   @relation(fields: [tenant_id], references: [id])
-  branchBrandAssignments   BranchBrandAssignment[]
+  tenant    Tenant    @relation(fields: [tenant_id], references: [id])
+  verticals    Vertical[]
+  users        User[]        @relation("UserDefaultBranch")
+  userBranches UserBranch[]
 }
 
-model BranchBrandAssignment {
+model Vertical {
   id         String   @id @default(cuid())
   tenant_id  String
   branch_id  String
-  brand_id   String
-  is_primary Boolean  @default(false)
+  name       String
   created_at DateTime @default(now())
 
-  tenant Tenant @relation(fields: [tenant_id], references: [id])
-  brand  Brand  @relation(fields: [brand_id], references: [id])
-  branch Branch @relation(fields: [branch_id], references: [id])
+  tenant              Tenant              @relation(fields: [tenant_id], references: [id])
+  branch              Branch              @relation(fields: [branch_id], references: [id])
+  pipelineDefinitions PipelineDefinition[]
+  campaigns           Campaign[]
+  parties             Party[]
+  leads               Lead[]
+  userVerticals       UserVertical[]
 
-  @@unique([branch_id, brand_id])
+  @@unique([branch_id, name])
 }
 
 model User {
   id            String   @id @default(cuid())
   tenant_id     String
+  branch_id     String?
   name          String
   email         String?
   phone_number  String?
@@ -85,15 +77,44 @@ model User {
   created_at    DateTime @default(now())
 
   tenant        Tenant       @relation(fields: [tenant_id], references: [id])
+  branch        Branch?      @relation("UserDefaultBranch", fields: [branch_id], references: [id])
   userRoles     UserRole[]
   parties       Party[]
-  cases         Case[]       @relation("AssignedCases")
   appointments  Appointment[]
   leads         Lead[]
   userVerticals UserVertical[]
+  userBranches  UserBranch[]
 
   @@unique([email, tenant_id])
   @@unique([phone_number, tenant_id])
+}
+
+model UserBranch {
+  id         String   @id @default(cuid())
+  user_id    String
+  branch_id  String
+  tenant_id  String
+  created_at DateTime @default(now())
+
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  branch Branch @relation(fields: [branch_id], references: [id])
+  tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, branch_id])
+}
+
+model UserVertical {
+  id          String   @id @default(cuid())
+  user_id     String
+  vertical_id String
+  tenant_id   String
+  created_at  DateTime @default(now())
+
+  user     User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  vertical Vertical @relation(fields: [vertical_id], references: [id])
+  tenant   Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, vertical_id])
 }
 
 model PlatformUser {
@@ -129,31 +150,3 @@ model RefreshToken {
   @@index([token_hash])
   @@index([user_id])
 }
-
-model Vertical {
-  id          String   @id @default(cuid())
-  tenant_id   String
-  branch_id   String
-  name        String
-  description String?
-  status      String   @default("active")
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-
-  @@index([tenant_id, branch_id])
-  @@index([tenant_id, status])
-}
-
-model UserVertical {
-  id          String   @id @default(cuid())
-  user_id     String
-  vertical_id String
-  tenant_id   String
-  created_at  DateTime @default(now())
-
-  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
-
-  @@unique([user_id, vertical_id])
-}
-

@@ -13,6 +13,7 @@ export interface PartyListParams {
   name?: string;
   source?: string;
   type?: string;
+  vertical_ids?: string;
 }
 
 export interface CursorPaginatedParties {
@@ -39,6 +40,7 @@ export const partiesApi = {
     if (params.name) qs.set('name', params.name);
     if (params.source) qs.set('source', params.source);
     if (params.type) qs.set('type', params.type);
+    if (params.vertical_ids) qs.set('vertical_ids', params.vertical_ids);
     const query = qs.toString();
     return apiCall<CursorPaginatedParties>(`/parties${query ? `?${query}` : ''}`);
   },

@@ -14,9 +14,6 @@ function mockDb() {
       party: {
         create: vi.fn().mockResolvedValue({ id: 'party-1' }),
       },
-      case: {
-        create: vi.fn().mockResolvedValue({ id: 'case-1' }),
-      },
       lead: {
         update: vi.fn().mockResolvedValue({ id: 'lead-1', status: 'converted' }),
       },
@@ -117,7 +114,7 @@ describe('LeadService', () => {
       (client.lead.findUnique as any).mockResolvedValue(LEAD);
 
       const result = await svc.convert('lead-1', {
-        branch_brand_assignment_id: 'assign-1',
+        vertical_id: 'vertical-1',
       });
 
       expect(result.isOk()).toBe(true);
@@ -131,7 +128,7 @@ describe('LeadService', () => {
       (client.lead.findUnique as any).mockResolvedValue({ ...LEAD, status: 'converted' });
 
       const result = await svc.convert('lead-1', {
-        branch_brand_assignment_id: 'assign-1',
+        vertical_id: 'vertical-1',
       });
 
       expect(result.isErr()).toBe(true);

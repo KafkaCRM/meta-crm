@@ -48,6 +48,7 @@ export class CampaignService {
 
   async list(params: {
     vertical_id?: string;
+    vertical_ids?: string[];
     status?: string;
     channel?: string;
   }): Promise<Result<CampaignResponse[], CampaignError>> {
@@ -56,7 +57,9 @@ export class CampaignService {
         status: params.status ? params.status : { not: 'deleted' },
       };
 
-      if (params.vertical_id) {
+      if (params.vertical_ids && params.vertical_ids.length > 0) {
+        where.vertical_id = { in: params.vertical_ids };
+      } else if (params.vertical_id) {
         where.vertical_id = params.vertical_id;
       }
 
@@ -76,7 +79,6 @@ export class CampaignService {
             id: c.id,
             tenant_id: c.tenant_id,
             branch_id: c.branch_id,
-            brand_id: c.brand_id,
             vertical_id: c.vertical_id,
             pipeline_id: c.pipeline_id,
             name: c.name,
@@ -121,7 +123,6 @@ export class CampaignService {
         id: campaign.id,
         tenant_id: campaign.tenant_id,
         branch_id: campaign.branch_id,
-        brand_id: campaign.brand_id,
         vertical_id: campaign.vertical_id,
         pipeline_id: campaign.pipeline_id,
         name: campaign.name,
@@ -156,7 +157,6 @@ export class CampaignService {
         data: {
           tenant_id: this.scope?.tenant_id ?? '',
           branch_id: dto.branch_id,
-          brand_id: dto.brand_id,
           vertical_id: dto.vertical_id,
           pipeline_id: dto.pipeline_id,
           name: dto.name,
@@ -194,7 +194,6 @@ export class CampaignService {
         id: campaign.id,
         tenant_id: campaign.tenant_id,
         branch_id: campaign.branch_id,
-        brand_id: campaign.brand_id,
         vertical_id: campaign.vertical_id,
         pipeline_id: campaign.pipeline_id,
         name: campaign.name,
@@ -232,7 +231,6 @@ export class CampaignService {
 
       const updateData: Record<string, any> = {};
       if (dto.branch_id !== undefined) updateData.branch_id = dto.branch_id;
-      if (dto.brand_id !== undefined) updateData.brand_id = dto.brand_id;
       if (dto.vertical_id !== undefined) updateData.vertical_id = dto.vertical_id;
       if (dto.pipeline_id !== undefined) updateData.pipeline_id = dto.pipeline_id;
       if (dto.name !== undefined) updateData.name = dto.name;
@@ -257,7 +255,6 @@ export class CampaignService {
         id: updated.id,
         tenant_id: updated.tenant_id,
         branch_id: updated.branch_id,
-        brand_id: updated.brand_id,
         vertical_id: updated.vertical_id,
         pipeline_id: updated.pipeline_id,
         name: updated.name,
@@ -304,7 +301,6 @@ export class CampaignService {
         id: updated.id,
         tenant_id: updated.tenant_id,
         branch_id: updated.branch_id,
-        brand_id: updated.brand_id,
         vertical_id: updated.vertical_id,
         pipeline_id: updated.pipeline_id,
         name: updated.name,
@@ -340,15 +336,15 @@ export class CampaignService {
         return err({ code: 'NOT_FOUND', message: 'Campaign not found' });
       }
 
-      const casesCount = await this.db.getClient().case.count({
+      const leadsCount = await this.db.getClient().lead.count({
         where: { campaign_id: id },
       });
 
-      if (casesCount > 0) {
+      if (leadsCount > 0) {
         return err({
           code: 'CAMPAIGN_HAS_LEADS',
-          message: `Cannot delete campaign: ${casesCount} cases tagged`,
-          count: casesCount,
+          message: `Cannot delete campaign: ${leadsCount} leads tagged`,
+          count: leadsCount,
         });
       }
 
@@ -408,11 +404,13 @@ export class CampaignService {
     }
   }
 
-  async getAggregateStats(): Promise<Result<CampaignAggregateStatsResponse, CampaignError>> {
+  async getAggregateStats(verticalIds?: string[]): Promise<Result<CampaignAggregateStatsResponse, CampaignError>> {
     try {
-      const campaigns = await this.db.getClient().campaign.findMany({
-        where: { status: { not: 'deleted' } },
-      });
+      const where: Record<string, any> = { status: { not: 'deleted' } };
+      if (verticalIds && verticalIds.length > 0) {
+        where.vertical_id = { in: verticalIds };
+      }
+      const campaigns = await this.db.getClient().campaign.findMany({ where });
 
       const campaignsData = await Promise.all(
         campaigns.map(async (c) => {

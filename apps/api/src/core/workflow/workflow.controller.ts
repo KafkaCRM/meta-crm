@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -13,7 +14,7 @@ import {
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { IsString, IsArray } from 'class-validator';
+import { IsString, IsArray, IsOptional } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../permissions/permissions.guard';
 import { CheckPermissions } from '../permissions/permissions.decorator';
@@ -37,8 +38,11 @@ export class WorkflowController {
 
   @Get()
   @CheckPermissions('read', 'Workflow')
-  async list() {
-    const result = await this.service.list();
+  async list(
+    @Query('branch_id') branchId?: string,
+    @Query('vertical_id') verticalId?: string,
+  ) {
+    const result = await this.service.list({ branch_id: branchId, vertical_id: verticalId });
     if (result.isErr()) {
       throw new InternalServerErrorException(result.error.message);
     }
@@ -48,7 +52,7 @@ export class WorkflowController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @CheckPermissions('manage', 'Workflow')
-  async create(@Body() body: { name: string; entity_type?: string }) {
+  async create(@Body() body: { name: string; entity_type?: string; vertical_id?: string }) {
     const result = await this.service.create(body);
     if (result.isErr()) {
       throw new InternalServerErrorException(result.error.message);

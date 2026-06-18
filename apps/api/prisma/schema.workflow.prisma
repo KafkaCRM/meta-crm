@@ -6,9 +6,9 @@ model PipelineDefinition {
   vertical_id String?
 
   tenant        Tenant              @relation(fields: [tenant_id], references: [id])
+  vertical      Vertical?           @relation(fields: [vertical_id], references: [id])
   stages        PipelineStage[]
   transitions   PipelineTransition[]
-  cases         Case[]
   leads         Lead[]
   campaigns     Campaign[]
 }
@@ -40,7 +40,7 @@ model AutomationWorkflow {
   tenant_id     String
   name          String
   description   String?
-  trigger_event String   // e.g. "Party:create", "Case:update", etc.
+  trigger_event String   // e.g. "Party:create", "Lead:create", etc.
   flow_json     Json     // Holds steps, conditions, actions, and connections
   is_active     Boolean  @default(true)
   created_at    DateTime @default(now())

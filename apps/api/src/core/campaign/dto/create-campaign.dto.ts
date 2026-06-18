@@ -6,9 +6,6 @@ export class CreateCampaignDto {
   branch_id!: string;
 
   @IsString()
-  brand_id!: string;
-
-  @IsString()
   vertical_id!: string;
 
   @IsString()

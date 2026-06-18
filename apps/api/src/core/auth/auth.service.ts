@@ -468,52 +468,16 @@ export class AuthService {
   private async resolveVerticalIds(
     userId: string,
     tenantId: string,
-    role: string,
-    assignmentIds: string[],
+    _role: string,
+    _assignmentIds: string[],
   ): Promise<string[]> {
     if (!tenantId) return [];
 
-    // 1. Fetch explicit user-vertical mappings from UserVertical table
     const userVerticals = await this.db.userVertical.findMany({
       where: { user_id: userId, tenant_id: tenantId },
       select: { vertical_id: true }
     });
-    if (userVerticals.length > 0) {
-      return userVerticals.map((uv) => uv.vertical_id);
-    }
 
-    // 2. Fallback to branch-based inheritance for backwards compatibility
-    if (
-      role === TenantRole.Manager ||
-      role === TenantRole.Admin ||
-      role === TenantRole.Owner ||
-      assignmentIds.length === 0
-    ) {
-      return [];
-    }
-
-    const assignments = await this.db.branchBrandAssignment.findMany({
-      where: {
-        id: { in: assignmentIds },
-        tenant_id: tenantId,
-      },
-      select: { branch_id: true },
-    });
-
-    const branchIds = assignments.map((a) => a.branch_id);
-    if (branchIds.length === 0) {
-      return [];
-    }
-
-    const verticals = await this.db.vertical.findMany({
-      where: {
-        branch_id: { in: branchIds },
-        tenant_id: tenantId,
-        status: 'active',
-      },
-      select: { id: true },
-    });
-
-    return verticals.map((v) => v.id);
+    return userVerticals.map((uv) => uv.vertical_id);
   }
 }

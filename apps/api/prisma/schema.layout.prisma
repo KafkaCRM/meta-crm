@@ -1,7 +1,7 @@
 model PageLayout {
   id          String   @id @default(cuid())
   tenant_id   String
-  object_type String   // e.g. "Party", "Case", or custom object names
+  object_type String   // e.g. "Party", or custom object names
   name        String
   layout_json Json     // Stores sections, column structures, field order, and read-only flags
   is_default  Boolean  @default(true)

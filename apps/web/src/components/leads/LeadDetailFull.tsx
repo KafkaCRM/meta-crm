@@ -82,7 +82,7 @@ export function LeadDetailFull({ leadId }: LeadDetailFullProps) {
   const [showPromoteDialog, setShowPromoteDialog] = useState(false);
   const [showPipelineDialog, setShowPipelineDialog] = useState(false);
   const [selectedPipelineId, setSelectedPipelineId] = useState('');
-  const [promoteAssignmentId, setPromoteAssignmentId] = useState('');
+  const [promoteVerticalId, setPromoteVerticalId] = useState('');
   const [promoteAssignedToId, setPromoteAssignedToId] = useState('');
   const [noteText, setNoteText] = useState('');
 
@@ -92,9 +92,9 @@ export function LeadDetailFull({ leadId }: LeadDetailFullProps) {
     staleTime: 15_000,
   });
 
-  const { data: assignments = [] } = useQuery({
-    queryKey: ['settings', 'assignments'],
-    queryFn: () => settingsApi.assignments.list(),
+  const { data: verticals = [] } = useQuery({
+    queryKey: ['settings', 'verticals'],
+    queryFn: () => settingsApi.verticals.list(),
   });
 
   const { data: pipelines = [] } = useQuery({
@@ -114,7 +114,7 @@ export function LeadDetailFull({ leadId }: LeadDetailFullProps) {
   });
 
   const convertMutation = useMutation({
-    mutationFn: (data: { branch_brand_assignment_id: string; assigned_to_id?: string }) =>
+    mutationFn: (data: { vertical_id: string; assigned_to_id?: string }) =>
       leadsApi.convert(leadId, data),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['lead', leadId] });
@@ -217,11 +217,11 @@ export function LeadDetailFull({ leadId }: LeadDetailFullProps) {
               <Button
                 size="sm"
                 onClick={() => {
-                  if (assignments.length === 0) {
-                    toast.error('No branch/brand assignments configured');
+                  if (verticals.length === 0) {
+                    toast.error('No verticals configured');
                     return;
                   }
-                  setPromoteAssignmentId(assignments[0]?.id ?? '');
+                  setPromoteVerticalId(verticals[0]?.id ?? '');
                   setShowPromoteDialog(true);
                 }}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white h-8"
@@ -479,15 +479,15 @@ export function LeadDetailFull({ leadId }: LeadDetailFullProps) {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1">
-              <Label className="text-xs font-semibold text-muted-foreground">Branch / Brand Assignment</Label>
-              <Select value={promoteAssignmentId} onValueChange={setPromoteAssignmentId}>
+              <Label className="text-xs font-semibold text-muted-foreground">Vertical</Label>
+              <Select value={promoteVerticalId} onValueChange={setPromoteVerticalId}>
                 <SelectTrigger className="h-9 border-border">
-                  <SelectValue placeholder="Select assignment..." />
+                  <SelectValue placeholder="Select vertical..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {assignments.map((a: any) => (
-                    <SelectItem key={a.id} value={a.id}>
-                      {a.brand?.name ?? 'Brand'} — {a.branch?.name ?? 'Branch'}
+                  {verticals.map((v: any) => (
+                    <SelectItem key={v.id} value={v.id}>
+                      {v.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -503,8 +503,8 @@ export function LeadDetailFull({ leadId }: LeadDetailFullProps) {
               Cancel
             </Button>
             <Button
-              onClick={() => convertMutation.mutate({ branch_brand_assignment_id: promoteAssignmentId })}
-              disabled={!promoteAssignmentId || convertMutation.isPending}
+              onClick={() => convertMutation.mutate({ vertical_id: promoteVerticalId })}
+              disabled={!promoteVerticalId || convertMutation.isPending}
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               {convertMutation.isPending ? 'Promoting...' : 'Confirm & Promote'}

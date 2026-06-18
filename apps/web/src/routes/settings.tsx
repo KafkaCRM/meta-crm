@@ -2,8 +2,8 @@ import { createRoute, Outlet, redirect } from '@tanstack/react-router';
 import { rootRoute } from '../routes';
 import { SettingsLayout } from '@/components/settings/SettingsLayout';
 import { BranchManager } from '@/components/settings/BranchManager';
+import { VerticalManager } from '@/components/settings/VerticalManager';
 import { BrandManager } from '@/components/settings/BrandManager';
-import { AssignmentManager } from '@/components/settings/AssignmentManager';
 import { UserManager } from '@/components/settings/UserManager';
 import { RoleMatrix } from '@/components/settings/RoleMatrix';
 import { WorkflowBuilder } from '@/components/settings/WorkflowBuilder';
@@ -14,17 +14,10 @@ import { PluginStore } from '@/components/settings/PluginStore';
 import { ObjectManager } from '@/components/settings/ObjectManager';
 import { SetupAuditTrail } from '@/components/settings/SetupAuditTrail';
 import { LayoutBuilder } from '@/components/settings/LayoutBuilder';
-import { IndustrySettings } from '@/components/settings/IndustrySettings';
 
 function SettingsPage({ children }: { children: React.ReactNode }) {
   return <SettingsLayout>{children}</SettingsLayout>;
 }
-
-export const settingsIndustryRoute = createRoute({
-  getParentRoute: () => settingsRoute,
-  path: 'industry',
-  component: IndustrySettings,
-});
 
 export const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -42,16 +35,18 @@ export const settingsBranchesRoute = createRoute({
   component: BranchManager,
 });
 
+export const settingsVerticalsRoute = createRoute({
+  getParentRoute: () => settingsRoute,
+  path: 'verticals',
+  component: VerticalManager,
+});
+
 export const settingsBrandsRoute = createRoute({
   getParentRoute: () => settingsRoute,
   path: 'brands',
-  component: BrandManager,
-});
-
-export const settingsAssignmentsRoute = createRoute({
-  getParentRoute: () => settingsRoute,
-  path: 'assignments',
-  component: AssignmentManager,
+  beforeLoad: () => {
+    throw redirect({ to: '/settings/verticals' });
+  },
 });
 
 export const settingsUsersRoute = createRoute({

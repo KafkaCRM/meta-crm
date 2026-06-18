@@ -45,7 +45,7 @@ describe('PartyUpsertService', () => {
 
   describe('normalizePhone', () => {
     it('normalizes valid IN number with country code', async () => {
-      const result = await svc.upsertByPhone('+919876543210', { branch_brand_assignment_id: 'assign-1' }, PartySource.Manual, scope);
+      const result = await svc.upsertByPhone('+919876543210', { vertical_id: 'assign-1' }, PartySource.Manual, scope);
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         expect(result.value.action).toBe('created');
@@ -53,7 +53,7 @@ describe('PartyUpsertService', () => {
     });
 
     it('returns INVALID_PHONE for invalid number', async () => {
-      const result = await svc.upsertByPhone('not-a-phone', { branch_brand_assignment_id: 'assign-1' }, PartySource.Manual, scope);
+      const result = await svc.upsertByPhone('not-a-phone', { vertical_id: 'assign-1' }, PartySource.Manual, scope);
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
         expect(result.error.code).toBe('INVALID_PHONE');
@@ -66,7 +66,7 @@ describe('PartyUpsertService', () => {
       const client = db.getClient();
       (client.party.findFirst as any).mockResolvedValue({ id: 'party-1', phone_normalized: '+919876543210', name: 'Existing' });
 
-      const result = await svc.upsertByPhone('+919876543210', { branch_brand_assignment_id: 'assign-1' }, PartySource.Manual, scope);
+      const result = await svc.upsertByPhone('+919876543210', { vertical_id: 'assign-1' }, PartySource.Manual, scope);
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         expect(result.value.action).toBe('found');
@@ -84,7 +84,7 @@ describe('PartyUpsertService', () => {
       ]);
       (client.partyMergeQueue.create as any).mockResolvedValue({ id: 'mq-1' });
 
-      const result = await svc.upsertByPhone('+919876543210', { name: 'Same Name', branch_brand_assignment_id: 'assign-1' }, PartySource.Manual, scope);
+      const result = await svc.upsertByPhone('+919876543210', { name: 'Same Name', vertical_id: 'assign-1' }, PartySource.Manual, scope);
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         expect(result.value.action).toBe('queued_for_review');

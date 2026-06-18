@@ -21,9 +21,9 @@ export interface ThreadObject {
   messages: InteractionDto[];
 }
 
-export interface CaseEventDto {
+export interface LeadEventDto {
   id: string;
-  case_id: string;
+  lead_id: string;
   event_type: string;
   from_stage?: string | null;
   to_stage?: string | null;
@@ -36,7 +36,7 @@ export interface CaseEventDto {
 export type TimelineItem =
   | { kind: 'interaction'; data: InteractionDto }
   | { kind: 'thread'; data: ThreadObject }
-  | { kind: 'system_event'; data: CaseEventDto };
+  | { kind: 'system_event'; data: LeadEventDto };
 
 export interface InteractionListResponse {
   items: TimelineItem[];

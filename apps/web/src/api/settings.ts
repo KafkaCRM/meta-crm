@@ -10,30 +10,11 @@ export interface Branch {
   created_at: string;
 }
 
-export interface Brand {
-  id: string;
-  tenant_id: string;
-  name: string;
-  logo_url?: string;
-  created_at: string;
-}
-
-export interface Assignment {
-  id: string;
-  tenant_id: string;
-  branch_id: string;
-  brand_id: string;
-  is_primary: boolean;
-  created_at: string;
-}
-
 export interface Vertical {
   id: string;
   tenant_id: string;
   branch_id: string;
   name: string;
-  description?: string | null;
-  status: string;
   created_at: string;
 }
 
@@ -44,6 +25,7 @@ export interface User {
   email?: string | null;
   phone_number?: string;
   status: string;
+  branch_id?: string;
   created_at: string;
   roles?: { role_id: string; role_name: string; assignment_id?: string }[];
 }
@@ -112,8 +94,14 @@ export interface Plugin {
 }
 
 const pipelineSettingsApi = {
-  list: () => apiCall<any[]>('/pipelines'),
-  create: (data: { name: string; entity_type?: string }) =>
+  list: (params?: { branch_id?: string; vertical_id?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.branch_id) qs.set('branch_id', params.branch_id);
+    if (params?.vertical_id) qs.set('vertical_id', params.vertical_id);
+    const query = qs.toString();
+    return apiCall<any[]>(`/pipelines${query ? `?${query}` : ''}`);
+  },
+  create: (data: { name: string; entity_type?: string; vertical_id?: string }) =>
     apiCall<any>('/pipelines', { method: 'POST', body: JSON.stringify(data) }),
   getDefault: () => apiCall<any>('/pipelines/default'),
   update: (id: string, data: { name: string; stages: any[]; transitions: any[] }) =>
@@ -133,32 +121,20 @@ export const settingsApi = {
       apiCall<{ message: string }>(`/branches/${id}`, { method: 'DELETE' }),
   },
 
-  brands: {
-    list: () => apiCall<Brand[]>('/brands'),
-    create: (data: { name: string; logo_url?: string }) =>
-      apiCall<Brand>('/brands', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: { name?: string; logo_url?: string }) =>
-      apiCall<Brand>(`/brands/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-  },
-
-  assignments: {
-    list: () => apiCall<Assignment[]>('/assignments'),
-    create: (data: { branch_id: string; brand_id: string; is_primary?: boolean }) =>
-      apiCall<Assignment>('/assignments', { method: 'POST', body: JSON.stringify(data) }),
-    remove: (id: string) =>
-      apiCall<{ message: string }>(`/assignments/${id}`, { method: 'DELETE' }),
-  },
-
   verticals: {
-    list: (params?: { brand_id?: string; status?: string }) => {
+    list: (params?: { branch_id?: string; status?: string }) => {
       const qs = new URLSearchParams();
-      if (params?.brand_id) qs.set('brand_id', params.brand_id);
+      if (params?.branch_id) qs.set('branch_id', params.branch_id);
       if (params?.status) qs.set('status', params.status);
       const query = qs.toString();
       return apiCall<Vertical[]>(`/verticals${query ? `?${query}` : ''}`);
     },
-    create: (data: { brand_id: string; name: string; description?: string; status?: string }) =>
+    create: (data: { branch_id: string; name: string }) =>
       apiCall<Vertical>('/verticals', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: { name?: string }) =>
+      apiCall<Vertical>(`/verticals/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    remove: (id: string) =>
+      apiCall<{ message: string }>(`/verticals/${id}`, { method: 'DELETE' }),
   },
 
   users: {
@@ -169,7 +145,7 @@ export const settingsApi = {
       phone_number: string;
       password?: string;
       role_ids: string[];
-      assignment_ids?: string[];
+      branch_id?: string;
       vertical_ids?: string[];
     }) =>
       apiCall<User & { temporary_password?: string }>('/users/invite', {
@@ -182,7 +158,7 @@ export const settingsApi = {
         name?: string;
         phone_number?: string;
         role_ids?: string[];
-        assignment_ids?: string[];
+        branch_id?: string;
         vertical_ids?: string[];
       },
     ) =>

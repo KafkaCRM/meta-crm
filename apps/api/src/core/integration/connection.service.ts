@@ -341,8 +341,8 @@ export class ConnectionService {
     tenantId: string,
     provider: string,
   ): Promise<Result<Record<string, string>, ConnectionError>> {
-    const connection = await this.platformDb.client.integrationConnection.findUnique({
-      where: { tenant_id_provider: { tenant_id: tenantId, provider } },
+    const connection = await this.platformDb.client.integrationConnection.findFirst({
+      where: { tenant_id: tenantId, provider },
     });
 
     if (!connection) {
@@ -438,8 +438,8 @@ export class ConnectionService {
   }
 
   async findConnectionId(tenantId: string, provider: string): Promise<string | null> {
-    const connection = await this.platformDb.client.integrationConnection.findUnique({
-      where: { tenant_id_provider: { tenant_id: tenantId, provider } },
+    const connection = await this.platformDb.client.integrationConnection.findFirst({
+      where: { tenant_id: tenantId, provider },
       select: { id: true },
     });
     return connection?.id ?? null;

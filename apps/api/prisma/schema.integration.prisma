@@ -31,7 +31,7 @@ model IntegrationIntakeRoute {
   id                     String   @id @default(cuid())
   connection_id          String
   priority               Int      @default(0)
-  mode                   String   @default("create_lead") // create_lead | create_contact_opportunity
+  mode                   String   @default("create_lead") // create_lead | create_contact
   campaign_id            String?
   conditions             Json     @default("{}")
   owner_id               String?
@@ -53,7 +53,7 @@ model IntegrationFieldMapping {
   id            String   @id @default(cuid())
   route_id      String
   source_field  String   // e.g. "ad_lead.email", "ad_lead.full_name"
-  target_entity String   // lead | party | case
+  target_entity String   // lead | party
   target_field  String
   transform     String?  // "direct" or expression (e.g. "split(' ',0)" for first name)
   is_required   Boolean  @default(false)
@@ -71,7 +71,7 @@ model InboundEvent {
   event_type        String
   raw_payload       Json
   status            String    @default("received") // received | deduplicated | processing | routed | failed | dead_lettered
-  result_entity_type String?  // lead | party | case
+  result_entity_type String?  // lead | party
   result_entity_id  String?
   error_message     String?
   received_at       DateTime  @default(now())

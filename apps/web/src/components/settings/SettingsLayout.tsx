@@ -14,8 +14,6 @@ import {
   GitBranch,
   Sliders,
   Tags,
-  UserCog,
-  Globe,
   Puzzle,
 } from 'lucide-react';
 
@@ -40,9 +38,7 @@ const NAV: SettingsNavSection[] = [
     group: 'Organisation',
     items: [
       { id: 'branches', label: 'Branches', icon: GitBranch, permission: ['manage', 'Branch'] },
-      { id: 'brands', label: 'Brands', icon: Building2, permission: ['manage', 'Brand'] },
-      { id: 'industry', label: 'Industry Vertical', icon: Globe, permission: ['manage', 'FieldDefinition'] },
-      { id: 'assignments', label: 'Assignments', icon: UserCog, permission: ['manage', 'Branch'] },
+      { id: 'verticals', label: 'Verticals', icon: Layers, permission: ['manage', 'Vertical'] },
       { id: 'audit-trail', label: 'Setup Audit Trail', icon: Sliders, permission: ['manage', 'FieldDefinition'] },
     ],
   },

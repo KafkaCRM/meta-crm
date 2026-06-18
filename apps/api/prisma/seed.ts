@@ -141,20 +141,18 @@ async function main() {
   });
 
   // Assign role to tenant user
-  await prisma.userRole.upsert({
-    where: {
-      user_id_role_id: {
-        user_id: tenantUser.id,
-        role_id: role.id,
-      },
-    },
-    update: {},
-    create: {
-      user: { connect: { id: tenantUser.id } },
-      role: { connect: { id: role.id } },
-      tenant: { connect: { id: tenant.id } },
-    },
+  const existingRole = await prisma.userRole.findFirst({
+    where: { user_id: tenantUser.id, role_id: role.id },
   });
+  if (!existingRole) {
+    await prisma.userRole.create({
+      data: {
+        user: { connect: { id: tenantUser.id } },
+        role: { connect: { id: role.id } },
+        tenant: { connect: { id: tenant.id } },
+      },
+    });
+  }
   console.log(`Tenant user: ${tenantUser.name} (${tenantUser.email})`);
   console.log(`Password: ${tenantPassword}`);
 

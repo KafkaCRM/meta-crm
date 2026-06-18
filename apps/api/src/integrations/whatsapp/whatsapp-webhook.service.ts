@@ -99,7 +99,7 @@ export class WhatsAppWebhookService {
       parsed.from_phone,
       {
         name: '',
-        branch_brand_assignment_id: '',
+        vertical_id: scope.vertical_ids?.[0] ?? '',
       },
       PartySource.WhatsApp,
       scope,

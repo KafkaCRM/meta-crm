@@ -293,11 +293,7 @@ describe('PlatformTenantsService — getHierarchy', () => {
       client: {
         tenant: { findUnique: vi.fn() },
         branch: { findMany: vi.fn() },
-        branchBrandAssignment: { findMany: vi.fn() },
         vertical: { findMany: vi.fn() },
-        case: { count: vi.fn() },
-        pipelineDefinition: { findMany: vi.fn() },
-        pipelineStage: { groupBy: vi.fn(), findMany: vi.fn() },
       },
     };
     svc = new PlatformTenantsService(mockDb as unknown as PlatformPrismaService, mockAudit, mockStream);
@@ -313,26 +309,13 @@ describe('PlatformTenantsService — getHierarchy', () => {
     }
   });
 
-  it('returns hierarchy with branches, brands, and verticals with stats', async () => {
+  it('returns hierarchy with branches, and verticals', async () => {
     (mockDb.client.tenant.findUnique as any).mockResolvedValue({ id: 'tenant-1', name: 'Apex' });
     (mockDb.client.branch.findMany as any).mockResolvedValue([
       { id: 'branch-1', name: 'Kothrud', city: 'Pune' },
     ]);
-    (mockDb.client.branchBrandAssignment.findMany as any).mockResolvedValue([
-      { id: 'assignment-1', is_primary: true, brand: { id: 'brand-1', name: 'Apex Institute' } },
-    ]);
     (mockDb.client.vertical.findMany as any).mockResolvedValue([
-      { id: 'vertical-1', name: 'NEET', status: 'active' },
-    ]);
-    (mockDb.client.case.count as any).mockResolvedValue(10);
-    (mockDb.client.pipelineDefinition.findMany as any).mockResolvedValue([
-      { id: 'wf-1' },
-    ]);
-    (mockDb.client.pipelineStage.groupBy as any).mockResolvedValue([
-      { pipeline_definition_id: 'wf-1', _max: { order: 3 } },
-    ]);
-    (mockDb.client.pipelineStage.findMany as any).mockResolvedValue([
-      { id: 'stage-final' },
+      { id: 'vertical-1', name: 'NEET' },
     ]);
 
     const result = await svc.getHierarchy('tenant-1');

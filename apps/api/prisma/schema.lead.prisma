@@ -1,6 +1,7 @@
 model Lead {
   id                    String   @id @default(cuid())
   tenant_id             String
+  vertical_id           String?
   name                  String
   email                 String?
   phone                 String
@@ -17,12 +18,14 @@ model Lead {
   updated_at            DateTime @updatedAt
 
   tenant              Tenant              @relation(fields: [tenant_id], references: [id])
+  vertical            Vertical?           @relation(fields: [vertical_id], references: [id])
   assigned_to         User?               @relation(fields: [assigned_to_id], references: [id])
   party               Party?              @relation(fields: [party_id], references: [id])
   pipelineDefinition  PipelineDefinition? @relation(fields: [pipeline_definition_id], references: [id])
   events              LeadEvent[]
 
   @@index([tenant_id, status])
+  @@index([tenant_id, vertical_id])
   @@index([tenant_id, stage])
   @@index([tenant_id, pipeline_definition_id])
   @@index([tenant_id, party_id])

@@ -56,7 +56,7 @@ export class PartyUpsertService {
 
   async upsertByPhone(
     phone: string,
-    data: { name?: string; type?: string; email?: string; branch_brand_assignment_id: string; attributes?: Record<string, unknown> },
+    data: { name?: string; type?: string; email?: string; vertical_id: string; attributes?: Record<string, unknown> },
     source: PartySource,
     scope: RequestScope,
   ): Promise<Result<PartyUpsertResult, PartyError>> {
@@ -115,7 +115,7 @@ export class PartyUpsertService {
               phone_raw: phone,
               phone_normalized: normalized,
               source: source,
-              branch_brand_assignment_id: data.branch_brand_assignment_id,
+              vertical_id: data.vertical_id,
               attributes: (data.attributes ?? {}) as any,
               merge_status: 'canonical',
             } as any,
@@ -144,7 +144,7 @@ export class PartyUpsertService {
         phone_raw: phone,
         phone_normalized: normalized,
         source: source,
-        branch_brand_assignment_id: data.branch_brand_assignment_id,
+        vertical_id: data.vertical_id,
         attributes: (data.attributes ?? {}) as any,
         merge_status: 'canonical',
       } as any,

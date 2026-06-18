@@ -80,8 +80,6 @@ export class LookupController {
               { name: { contains: q, mode: 'insensitive' } },
               { email: { contains: q, mode: 'insensitive' } },
             ];
-          } else if (prismaModelName === 'case') {
-            where.title = { contains: q, mode: 'insensitive' };
           } else if (prismaModelName === 'user') {
             where.name = { contains: q, mode: 'insensitive' };
           } else if (prismaModelName === 'appointment') {

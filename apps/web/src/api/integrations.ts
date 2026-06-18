@@ -36,7 +36,7 @@ export interface IntakeRoute {
   connection_id: string;
   priority: number;
   conditions: Record<string, string>;
-  mode: 'create_lead' | 'create_contact_opportunity';
+  mode: 'create_lead' | 'create_contact';
   campaign_id: string | null;
   owner_id: string | null;
   assignment_rule: Record<string, unknown>;

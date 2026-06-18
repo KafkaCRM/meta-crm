@@ -46,7 +46,7 @@ export class PartyMergeService {
     }
 
     await this.db.getClient().$transaction(async (tx) => {
-      await tx.case.updateMany({
+      await tx.lead.updateMany({
         where: { party_id: input.duplicate_id },
         data: { party_id: input.canonical_id },
       });

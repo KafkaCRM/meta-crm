@@ -8,10 +8,6 @@ export class UpdateCampaignDto {
 
   @IsOptional()
   @IsString()
-  brand_id?: string;
-
-  @IsOptional()
-  @IsString()
   vertical_id?: string;
 
   @IsOptional()

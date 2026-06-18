@@ -9,6 +9,7 @@ export interface LeadListParams {
   assigned_to_id?: string;
   pipeline_definition_id?: string;
   stage?: string;
+  vertical_ids?: string;
 }
 
 export interface LeadEventResponse {
@@ -69,7 +70,7 @@ export interface CursorPaginatedLeads {
 }
 
 export interface ConvertLeadInput {
-  branch_brand_assignment_id: string;
+  vertical_id: string;
   assigned_to_id?: string;
 }
 
@@ -88,6 +89,7 @@ export const leadsApi = {
     if (params.assigned_to_id) qs.set('assigned_to_id', params.assigned_to_id);
     if (params.pipeline_definition_id) qs.set('pipeline_definition_id', params.pipeline_definition_id);
     if (params.stage) qs.set('stage', params.stage);
+    if (params.vertical_ids) qs.set('vertical_ids', params.vertical_ids);
     const query = qs.toString();
     return apiCall<CursorPaginatedLeads>(`/leads${query ? `?${query}` : ''}`);
   },

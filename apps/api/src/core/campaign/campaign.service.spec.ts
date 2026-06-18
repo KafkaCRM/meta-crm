@@ -30,7 +30,7 @@ function mockDb() {
       count: vi.fn().mockResolvedValue(0),
       findUnique: vi.fn().mockResolvedValue({ id: 'campaign-1', attributes: {} }),
     },
-    case: {
+    lead: {
       count: vi.fn().mockResolvedValue(0),
       findMany: vi.fn().mockResolvedValue([]),
       groupBy: vi.fn().mockResolvedValue([]),
@@ -40,7 +40,7 @@ function mockDb() {
       findMany: vi.fn().mockResolvedValue([]),
       groupBy: vi.fn().mockResolvedValue([]),
     },
-    caseEvent: {
+    leadEvent: {
       findMany: vi.fn().mockResolvedValue([]),
       groupBy: vi.fn().mockResolvedValue([]),
     },
@@ -68,7 +68,6 @@ const CAMPAIGN = {
   id: 'campaign-1',
   tenant_id: 'tenant-a',
   branch_id: 'branch-1',
-  brand_id: 'brand-1',
   vertical_id: 'vertical-1',
   pipeline_id: 'pipeline-1',
   name: 'NEET Facebook May 2026',
@@ -111,7 +110,6 @@ describe('Campaign Modules', () => {
 
       const result = await campaignService.create({
         branch_id: 'branch-1',
-        brand_id: 'brand-1',
         vertical_id: 'vertical-1',
         pipeline_id: 'pipeline-1',
         name: 'NEET Facebook May 2026',
@@ -144,7 +142,6 @@ describe('Campaign Modules', () => {
 
       const result = await campaignService.create({
         branch_id: 'branch-1',
-        brand_id: 'brand-1',
         vertical_id: 'vertical-1',
         pipeline_id: 'pipeline-1',
         name: 'NEET Facebook May 2026',
@@ -168,12 +165,12 @@ describe('Campaign Modules', () => {
   });
 
   describe('campaign-auto-tag.service.ts', () => {
-    it('tags case by UTM match when utmCampaign matches active campaign', async () => {
+    it('tags lead by UTM match when utmCampaign matches active campaign', async () => {
       const client = db.getClient();
       (client.campaign.findFirst as any).mockResolvedValue(CAMPAIGN);
 
       const result = await autoTagService.autoTagCampaign({
-        caseId: 'case-123',
+        leadId: 'lead-123',
         channel: 'facebook',
         utmCampaign: 'neet-facebook-may-2026',
         verticalId: 'vertical-1',
@@ -191,28 +188,27 @@ describe('Campaign Modules', () => {
           status: 'active',
         },
       });
-      expect(client.case.update).toHaveBeenCalledWith({
-        where: { id: 'case-123' },
+      expect(client.lead.update).toHaveBeenCalledWith({
+        where: { id: 'lead-123' },
         data: { campaign_id: 'campaign-1' },
       });
       expect(hooks.emit).toHaveBeenCalledWith('campaign:lead_added', {
         campaign_id: 'campaign-1',
-        case_id: 'case-123',
+        lead_id: 'lead-123',
         tenant_id: 'tenant-a',
         channel: 'facebook',
         tagged_automatically: true,
       });
     });
 
-    it('tags case by channel+vertical match if no UTM match is found', async () => {
+    it('tags lead by channel+vertical match if no UTM match is found', async () => {
       const client = db.getClient();
-      // First findFirst call (UTM match) returns null, second call returns CAMPAIGN
       (client.campaign.findFirst as any)
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(CAMPAIGN);
 
       const result = await autoTagService.autoTagCampaign({
-        caseId: 'case-123',
+        leadId: 'lead-123',
         channel: 'facebook',
         utmCampaign: 'some-non-matching-utm',
         verticalId: 'vertical-1',
@@ -225,19 +221,18 @@ describe('Campaign Modules', () => {
       }
 
       expect(client.campaign.findFirst).toHaveBeenCalledTimes(2);
-      expect(client.case.update).toHaveBeenCalledWith({
-        where: { id: 'case-123' },
+      expect(client.lead.update).toHaveBeenCalledWith({
+        where: { id: 'lead-123' },
         data: { campaign_id: 'campaign-1' },
       });
     });
 
     it('returns Ok(null) if campaign has expired (past end_date)', async () => {
       const client = db.getClient();
-      // Mock search results to return nothing
       (client.campaign.findFirst as any).mockResolvedValue(null);
 
       const result = await autoTagService.autoTagCampaign({
-        caseId: 'case-123',
+        leadId: 'lead-123',
         channel: 'facebook',
         utmCampaign: null,
         verticalId: 'vertical-1',
@@ -248,7 +243,7 @@ describe('Campaign Modules', () => {
       if (result.isOk()) {
         expect(result.value).toBeNull();
       }
-      expect(client.case.update).not.toHaveBeenCalled();
+      expect(client.lead.update).not.toHaveBeenCalled();
     });
 
     it('returns Ok(null) if no matches are found', async () => {
@@ -256,7 +251,7 @@ describe('Campaign Modules', () => {
       (client.campaign.findFirst as any).mockResolvedValue(null);
 
       const result = await autoTagService.autoTagCampaign({
-        caseId: 'case-123',
+        leadId: 'lead-123',
         channel: 'linkedin',
         utmCampaign: null,
         verticalId: 'vertical-999',
@@ -267,7 +262,7 @@ describe('Campaign Modules', () => {
       if (result.isOk()) {
         expect(result.value).toBeNull();
       }
-      expect(client.case.update).not.toHaveBeenCalled();
+      expect(client.lead.update).not.toHaveBeenCalled();
     });
 
     it('matches most recently created campaign if multiple channel+vertical candidates match', async () => {
@@ -275,7 +270,7 @@ describe('Campaign Modules', () => {
       (client.campaign.findFirst as any).mockResolvedValue(CAMPAIGN);
 
       await autoTagService.autoTagCampaign({
-        caseId: 'case-123',
+        leadId: 'lead-123',
         channel: 'facebook',
         utmCampaign: null,
         verticalId: 'vertical-1',
@@ -295,45 +290,39 @@ describe('Campaign Modules', () => {
       const client = db.getClient();
       (client.campaign.findFirst as any).mockResolvedValue(CAMPAIGN);
 
-      // total leads = 10
-      (client.case.count as any).mockImplementation((args: any) => {
+      (client.lead.count as any).mockImplementation((args: any) => {
         const where = args?.where;
         if (where?.stage?.not) {
-          // contacted (not initial)
           return Promise.resolve(8);
         }
         if (where?.stage?.in) {
           if (where.stage.in.includes('stage-won')) {
-            // converted
             return Promise.resolve(5);
           }
           if (where.stage.in.includes('stage-lost')) {
-            // lost
             return Promise.resolve(3);
           }
         }
-        // total leads count
         return Promise.resolve(10);
       });
 
-      // stages in pipeline: Enquiry (initial, order 1), Won (final positive, order 3), Lost (final negative, order 3)
       (client.pipelineStage.findMany as any).mockResolvedValue([
         { id: 'stage-enquiry', name: 'Enquiry', order: 1 },
         { id: 'stage-won', name: 'Closed Won', order: 3 },
         { id: 'stage-lost', name: 'Closed Lost', order: 3 },
       ]);
 
-      (client.case.findMany as any).mockResolvedValue([
-        { id: 'case-1', created_at: new Date('2026-05-01') },
-        { id: 'case-2', created_at: new Date('2026-05-02') },
+      (client.lead.findMany as any).mockResolvedValue([
+        { id: 'lead-1', created_at: new Date('2026-05-01') },
+        { id: 'lead-2', created_at: new Date('2026-05-02') },
       ]);
 
-      (client.caseEvent.findMany as any).mockResolvedValue([
-        { case_id: 'case-1', to_stage: 'stage-won', occurred_at: new Date('2026-05-03'), event_type: 'stage_changed' },
-        { case_id: 'case-2', to_stage: 'stage-won', occurred_at: new Date('2026-05-06'), event_type: 'stage_changed' },
+      (client.leadEvent.findMany as any).mockResolvedValue([
+        { lead_id: 'lead-1', to_stage: 'stage-won', occurred_at: new Date('2026-05-03'), event_type: 'stage_changed' },
+        { lead_id: 'lead-2', to_stage: 'stage-won', occurred_at: new Date('2026-05-06'), event_type: 'stage_changed' },
       ]);
 
-      (client.case.groupBy as any).mockResolvedValue([
+      (client.lead.groupBy as any).mockResolvedValue([
         { stage: 'stage-enquiry', _count: { id: 2 } },
         { stage: 'stage-won', _count: { id: 5 } },
         { stage: 'stage-lost', _count: { id: 3 } },
@@ -348,7 +337,7 @@ describe('Campaign Modules', () => {
         expect(stats.converted).toBe(5);
         expect(stats.lost).toBe(3);
         expect(stats.conversion_rate).toBe(50);
-        expect(stats.avg_days_to_convert).toBe(3); // case-1 = 2 days, case-2 = 4 days -> avg = 3
+        expect(stats.avg_days_to_convert).toBe(3); // lead-1 = 2 days, lead-2 = 4 days -> avg = 3
         expect(stats.by_stage).toHaveLength(3);
         expect(stats.by_stage[1]?.stage_name).toBe('Closed Won');
         expect(stats.by_stage[1]?.count).toBe(5);
@@ -358,10 +347,10 @@ describe('Campaign Modules', () => {
   });
 
   describe('Campaign Deletion Blocks & Soft Deletion', () => {
-    it('returns CAMPAIGN_HAS_LEADS error when attempting to delete a campaign with tagged cases', async () => {
+    it('returns CAMPAIGN_HAS_LEADS error when attempting to delete a campaign with tagged leads', async () => {
       const client = db.getClient();
       (client.campaign.findFirst as any).mockResolvedValue(CAMPAIGN);
-      (client.case.count as any).mockResolvedValue(4);
+      (client.lead.count as any).mockResolvedValue(4);
 
       const result = await campaignService.delete('campaign-1');
 
@@ -373,10 +362,10 @@ describe('Campaign Modules', () => {
       expect(client.campaign.update).not.toHaveBeenCalled();
     });
 
-    it('soft deletes successfully when no cases are tagged to the campaign', async () => {
+    it('soft deletes successfully when no leads are tagged to the campaign', async () => {
       const client = db.getClient();
       (client.campaign.findFirst as any).mockResolvedValue(CAMPAIGN);
-      (client.case.count as any).mockResolvedValue(0);
+      (client.lead.count as any).mockResolvedValue(0);
 
       const result = await campaignService.delete('campaign-1');
 
@@ -392,28 +381,22 @@ describe('Campaign Modules', () => {
     it('calculates aggregate statistics and resolves top_channel with the highest conversion rate', async () => {
       const client = db.getClient();
 
-      // Mock two active campaigns
       (client.campaign.findMany as any).mockResolvedValue([
         { ...CAMPAIGN, id: 'c-fb', channel: 'facebook', pipeline_id: 'p-1' },
         { ...CAMPAIGN, id: 'c-gg', channel: 'google', pipeline_id: 'p-1' },
       ]);
 
-      // Mock stage count query to calculate stats for each campaign
-      // For c-fb (Facebook): 10 leads, 5 converted -> 50%
-      // For c-gg (Google): 10 leads, 2 converted -> 20%
       (client.pipelineStage.findMany as any).mockResolvedValue([
         { id: 'stage-won', name: 'Closed Won', order: 3 },
       ]);
 
-      (client.case.count as any).mockImplementation((args: any) => {
+      (client.lead.count as any).mockImplementation((args: any) => {
         const where = args?.where;
         const isFacebook = where.campaign_id === 'c-fb';
-        
+
         if (where?.stage?.in) {
-          // converted
           return Promise.resolve(isFacebook ? 5 : 2);
         }
-        // total leads
         return Promise.resolve(10);
       });
 
@@ -423,8 +406,8 @@ describe('Campaign Modules', () => {
         const agg = result.value;
         expect(agg.total_leads).toBe(20);
         expect(agg.total_converted).toBe(7);
-        expect(agg.overall_conversion_rate).toBe(35); // 7 / 20 * 100
-        expect(agg.top_channel).toBe('facebook'); // facebook conversion rate = 50%, google = 20%
+        expect(agg.overall_conversion_rate).toBe(35);
+        expect(agg.top_channel).toBe('facebook');
         expect(agg.campaigns).toHaveLength(2);
       }
     });

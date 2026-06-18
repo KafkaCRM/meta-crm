@@ -39,10 +39,14 @@ export class LeadService {
     assigned_to_id?: string;
     pipeline_definition_id?: string;
     stage?: string;
+    vertical_ids?: string[];
   }): Promise<Result<{ data: any[]; next_cursor?: string }, LeadError>> {
     const limit = Math.min(params.limit ?? 50, 100);
 
     const where: any = {};
+    if (params.vertical_ids && params.vertical_ids.length > 0) {
+      where.vertical_id = { in: params.vertical_ids };
+    }
     if (params.status) {
       if (params.status === 'junk') {
         where.status = 'junk';
@@ -216,6 +220,7 @@ export class LeadService {
         notes: dto.notes,
         campaign_id: dto.campaign_id,
         assigned_to_id: dto.assigned_to_id,
+        vertical_id: dto.vertical_id ?? scope.vertical_ids?.[0] ?? '',
         attributes: (dto.attributes ?? {}) as any,
         tenant_id: scope.tenant_id,
         events: {
@@ -248,6 +253,7 @@ export class LeadService {
         ...(dto.notes !== undefined && { notes: dto.notes }),
         ...(dto.campaign_id !== undefined && { campaign_id: dto.campaign_id }),
         ...(dto.assigned_to_id !== undefined && { assigned_to_id: dto.assigned_to_id }),
+        ...(dto.vertical_id !== undefined && { vertical_id: dto.vertical_id }),
         ...(dto.attributes !== undefined && { attributes: dto.attributes as any }),
       },
     });
@@ -408,7 +414,7 @@ export class LeadService {
         const party = await tx.party.create({
           data: {
             tenant_id: scope!.tenant_id,
-            branch_brand_assignment_id: dto.branch_brand_assignment_id,
+            vertical_id: dto.vertical_id,
             type: 'individual',
             name: lead.name,
             email: lead.email,

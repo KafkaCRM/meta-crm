@@ -69,7 +69,7 @@ export class InteractionController {
     if (result.isErr()) {
       switch (result.error.code) {
         case 'PARTY_NOT_FOUND':
-        case 'CASE_NOT_FOUND':
+        case 'LEAD_NOT_FOUND':
           throw new BadRequestException(result.error);
         default:
           throw new InternalServerErrorException(result.error);
@@ -80,7 +80,7 @@ export class InteractionController {
 
   @Post(':id/pin')
   @HttpCode(HttpStatus.OK)
-  @CheckPermissions('manage', 'Case')
+  @CheckPermissions('manage', 'Lead')
   async pin(@Param('id') id: string, @CurrentUser() scope: RequestScope) {
     const result = await this.interactionService.pin(id, scope.user_id);
     if (result.isErr()) {
@@ -92,7 +92,7 @@ export class InteractionController {
 
   @Delete(':id/pin')
   @HttpCode(HttpStatus.OK)
-  @CheckPermissions('manage', 'Case')
+  @CheckPermissions('manage', 'Lead')
   async unpin(@Param('id') id: string) {
     const result = await this.interactionService.unpin(id);
     if (result.isErr()) {

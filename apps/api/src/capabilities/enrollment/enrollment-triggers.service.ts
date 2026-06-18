@@ -22,9 +22,9 @@ export class EnrollmentTriggersService implements OnModuleInit {
     this.logger.log('Enrollment triggers loaded');
   }
 
-  @OnEvent('case:stage_changed')
+  @OnEvent('lead:stage_changed')
   async handleStageChanged(payload: {
-    case_id: string;
+    lead_id: string;
     from_stage: string;
     to_stage: string;
     tenant_id?: string;
@@ -37,22 +37,21 @@ export class EnrollmentTriggersService implements OnModuleInit {
     const hasCapability = await this.checkCapability(tenantId);
     if (!hasCapability) return;
 
-    const caseRecord = await this.db.getClient().case.findUnique({
-      where: { id: payload.case_id },
+    const leadRecord = await this.db.getClient().lead.findUnique({
+      where: { id: payload.lead_id },
       include: { party: true },
     });
 
-    if (!caseRecord) return;
-    if (caseRecord.type !== 'enrollment') return;
+    if (!leadRecord || !leadRecord.party_id) return;
 
     const toStageName = await this.getStageName(payload.to_stage);
     if (toStageName !== 'Fee Paid') return;
 
-    const confirmationMessage = this.buildConfirmationMessage(caseRecord);
+    const confirmationMessage = this.buildConfirmationMessage(leadRecord);
 
-    const phone = caseRecord.party?.phone_normalized;
+    const phone = leadRecord.party?.phone_normalized;
     if (!phone) {
-      this.logger.warn(`No phone for enrollment case ${caseRecord.id}`);
+      this.logger.warn(`No phone for enrollment lead ${leadRecord.id}`);
       return;
     }
 
@@ -61,7 +60,7 @@ export class EnrollmentTriggersService implements OnModuleInit {
       message: confirmationMessage,
       tenant_id: tenantId,
       metadata: {
-        case_id: caseRecord.id,
+        lead_id: leadRecord.id,
         type: 'enrollment_confirmation',
       },
     });
@@ -69,15 +68,14 @@ export class EnrollmentTriggersService implements OnModuleInit {
     await this.db.getClient().interaction.create({
       data: {
         tenant_id: tenantId,
-        case_id: caseRecord.id,
-        party_id: caseRecord.party_id,
+        party_id: leadRecord.party_id,
         channel: 'whatsapp',
         direction: 'outbound',
         content: confirmationMessage,
       },
     });
 
-    this.logger.log(`Enrollment confirmation sent for case ${caseRecord.id}`);
+    this.logger.log(`Enrollment confirmation sent for lead ${leadRecord.id}`);
   }
 
   private async checkCapability(tenantId: string): Promise<boolean> {
@@ -111,8 +109,8 @@ export class EnrollmentTriggersService implements OnModuleInit {
     return stage?.name ?? null;
   }
 
-  private buildConfirmationMessage(caseRecord: any): string {
-    const attrs = caseRecord.attributes ?? {};
+  private buildConfirmationMessage(leadRecord: any): string {
+    const attrs = leadRecord.attributes ?? {};
     const courseName = (attrs as Record<string, unknown>)['course_name'] as string ?? 'your course';
     return `Your enrollment for ${courseName} has been confirmed. Fee payment received. We will contact you with further details.`;
   }

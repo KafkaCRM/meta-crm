@@ -52,6 +52,10 @@ class CursorQuery {
   @IsOptional()
   @IsString()
   type?: string;
+
+  @IsOptional()
+  @IsString()
+  vertical_ids?: string;
 }
 
 class CheckDuplicateQuery {
@@ -82,7 +86,8 @@ export class PartyController {
   @Get()
   @CheckPermissions('read', 'Party')
   async findAll(@Query() query: CursorQuery) {
-    const result = await this.partyService.findMany(query);
+    const verticalIds = query.vertical_ids ? query.vertical_ids.split(',').filter(Boolean) : undefined;
+    const result = await this.partyService.findMany({ ...query, vertical_ids: verticalIds });
     if (result.isErr()) {
       throw new InternalServerErrorException(result.error);
     }
@@ -97,7 +102,7 @@ export class PartyController {
   ) {
     const result = await this.upsertService.upsertByPhone(
       query.phone,
-      { name: '', branch_brand_assignment_id: '' },
+      { name: '', vertical_id: '' },
       'manual' as any,
       scope,
     );

@@ -2,7 +2,6 @@ model Campaign {
   id            String    @id @default(cuid())
   tenant_id     String
   branch_id     String
-  brand_id      String
   vertical_id   String
   pipeline_id   String
   name          String
@@ -20,6 +19,7 @@ model Campaign {
   updated_at    DateTime  @updatedAt
 
   pipeline      PipelineDefinition @relation(fields: [pipeline_id], references: [id])
+  vertical      Vertical           @relation(fields: [vertical_id], references: [id])
   intakeRoutes  IntegrationIntakeRoute[]
 
   @@index([tenant_id, status])

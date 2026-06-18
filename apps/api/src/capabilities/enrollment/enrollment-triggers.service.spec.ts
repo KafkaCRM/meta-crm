@@ -23,7 +23,7 @@ describe('EnrollmentTriggersService', () => {
   beforeEach(async () => {
     mockDb = {
       getClient: vi.fn().mockReturnValue({
-        case: {
+        lead: {
           findUnique: vi.fn(),
         },
         pipelineStage: {
@@ -68,9 +68,9 @@ describe('EnrollmentTriggersService', () => {
     });
   });
 
-  it('fires confirmation message when case moves to Fee Paid stage', async () => {
-    const casePayload = {
-      case_id: 'case-1',
+  it('fires confirmation message when lead moves to Fee Paid stage', async () => {
+    const leadPayload = {
+      lead_id: 'lead-1',
       from_stage: 'stage-applied',
       to_stage: 'stage-fee-paid',
       tenant_id: 'tenant-1',
@@ -78,16 +78,15 @@ describe('EnrollmentTriggersService', () => {
     };
 
     mockDb.getClient().tenantPlugin.findFirst.mockResolvedValue({ id: 'plugin-1' });
-    mockDb.getClient().case.findUnique.mockResolvedValue({
-      id: 'case-1',
-      type: 'enrollment',
+    mockDb.getClient().lead.findUnique.mockResolvedValue({
+      id: 'lead-1',
       party_id: 'party-1',
       attributes: { course_name: 'BSc Computer Science' },
       party: { phone_normalized: '+1234567890' },
     });
     mockDb.getClient().pipelineStage.findUnique.mockResolvedValue({ id: 'stage-fee-paid', name: 'Fee Paid' });
 
-    await service.handleStageChanged(casePayload);
+    await service.handleStageChanged(leadPayload);
 
     expect(mockMessagingAdapter.send).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -107,33 +106,9 @@ describe('EnrollmentTriggersService', () => {
     );
   });
 
-  it('does not fire for non-enrollment case types', async () => {
-    const casePayload = {
-      case_id: 'case-2',
-      from_stage: 'stage-1',
-      to_stage: 'stage-fee-paid',
-      tenant_id: 'tenant-1',
-      actor_id: 'user-1',
-    };
-
-    mockDb.getClient().tenantPlugin.findFirst.mockResolvedValue({ id: 'plugin-1' });
-    mockDb.getClient().case.findUnique.mockResolvedValue({
-      id: 'case-2',
-      type: 'support',
-      party_id: 'party-2',
-      attributes: {},
-      party: { phone_normalized: '+1234567890' },
-    });
-
-    await service.handleStageChanged(casePayload);
-
-    expect(mockMessagingAdapter.send).not.toHaveBeenCalled();
-    expect(mockDb.getClient().interaction.create).not.toHaveBeenCalled();
-  });
-
   it('does not fire when capability is disabled for tenant', async () => {
-    const casePayload = {
-      case_id: 'case-3',
+    const leadPayload = {
+      lead_id: 'lead-3',
       from_stage: 'stage-1',
       to_stage: 'stage-fee-paid',
       tenant_id: 'tenant-no-cap',
@@ -145,23 +120,22 @@ describe('EnrollmentTriggersService', () => {
       config_json: { enabled_capabilities: [] },
     });
     mockDb.getClient().tenantPlugin.findFirst.mockResolvedValue(null);
-    mockDb.getClient().case.findUnique.mockResolvedValue({
-      id: 'case-3',
-      type: 'enrollment',
+    mockDb.getClient().lead.findUnique.mockResolvedValue({
+      id: 'lead-3',
       party_id: 'party-3',
       attributes: {},
       party: { phone_normalized: '+1234567890' },
     });
 
-    await service.handleStageChanged(casePayload);
+    await service.handleStageChanged(leadPayload);
 
-    expect(mockDb.getClient().case.findUnique).not.toHaveBeenCalled();
+    expect(mockDb.getClient().lead.findUnique).not.toHaveBeenCalled();
     expect(mockMessagingAdapter.send).not.toHaveBeenCalled();
   });
 
   it('does not fire when stage is not Fee Paid', async () => {
-    const casePayload = {
-      case_id: 'case-4',
+    const leadPayload = {
+      lead_id: 'lead-4',
       from_stage: 'stage-1',
       to_stage: 'stage-interview',
       tenant_id: 'tenant-1',
@@ -169,16 +143,15 @@ describe('EnrollmentTriggersService', () => {
     };
 
     mockDb.getClient().tenantPlugin.findFirst.mockResolvedValue({ id: 'plugin-1' });
-    mockDb.getClient().case.findUnique.mockResolvedValue({
-      id: 'case-4',
-      type: 'enrollment',
+    mockDb.getClient().lead.findUnique.mockResolvedValue({
+      id: 'lead-4',
       party_id: 'party-4',
       attributes: {},
       party: { phone_normalized: '+1234567890' },
     });
     mockDb.getClient().pipelineStage.findUnique.mockResolvedValue({ id: 'stage-interview', name: 'Interview' });
 
-    await service.handleStageChanged(casePayload);
+    await service.handleStageChanged(leadPayload);
 
     expect(mockMessagingAdapter.send).not.toHaveBeenCalled();
   });

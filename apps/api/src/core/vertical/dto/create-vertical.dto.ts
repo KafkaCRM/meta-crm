@@ -1,4 +1,4 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString } from 'class-validator';
 
 export class CreateVerticalDto {
   @IsString()
@@ -6,8 +6,4 @@ export class CreateVerticalDto {
 
   @IsString()
   name!: string;
-
-  @IsOptional()
-  @IsString()
-  description?: string;
 }

@@ -21,7 +21,6 @@ export interface CampaignResponse {
   id: string;
   tenant_id: string;
   branch_id: string;
-  brand_id: string;
   vertical_id: string;
   pipeline_id: string;
   name: string;

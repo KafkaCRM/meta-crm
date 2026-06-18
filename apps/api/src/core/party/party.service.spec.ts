@@ -51,7 +51,7 @@ const PARTY = {
   phone_raw: '+919876543210',
   phone_normalized: '+919876543210',
   source: 'manual',
-  branch_brand_assignment_id: 'assign-1',
+  vertical_id: 'assign-1',
   attributes: {},
   merge_status: 'canonical',
   created_at: new Date('2025-01-01'),
@@ -88,7 +88,7 @@ describe('PartyService', () => {
   describe('findOne', () => {
     it('returns party when found', async () => {
       const client = db.getClient();
-      (client.party.findUnique as any).mockResolvedValue({ ...PARTY, cases: [] });
+      (client.party.findUnique as any).mockResolvedValue(PARTY);
 
       const result = await svc.findOne('party-1');
       expect(result.isOk()).toBe(true);
@@ -115,7 +115,7 @@ describe('PartyService', () => {
         type: 'individual',
         name: 'John',
         email: 'john@example.com',
-        branch_brand_assignment_id: 'assign-1',
+        vertical_id: 'assign-1',
       });
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {

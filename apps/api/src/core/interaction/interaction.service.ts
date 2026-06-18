@@ -12,7 +12,7 @@ import type {
 } from './dto/interaction-response.dto';
 import type { RequestScope } from '../tenant/request-scope.interface';
 
-export type InteractionErrorCode = 'NOT_FOUND' | 'PARTY_NOT_FOUND' | 'CASE_NOT_FOUND';
+export type InteractionErrorCode = 'NOT_FOUND' | 'PARTY_NOT_FOUND' | 'LEAD_NOT_FOUND';
 
 export interface InteractionError {
   code: InteractionErrorCode;
@@ -84,10 +84,10 @@ export class InteractionService {
       });
     }
 
-    let caseEvents: any[] = [];
+    let leadEvents: any[] = [];
     if (params.case_id) {
-      caseEvents = await this.db.getClient().caseEvent.findMany({
-        where: { case_id: params.case_id },
+      leadEvents = await this.db.getClient().leadEvent.findMany({
+        where: { lead_id: params.case_id },
         orderBy: { occurred_at: 'desc' },
         take: Math.max(limit * 3, 200),
       });
@@ -98,11 +98,11 @@ export class InteractionService {
         kind: 'interaction' as const,
         data: this.toInteractionDto(i),
       })),
-      ...caseEvents.map((e) => ({
+      ...leadEvents.map((e) => ({
         kind: 'system_event' as const,
         data: {
           id: e.id,
-          case_id: e.case_id,
+          lead_id: e.lead_id,
           event_type: e.event_type,
           from_stage: e.from_stage,
           to_stage: e.to_stage,
@@ -161,11 +161,11 @@ export class InteractionService {
     }
 
     if (dto.case_id) {
-      const caseRecord = await this.db.getClient().case.findUnique({
+      const leadRecord = await this.db.getClient().lead.findUnique({
         where: { id: dto.case_id },
       });
-      if (!caseRecord) {
-        return err({ code: 'CASE_NOT_FOUND', message: 'Case not found' });
+      if (!leadRecord) {
+        return err({ code: 'LEAD_NOT_FOUND', message: 'Lead not found' });
       }
     }
 

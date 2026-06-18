@@ -68,7 +68,6 @@ export interface TenantListItem {
   created_at: Date;
   branch_count: number;
   user_count: number;
-  case_count: number;
 }
 
 export interface TenantDetail {
@@ -117,10 +116,9 @@ export class PlatformTenantsService {
 
     const data: TenantListItem[] = await Promise.all(
       page.map(async (t: any) => {
-        const [branchCount, userCount, caseCount] = await Promise.all([
+        const [branchCount, userCount] = await Promise.all([
           this.db.client.branch.count({ where: { tenant_id: t.id } }),
           this.db.client.user.count({ where: { tenant_id: t.id } }),
-          this.db.client.case.count({ where: { tenant_id: t.id } }),
         ]);
         return {
           id: t.id,
@@ -131,7 +129,6 @@ export class PlatformTenantsService {
           created_at: t.created_at,
           branch_count: branchCount,
           user_count: userCount,
-          case_count: caseCount,
         };
       }),
     );
@@ -724,42 +721,30 @@ export class PlatformTenantsService {
         });
       }
 
-      // Provision default branch, brand, and assignment if not already present
-      let defaultAssignment = await this.db.client.branchBrandAssignment.findFirst({
-        where: { tenant_id: id, is_primary: true },
+      // Provision default branch and vertical if not already present
+      let branch = await this.db.client.branch.findFirst({
+        where: { tenant_id: id, name: `${tenant.name} Headquarters` },
       });
 
-      if (!defaultAssignment) {
-        let branch = await this.db.client.branch.findFirst({
-          where: { tenant_id: id, name: `${tenant.name} Headquarters` },
+      if (!branch) {
+        branch = await this.db.client.branch.create({
+          data: {
+            tenant_id: id,
+            name: `${tenant.name} Headquarters`,
+          },
         });
-        if (!branch) {
-          branch = await this.db.client.branch.create({
-            data: {
-              tenant_id: id,
-              name: `${tenant.name} Headquarters`,
-            },
-          });
-        }
+      }
 
-        let brand = await this.db.client.brand.findFirst({
-          where: { tenant_id: id, name: 'Primary Brand' },
-        });
-        if (!brand) {
-          brand = await this.db.client.brand.create({
-            data: {
-              tenant_id: id,
-              name: 'Primary Brand',
-            },
-          });
-        }
+      let defaultVertical = await this.db.client.vertical.findFirst({
+        where: { tenant_id: id, branch_id: branch.id },
+      });
 
-        defaultAssignment = await this.db.client.branchBrandAssignment.create({
+      if (!defaultVertical) {
+        defaultVertical = await this.db.client.vertical.create({
           data: {
             tenant_id: id,
             branch_id: branch.id,
-            brand_id: brand.id,
-            is_primary: true,
+            name: 'Default Vertical',
           },
         });
       }
@@ -848,12 +833,12 @@ export class PlatformTenantsService {
         const ownerRole = await this.db.client.role.findFirst({
           where: { tenant_id: id, slug: 'owner' },
         });
-        if (ownerRole && defaultAssignment) {
+        if (ownerRole && defaultVertical) {
           const existingUserRole = await this.db.client.userRole.findFirst({
             where: {
               user_id: firstUser.id,
               role_id: ownerRole.id,
-              assignment_id: defaultAssignment.id,
+              assignment_id: defaultVertical.id,
             },
           });
           if (!existingUserRole) {
@@ -862,7 +847,7 @@ export class PlatformTenantsService {
                 user_id: firstUser.id,
                 role_id: ownerRole.id,
                 tenant_id: id,
-                assignment_id: defaultAssignment.id,
+                assignment_id: defaultVertical.id,
               },
             });
           }
@@ -1254,90 +1239,24 @@ export class PlatformTenantsService {
 
       const branchesWithHierarchy = await Promise.all(
         branches.map(async (b: any) => {
-          const assignments = await this.db.client.branchBrandAssignment.findMany({
-            where: { tenant_id: tenantId, branch_id: b.id },
-            include: { brand: true },
-          });
-
-          const brands = assignments
-            .filter((a: any) => a.brand)
-            .map((a: any) => ({
-              id: a.brand.id,
-              name: a.brand.name,
-              is_primary: a.is_primary,
-            }));
-
           const verticals = await this.db.client.vertical.findMany({
             where: { tenant_id: tenantId, branch_id: b.id },
             orderBy: { name: 'asc' },
           });
 
-          const verticalsWithStats = await Promise.all(
-            verticals.map(async (v: any) => {
-              const total_leads = await this.db.client.case.count({
-                where: { tenant_id: tenantId, vertical_id: v.id },
-              });
-
-              let conversion_rate = 0;
-              if (total_leads > 0) {
-                const wfs = await this.db.client.pipelineDefinition.findMany({
-                  where: { tenant_id: tenantId, vertical_id: v.id },
-                  select: { id: true },
-                });
-
-                let converted = 0;
-                if (wfs.length > 0) {
-                  const wfIds = wfs.map((w: any) => w.id);
-                  const wfGroups = await this.db.client.pipelineStage.groupBy({
-                    by: ['pipeline_definition_id'],
-                    where: { pipeline_definition_id: { in: wfIds } },
-                    _max: { order: true },
-                  });
-
-                  const finalStageIds: string[] = [];
-                  for (const group of wfGroups) {
-                    const maxOrder = group._max?.order;
-                    if (maxOrder === undefined || maxOrder === null) continue;
-                    const stages = await this.db.client.pipelineStage.findMany({
-                      where: {
-                        pipeline_definition_id: group.pipeline_definition_id,
-                        order: maxOrder,
-                      },
-                      select: { id: true },
-                    });
-                    finalStageIds.push(...stages.map((s: any) => s.id));
-                  }
-
-                  if (finalStageIds.length > 0) {
-                    converted = await this.db.client.case.count({
-                      where: {
-                        tenant_id: tenantId,
-                        vertical_id: v.id,
-                        stage: { in: finalStageIds },
-                      },
-                    });
-                  }
-                }
-                conversion_rate = Math.round((converted / total_leads) * 10000) / 100;
-              }
-
-              return {
-                id: v.id,
-                name: v.name,
-                status: v.status,
-                stats: {
-                  total_leads,
-                  conversion_rate,
-                },
-              };
-            }),
-          );
+          const verticalsWithStats = verticals.map((v: any) => ({
+            id: v.id,
+            name: v.name,
+            stats: {
+              total_leads: 0,
+              conversion_rate: 0,
+            },
+          }));
 
           return {
             id: b.id,
             name: b.name,
             city: b.city,
-            brands,
             verticals: verticalsWithStats,
           };
         }),

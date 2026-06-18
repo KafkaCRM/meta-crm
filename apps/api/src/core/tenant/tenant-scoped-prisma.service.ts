@@ -11,8 +11,7 @@ export const TENANT_SCOPED_MODELS: readonly string[] = [
   'BranchBrandAssignment',
   'User',
   'Party',
-  'Case',
-  'CaseEvent',
+  'Vertical',
   'Interaction',
   'PartyMergeQueue',
   'Role',
@@ -75,8 +74,9 @@ export async function applyTenantScope<T>(
     });
   }
 
+  const verticalScopedModels = ['Party', 'Campaign', 'PipelineDefinition', 'Lead'];
   const verticalFilter =
-    scope.vertical_ids && scope.vertical_ids.length > 0 && model === 'Case'
+    scope.vertical_ids && scope.vertical_ids.length > 0 && verticalScopedModels.includes(model)
       ? { vertical_id: { in: scope.vertical_ids } }
       : {};
 

@@ -308,56 +308,29 @@ function FormField<T extends FieldValues>({
     }
   };
 
-  // 1. Fetch assignments if it's the assignment field
-  const isAssignmentField = field.name === 'branch_brand_assignment_id';
+  // If it's the vertical_id field, fetch verticals
+  const isVerticalField = field.name === 'vertical_id';
 
-  const { data: assignments = [] } = useQuery({
-    queryKey: ['settings', 'assignments'],
-    queryFn: () => settingsApi.assignments.list(),
-    enabled: isAssignmentField,
+  const { data: verticals = [] } = useQuery({
+    queryKey: ['settings', 'verticals'],
+    queryFn: () => settingsApi.verticals.list(),
+    enabled: isVerticalField,
     staleTime: 60_000,
   });
 
-  const { data: branches = [] } = useQuery({
-    queryKey: ['settings', 'branches'],
-    queryFn: () => settingsApi.branches.list(),
-    enabled: isAssignmentField,
-    staleTime: 60_000,
-  });
-
-  const { data: brands = [] } = useQuery({
-    queryKey: ['settings', 'brands'],
-    queryFn: () => settingsApi.brands.list(),
-    enabled: isAssignmentField,
-    staleTime: 60_000,
-  });
-
-  // Build resolved options
-  const assignmentOptions = useMemo(() => {
-    if (!isAssignmentField) return [];
-    return assignments.map((asg) => {
-      const branchName = branches.find((b) => b.id === asg.branch_id)?.name ?? `Branch (${asg.branch_id})`;
-      const brandName = brands.find((b) => b.id === asg.brand_id)?.name ?? `Brand (${asg.brand_id})`;
-      return {
-        id: asg.id,
-        label: `${branchName} · ${brandName}`,
-      };
-    });
-  }, [isAssignmentField, assignments, branches, brands]);
-
-  // Set default if only 1 assignment exists
+  // Set default if only 1 vertical exists
   useEffect(() => {
-    if (isAssignmentField && assignments.length === 1 && currentValue !== assignments[0]?.id) {
-      setValue(fieldName, assignments[0]!.id as PathValue<T, typeof fieldName>);
+    if (isVerticalField && verticals.length === 1 && currentValue !== verticals[0]?.id) {
+      setValue(fieldName, verticals[0]!.id as PathValue<T, typeof fieldName>);
     }
-  }, [isAssignmentField, assignments, currentValue, setValue, fieldName]);
+  }, [isVerticalField, verticals, currentValue, setValue, fieldName]);
 
-  // If it's the assignment field and there is only 1 assignment, hide it!
-  if (isAssignmentField && assignments.length === 1) {
+  // If it's the vertical field and there is only 1 vertical, hide it!
+  if (isVerticalField && verticals.length === 1) {
     return null;
   }
 
-  if (isAssignmentField && assignments.length > 1) {
+  if (isVerticalField && verticals.length > 1) {
     return (
       <div className="space-y-1.5 relative">
         {isPrefilled && (
@@ -377,9 +350,9 @@ function FormField<T extends FieldValues>({
             <SelectValue placeholder={`Select ${label.toLowerCase()}`} />
           </SelectTrigger>
           <SelectContent>
-            {assignmentOptions.map((opt) => (
-              <SelectItem key={opt.id} value={opt.id}>
-                {opt.label}
+            {verticals.map((v) => (
+              <SelectItem key={v.id} value={v.id}>
+                {v.name}
               </SelectItem>
             ))}
           </SelectContent>

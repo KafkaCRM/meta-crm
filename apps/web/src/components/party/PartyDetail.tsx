@@ -3,7 +3,7 @@ import { useQuery, useMutation, useInfiniteQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { PartySource, MergeStatus, Channel, Direction, EventType } from '@meta-crm/types';
-import type { PartyResponse, CaseResponse } from '@meta-crm/types';
+import type { PartyResponse } from '@meta-crm/types';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useLabels } from '@/hooks/useLabels';
 import { useRealtime } from '@/hooks/useRealtime';
@@ -13,7 +13,7 @@ import { queryClient } from '@/lib/query-client';
 import { MergeWizard } from './MergeWizard';
 import { Button } from '@/components/ui/button';
 import { RecordLayout } from '@/components/shared';
-import { StagePath } from '../case/StagePath';
+{/* StagePath import removed — Case module deleted */}
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -422,13 +422,8 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
         </div>
       </div>
       
-      {party.merge_status !== 'merged' && (
-        <StagePath 
-          currentStage={(party as any).stage || 'new'} 
-          stages={['new', 'contacted', 'qualified', 'negotiation', 'won', 'lost']} 
-          onStageSelect={(stage) => updateMutation.mutate({ id: party.id, data: { stage } })} 
-        />
-      )}
+      {/* StagePath removed — Case module deleted */}
+      {party.merge_status !== 'merged' && null}
 
       {/* Merged Warning Banner */}
       {party.merge_status === 'merged' && (
@@ -616,7 +611,7 @@ export function PartyDetail({ partyId }: PartyDetailProps) {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {cases.map((c: CaseResponse) => (
+                  {cases.map((c: any) => (
                     <button
                       key={c.id}
                       className="flex w-full items-center justify-between rounded-lg border border-border p-3 text-left hover:bg-muted/30 transition-colors cursor-pointer"

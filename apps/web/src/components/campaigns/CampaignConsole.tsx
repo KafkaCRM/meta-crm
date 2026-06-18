@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { campaignsApi } from '@/api/campaigns';
 import { settingsApi } from '@/api/settings';
+import { useBranch } from '@/contexts/branch.context';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -45,22 +46,20 @@ export function CampaignConsole() {
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
 
+  const { selectedVerticalIds } = useBranch();
+  const verticalIdsStr = selectedVerticalIds.length > 0 ? selectedVerticalIds.join(',') : '';
+
   // Fetch aggregate data
   const { data: statsData, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['campaigns', 'stats'],
-    queryFn: () => campaignsApi.getAggregateStats(),
+    queryKey: ['campaigns', 'stats', verticalIdsStr],
+    queryFn: () => campaignsApi.getAggregateStats(verticalIdsStr ? { vertical_ids: verticalIdsStr } : undefined),
     staleTime: 30_000,
   });
 
-  // Fetch branches & brands for dynamic scoping
+  // Fetch branches for dynamic scoping
   const { data: branches = [] } = useQuery({
     queryKey: ['settings', 'branches'],
     queryFn: () => settingsApi.branches.list(),
-  });
-
-  const { data: brands = [] } = useQuery({
-    queryKey: ['settings', 'brands'],
-    queryFn: () => settingsApi.brands.list(),
   });
 
   // Fetch selected campaign detail
@@ -99,11 +98,6 @@ export function CampaignConsole() {
     if (!campaign) return null;
     return branches.find(b => b.id === campaign.branch_id);
   }, [campaign, branches]);
-
-  const activeBrand = useMemo(() => {
-    if (!campaign) return null;
-    return brands.find(b => b.id === campaign.brand_id);
-  }, [campaign, brands]);
 
   // Client side filtering for campaign leads table
   const filteredLeads = useMemo(() => {
@@ -243,14 +237,6 @@ export function CampaignConsole() {
               <>
                 <span className="text-sm font-semibold text-foreground">
                   {activeBranch?.name ?? 'Branch'}
-                </span>
-                <span className="text-muted-foreground">/</span>
-              </>
-            )}
-            {brands.length > 1 && (
-              <>
-                <span className="text-sm font-semibold text-foreground">
-                  {activeBrand?.name ?? 'Brand'}
                 </span>
                 <span className="text-muted-foreground">/</span>
               </>

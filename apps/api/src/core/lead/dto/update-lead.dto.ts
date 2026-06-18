@@ -34,6 +34,10 @@ export class UpdateLeadDto {
   assigned_to_id?: string;
 
   @IsOptional()
+  @IsString()
+  vertical_id?: string;
+
+  @IsOptional()
   @IsObject()
   attributes?: Record<string, any>;
 }

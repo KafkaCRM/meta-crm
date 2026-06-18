@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Link } from '@tanstack/react-router';
-import { ShieldAlert, ArrowRight, UserCheck, Phone, Mail, FileText, Calendar, Building } from 'lucide-react';
+import { ShieldAlert, ArrowRight, UserCheck, Phone, Mail, FileText, Calendar } from 'lucide-react';
 import dayjs from 'dayjs';
 
 interface LeadDetailProps {
@@ -28,48 +28,26 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
   const [showConvertForm, setShowConvertForm] = useState(false);
 
   // Form State
-  const [assignmentId, setAssignmentId] = useState('');
+  const [verticalId, setVerticalId] = useState('');
   const { data: lead, isLoading: leadLoading } = useQuery({
     queryKey: ['lead', leadId],
     queryFn: () => leadsApi.get(leadId),
   });
 
-  const { data: assignments = [] } = useQuery({
-    queryKey: ['settings', 'assignments'],
-    queryFn: () => settingsApi.assignments.list(),
+  const { data: verticals = [] } = useQuery({
+    queryKey: ['settings', 'verticals'],
+    queryFn: () => settingsApi.verticals.list(),
   });
 
-  const { data: branches = [] } = useQuery({
-    queryKey: ['settings', 'branches'],
-    queryFn: () => settingsApi.branches.list ? settingsApi.branches.list() : [],
-  });
-
-  const { data: brands = [] } = useQuery({
-    queryKey: ['settings', 'brands'],
-    queryFn: () => settingsApi.brands.list(),
-  });
-
-  // Map assignment options
-  const assignmentOptions = useMemo(() => {
-    return assignments.map((ass) => {
-      const branch = branches.find((b) => b.id === ass.branch_id);
-      const brand = brands.find((b) => b.id === ass.brand_id);
-      return {
-        id: ass.id,
-        label: `${brand?.name ?? 'Brand'} — ${branch?.name ?? 'Branch'}`,
-      };
-    });
-  }, [assignments, branches, brands]);
-
-  // Set default assignment from first option
+  // Set default vertical from first option
   useMemo(() => {
-    if (assignments.length > 0 && !assignmentId) {
-      setAssignmentId(assignments[0]?.id || '');
+    if (verticals.length > 0 && !verticalId) {
+      setVerticalId(verticals[0]?.id || '');
     }
-  }, [assignments, assignmentId]);
+  }, [verticals, verticalId]);
 
   const convertMutation = useMutation({
-    mutationFn: (data: { branch_brand_assignment_id: string }) => leadsApi.convert(leadId, data),
+    mutationFn: (data: { vertical_id: string }) => leadsApi.convert(leadId, data),
     onSuccess: () => {
       toast.success('Lead promoted to Contact!');
       queryClient.invalidateQueries({ queryKey: ['lead', leadId] });
@@ -84,12 +62,12 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
 
   const handleConvert = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!assignmentId) {
-      toast.error('Please select a Branch/Brand assignment');
+    if (!verticalId) {
+      toast.error('Please select a Vertical');
       return;
     }
     convertMutation.mutate({
-      branch_brand_assignment_id: assignmentId,
+      vertical_id: verticalId,
     });
   };
 
@@ -129,16 +107,16 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
         </div>
         {!isConverted && !showConvertForm && (
           <div className="flex items-center gap-2">
-            {assignments.length > 0 && (
+            {verticals.length > 0 && (
               <Button
                 onClick={() => {
-                  const defaultAssignmentId = assignmentId || assignments[0]?.id;
-                  if (!defaultAssignmentId) {
-                    toast.error('No office assignment available');
+                  const defaultVerticalId = verticalId || verticals[0]?.id;
+                  if (!defaultVerticalId) {
+                    toast.error('No vertical available');
                     return;
                   }
                   convertMutation.mutate({
-                    branch_brand_assignment_id: defaultAssignmentId,
+                    vertical_id: defaultVerticalId,
                   });
                 }}
                 disabled={convertMutation.isPending}
@@ -234,16 +212,16 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
 
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-foreground uppercase tracking-wider">
-              Assign to Branch / Brand Office
+              Assign to Vertical
             </Label>
-            <Select value={assignmentId} onValueChange={setAssignmentId}>
+            <Select value={verticalId} onValueChange={setVerticalId}>
               <SelectTrigger className="h-9 border-border bg-card">
-                <SelectValue placeholder="Select branch & brand assignment..." />
+                <SelectValue placeholder="Select vertical..." />
               </SelectTrigger>
               <SelectContent>
-                {assignmentOptions.map((opt) => (
-                  <SelectItem key={opt.id} value={opt.id}>
-                    {opt.label}
+                {verticals.map((v: any) => (
+                  <SelectItem key={v.id} value={v.id}>
+                    {v.name}
                   </SelectItem>
                 ))}
               </SelectContent>

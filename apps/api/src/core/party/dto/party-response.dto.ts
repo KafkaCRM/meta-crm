@@ -6,7 +6,7 @@ export interface PartyResponse {
   phone_raw: string;
   phone_normalized: string;
   source: string;
-  branch_brand_assignment_id: string;
+  vertical_id: string;
   attributes: Record<string, unknown>;
   merge_status: string;
   merged_into_id?: string | null;

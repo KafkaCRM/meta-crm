@@ -44,43 +44,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   private async resolveVerticalIdsFromDb(
-    tenantId: string,
-    role: string,
-    assignmentIds: string[],
+    _tenantId: string,
+    _role: string,
+    _assignmentIds: string[],
   ): Promise<string[]> {
-    if (
-      role === TenantRole.Manager ||
-      role === TenantRole.Admin ||
-      role === TenantRole.Owner ||
-      !tenantId ||
-      assignmentIds.length === 0
-    ) {
-      return [];
-    }
-
-    const assignments = await this.platformDb.client.branchBrandAssignment.findMany({
-      where: {
-        id: { in: assignmentIds },
-        tenant_id: tenantId,
-      },
-      select: { branch_id: true },
-    });
-
-    const branchIds = assignments.map((a) => a.branch_id);
-    if (branchIds.length === 0) {
-      return [];
-    }
-
-    const verticals = await this.platformDb.client.vertical.findMany({
-      where: {
-        branch_id: { in: branchIds },
-        tenant_id: tenantId,
-        status: 'active',
-      },
-      select: { id: true },
-    });
-
-    return verticals.map((v) => v.id);
+    return [];
   }
 
   async validate(payload: JwtPayload): Promise<RequestScope> {

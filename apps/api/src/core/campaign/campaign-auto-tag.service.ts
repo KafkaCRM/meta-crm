@@ -16,21 +16,19 @@ export class CampaignAutoTagService {
   ) {}
 
   async autoTagCampaign(params: {
-    caseId: string;
+    leadId: string;
     channel: string;
     utmCampaign: string | null;
     verticalId: string;
     scope: RequestScope;
   }): Promise<Result<string | null, CampaignError>> {
     try {
-      // Safely ensure the request scope is set in CLS context so that TenantScopedPrismaService can query correctly.
       if (this.cls.isActive()) {
         if (!this.cls.get('scope') && params.scope) {
           this.cls.set('scope', params.scope);
         }
       }
 
-      // 1. UTM Match (highest priority)
       if (params.utmCampaign) {
         const matchedUtm = await this.db.getClient().campaign.findFirst({
           where: {
@@ -40,14 +38,14 @@ export class CampaignAutoTagService {
         });
 
         if (matchedUtm) {
-          await this.db.getClient().case.update({
-            where: { id: params.caseId },
+          await this.db.getClient().lead.update({
+            where: { id: params.leadId },
             data: { campaign_id: matchedUtm.id },
           });
 
           await this.hooks.emit('campaign:lead_added', {
             campaign_id: matchedUtm.id,
-            case_id: params.caseId,
+            lead_id: params.leadId,
             tenant_id: params.scope.tenant_id,
             channel: params.channel,
             tagged_automatically: true,
@@ -57,7 +55,6 @@ export class CampaignAutoTagService {
         }
       }
 
-      // 2. Channel + Vertical Match
       const now = new Date();
       const matchedChannel = await this.db.getClient().campaign.findFirst({
         where: {
@@ -74,14 +71,14 @@ export class CampaignAutoTagService {
       });
 
       if (matchedChannel) {
-        await this.db.getClient().case.update({
-          where: { id: params.caseId },
+        await this.db.getClient().lead.update({
+          where: { id: params.leadId },
           data: { campaign_id: matchedChannel.id },
         });
 
         await this.hooks.emit('campaign:lead_added', {
           campaign_id: matchedChannel.id,
-          case_id: params.caseId,
+          lead_id: params.leadId,
           tenant_id: params.scope.tenant_id,
           channel: params.channel,
           tagged_automatically: true,
@@ -90,7 +87,6 @@ export class CampaignAutoTagService {
         return ok(matchedChannel.id);
       }
 
-      // 3. No match
       return ok(null);
     } catch (e: any) {
       return err({

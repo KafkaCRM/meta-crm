@@ -4,7 +4,6 @@ export interface Campaign {
   id: string;
   tenant_id: string;
   branch_id: string;
-  brand_id: string;
   vertical_id: string;
   pipeline_id: string;
   name: string;
@@ -38,7 +37,6 @@ export interface CampaignStats {
 
 export interface CreateCampaignDto {
   branch_id: string;
-  brand_id: string;
   vertical_id: string;
   pipeline_id: string;
   name: string;
@@ -73,9 +71,10 @@ export interface CampaignsStatsSummary {
 }
 
 export const campaignsApi = {
-  list: (params: { vertical_id?: string; status?: string; channel?: string } = {}) => {
+  list: (params: { vertical_id?: string; vertical_ids?: string; status?: string; channel?: string } = {}) => {
     const qs = new URLSearchParams();
     if (params.vertical_id) qs.set('vertical_id', params.vertical_id);
+    if (params.vertical_ids) qs.set('vertical_ids', params.vertical_ids);
     if (params.status) qs.set('status', params.status);
     if (params.channel) qs.set('channel', params.channel);
     const query = qs.toString();
@@ -115,5 +114,10 @@ export const campaignsApi = {
     return apiCall<{ data: any[]; next_cursor?: string }>(`/campaigns/${id}/leads${query ? `?${query}` : ''}`);
   },
 
-  getAggregateStats: () => apiCall<CampaignsStatsSummary>('/campaigns/stats'),
+  getAggregateStats: (params?: { vertical_ids?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.vertical_ids) qs.set('vertical_ids', params.vertical_ids);
+    const query = qs.toString();
+    return apiCall<CampaignsStatsSummary>(`/campaigns/stats${query ? `?${query}` : ''}`);
+  },
 };

@@ -33,11 +33,15 @@ export class PartyService {
     name?: string;
     source?: string;
     type?: string;
+    vertical_ids?: string[];
   }): Promise<Result<{ data: any[]; next_cursor?: string }, PartyError>> {
     const scope = this.cls.get<RequestScope>('scope');
     const limit = Math.min(params.limit ?? 50, 100);
 
     const where: any = {};
+    if (params.vertical_ids && params.vertical_ids.length > 0) {
+      where.vertical_id = { in: params.vertical_ids };
+    }
     if (params.phone) where.phone_normalized = { contains: params.phone };
     if (params.name) where.name = { contains: params.name, mode: 'insensitive' };
     if (params.source) where.source = params.source;
@@ -63,11 +67,6 @@ export class PartyService {
     const scope = this.cls.get<RequestScope>('scope');
     const party = await this.db.getClient().party.findUnique({
       where: { id },
-      include: {
-        cases: {
-          include: { caseEvents: { orderBy: { occurred_at: 'desc' }, take: 5 } },
-        },
-      },
     });
 
     if (!party) {
@@ -95,9 +94,9 @@ export class PartyService {
         phone_raw: dto.phone ?? '',
         phone_normalized: dto.phone ?? '',
         source: dto.source ?? 'manual',
-        branch_brand_assignment_id: dto.branch_brand_assignment_id,
+        vertical_id: dto.vertical_id,
         attributes: (dto.attributes ?? {}) as any,
-      },
+      } as any,
     });
 
     const scope = this.cls.get<RequestScope>('scope');
@@ -128,7 +127,7 @@ export class PartyService {
       updateData.phone_raw = dto.phone;
       updateData.phone_normalized = dto.phone;
     }
-    if (dto.branch_brand_assignment_id !== undefined) updateData.branch_brand_assignment_id = dto.branch_brand_assignment_id;
+    if (dto.vertical_id !== undefined) updateData.vertical_id = dto.vertical_id;
     if (dto.source !== undefined) updateData.source = dto.source;
     if (dto.attributes !== undefined) {
       const validationResult = await this.fieldValidation.validateAttributes('Party', dto.attributes);

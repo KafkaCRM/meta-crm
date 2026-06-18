@@ -22,7 +22,7 @@ export function UserManager() {
     phone_number: '',
     password: '',
     autoGeneratePassword: true,
-    assignment_ids: [] as string[],
+    branchIds: [] as string[],
     roleIds: [] as string[],
     vertical_ids: [] as string[],
   });
@@ -50,41 +50,29 @@ export function UserManager() {
     staleTime: 30_000,
   });
 
-  const { data: assignments } = useQuery({
-    queryKey: ['settings', 'assignments'],
-    queryFn: () => settingsApi.assignments.list(),
-    staleTime: 30_000,
-  });
-
   const { data: branches } = useQuery({
     queryKey: ['settings', 'branches'],
     queryFn: () => settingsApi.branches.list(),
     staleTime: 30_000,
   });
 
-  const { data: brands } = useQuery({
-    queryKey: ['settings', 'brands'],
-    queryFn: () => settingsApi.brands.list(),
-    staleTime: 30_000,
-  });
+  const selectedBranchIds = inviteForm.branchIds;
 
   const { data: verticals } = useQuery({
-    queryKey: ['settings', 'verticals'],
-    queryFn: () => settingsApi.verticals.list({ status: 'active' }),
+    queryKey: ['settings', 'verticals', selectedBranchIds.join(',')],
+    queryFn: () => {
+      if (selectedBranchIds.length === 1) {
+        return settingsApi.verticals.list({ branch_id: selectedBranchIds[0] });
+      }
+      return settingsApi.verticals.list();
+    },
     staleTime: 30_000,
   });
 
-  const assignmentOptions = useMemo(() => {
-    if (!assignments || !branches || !brands) return [];
-    return assignments.map((a) => {
-      const branch = branches.find((b) => b.id === a.branch_id);
-      const brand = brands.find((b) => b.id === a.brand_id);
-      return {
-        id: a.id,
-        name: `${branch?.name ?? 'Unknown Branch'} - ${brand?.name ?? 'Unknown Brand'}`,
-      };
-    });
-  }, [assignments, branches, brands]);
+  const filteredVerticals = useMemo(() => {
+    if (selectedBranchIds.length === 0) return verticals ?? [];
+    return (verticals ?? []).filter((v: any) => selectedBranchIds.includes(v.branch_id));
+  }, [verticals, selectedBranchIds]);
 
   const sortedRoles = useMemo(() => {
     if (!roles) return [];
@@ -110,7 +98,6 @@ export function UserManager() {
       phone_number: string;
       password?: string;
       role_ids: string[];
-      assignment_ids?: string[];
       vertical_ids?: string[];
     }) => settingsApi.users.invite(data),
     onSuccess: (data) => {
@@ -128,7 +115,7 @@ export function UserManager() {
         phone_number: '',
         password: '',
         autoGeneratePassword: true,
-        assignment_ids: [],
+        branchIds: [],
         roleIds: [],
         vertical_ids: [],
       });
@@ -154,7 +141,6 @@ export function UserManager() {
       if (!inviteForm.phone_number.trim()) errors.phone_number = 'Phone number is required';
       if (inviteForm.roleIds.length === 0) errors.roleIds = 'Select at least one role';
       if (!inviteForm.autoGeneratePassword && !inviteForm.password.trim()) errors.password = 'Enter a password or enable auto-generate';
-      if (assignmentOptions.length > 1 && inviteForm.assignment_ids.length === 0) errors.assignment_ids = 'Select at least one location';
 
       if (Object.keys(errors).length > 0) {
         setValidationErrors(errors);
@@ -169,11 +155,10 @@ export function UserManager() {
         phone_number: inviteForm.phone_number.trim(),
         password: inviteForm.autoGeneratePassword ? undefined : inviteForm.password,
         role_ids: inviteForm.roleIds,
-        assignment_ids: inviteForm.assignment_ids.length > 0 ? inviteForm.assignment_ids : undefined,
         vertical_ids: inviteForm.vertical_ids.length > 0 ? inviteForm.vertical_ids : undefined,
       });
     },
-    [inviteForm, inviteMutation, assignmentOptions],
+    [inviteForm, inviteMutation],
   );
 
   const toggleRole = useCallback((roleId: string) => {
@@ -405,49 +390,44 @@ export function UserManager() {
                   </div>
                 </div>
 
-                {/* Assignments Selector */}
-                {assignmentOptions.length > 1 ? (
+                {/* Branch Selector (Multi-select) */}
+                {branches && branches.length > 0 ? (
                   <div className="space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground">
-                      Store Location <span className="text-red-500">*</span>
-                    </label>
+                    <label className="text-xs font-medium text-muted-foreground">Branches</label>
                     <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1.5 border border-border rounded-lg bg-background/50">
-                      {assignmentOptions.map((opt) => {
-                        const isSelected = inviteForm.assignment_ids.includes(opt.id);
+                      {branches.map((b: any) => {
+                        const isSelected = inviteForm.branchIds.includes(b.id);
                         return (
                           <button
-                            key={opt.id} type="button"
+                            key={b.id} type="button"
                             onClick={() => setInviteForm((f) => ({
                               ...f,
-                              assignment_ids: f.assignment_ids.includes(opt.id)
-                                ? f.assignment_ids.filter((id) => id !== opt.id)
-                                : [...f.assignment_ids, opt.id],
+                              branchIds: f.branchIds.includes(b.id)
+                                ? f.branchIds.filter((id) => id !== b.id)
+                                : [...f.branchIds, b.id],
+                              vertical_ids: f.branchIds.includes(b.id)
+                                ? f.vertical_ids
+                                : f.vertical_ids,
                             }))}
                             className={cn(
                               "text-xs px-2.5 py-1 rounded-md border transition-all font-medium",
                               isSelected ? "bg-primary text-white border-primary shadow-sm" : "bg-card text-muted-foreground border-border hover:border-slate-400 hover:text-foreground",
                             )}
                           >
-                            {opt.name}
+                            {b.name}
                           </button>
                         );
                       })}
                     </div>
-                    {validationErrors.assignment_ids && <p className="text-[10px] text-red-500">{validationErrors.assignment_ids}</p>}
-                  </div>
-                ) : assignmentOptions.length === 1 ? (
-                  <div className="bg-background/30 p-2 rounded border border-border/40 flex items-center gap-2">
-                    <span className="text-[10px] font-semibold text-muted-foreground uppercase">Location:</span>
-                    <span className="text-xs text-foreground font-medium">{assignmentOptions[0]?.name}</span>
                   </div>
                 ) : null}
 
-                {/* Verticals Selector */}
-                {verticals && verticals.length > 1 ? (
+                {/* Verticals Selector (filtered by selected branches) */}
+                {filteredVerticals && filteredVerticals.length > 0 ? (
                   <div className="space-y-2">
                     <label className="text-xs font-medium text-muted-foreground">Department / Vertical</label>
                     <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1.5 border border-border rounded-lg bg-background/50">
-                      {verticals.map((vert: any) => {
+                      {filteredVerticals.map((vert: any) => {
                         const isSelected = inviteForm.vertical_ids.includes(vert.id);
                         return (
                           <button
@@ -468,11 +448,14 @@ export function UserManager() {
                         );
                       })}
                     </div>
+                    {inviteForm.branchIds.length === 0 && (
+                      <p className="text-[10px] text-muted-foreground">Select a branch above to see available verticals</p>
+                    )}
                   </div>
-                ) : verticals?.length === 1 ? (
+                ) : inviteForm.branchIds.length > 0 ? (
                   <div className="bg-background/30 p-2 rounded border border-border/40 flex items-center gap-2">
                     <span className="text-[10px] font-semibold text-muted-foreground uppercase">Vertical:</span>
-                    <span className="text-xs text-foreground font-medium">{verticals[0]?.name}</span>
+                    <span className="text-xs text-muted-foreground">No verticals found for selected branches</span>
                   </div>
                 ) : null}
 
@@ -558,7 +541,7 @@ export function UserManager() {
                 </Button>
                 <Button type="button" onClick={() => {
                   setCreatedUserCredentials(null);
-                  setInviteForm({ name: '', email: '', phone_number: '', password: '', autoGeneratePassword: true, assignment_ids: [], roleIds: [], vertical_ids: [] });
+                   setInviteForm({ name: '', email: '', phone_number: '', password: '', autoGeneratePassword: true, branchIds: [], roleIds: [], vertical_ids: [] });
                 }} className="flex-1 bg-primary text-white hover:bg-primary/90 text-xs h-9">
                   Create Another
                 </Button>

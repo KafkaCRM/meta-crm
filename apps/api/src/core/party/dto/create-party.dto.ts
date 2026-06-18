@@ -14,7 +14,7 @@ export class CreatePartyDto {
   email?: string;
 
   @IsString()
-  branch_brand_assignment_id!: string;
+  vertical_id!: string;
 
   @IsOptional()
   @IsString()

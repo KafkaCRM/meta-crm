@@ -103,7 +103,7 @@ export function IntegrationDetail({ connectionId, manifest, onBack }: Props) {
       </div>
 
       {manifest.url_generator ? (
-        <UrlGeneratorSetup connection={connection} manifest={manifest} canManage={canManage} onChanged={refetch} />
+        <UrlGeneratorSetup connection={connection} connectionId={connectionId} manifest={manifest} canManage={canManage} onChanged={refetch} />
       ) : manifest.oauth_supported ? (
         <OAuthSetup connection={connection} manifest={manifest} canManage={canManage} onChanged={refetch} />
       ) : manifest.provider === 'email-to-case' ? (
@@ -117,8 +117,9 @@ export function IntegrationDetail({ connectionId, manifest, onBack }: Props) {
 
 /* ───────── URL Generator (Web-to-Lead, Zapier) ───────── */
 
-function UrlGeneratorSetup({ connection, manifest, canManage, onChanged }: {
+function UrlGeneratorSetup({ connection, connectionId, manifest, canManage, onChanged }: {
   connection: ConnectionDto | null;
+  connectionId: string;
   manifest: IntegrationManifest;
   canManage: boolean;
   onChanged: () => void;

@@ -4,6 +4,7 @@ import { useRouter, Link, useLocation } from '@tanstack/react-router';
 import { useAuth } from '@/contexts/auth.context';
 import { AbilityProvider } from '@/contexts/permissions.context';
 import { LabelsProvider } from '@/contexts/labels.context';
+import { BranchProvider } from '@/contexts/branch.context';
 import { useLabels } from '@/hooks/useLabels';
 import { useQuery } from '@tanstack/react-query';
 import { settingsApi } from '@/api/settings';
@@ -80,6 +81,7 @@ import { useCapabilities } from '@/hooks/useCapabilities';
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
 import { CommandPalette } from '@/components/shared/CommandPalette';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { useBranch } from '@/contexts/branch.context';
 
 
 /* ------------------------------------------------------------------ */
@@ -104,6 +106,26 @@ const getPipelineColor = (id: string) => {
   }
   return colors[sum % colors.length];
 };
+
+function BranchSelector() {
+  const { selectedBranchId, setSelectedBranchId, branches } = useBranch();
+  const selectedBranch = branches.find((b: any) => b.id === selectedBranchId);
+
+  return (
+    <div className="relative w-full">
+      <select
+        value={selectedBranchId}
+        onChange={(e) => setSelectedBranchId(e.target.value)}
+        className="flex h-8 w-full rounded-lg border border-sidebar-border bg-sidebar-accent/30 px-2.5 py-1 text-xs font-medium text-sidebar-foreground shadow-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+      >
+        <option value="">All Branches</option>
+        {branches.map((b: any) => (
+          <option key={b.id} value={b.id}>{b.name}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
 
 function AppSidebar() {
   const { user, ability, logout } = useAuth();
@@ -148,12 +170,10 @@ function AppSidebar() {
     '/settings/users': ['manage', 'User'],
     '/settings/roles': ['manage', 'Role'],
     '/settings/branches': ['manage', 'Branch'],
-    '/settings/brands': ['manage', 'Brand'],
-    '/settings/assignments': ['manage', 'Branch'],
+    '/settings/verticals': ['manage', 'Vertical'],
     '/settings/pipelines': ['manage', 'Workflow'],
     '/settings/workflows': ['manage', 'Workflow'],
     '/settings/fields': ['manage', 'FieldDefinition'],
-    '/settings/industry': ['manage', 'FieldDefinition'],
     '/settings/labels': ['manage', 'LabelOverride'],
     '/settings/capabilities': ['manage', 'Plugin'],
     '/settings/plugins': ['manage', 'Plugin'],
@@ -164,9 +184,7 @@ function AppSidebar() {
     { label: 'Users', path: '/settings/users', icon: Users },
     { label: 'Roles', path: '/settings/roles', icon: Shield },
     { label: 'Branches', path: '/settings/branches', icon: GitBranch },
-    { label: 'Brands', path: '/settings/brands', icon: Building2 },
-    { label: 'Industry Vertical', path: '/settings/industry', icon: Globe },
-    { label: 'Assignments', path: '/settings/assignments', icon: UserCog },
+    { label: 'Verticals', path: '/settings/verticals', icon: Layers },
     { label: 'Pipeline Settings', path: '/settings/pipelines', icon: Workflow },
     { label: 'Fields', path: '/settings/fields', icon: Sliders },
     { label: 'Labels', path: '/settings/labels', icon: Tags },
@@ -278,6 +296,20 @@ function AppSidebar() {
                   </SidebarMenuItem>
                 );
               })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Branch Selector */}
+        <SidebarGroup className="pt-0 pb-1">
+          <SidebarGroupLabel className="text-sidebar-foreground/50 text-[10px] font-bold uppercase tracking-wider px-2 mb-1">
+            Branch
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <BranchSelector />
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -404,6 +436,7 @@ function RootLayout() {
       <AbilityProvider ability={ability}>
         <CurrencyProvider>
           <LabelsProvider>
+            <BranchProvider>
             <SidebarProvider>
             <div className="flex min-h-screen w-full bg-background text-foreground flex-col">
               {isImpersonating && (
@@ -476,6 +509,7 @@ function RootLayout() {
           </div>
         </div>
             </SidebarProvider>
+            </BranchProvider>
           </LabelsProvider>
         </CurrencyProvider>
       </AbilityProvider>
@@ -1006,16 +1040,10 @@ import {
 } from './routes/party';
 
 import {
-  casesRoute,
-  casesNewRoute,
-  caseDetailRoute,
-} from './routes/case';
-
-import {
   settingsRoute,
   settingsBranchesRoute,
+  settingsVerticalsRoute,
   settingsBrandsRoute,
-  settingsAssignmentsRoute,
   settingsUsersRoute,
   settingsRolesRoute,
   settingsPipelinesRoute,
@@ -1028,7 +1056,6 @@ import {
   settingsObjectsRoute,
   settingsAuditTrailRoute,
   settingsLayoutBuilderRoute,
-  settingsIndustryRoute,
 } from './routes/settings';
 
 import { appointmentsRoute } from './routes/appointments';
@@ -1056,9 +1083,6 @@ export const routeTree = rootRoute.addChildren([
   partiesNewRoute,
   partyDetailRoute,
   partyEditRoute,
-  casesRoute,
-  casesNewRoute,
-  caseDetailRoute,
   appointmentsRoute,
   billingRoute,
   propertiesRoute,
@@ -1068,8 +1092,8 @@ export const routeTree = rootRoute.addChildren([
   integrationsRoute,
   settingsRoute,
   settingsBranchesRoute,
+  settingsVerticalsRoute,
   settingsBrandsRoute,
-  settingsAssignmentsRoute,
   settingsUsersRoute,
   settingsRolesRoute,
   settingsPipelinesRoute,
@@ -1082,7 +1106,6 @@ export const routeTree = rootRoute.addChildren([
   settingsObjectsRoute,
   settingsAuditTrailRoute,
   settingsLayoutBuilderRoute,
-  settingsIndustryRoute,
 ]);
 
 export const router = createRouter({ routeTree });

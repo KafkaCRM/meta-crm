@@ -99,11 +99,6 @@ export class BranchService {
       throw new NotFoundException('Branch not found');
     }
 
-    // Check for branch brand assignments and clean up
-    await this.tenantDb.getClient().branchBrandAssignment.deleteMany({
-      where: { branch_id: id, tenant_id: tenantId },
-    });
-
     await this.tenantDb.getClient().branch.delete({
       where: { id },
     });

@@ -8,7 +8,6 @@ import { TenantModule } from './core/tenant/tenant.module';
 import { PartyModule } from './core/party/party.module';
 import { HooksModule } from './core/hooks/hooks.module';
 import { RealtimeModule } from './core/realtime/realtime.module';
-import { CaseModule } from './core/case/case.module';
 import { InteractionModule } from './core/interaction/interaction.module';
 import { MetadataModule } from './core/metadata/metadata.module';
 import { ReportModule } from './core/report/report.module';
@@ -63,7 +62,6 @@ const CAPABILITY_MODULES = [
     PartyModule,
     HooksModule,
     RealtimeModule,
-    CaseModule,
     InteractionModule,
     MetadataModule,
     ReportModule,

@@ -37,6 +37,8 @@ export function WorkflowBuilder() {
   const [activePipelineName, setActivePipelineName] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newPipelineName, setNewPipelineName] = useState('');
+  const [selectedBranchId, setSelectedBranchId] = useState('');
+  const [selectedVerticalId, setSelectedVerticalId] = useState('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [pipelineToDelete, setPipelineToDelete] = useState<{ id: string; name: string } | null>(null);
 
@@ -51,6 +53,20 @@ export function WorkflowBuilder() {
     staleTime: 30_000,
   });
 
+  // Branch and vertical queries for create dialog
+  const { data: branches = [] } = useQuery({
+    queryKey: ['settings', 'branches'],
+    queryFn: () => settingsApi.branches.list(),
+    staleTime: 30_000,
+  });
+
+  const { data: verticals = [] } = useQuery({
+    queryKey: ['settings', 'verticals', selectedBranchId],
+    queryFn: () => settingsApi.verticals.list(selectedBranchId ? { branch_id: selectedBranchId } : undefined),
+    staleTime: 30_000,
+    enabled: !!selectedBranchId,
+  });
+
   // 2. Query - Fetch current selected pipeline details
   const { data: activePipeline, isLoading: pipelineDetailsLoading } = useQuery({
     queryKey: ['settings', 'pipeline-details', activePipelineId],
@@ -60,11 +76,13 @@ export function WorkflowBuilder() {
 
   // 3. Mutation - Create custom pipeline
   const createPipelineMutation = useMutation({
-    mutationFn: (data: { name: string }) => settingsApi.pipelines.create(data),
+    mutationFn: (data: { name: string; vertical_id?: string }) => settingsApi.pipelines.create(data),
     onSuccess: (created) => {
       toast.success(`Pipeline "${created.name}" created successfully!`);
       setIsCreateModalOpen(false);
       setNewPipelineName('');
+      setSelectedBranchId('');
+      setSelectedVerticalId('');
       refetchPipelines();
       
       // Auto-enter editing mode for the new pipeline
@@ -85,7 +103,15 @@ export function WorkflowBuilder() {
       toast.error(`A pipeline named "${newPipelineName.trim()}" already exists. Please choose a unique name.`);
       return;
     }
-    createPipelineMutation.mutate({ name: newPipelineName.trim() });
+    if (!selectedBranchId) {
+      toast.error('Please select a branch.');
+      return;
+    }
+    if (!selectedVerticalId) {
+      toast.error('Please select a vertical.');
+      return;
+    }
+    createPipelineMutation.mutate({ name: newPipelineName.trim(), vertical_id: selectedVerticalId });
   };
 
   // Mutation - Delete custom pipeline
@@ -349,6 +375,13 @@ export function WorkflowBuilder() {
                   )}
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {pipe.vertical && (
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                      <span className="inline-flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-md font-medium">
+                        {pipe.vertical.name}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex flex-wrap gap-1.5">
                     {pipe.stages?.map((stage: any) => (
                       <Badge 
@@ -407,6 +440,36 @@ export function WorkflowBuilder() {
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 pt-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-800 uppercase tracking-wider">Branch</label>
+                  <select
+                    value={selectedBranchId}
+                    onChange={(e) => {
+                      setSelectedBranchId(e.target.value);
+                      setSelectedVerticalId('');
+                    }}
+                    className="flex h-9 w-full rounded-lg border border-border bg-background px-3 py-1 text-sm shadow-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  >
+                    <option value="">Select a branch...</option>
+                    {branches.map((b: any) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-800 uppercase tracking-wider">Vertical</label>
+                  <select
+                    value={selectedVerticalId}
+                    onChange={(e) => setSelectedVerticalId(e.target.value)}
+                    disabled={!selectedBranchId}
+                    className="flex h-9 w-full rounded-lg border border-border bg-background px-3 py-1 text-sm shadow-none focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50"
+                  >
+                    <option value="">{selectedBranchId ? 'Select a vertical...' : 'Select a branch first'}</option>
+                    {verticals.map((v: any) => (
+                      <option key={v.id} value={v.id}>{v.name}</option>
+                    ))}
+                  </select>
+                </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-800 uppercase tracking-wider">Pipeline Name</label>
                   <Input

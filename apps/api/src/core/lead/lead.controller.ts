@@ -32,6 +32,7 @@ class LeadQueryDto {
   @IsOptional() @IsString() assigned_to_id?: string;
   @IsOptional() @IsString() pipeline_definition_id?: string;
   @IsOptional() @IsString() stage?: string;
+  @IsOptional() @IsString() vertical_ids?: string;
 }
 
 @Controller('leads')
@@ -42,7 +43,8 @@ export class LeadController {
   @Get()
   @CheckPermissions('read', 'Lead')
   async findAll(@Query() query: LeadQueryDto) {
-    const result = await this.service.findMany(query);
+    const verticalIds = query.vertical_ids ? query.vertical_ids.split(',').filter(Boolean) : undefined;
+    const result = await this.service.findMany({ ...query, vertical_ids: verticalIds });
     if (result.isErr()) {
       throw new InternalServerErrorException({
         code: result.error.code,

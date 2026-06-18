@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { createColumnHelper } from '@tanstack/react-table';
 import { leadsApi, type LeadResponse } from '@/api/leads';
+import { useBranch } from '@/contexts/branch.context';
 import { VirtualTable } from '@/components/shared/VirtualTable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,11 +18,11 @@ import {
   type OperationalStatus,
 } from '@/components/shared';
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { LeadDetail } from './LeadDetail';
 import { CreateLeadModal } from './CreateLeadModal';
 import { cn } from '@/lib/utils';
@@ -62,6 +63,7 @@ export function LeadList() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'new' | 'unassigned' | 'hot' | 'duplicate' | 'junk'>('all');
+  const { selectedVerticalIds } = useBranch();
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -73,10 +75,13 @@ export function LeadList() {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [searchQuery]);
 
+  const verticalIdsStr = selectedVerticalIds.length > 0 ? selectedVerticalIds.join(',') : '';
+
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['leads', debouncedSearch, activeTab],
+    queryKey: ['leads', verticalIdsStr, debouncedSearch, activeTab],
     queryFn: () => {
       const params: Record<string, string | number> = {};
+      if (verticalIdsStr) params.vertical_ids = verticalIdsStr;
       if (debouncedSearch) {
         params.name = debouncedSearch;
       }
@@ -452,25 +457,23 @@ export function LeadList() {
         </Card>
       </div>
 
-      {/* Slide-out Preview Panel */}
-      <Sheet open={previewOpen} onOpenChange={setPreviewOpen}>
-        <SheetContent className="sm:max-w-[460px] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Lead Record Details</SheetTitle>
-          </SheetHeader>
-          <div className="mt-6">
-            {previewId && (
-              <LeadDetail
-                leadId={previewId}
-                onClose={() => setPreviewOpen(false)}
-                onChanged={() => {
-                  refetch();
-                }}
-              />
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
+      {/* Lead Detail Dialog */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="sm:max-w-[540px] max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Lead Details</DialogTitle>
+          </DialogHeader>
+          {previewId && (
+            <LeadDetail
+              leadId={previewId}
+              onClose={() => setPreviewOpen(false)}
+              onChanged={() => {
+                refetch();
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Create Lead Modal */}
       <CreateLeadModal

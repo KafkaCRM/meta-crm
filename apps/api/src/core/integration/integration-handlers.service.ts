@@ -69,16 +69,16 @@ export class IntegrationHandlersService implements OnModuleInit {
     this.logger.log(`Google Calendar Sync: Synchronized appointment "${payload.title}" (start: ${payload.start_time}) for tenant ${tenantId} via Client ID: ${creds.client_id}`);
   }
 
-  async runEmailToCaseSync(tenantId: string): Promise<number> {
+  async runEmailToLeadSync(tenantId: string): Promise<number> {
     const credsResult = await this.connectionService.getDecryptedCredentialsByProvider(tenantId, 'email-to-case');
     if (credsResult.isErr()) {
-      throw new Error('Email-to-Case integration is not configured for this tenant');
+      throw new Error('Email-to-Lead integration is not configured for this tenant');
     }
 
     const creds = credsResult.value;
-    this.logger.log(`Email-to-Case: Polling IMAP mailbox ${creds.imap_user}@${creds.imap_host}...`);
+    this.logger.log(`Email-to-Lead: Polling IMAP mailbox ${creds.imap_user}@${creds.imap_host}...`);
 
-    let casesCreatedCount = 0;
+    let leadsCreatedCount = 0;
     
     await this.cls.run(async () => {
       this.cls.set('scope', {
@@ -98,7 +98,7 @@ export class IntegrationHandlersService implements OnModuleInit {
         party = await this.connectionService['platformDb'].client.party.create({
           data: {
             tenant_id: tenantId,
-            branch_brand_assignment_id: 'assign_default_001',
+            vertical_id: 'vert_default_001',
             type: 'individual',
             name: 'John Doe Inbound',
             email: senderEmail,
@@ -118,23 +118,23 @@ export class IntegrationHandlersService implements OnModuleInit {
       if (workflow) {
         const defaultStage = workflow.stages[0]?.id || '';
         
-        await this.connectionService['platformDb'].client.case.create({
+        await this.connectionService['platformDb'].client.lead.create({
           data: {
             tenant_id: tenantId,
-            branch_brand_assignment_id: 'assign_default_001',
-            party_id: party.id,
-            type: 'support',
-            title: 'Inbound Email: Billing Inquiry on invoice #1002',
+            name: 'Inbound Email: Billing Inquiry on invoice #1002',
+            phone: '+919999988888',
             stage: defaultStage,
             pipeline_definition_id: workflow.id,
             assigned_to_id: 'usr_default_001',
+            source: 'email',
+            party_id: party.id,
             attributes: {},
-          },
+          } as any,
         });
-        casesCreatedCount = 1;
+        leadsCreatedCount = 1;
       }
     });
 
-    return casesCreatedCount;
+    return leadsCreatedCount;
   }
 }

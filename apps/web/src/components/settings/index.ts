@@ -1,7 +1,6 @@
 export { SettingsLayout } from './SettingsLayout';
 export { BranchManager } from './BranchManager';
-export { BrandManager } from './BrandManager';
-export { AssignmentManager } from './AssignmentManager';
+export { VerticalManager } from './VerticalManager';
 export { UserManager } from './UserManager';
 export { RoleMatrix } from './RoleMatrix';
 export { WorkflowBuilder } from './WorkflowBuilder';

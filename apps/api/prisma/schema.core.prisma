@@ -1,91 +1,40 @@
 model Party {
-  id                        String            @id @default(cuid())
-  tenant_id                 String
-  branch_brand_assignment_id String
-  type                      String
-  name                      String
-  email                     String?
-  phone_raw                 String
-  phone_normalized          String
-  source                    String
-  attributes                Json              @default("{}")
-  merge_status              String            @default("canonical")
-  merged_into_id            String?
-  created_at                DateTime          @default(now())
-  updated_at                DateTime          @updatedAt
+  id            String   @id @default(cuid())
+  tenant_id     String
+  vertical_id   String
+  type          String
+  name          String
+  email         String?
+  phone_raw     String
+  phone_normalized String
+  source        String
+  attributes    Json     @default("{}")
+  merge_status  String   @default("canonical")
+  merged_into_id String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
 
-  user                    User?              @relation(fields: [tenant_id], references: [id])
-  cases                   Case[]
-  interactions            Interaction[]
-  mergeQueuePrimary       PartyMergeQueue[]  @relation("PrimaryParty")
-  mergeQueueDuplicate     PartyMergeQueue[]  @relation("DuplicateParty")
-  leads                   Lead[]
-  appointments            Appointment[]
-  invoices                Invoice[]
-  orders                  Order[]
-  onboardings             Onboarding[]
+  vertical              Vertical          @relation(fields: [vertical_id], references: [id])
+  user                  User?             @relation(fields: [tenant_id], references: [id])
+  interactions          Interaction[]
+  mergeQueuePrimary     PartyMergeQueue[] @relation("PrimaryParty")
+  mergeQueueDuplicate   PartyMergeQueue[] @relation("DuplicateParty")
+  leads                 Lead[]
+  appointments          Appointment[]
+  invoices              Invoice[]
+  orders                Order[]
+  onboardings           Onboarding[]
 
   @@index([tenant_id, phone_normalized])
   @@index([tenant_id, created_at])
-  @@index([attributes], type: Gin)
-}
-
-model Case {
-  id                        String   @id @default(cuid())
-  tenant_id                 String
-  branch_brand_assignment_id String
-  party_id                  String
-  type                      String
-  title                     String
-  stage                     String
-  pipeline_definition_id    String
-  assigned_to_id            String?
-  vertical_id               String?
-  campaign_id               String?
-  attributes                Json     @default("{}")
-  created_at                DateTime @default(now())
-  updated_at                DateTime @updatedAt
-  last_stage_changed_at     DateTime @default(now())
-
-  party             Party          @relation(fields: [party_id], references: [id])
-  pipelineDefinition PipelineDefinition @relation(fields: [pipeline_definition_id], references: [id])
-  assignedTo        User?          @relation("AssignedCases", fields: [assigned_to_id], references: [id])
-  caseEvents        CaseEvent[]
-  interactions      Interaction[]
-
-  @@index([tenant_id, stage])
-  @@index([tenant_id, pipeline_definition_id])
-  @@index([tenant_id, party_id])
-  @@index([tenant_id, assigned_to_id])
-  @@index([tenant_id, created_at])
   @@index([tenant_id, vertical_id])
-  @@index([tenant_id, campaign_id])
   @@index([attributes], type: Gin)
-}
-
-model CaseEvent {
-  id          String   @id @default(cuid())
-  case_id     String
-  tenant_id   String
-  event_type  String
-  from_stage  String?
-  to_stage    String?
-  actor_id    String
-  actor_type  String
-  payload     Json     @default("{}")
-  occurred_at DateTime @default(now())
-
-  case Case @relation(fields: [case_id], references: [id])
-
-  @@index([case_id, occurred_at])
-  @@index([tenant_id, occurred_at])
 }
 
 model Interaction {
   id         String   @id @default(cuid())
   tenant_id  String
   party_id   String
-  case_id    String?
   channel    String
   direction  String
   content    String
@@ -96,10 +45,8 @@ model Interaction {
   created_at DateTime @default(now())
 
   party Party @relation(fields: [party_id], references: [id])
-  case  Case? @relation(fields: [case_id], references: [id])
 
   @@index([tenant_id, party_id, created_at])
-  @@index([tenant_id, case_id, created_at])
   @@index([thread_id])
 }
 

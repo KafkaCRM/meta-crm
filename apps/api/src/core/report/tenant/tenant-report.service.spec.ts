@@ -15,8 +15,8 @@ const scope: RequestScope = {
 
 function buildMocks() {
   const client = {
-    case: { groupBy: vi.fn(), count: vi.fn(), findMany: vi.fn() },
-    caseEvent: { findMany: vi.fn() },
+    lead: { groupBy: vi.fn(), count: vi.fn(), findMany: vi.fn() },
+    leadEvent: { findMany: vi.fn() },
     interaction: { groupBy: vi.fn() },
     party: { groupBy: vi.fn() },
     pipelineStage: { groupBy: vi.fn(), findMany: vi.fn() },
@@ -46,7 +46,7 @@ describe('TenantReportService', () => {
   /* ------------------------------------------------------------------ */
   describe('pipelineFunnel', () => {
     it('returns stage counts and percentages', async () => {
-      (client.case.groupBy as any).mockResolvedValue([
+      (client.lead.groupBy as any).mockResolvedValue([
         { stage: 'Enquiry', _count: { id: 10 } },
         { stage: 'Review', _count: { id: 5 } },
         { stage: 'Approved', _count: { id: 5 } },
@@ -62,8 +62,8 @@ describe('TenantReportService', () => {
       }
     });
 
-    it('returns empty array when no cases', async () => {
-      (client.case.groupBy as any).mockResolvedValue([]);
+    it('returns empty array when no leads', async () => {
+      (client.lead.groupBy as any).mockResolvedValue([]);
 
       const result = await svc.pipelineFunnel({});
       expect(result.isOk()).toBe(true);
@@ -72,35 +72,23 @@ describe('TenantReportService', () => {
       }
     });
 
-    it('filters by assignment_id', async () => {
-      (client.case.groupBy as any).mockResolvedValue([{ stage: 'Enquiry', _count: { id: 3 } }]);
-
-      await svc.pipelineFunnel({ assignment_id: 'assign-1' });
-
-      expect(client.case.groupBy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ branch_brand_assignment_id: 'assign-1' }),
-        }),
-      );
-    });
-
     it('filters by date range', async () => {
-      (client.case.groupBy as any).mockResolvedValue([]);
+      (client.lead.groupBy as any).mockResolvedValue([]);
 
       await svc.pipelineFunnel({ date_from: '2025-01-01', date_to: '2025-12-31' });
 
-      const callArgs = (client.case.groupBy as any).mock.calls[0][0];
+      const callArgs = (client.lead.groupBy as any).mock.calls[0][0];
       expect(callArgs.where.created_at).toBeDefined();
       expect(callArgs.where.created_at.gte).toEqual(new Date('2025-01-01'));
       expect(callArgs.where.created_at.lte).toEqual(new Date('2025-12-31'));
     });
 
     it('filters by campaign_id', async () => {
-      (client.case.groupBy as any).mockResolvedValue([]);
+      (client.lead.groupBy as any).mockResolvedValue([]);
 
       await svc.pipelineFunnel({ campaign_id: 'camp-123' });
 
-      expect(client.case.groupBy).toHaveBeenCalledWith(
+      expect(client.lead.groupBy).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({ campaign_id: 'camp-123' }),
         }),
@@ -113,14 +101,14 @@ describe('TenantReportService', () => {
   /* ------------------------------------------------------------------ */
   describe('conversionRate', () => {
     it('returns rate, total, and converted', async () => {
-      (client.case.count as any).mockResolvedValue(20);
+      (client.lead.count as any).mockResolvedValue(20);
       (client.pipelineStage.groupBy as any).mockResolvedValue([
         { pipeline_definition_id: 'wf-1', _max: { order: 3 } },
       ]);
       (client.pipelineStage.findMany as any).mockResolvedValue([
         { id: 'stage-final' },
       ]);
-      (client.case.findMany as any).mockResolvedValue([
+      (client.lead.findMany as any).mockResolvedValue([
         { id: 'c-1', pipeline_definition_id: 'wf-1', stage: 'stage-final' },
         { id: 'c-2', pipeline_definition_id: 'wf-1', stage: 'Enquiry' },
       ]);
@@ -139,12 +127,12 @@ describe('TenantReportService', () => {
   /*  stageTime                                                            */
   /* ------------------------------------------------------------------ */
   describe('stageTime', () => {
-    it('calculates avg hours from case_events', async () => {
+    it('calculates avg hours from lead events', async () => {
       const base = new Date('2025-01-01T10:00:00Z');
-      (client.caseEvent.findMany as any).mockResolvedValue([
-        { case_id: 'c-1', from_stage: null, to_stage: 'Enquiry', occurred_at: base },
-        { case_id: 'c-1', from_stage: 'Enquiry', to_stage: 'Review', occurred_at: new Date(base.getTime() + 2 * 3600000) },
-        { case_id: 'c-1', from_stage: 'Review', to_stage: 'Approved', occurred_at: new Date(base.getTime() + 5 * 3600000) },
+      (client.leadEvent.findMany as any).mockResolvedValue([
+        { lead_id: 'c-1', from_stage: null, to_stage: 'Enquiry', occurred_at: base },
+        { lead_id: 'c-1', from_stage: 'Enquiry', to_stage: 'Review', occurred_at: new Date(base.getTime() + 2 * 3600000) },
+        { lead_id: 'c-1', from_stage: 'Review', to_stage: 'Approved', occurred_at: new Date(base.getTime() + 5 * 3600000) },
       ]);
 
       const result = await svc.stageTime({});
@@ -226,7 +214,7 @@ describe('TenantReportService', () => {
       (client.campaign.findMany as any).mockResolvedValue([
         { id: 'camp-1', name: 'Facebook Ad', channel: 'facebook', pipeline_id: 'pipe-1' },
       ]);
-      (client.case.groupBy as any).mockResolvedValue([
+      (client.lead.groupBy as any).mockResolvedValue([
         { campaign_id: 'camp-1', stage: 'stage-final', _count: { id: 5 } },
         { campaign_id: 'camp-1', stage: 'Enquiry', _count: { id: 5 } },
       ]);
@@ -285,11 +273,9 @@ describe('TenantReportService', () => {
         { id: 'camp-fb', name: 'Facebook Ad', channel: 'facebook', pipeline_id: 'pipe-1' },
         { id: 'camp-google', name: 'Google Search', channel: 'google', pipeline_id: 'pipe-1' },
       ]);
-      (client.case.groupBy as any).mockResolvedValue([
-        // Facebook: 10 leads, 2 converted -> 20%
+      (client.lead.groupBy as any).mockResolvedValue([
         { campaign_id: 'camp-fb', stage: 'stage-final', _count: { id: 2 } },
         { campaign_id: 'camp-fb', stage: 'Enquiry', _count: { id: 8 } },
-        // Google: 10 leads, 5 converted -> 50%
         { campaign_id: 'camp-google', stage: 'stage-final', _count: { id: 5 } },
         { campaign_id: 'camp-google', stage: 'Enquiry', _count: { id: 5 } },
       ]);
@@ -302,14 +288,12 @@ describe('TenantReportService', () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         expect(result.value).toHaveLength(2);
-        // Google should be first (50% conversion rate)
         expect(result.value[0]).toEqual({
           channel: 'google',
           total_leads: 10,
           converted: 5,
           conversion_rate: 50,
         });
-        // Facebook should be second (20% conversion rate)
         expect(result.value[1]).toEqual({
           channel: 'facebook',
           total_leads: 10,

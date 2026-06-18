@@ -124,21 +124,9 @@ export class UserService {
         },
       });
 
-      // Resolve auto-assignment if single-entity workspace
-      const assignmentsCount = await tx.branchBrandAssignment.count({
-        where: { tenant_id: tenantId },
-      });
-      let resolvedAssignmentId = input.assignment_ids?.[0] ?? null;
-      if (!resolvedAssignmentId && assignmentsCount === 1) {
-        const singleAssignment = await tx.branchBrandAssignment.findFirst({
-          where: { tenant_id: tenantId },
-        });
-        resolvedAssignmentId = singleAssignment?.id ?? null;
-      }
-
       const assignedIds = input.assignment_ids && input.assignment_ids.length > 0
         ? input.assignment_ids
-        : (resolvedAssignmentId ? [resolvedAssignmentId] : [null]);
+        : [null];
 
       // Connect selected roles to each assignment
       for (const roleId of input.role_ids) {
@@ -202,19 +190,6 @@ export class UserService {
 
       // Handle roles and assignments updates
       if (input.role_ids || input.assignment_ids) {
-        // Resolve auto-assignment if single-entity workspace
-        const assignmentsCount = await tx.branchBrandAssignment.count({
-          where: { tenant_id: tenantId },
-        });
-        let resolvedAssignmentId = input.assignment_ids?.[0] ?? null;
-        if (!resolvedAssignmentId && assignmentsCount === 1) {
-          const singleAssignment = await tx.branchBrandAssignment.findFirst({
-            where: { tenant_id: tenantId },
-          });
-          resolvedAssignmentId = singleAssignment?.id ?? null;
-        }
-
-        // Fetch current roles if only assignment_ids changed
         let roleIdsToUse = input.role_ids;
         if (!roleIdsToUse) {
           const currentRoles = await tx.userRole.findMany({
@@ -226,7 +201,7 @@ export class UserService {
 
         const assignedIds = input.assignment_ids && input.assignment_ids.length > 0
           ? input.assignment_ids
-          : (resolvedAssignmentId ? [resolvedAssignmentId] : [null]);
+          : [null];
 
         // Clear existing role mappings
         await tx.userRole.deleteMany({

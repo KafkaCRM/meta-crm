@@ -179,19 +179,19 @@ export class AutomationWorkflowProcessor extends WorkerHost {
             [fieldName]: fieldValue,
           };
         }
-      } else if (record.title !== undefined) {
-        // This is a Case!
-        const isCustomField = fieldName.startsWith('attributes.') || !Object.keys(this.platformDb.client.case).includes(fieldName);
+      } else if (record.name !== undefined) {
+        // This is a Lead!
+        const isCustomField = fieldName.startsWith('attributes.') || !['name', 'email', 'phone', 'source', 'status'].includes(fieldName);
         if (isCustomField) {
           const attrKey = fieldName.startsWith('attributes.') ? fieldName.substring('attributes.'.length) : fieldName;
           const mergedAttributes = { ...((record.attributes ?? {}) as Record<string, any>), [attrKey]: fieldValue };
-          await this.platformDb.client.case.update({
+          await this.platformDb.client.lead.update({
             where: { id: record.id },
             data: { attributes: mergedAttributes },
           });
           record.attributes = mergedAttributes;
         } else {
-          await this.platformDb.client.case.update({
+          await this.platformDb.client.lead.update({
             where: { id: record.id },
             data: { [fieldName]: fieldValue },
           });
@@ -199,7 +199,7 @@ export class AutomationWorkflowProcessor extends WorkerHost {
         }
       } else {
         // This is a Party (standard / custom)!
-        const isCustomField = fieldName.startsWith('attributes.') || !['type', 'name', 'email', 'phone_raw', 'phone_normalized', 'source', 'branch_brand_assignment_id'].includes(fieldName);
+        const isCustomField = fieldName.startsWith('attributes.') || !['type', 'name', 'email', 'phone_raw', 'phone_normalized', 'source'].includes(fieldName);
         if (isCustomField) {
           const attrKey = fieldName.startsWith('attributes.') ? fieldName.substring('attributes.'.length) : fieldName;
           const mergedAttributes = { ...((record.attributes ?? {}) as Record<string, any>), [attrKey]: fieldValue };

@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { ok, err } from 'neverthrow';
 import type { Result } from 'neverthrow';
-import { Prisma } from '@prisma/client';
 import { TenantRole } from '@meta-crm/types';
 import { TenantScopedPrismaService } from '../tenant/tenant-scoped-prisma.service';
 import type { RequestScope } from '../tenant/request-scope.interface';
@@ -17,7 +16,6 @@ export type PipelineErrorCode =
   | 'CAMPAIGN_NOT_FOUND'
   | 'LEAD_CREATION_FAILED'
   | 'PARTY_CREATION_FAILED'
-  | 'CASE_CREATION_FAILED'
   | 'INTERNAL';
 
 export interface PipelineError {
@@ -127,11 +125,11 @@ export class IntakePipelineService {
         data: {
           connection_id: connectionId,
           priority: 1,
-          conditions: Prisma.JsonNull,
+          conditions: null as any,
           mode: 'create_lead',
-          assignment_rule: { type: 'fixed' } as Prisma.InputJsonValue,
+          assignment_rule: { type: 'fixed' },
           duplicate_strategy: 'skip',
-          duplicate_match_fields: ['email', 'phone'] as Prisma.InputJsonValue,
+          duplicate_match_fields: ['email', 'phone'],
           owner_id: null,
           campaign_id: null,
           fieldMappings: {
@@ -169,7 +167,6 @@ export class IntakePipelineService {
       // 7. Resolve assignment
       const assignedToId = await this.resolveAssignment(route);
 
-      const branchBrandAssignmentId = campaignDerivations?.branchBrandAssignmentId ?? '';
       const pipelineId = pipelineOverrideId ?? campaignDerivations?.pipelineId ?? null;
       const stageId = pipelineOverrideStageId ?? campaignDerivations?.entryStageId ?? null;
 
@@ -181,7 +178,6 @@ export class IntakePipelineService {
           connectionProvider: connection.provider,
           campaignId: route.campaign_id,
           assignedToId,
-          branchBrandAssignmentId,
           verticalId: campaignDerivations?.verticalId ?? null,
           pipelineDefinitionId: pipelineId,
           stageId,
@@ -210,22 +206,16 @@ export class IntakePipelineService {
         });
       }
 
-      // mode = create_contact_opportunity
-      const contactResult = await this.createContactOpportunityFromIntake({
+      // mode = create_contact
+      const partyResult = await this.createContactFromIntake({
         tenantId,
         mappedFields,
         connectionProvider: connection.provider,
-        campaignId: route.campaign_id,
-        assignedToId,
-        branchBrandAssignmentId,
-        verticalId: campaignDerivations?.verticalId ?? null,
-        pipelineId: campaignDerivations?.pipelineId ?? null,
-        entryStageId: campaignDerivations?.entryStageId ?? null,
       });
 
-      if (contactResult.isErr()) {
-        await this.failEvent(inboundEvent.id, contactResult.error.message);
-        return err(contactResult.error);
+      if (partyResult.isErr()) {
+        await this.failEvent(inboundEvent.id, partyResult.error.message);
+        return err(partyResult.error);
       }
 
       await this.db.getClient().inboundEvent.update({
@@ -233,7 +223,7 @@ export class IntakePipelineService {
         data: {
           status: 'routed',
           result_entity_type: 'party',
-          result_entity_id: contactResult.value,
+          result_entity_id: partyResult.value,
           processed_at: new Date(),
         },
       });
@@ -241,7 +231,7 @@ export class IntakePipelineService {
       return ok({
         status: 'routed',
         entity_type: 'party',
-        entity_id: contactResult.value,
+        entity_id: partyResult.value,
         event_id: inboundEvent.id,
       });
     } catch (e) {
@@ -347,7 +337,6 @@ export class IntakePipelineService {
   // ═══════════════════════════════════════════════════════════════════
 
   private async resolveCampaign(campaignId: string | null): Promise<{
-    branchBrandAssignmentId: string | null;
     verticalId: string | null;
     pipelineId: string | null;
     entryStageId: string | null;
@@ -363,12 +352,7 @@ export class IntakePipelineService {
 
     if (!campaign) return null;
 
-    const branchBrandAssignment = await this.db.getClient().branchBrandAssignment.findFirst({
-      where: { branch_id: campaign.branch_id, brand_id: campaign.brand_id },
-    });
-
     return {
-      branchBrandAssignmentId: branchBrandAssignment?.id ?? null,
       verticalId: campaign.vertical_id,
       pipelineId: campaign.pipeline_id,
       entryStageId: campaign.pipeline?.stages?.[0]?.id ?? null,
@@ -409,7 +393,6 @@ export class IntakePipelineService {
     connectionProvider: string;
     campaignId: string | null;
     assignedToId: string | null;
-    branchBrandAssignmentId: string;
     verticalId: string | null;
     pipelineDefinitionId: string | null;
     stageId: string | null;
@@ -429,6 +412,7 @@ export class IntakePipelineService {
       const lead = await this.db.getClient().lead.create({
         data: {
           tenant_id: params.tenantId,
+          vertical_id: params.verticalId ?? '',
           name,
           email,
           phone,
@@ -460,26 +444,18 @@ export class IntakePipelineService {
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  // Contact + Opportunity Creation
+  // Contact Creation
   // ═══════════════════════════════════════════════════════════════════
 
-  private async createContactOpportunityFromIntake(params: {
+  private async createContactFromIntake(params: {
     tenantId: string;
     mappedFields: Record<string, string>;
     connectionProvider: string;
-    campaignId: string | null;
-    assignedToId: string | null;
-    branchBrandAssignmentId: string;
-    verticalId: string | null;
-    pipelineId: string | null;
-    entryStageId: string | null;
   }): Promise<Result<string, PipelineError>> {
     const name = params.mappedFields['party.name'] ?? 'Unknown Contact';
     const email = params.mappedFields['party.email'] ?? null;
     const phone = params.mappedFields['party.phone_raw'] ?? '+910000000000';
     const normalized = phone.replace(/[^\d+]/g, '');
-
-    const caseTitle = params.mappedFields['case.title'] ?? `Opportunity: ${name}`;
 
     const partyAttrs: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(params.mappedFields)) {
@@ -489,64 +465,25 @@ export class IntakePipelineService {
     }
 
     try {
-      const result = await this.db.getClient().$transaction(async (tx) => {
-        const party = await tx.party.create({
-          data: {
-            tenant_id: params.tenantId,
-            branch_brand_assignment_id: params.branchBrandAssignmentId,
-            type: 'individual',
-            name,
-            email,
-            phone_raw: phone,
-            phone_normalized: normalized,
-            source: params.connectionProvider,
-            attributes: partyAttrs as any,
-            merge_status: 'canonical',
-          },
-        });
-
-        let pipelineId: string | null = params.pipelineId;
-        let stageId: string | null = params.entryStageId;
-
-        if (!pipelineId) {
-          const pipeline = await tx.pipelineDefinition.findFirst();
-          pipelineId = pipeline?.id ?? null;
-          if (pipeline) {
-            const stages = await tx.pipelineStage.findMany({
-              where: { pipeline_definition_id: pipeline.id },
-              orderBy: { order: 'asc' },
-            });
-            stageId = stages[0]?.id ?? null;
-          }
-        }
-
-        if (!pipelineId) {
-          throw new Error('No pipeline definition found');
-        }
-
-        await tx.case.create({
-          data: {
-            tenant_id: params.tenantId,
-            branch_brand_assignment_id: params.branchBrandAssignmentId,
-            party_id: party.id,
-            type: 'sales',
-            title: caseTitle,
-            stage: stageId ?? '',
-            pipeline_definition_id: pipelineId,
-            assigned_to_id: params.assignedToId,
-            vertical_id: params.verticalId,
-            campaign_id: params.campaignId,
-            attributes: {},
-          },
-        });
-
-        return party.id;
+      const party = await this.db.getClient().party.create({
+        data: {
+          tenant_id: params.tenantId,
+          vertical_id: '',
+          type: 'individual',
+          name,
+          email,
+          phone_raw: phone,
+          phone_normalized: normalized,
+          source: params.connectionProvider,
+          attributes: partyAttrs as any,
+          merge_status: 'canonical',
+        },
       });
 
-      return ok(result);
+      return ok(party.id);
     } catch (e) {
       return err({
-        code: 'CASE_CREATION_FAILED',
+        code: 'PARTY_CREATION_FAILED',
         message: (e as Error).message,
       });
     }

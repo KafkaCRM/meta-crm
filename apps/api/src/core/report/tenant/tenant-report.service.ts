@@ -84,13 +84,12 @@ export class TenantReportService {
     return this.cls.get<RequestScope>('scope')!;
   }
 
-  private buildCaseFilter(params: ReportParams): Record<string, unknown> {
+  private buildLeadFilter(params: ReportParams): Record<string, unknown> {
     const filter: Record<string, unknown> = {};
     const createdAt: Record<string, Date> = {};
     if (params.date_from) createdAt.gte = new Date(params.date_from);
     if (params.date_to) createdAt.lte = new Date(params.date_to);
     if (Object.keys(createdAt).length > 0) filter.created_at = createdAt;
-    if (params.assignment_id) filter.branch_brand_assignment_id = params.assignment_id;
     if (params.workflow_id) filter.pipeline_definition_id = params.workflow_id;
     if (params.campaign_id) filter.campaign_id = params.campaign_id;
     return filter;
@@ -102,14 +101,14 @@ export class TenantReportService {
     if (params.date_from) createdAt.gte = new Date(params.date_from);
     if (params.date_to) createdAt.lte = new Date(params.date_to);
     if (Object.keys(createdAt).length > 0) filter.created_at = createdAt;
-    if (params.assignment_id) filter.branch_brand_assignment_id = params.assignment_id;
+    if (params.assignment_id) filter.vertical_id = params.assignment_id;
     return filter;
   }
 
   async pipelineFunnel(params: ReportParams): Promise<Result<PipelineFunnelResponse, ReportError>> {
-    const filter = this.buildCaseFilter(params);
+    const filter = this.buildLeadFilter(params);
 
-    const groups = await this.db.getClient().case.groupBy({
+    const groups = await this.db.getClient().lead.groupBy({
       by: ['stage'],
       where: filter,
       _count: { id: true },
@@ -119,7 +118,7 @@ export class TenantReportService {
     const total = groups.reduce((sum, g) => sum + g._count.id, 0);
 
     const stages: PipelineStage[] = groups.map((g) => ({
-      name: g.stage,
+      name: g.stage ?? '',
       count: g._count.id,
       percentage: total > 0 ? Math.round((g._count.id / total) * 10000) / 100 : 0,
     }));
@@ -128,9 +127,9 @@ export class TenantReportService {
   }
 
   async conversionRate(params: ReportParams): Promise<Result<ConversionRateResponse, ReportError>> {
-    const filter = this.buildCaseFilter(params);
+    const filter = this.buildLeadFilter(params);
 
-    const total = await this.db.getClient().case.count({ where: filter });
+    const total = await this.db.getClient().lead.count({ where: filter });
 
     const wfGroups = await this.db.getClient().pipelineStage.groupBy({
       by: ['pipeline_definition_id'],
@@ -156,14 +155,15 @@ export class TenantReportService {
       ? filter
       : { ...filter, pipeline_definition_id: { in: Array.from(lastStageByWorkflow.keys()) } };
 
-    const cases = await this.db.getClient().case.findMany({
+    const leads = await this.db.getClient().lead.findMany({
       where: wfFilter,
       select: { id: true, pipeline_definition_id: true, stage: true },
     });
 
-    const converted = cases.filter((c) => {
-      const lastStageIds = lastStageByWorkflow.get(c.pipeline_definition_id);
-      return lastStageIds ? lastStageIds.includes(c.stage) : false;
+    const converted = leads.filter((l) => {
+      if (!l.pipeline_definition_id) return false;
+      const lastStageIds = lastStageByWorkflow.get(l.pipeline_definition_id);
+      return lastStageIds && l.stage ? lastStageIds.includes(l.stage) : false;
     }).length;
 
     const rate = total > 0 ? Math.round((converted / total) * 10000) / 100 : 0;
@@ -172,33 +172,33 @@ export class TenantReportService {
   }
 
   async stageTime(params: ReportParams): Promise<Result<StageTimeResponse, ReportError>> {
-    const filter = this.buildCaseFilter(params);
+    const filter = this.buildLeadFilter(params);
 
-    const events = await this.db.getClient().caseEvent.findMany({
+    const events = await this.db.getClient().leadEvent.findMany({
       where: {
         event_type: 'stage_changed',
         ...(params.date_from || params.date_to
           ? { occurred_at: { ...(params.date_from ? { gte: new Date(params.date_from) } : {}), ...(params.date_to ? { lte: new Date(params.date_to) } : {}) } }
           : {}),
       },
-      orderBy: [{ case_id: 'asc' }, { occurred_at: 'asc' }],
+      orderBy: [{ lead_id: 'asc' }, { occurred_at: 'asc' }],
       select: {
-        case_id: true,
+        lead_id: true,
         from_stage: true,
         to_stage: true,
         occurred_at: true,
       },
     });
 
-    const caseEvents = new Map<string, typeof events>();
+    const leadEvents = new Map<string, typeof events>();
     for (const event of events) {
-      const existing = caseEvents.get(event.case_id) ?? [];
+      const existing = leadEvents.get(event.lead_id) ?? [];
       existing.push(event);
-      caseEvents.set(event.case_id, existing);
+      leadEvents.set(event.lead_id, existing);
     }
 
     const stageDurations: Record<string, number[]> = {};
-    for (const evts of caseEvents.values()) {
+    for (const evts of leadEvents.values()) {
       for (let i = 0; i < evts.length - 1; i++) {
         const current = evts[i];
         const next = evts[i + 1];
@@ -259,7 +259,7 @@ export class TenantReportService {
       if (params.date_to) createdAt.lte = new Date(params.date_to);
       filter.created_at = createdAt;
     }
-    if (params.assignment_id) filter.branch_brand_assignment_id = params.assignment_id;
+    if (params.assignment_id) filter.vertical_id = params.assignment_id;
 
     const groups = await this.db.getClient().party.groupBy({
       by: ['source'],
@@ -306,19 +306,19 @@ export class TenantReportService {
       const campaignsToProcess = hasMore ? campaigns.slice(0, limit) : campaigns;
       const campaignIds = campaignsToProcess.map((c) => c.id);
 
-      const caseWhere: Record<string, any> = {
+      const leadWhere: Record<string, any> = {
         campaign_id: { in: campaignIds },
       };
       if (params.date_from || params.date_to) {
         const createdAt: Record<string, Date> = {};
         if (params.date_from) createdAt.gte = new Date(params.date_from);
         if (params.date_to) createdAt.lte = new Date(params.date_to);
-        caseWhere.created_at = createdAt;
+        leadWhere.created_at = createdAt;
       }
 
-      const caseGroups = await this.db.getClient().case.groupBy({
+      const leadGroups = await this.db.getClient().lead.groupBy({
         by: ['campaign_id', 'stage'],
-        where: caseWhere,
+        where: leadWhere,
         _count: { id: true },
       });
 
@@ -361,7 +361,7 @@ export class TenantReportService {
         campaignStatsMap.set(cId, { total_leads: 0, converted: 0 });
       }
 
-      for (const group of caseGroups) {
+      for (const group of leadGroups) {
         const cId = group.campaign_id;
         if (!cId) continue;
         const count = group._count.id;
@@ -372,7 +372,7 @@ export class TenantReportService {
         stats.total_leads += count;
 
         const finalPositiveIds = pipelineFinalPositiveStageIdsMap.get(campaign.pipeline_id);
-        if (finalPositiveIds && finalPositiveIds.has(group.stage)) {
+        if (finalPositiveIds && group.stage && finalPositiveIds.has(group.stage)) {
           stats.converted += count;
         }
         campaignStatsMap.set(cId, stats);
@@ -447,19 +447,19 @@ export class TenantReportService {
         campaignMap.set(c.id, c);
       }
 
-      const caseWhere: Record<string, any> = {
+      const leadWhere: Record<string, any> = {
         campaign_id: { in: campaignIds },
       };
       if (params.date_from || params.date_to) {
         const createdAt: Record<string, Date> = {};
         if (params.date_from) createdAt.gte = new Date(params.date_from);
         if (params.date_to) createdAt.lte = new Date(params.date_to);
-        caseWhere.created_at = createdAt;
+        leadWhere.created_at = createdAt;
       }
 
-      const caseGroups = await this.db.getClient().case.groupBy({
+      const leadGroups = await this.db.getClient().lead.groupBy({
         by: ['campaign_id', 'stage'],
-        where: caseWhere,
+        where: leadWhere,
         _count: { id: true },
       });
 
@@ -499,7 +499,7 @@ export class TenantReportService {
 
       const channelStatsMap = new Map<string, { total_leads: number; converted: number }>();
 
-      for (const group of caseGroups) {
+      for (const group of leadGroups) {
         const cId = group.campaign_id;
         if (!cId) continue;
         const campaign = campaignMap.get(cId);
@@ -512,7 +512,7 @@ export class TenantReportService {
         stats.total_leads += count;
 
         const finalPositiveIds = pipelineFinalPositiveStageIdsMap.get(campaign.pipeline_id);
-        if (finalPositiveIds && finalPositiveIds.has(group.stage)) {
+        if (finalPositiveIds && group.stage && finalPositiveIds.has(group.stage)) {
           stats.converted += count;
         }
         channelStatsMap.set(channel, stats);

@@ -18,11 +18,24 @@ export class WorkflowService {
     private readonly cls: ClsService,
   ) {}
 
-  async list(): Promise<Result<any[], WorkflowError>> {
+  async list(filters?: { branch_id?: string; vertical_id?: string }): Promise<Result<any[], WorkflowError>> {
     try {
+      const where: Record<string, unknown> = {};
+      if (filters?.vertical_id) {
+        where.vertical_id = filters.vertical_id;
+      } else if (filters?.branch_id) {
+        // Filter by branch through the vertical relation
+        const verticalIds = await this.db.getClient().vertical.findMany({
+          where: { branch_id: filters.branch_id },
+          select: { id: true },
+        });
+        where.vertical_id = { in: verticalIds.map((v) => v.id) };
+      }
       const pipelines = await this.db.getClient().pipelineDefinition.findMany({
+        where,
         include: {
           stages: { orderBy: { order: 'asc' } },
+          vertical: { select: { id: true, name: true, branch_id: true } },
         },
       });
       return ok(pipelines);
@@ -34,7 +47,7 @@ export class WorkflowService {
     }
   }
 
-  async create(data: { name: string; entity_type?: string }): Promise<Result<any, WorkflowError>> {
+  async create(data: { name: string; entity_type?: string; vertical_id?: string }): Promise<Result<any, WorkflowError>> {
     try {
       const scope = this.cls.get<RequestScope>('scope');
       const tenantId = scope?.tenant_id || '';
@@ -60,7 +73,8 @@ export class WorkflowService {
         data: {
           tenant_id: tenantId,
           name: data.name,
-          entity_type: data.entity_type ?? 'case',
+          entity_type: data.entity_type ?? 'lead',
+          vertical_id: data.vertical_id ?? null,
         },
       });
 
@@ -112,7 +126,7 @@ export class WorkflowService {
           data: {
             tenant_id: tenantId,
             name: 'Default Pipeline',
-            entity_type: 'case',
+            entity_type: 'lead',
           },
         });
 
@@ -352,15 +366,15 @@ export class WorkflowService {
         });
       }
 
-      // 4. Check for linked cases
-      const casesCount = await dbClient.case.count({
+      // 4. Check for linked leads
+      const leadsCount = await dbClient.lead.count({
         where: { pipeline_definition_id: id },
       });
 
-      if (casesCount > 0) {
+      if (leadsCount > 0) {
         return err({
           code: 'VALIDATION_ERROR',
-          message: `Cannot delete pipeline: it is linked to ${casesCount} active customer items (deals/cases).`
+          message: `Cannot delete pipeline: it is linked to ${leadsCount} active lead(s).`
         });
       }
 

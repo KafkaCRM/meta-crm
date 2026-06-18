@@ -30,8 +30,8 @@ function mockPlatformDb() {
       pipelineDefinition: {
         findFirst: vi.fn().mockResolvedValue(mockWorkflow),
       },
-      case: {
-        create: vi.fn().mockResolvedValue({ id: 'case-1' }),
+      lead: {
+        create: vi.fn().mockResolvedValue({ id: 'lead-1' }),
       },
     },
   } as unknown as PlatformPrismaService;
@@ -92,8 +92,8 @@ describe('IntegrationHandlersService', () => {
     });
   });
 
-  describe('Email-to-Case Router', () => {
-    it('simulates inbound email sync by creating a support case', async () => {
+  describe('Email-to-Lead Router', () => {
+    it('simulates inbound email sync by creating a lead', async () => {
       const emailService = new IntegrationHandlersService(
         eventEmitter,
         platformDb,
@@ -102,11 +102,11 @@ describe('IntegrationHandlersService', () => {
       );
       const loggerSpy = vi.spyOn(emailService['logger'], 'log');
 
-      const count = await emailService.runEmailToCaseSync('t-1');
+      const count = await emailService.runEmailToLeadSync('t-1');
 
       expect(count).toBe(1);
-      expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('Email-to-Case: Polling IMAP mailbox'));
-      expect(platformDb.client.case.create).toHaveBeenCalled();
+      expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('Email-to-Lead: Polling IMAP mailbox'));
+      expect(platformDb.client.lead.create).toHaveBeenCalled();
     });
   });
 });

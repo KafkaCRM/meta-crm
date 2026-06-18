@@ -10,7 +10,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { cn } from '@/lib/utils';
 import dayjs from 'dayjs';
 
-export function BrandManager() {
+export function VerticalManager() {
   const { can } = usePermissions();
   const canManage = can('manage', 'Vertical');
   const queryClient = useQueryClient();

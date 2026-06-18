@@ -28,10 +28,10 @@ export class EnrollmentService {
   }): Promise<Result<{ data: any[]; next_cursor: string | undefined }, EnrollmentError>> {
     try {
       const limit = Math.min(params.limit ?? 50, 100);
-      const where: Record<string, unknown> = { type: 'enrollment' };
+      const where: Record<string, unknown> = {};
       if (params.stage) where.stage = params.stage;
 
-      const enrollments = await this.db.getClient().case.findMany({
+      const enrollments = await this.db.getClient().lead.findMany({
         where,
         take: limit + 1,
         ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
@@ -53,13 +53,10 @@ export class EnrollmentService {
 
   async getStats(): Promise<Result<EnrollmentStats, EnrollmentError>> {
     try {
-      const total = await this.db.getClient().case.count({
-        where: { type: 'enrollment' },
-      });
+      const total = await this.db.getClient().lead.count({});
 
-      const byStageRaw = await this.db.getClient().case.groupBy({
+      const byStageRaw = await this.db.getClient().lead.groupBy({
         by: ['stage'],
-        where: { type: 'enrollment' },
         _count: { id: true },
       });
 
@@ -68,8 +65,7 @@ export class EnrollmentService {
         count: g._count.id,
       }));
 
-      const allEnrollments = await this.db.getClient().case.findMany({
-        where: { type: 'enrollment' },
+      const allEnrollments = await this.db.getClient().lead.findMany({
         select: { attributes: true, created_at: true },
       });
 
