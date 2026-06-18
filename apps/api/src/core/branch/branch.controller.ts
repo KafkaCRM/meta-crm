@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -52,8 +53,8 @@ export class BranchController {
 
   @Get()
   @CheckPermissions('read', 'Branch')
-  async list(@CurrentUser() user: RequestScope) {
-    return this.service.list(user.tenant_id);
+  async list(@CurrentUser() user: RequestScope, @Query('accessible') accessible?: string) {
+    return this.service.list(user.tenant_id, accessible === 'true' ? { accessible: true, vertical_ids: user.vertical_ids } : undefined);
   }
 
   @Post()

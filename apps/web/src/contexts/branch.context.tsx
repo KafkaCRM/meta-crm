@@ -38,8 +38,8 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   const prevBranchRef = useRef(selectedBranchId);
 
   const { data: branches = [] } = useQuery({
-    queryKey: ['settings', 'branches'],
-    queryFn: () => settingsApi.branches.list(),
+    queryKey: ['settings', 'branches', 'accessible'],
+    queryFn: () => settingsApi.branches.list({ accessible: true }),
     staleTime: 60_000,
   });
 

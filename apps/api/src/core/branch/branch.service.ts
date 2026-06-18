@@ -42,9 +42,13 @@ export class BranchService {
     return activePlan?.max_branches ?? 1;
   }
 
-  async list(tenantId: string) {
+  async list(tenantId: string, opts?: { accessible?: boolean; vertical_ids?: string[] }) {
+    const where: Record<string, unknown> = { tenant_id: tenantId };
+    if (opts?.accessible && opts.vertical_ids && opts.vertical_ids.length > 0) {
+      where.verticals = { some: { id: { in: opts.vertical_ids } } };
+    }
     return this.tenantDb.getClient().branch.findMany({
-      where: { tenant_id: tenantId },
+      where,
       orderBy: { created_at: 'desc' },
     });
   }

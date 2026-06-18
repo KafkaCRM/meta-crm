@@ -113,7 +113,10 @@ const pipelineSettingsApi = {
 
 export const settingsApi = {
   branches: {
-    list: () => apiCall<Branch[]>('/branches'),
+    list: (params?: { accessible?: boolean }) => {
+      const qs = params?.accessible ? '?accessible=true' : '';
+      return apiCall<Branch[]>(`/branches${qs}`);
+    },
     create: (data: { name: string; address?: string; city?: string }) =>
       apiCall<Branch>('/branches', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: { name?: string; address?: string; city?: string }) =>
