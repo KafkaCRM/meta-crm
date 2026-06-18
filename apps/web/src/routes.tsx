@@ -138,13 +138,18 @@ function AppSidebar() {
   const { isEnabled } = useCapabilities();
   const { t } = useLabels();
 
-  const { selectedVerticalIds } = useBranch();
+  const { selectedBranchId, selectedVerticalIds, isLoading: branchLoading } = useBranch();
+  const pipelineVerticalIds = selectedBranchId ? selectedVerticalIds : [];
+  const hasBranchFilter = !!selectedBranchId && pipelineVerticalIds.length > 0;
 
   const { data: workflows = [], isLoading: pipelinesLoading } = useQuery({
-    queryKey: ['settings', 'pipelines', ...(selectedVerticalIds.length > 0 ? selectedVerticalIds : ['all'])],
-    queryFn: () => settingsApi.pipelines.list(selectedVerticalIds.length > 0 ? { vertical_ids: selectedVerticalIds.join(',') } : undefined),
+    queryKey: ['settings', 'pipelines', selectedBranchId || 'all', ...pipelineVerticalIds],
+    queryFn: () => settingsApi.pipelines.list(hasBranchFilter ? { vertical_ids: pipelineVerticalIds.join(',') } : undefined),
+    enabled: !selectedBranchId || selectedVerticalIds.length > 0,
     staleTime: 10_000,
   });
+
+  const pipelineDropdownLoading = pipelinesLoading || (!!selectedBranchId && selectedVerticalIds.length === 0);
 
   const initials = user?.name
     ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
@@ -277,7 +282,7 @@ function AppSidebar() {
                           </DropdownMenuLabel>
                           <DropdownMenuSeparator className="bg-sidebar-border/40 mx-1" />
 
-                          {pipelinesLoading ? (
+                          {pipelineDropdownLoading ? (
                             <div className="space-y-1.5 px-2.5 py-2">
                               <div className="h-5 bg-sidebar-accent/50 rounded-md animate-pulse" />
                               <div className="h-5 bg-sidebar-accent/50 rounded-md animate-pulse w-3/4" />
