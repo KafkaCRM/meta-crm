@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Plus, Trash2, Loader2, Mail, Shield, UserPlus, Phone, Key, MoreHorizontal, Settings, Building2, Tags, X } from 'lucide-react';
@@ -36,6 +36,37 @@ export function UserManager() {
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [settingsUser, setSettingsUser] = useState<User | null>(null);
+  const [settingsBranchId, setSettingsBranchId] = useState('');
+  const [settingsVerticalIds, setSettingsVerticalIds] = useState<string[]>([]);
+  const [settingsRoleIds, setSettingsRoleIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (settingsUser) {
+      setSettingsRoleIds(settingsUser.roles?.map((r) => r.role_id) ?? []);
+    }
+  }, [settingsUser]);
+
+  const { data: branches } = useQuery({
+    queryKey: ['settings', 'branches'],
+    queryFn: () => settingsApi.branches.list(),
+    staleTime: 30_000,
+  });
+
+  const { data: settingsVerticals } = useQuery({
+    queryKey: ['settings', 'verticals', settingsBranchId],
+    queryFn: () => settingsApi.verticals.list(settingsBranchId ? { branch_id: settingsBranchId } : undefined),
+    staleTime: 30_000,
+    enabled: !!settingsBranchId,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { role_ids?: string[]; vertical_ids?: string[] } }) =>
+      settingsApi.users.update(id, data),
+    onSuccess: () => {
+      toast.success('User updated successfully');
+    },
+    onError: (error: any) => toast.error(error?.message || 'Failed to update user'),
+  });
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['settings', 'users'],
@@ -434,48 +465,121 @@ export function UserManager() {
       </Dialog>
 
       {/* User Settings Dialog */}
-      <Dialog open={!!settingsUser} onOpenChange={(open) => { if (!open) setSettingsUser(null); }}>
+      <Dialog open={!!settingsUser} onOpenChange={(open) => {
+        if (!open) { setSettingsUser(null); setSettingsBranchId(''); setSettingsVerticalIds([]); setSettingsRoleIds([]); }
+      }}>
         <DialogContent className="sm:max-w-[500px] bg-card border border-border rounded-xl">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
-              <Settings size={16} className="text-muted-foreground" />
-              User Settings
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              {settingsUser?.name} — {settingsUser?.email || settingsUser?.phone_number}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            {settingsUser?.roles && settingsUser.roles.length > 0 && (
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                  <Tags size={12} />
-                  Current Roles
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {settingsUser.roles.map((r) => (
-                    <Badge key={r.role_id} variant="secondary" className="bg-[#f1f5f9] text-[#475569] border-border text-xs font-medium rounded px-2 py-0.5">
-                      {r.role_name}
-                    </Badge>
-                  ))}
+          {settingsUser && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  <Settings size={16} className="text-muted-foreground" />
+                  User Settings
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground">
+                  {settingsUser.name} — {settingsUser.email || settingsUser.phone_number}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 py-2">
+                {/* Roles */}
+                {roles && roles.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                      <Tags size={12} /> Roles
+                    </label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {roles.map((role) => {
+                        const isSelected = settingsRoleIds.includes(role.id);
+                        return (
+                          <button key={role.id} type="button"
+                            onClick={() => setSettingsRoleIds((prev) =>
+                              prev.includes(role.id) ? prev.filter((id) => id !== role.id) : [...prev, role.id]
+                            )}
+                            className={cn(
+                              "text-xs px-2.5 py-1 rounded-md border transition-all font-medium",
+                              isSelected ? "bg-primary text-white border-primary shadow-sm" : "bg-card text-muted-foreground border-border hover:border-slate-400 hover:text-foreground",
+                            )}
+                          >
+                            {role.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Branch */}
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                    <Building2 size={12} /> Branch
+                  </label>
+                  <select
+                    value={settingsBranchId}
+                    onChange={(e) => { setSettingsBranchId(e.target.value); setSettingsVerticalIds([]); }}
+                    className="flex h-9 w-full rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground shadow-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  >
+                    <option value="">Select branch</option>
+                    {branches?.map((b: any) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
                 </div>
+
+                {/* Verticals */}
+                {settingsBranchId && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                      <Tags size={12} /> Verticals
+                    </label>
+                    <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1.5 border border-border rounded-lg bg-background/50">
+                      {settingsVerticals && settingsVerticals.length > 0
+                        ? settingsVerticals.map((v: any) => {
+                            const isSelected = settingsVerticalIds.includes(v.id);
+                            return (
+                              <button key={v.id} type="button"
+                                onClick={() => setSettingsVerticalIds((prev) =>
+                                  prev.includes(v.id) ? prev.filter((id) => id !== v.id) : [...prev, v.id]
+                                )}
+                                className={cn(
+                                  "text-xs px-2.5 py-1 rounded-md border transition-all font-medium",
+                                  isSelected ? "bg-primary text-white border-primary shadow-sm" : "bg-card text-muted-foreground border-border hover:border-slate-400 hover:text-foreground",
+                                )}
+                              >
+                                {v.name}
+                              </button>
+                            );
+                          })
+                        : <p className="text-xs text-muted-foreground p-1">No verticals for this branch</p>
+                      }
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                <Building2 size={12} />
-                Branch & Vertical
-              </label>
-              <p className="text-xs text-muted-foreground bg-background/50 p-3 rounded-lg border border-border/40">
-                Branch and vertical assignment will be available in a future update.
-              </p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSettingsUser(null)} className="h-9 text-xs border-border text-muted-foreground bg-card hover:bg-muted">
-              Close
-            </Button>
-          </DialogFooter>
+
+              <DialogFooter className="flex gap-2">
+                <Button variant="outline" onClick={() => { setSettingsUser(null); setSettingsBranchId(''); setSettingsVerticalIds([]); setSettingsRoleIds([]); }}
+                  className="flex-1 h-9 text-xs border-border text-muted-foreground bg-card hover:bg-muted">
+                  Cancel
+                </Button>
+                <Button onClick={() => {
+                  updateMutation.mutate(
+                    { id: settingsUser.id, data: { role_ids: settingsRoleIds, vertical_ids: settingsVerticalIds } },
+                    {
+                      onSuccess: () => {
+                        queryClient.invalidateQueries({ queryKey: ['settings', 'users'] });
+                        toast.success('User settings saved');
+                        setSettingsUser(null); setSettingsBranchId(''); setSettingsVerticalIds([]); setSettingsRoleIds([]);
+                      },
+                    },
+                  );
+                }} disabled={updateMutation.isPending}
+                  className="flex-1 h-9 text-xs bg-primary hover:bg-primary/90 text-white">
+                  {updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save Changes'}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>
