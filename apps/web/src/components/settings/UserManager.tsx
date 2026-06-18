@@ -1,12 +1,14 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Plus, Trash2, Loader2, Mail, Shield, UserPlus, X, Phone, Key } from 'lucide-react';
+import { Plus, Trash2, Loader2, Mail, Shield, UserPlus, Phone, Key, MoreHorizontal, Settings, Building2, Tags, X } from 'lucide-react';
 import { settingsApi, type User, type Role } from '@/api/settings';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { usePermissions } from '@/hooks/usePermissions';
 import { cn } from '@/lib/utils';
@@ -33,6 +35,7 @@ export function UserManager() {
   } | null>(null);
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [settingsUser, setSettingsUser] = useState<User | null>(null);
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['settings', 'users'],
@@ -145,90 +148,104 @@ export function UserManager() {
         )}
       </div>
 
-      {/* Users list card (Full Width) */}
+      {/* Users table */}
       <Card className="bg-card border-border rounded-xl shadow-none">
         <CardHeader className="pb-3 border-b border-border">
-          <CardTitle className="text-base font-medium text-foreground">
-            Active Users
-          </CardTitle>
-          <CardDescription className="text-xs text-muted-foreground">
-            {users?.length ?? 0} users active in this tenant
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base font-medium text-foreground">
+                Active Users
+              </CardTitle>
+              <CardDescription className="text-xs text-muted-foreground mt-0.5">
+                {users?.length ?? 0} users active in this tenant
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="divide-y divide-[#e2e8f0]">
-            {users?.map((user, index) => {
-              const initials = user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-              const avatarGrad = avatarGradients[index % avatarGradients.length];
-
-              return (
-                <div
-                  key={user.id}
-                  className="flex items-center justify-between p-4 hover:bg-background/60 transition-colors group"
-                >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    {/* Avatar Circle */}
-                    <div className={`h-9 w-9 rounded-full bg-gradient-to-br ${avatarGrad} flex items-center justify-center font-semibold text-xs border border-border/50 shadow-sm flex-shrink-0`}>
-                      {initials}
-                    </div>
-
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-foreground truncate">{user.name}</p>
-                        {/* Pulsing indicator - simulates active status */}
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
-                      </div>
-                      <div className="flex flex-col gap-0.5 mt-0.5">
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Mail size={12} className="text-muted-foreground/85" />
-                          <span className="truncate">{user.email || 'No email'}</span>
-                        </p>
-                        {user.phone_number && (
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Phone size={12} className="text-muted-foreground/85" />
-                            <span className="truncate">{user.phone_number}</span>
-                          </p>
-                        )}
-                      </div>
-                      {user.roles && user.roles.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1.5">
-                          {user.roles.map((r) => (
-                            <Badge
-                              key={r.role_id}
-                              variant="secondary"
-                              className="bg-[#f1f5f9] text-[#475569] border-border text-[10px] font-medium rounded px-1.5 py-0"
-                            >
-                              {r.role_name}
-                            </Badge>
-                          ))}
+          <Table>
+            <TableHeader>
+              <TableRow className="border-b border-border/60 hover:bg-transparent">
+                <TableHead className="h-10 px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">Name</TableHead>
+                <TableHead className="h-10 px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">Email</TableHead>
+                <TableHead className="h-10 px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">Phone</TableHead>
+                <TableHead className="h-10 px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">Roles</TableHead>
+                <TableHead className="h-10 px-4 w-12" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {users?.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-32 text-center text-sm text-muted-foreground">
+                    No active users found. {canManage && 'Use the Create User button to add your first member.'}
+                  </TableCell>
+                </TableRow>
+              ) : null}
+              {users?.map((user, index) => {
+                const initials = user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                const avatarGrad = avatarGradients[index % avatarGradients.length];
+                return (
+                  <TableRow key={user.id} className="border-b border-border/40 group hover:bg-muted/30">
+                    <TableCell className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`h-8 w-8 rounded-full bg-gradient-to-br ${avatarGrad} flex items-center justify-center font-semibold text-[10px] border border-border/50 shadow-sm flex-shrink-0`}>
+                          {initials}
                         </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {canManage && (
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 hover:bg-red-50 transition-all"
-                      onClick={() => {
-                        if (window.confirm(`Remove ${user.name} from the workspace?`)) {
-                          removeMutation.mutate(user.id);
-                        }
-                      }}
-                    >
-                      <Trash2 size={14} />
-                    </Button>
-                  )}
-                </div>
-              );
-            })}
-            {users?.length === 0 && (
-              <div className="p-8 text-center text-sm text-muted-foreground">
-                No active users found. {canManage && 'Use the Create User button to add your first member.'}
-              </div>
-            )}
-          </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{user.name}</p>
+                          <span className="text-[10px] text-muted-foreground">{user.status}</span>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
+                      <span className="text-sm text-muted-foreground">{user.email || '—'}</span>
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
+                      <span className="text-sm text-muted-foreground">{user.phone_number || '—'}</span>
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {user.roles && user.roles.length > 0
+                          ? user.roles.map((r) => (
+                              <Badge key={r.role_id} variant="secondary" className="bg-[#f1f5f9] text-[#475569] border-border text-[10px] font-medium rounded px-1.5 py-0">
+                                {r.role_name}
+                              </Badge>
+                            ))
+                          : <span className="text-sm text-muted-foreground">—</span>}
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground">
+                            <MoreHorizontal size={14} />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-44 bg-popover border border-border shadow-md rounded-xl p-1.5">
+                          <DropdownMenuItem onClick={() => setSettingsUser(user)} className="text-xs gap-2 rounded-lg py-1.5 cursor-pointer">
+                            <Settings size={13} />
+                            User Settings
+                          </DropdownMenuItem>
+                          {canManage && (
+                            <>
+                              <DropdownMenuSeparator className="bg-border/40 mx-1" />
+                              <DropdownMenuItem
+                                onClick={() => { if (window.confirm(`Remove ${user.name} from the workspace?`)) removeMutation.mutate(user.id); }}
+                                className="text-xs gap-2 rounded-lg py-1.5 text-red-500 cursor-pointer"
+                              >
+                                <Trash2 size={13} />
+                                Remove User
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 
@@ -413,6 +430,52 @@ export function UserManager() {
               </DialogFooter>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* User Settings Dialog */}
+      <Dialog open={!!settingsUser} onOpenChange={(open) => { if (!open) setSettingsUser(null); }}>
+        <DialogContent className="sm:max-w-[500px] bg-card border border-border rounded-xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <Settings size={16} className="text-muted-foreground" />
+              User Settings
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              {settingsUser?.name} — {settingsUser?.email || settingsUser?.phone_number}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {settingsUser?.roles && settingsUser.roles.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                  <Tags size={12} />
+                  Current Roles
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {settingsUser.roles.map((r) => (
+                    <Badge key={r.role_id} variant="secondary" className="bg-[#f1f5f9] text-[#475569] border-border text-xs font-medium rounded px-2 py-0.5">
+                      {r.role_name}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                <Building2 size={12} />
+                Branch & Vertical
+              </label>
+              <p className="text-xs text-muted-foreground bg-background/50 p-3 rounded-lg border border-border/40">
+                Branch and vertical assignment will be available in a future update.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSettingsUser(null)} className="h-9 text-xs border-border text-muted-foreground bg-card hover:bg-muted">
+              Close
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
