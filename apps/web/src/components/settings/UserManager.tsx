@@ -36,7 +36,7 @@ export function UserManager() {
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [settingsUser, setSettingsUser] = useState<User | null>(null);
-  const [settingsBranchId, setSettingsBranchId] = useState('');
+  const [settingsBranchIds, setSettingsBranchIds] = useState<string[]>([]);
   const [settingsVerticalIds, setSettingsVerticalIds] = useState<string[]>([]);
   const [settingsRoleIds, setSettingsRoleIds] = useState<string[]>([]);
 
@@ -52,12 +52,15 @@ export function UserManager() {
     staleTime: 30_000,
   });
 
-  const { data: settingsVerticals } = useQuery({
-    queryKey: ['settings', 'verticals', settingsBranchId],
-    queryFn: () => settingsApi.verticals.list(settingsBranchId ? { branch_id: settingsBranchId } : undefined),
+  const { data: allVerticals = [] } = useQuery({
+    queryKey: ['settings', 'verticals'],
+    queryFn: () => settingsApi.verticals.list(),
     staleTime: 30_000,
-    enabled: !!settingsBranchId,
   });
+
+  const settingsFilteredVerticals = settingsBranchIds.length > 0
+    ? allVerticals.filter((v: any) => settingsBranchIds.includes(v.branch_id))
+    : allVerticals;
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: { role_ids?: string[]; vertical_ids?: string[] } }) =>
@@ -466,7 +469,7 @@ export function UserManager() {
 
       {/* User Settings Dialog */}
       <Dialog open={!!settingsUser} onOpenChange={(open) => {
-        if (!open) { setSettingsUser(null); setSettingsBranchId(''); setSettingsVerticalIds([]); setSettingsRoleIds([]); }
+        if (!open) { setSettingsUser(null); setSettingsBranchIds([]); setSettingsVerticalIds([]); setSettingsRoleIds([]); }
       }}>
         <DialogContent className="sm:max-w-[500px] bg-card border border-border rounded-xl">
           {settingsUser && (
@@ -509,32 +512,40 @@ export function UserManager() {
                   </div>
                 )}
 
-                {/* Branch */}
+                {/* Branches (multi-select) */}
                 <div className="space-y-2">
                   <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                    <Building2 size={12} /> Branch
+                    <Building2 size={12} /> Branches
                   </label>
-                  <select
-                    value={settingsBranchId}
-                    onChange={(e) => { setSettingsBranchId(e.target.value); setSettingsVerticalIds([]); }}
-                    className="flex h-9 w-full rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground shadow-none focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  >
-                    <option value="">Select branch</option>
-                    {branches?.map((b: any) => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
-                    ))}
-                  </select>
+                  <div className="flex flex-wrap gap-1.5">
+                    {branches?.map((b: any) => {
+                      const isSelected = settingsBranchIds.includes(b.id);
+                      return (
+                        <button key={b.id} type="button"
+                          onClick={() => setSettingsBranchIds((prev) =>
+                            prev.includes(b.id) ? prev.filter((id) => id !== b.id) : [...prev, b.id]
+                          )}
+                          className={cn(
+                            "text-xs px-2.5 py-1 rounded-md border transition-all font-medium",
+                            isSelected ? "bg-primary text-white border-primary shadow-sm" : "bg-card text-muted-foreground border-border hover:border-slate-400 hover:text-foreground",
+                          )}
+                        >
+                          {b.name}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
-                {/* Verticals */}
-                {settingsBranchId && (
+                {/* Verticals (filtered by selected branches) */}
+                {settingsBranchIds.length > 0 && (
                   <div className="space-y-2">
                     <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                       <Tags size={12} /> Verticals
                     </label>
                     <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1.5 border border-border rounded-lg bg-background/50">
-                      {settingsVerticals && settingsVerticals.length > 0
-                        ? settingsVerticals.map((v: any) => {
+                      {settingsFilteredVerticals.length > 0
+                        ? settingsFilteredVerticals.map((v: any) => {
                             const isSelected = settingsVerticalIds.includes(v.id);
                             return (
                               <button key={v.id} type="button"
@@ -550,7 +561,7 @@ export function UserManager() {
                               </button>
                             );
                           })
-                        : <p className="text-xs text-muted-foreground p-1">No verticals for this branch</p>
+                        : <p className="text-xs text-muted-foreground p-1">No verticals for selected branches</p>
                       }
                     </div>
                   </div>
@@ -558,7 +569,7 @@ export function UserManager() {
               </div>
 
               <DialogFooter className="flex gap-2">
-                <Button variant="outline" onClick={() => { setSettingsUser(null); setSettingsBranchId(''); setSettingsVerticalIds([]); setSettingsRoleIds([]); }}
+                <Button variant="outline" onClick={() => { setSettingsUser(null); setSettingsBranchIds([]); setSettingsVerticalIds([]); setSettingsRoleIds([]); }}
                   className="flex-1 h-9 text-xs border-border text-muted-foreground bg-card hover:bg-muted">
                   Cancel
                 </Button>
@@ -569,7 +580,7 @@ export function UserManager() {
                       onSuccess: () => {
                         queryClient.invalidateQueries({ queryKey: ['settings', 'users'] });
                         toast.success('User settings saved');
-                        setSettingsUser(null); setSettingsBranchId(''); setSettingsVerticalIds([]); setSettingsRoleIds([]);
+                        setSettingsUser(null); setSettingsBranchIds([]); setSettingsVerticalIds([]); setSettingsRoleIds([]);
                       },
                     },
                   );
