@@ -1,8 +1,8 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Plus, Trash2, Loader2, Mail, Shield, UserPlus, X, Phone, Key } from 'lucide-react';
-import { settingsApi, type User, type Role } from '@/api/settings';
+import { settingsApi, type User } from '@/api/settings';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,20 +18,15 @@ export function UserManager() {
 
   const [inviteForm, setInviteForm] = useState({
     name: '',
-    email: '',
     phone_number: '',
     password: '',
     autoGeneratePassword: true,
-    branchIds: [] as string[],
-    roleIds: [] as string[],
-    vertical_ids: [] as string[],
   });
 
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 
   const [createdUserCredentials, setCreatedUserCredentials] = useState<{
     name: string;
-    email?: string | null;
     phone_number?: string;
     password?: string;
   } | null>(null);
@@ -44,80 +39,25 @@ export function UserManager() {
     staleTime: 30_000,
   });
 
-  const { data: roles } = useQuery({
-    queryKey: ['settings', 'roles'],
-    queryFn: () => settingsApi.roles.list(),
-    staleTime: 30_000,
-  });
-
-  const { data: branches } = useQuery({
-    queryKey: ['settings', 'branches'],
-    queryFn: () => settingsApi.branches.list(),
-    staleTime: 30_000,
-  });
-
-  const selectedBranchIds = inviteForm.branchIds;
-
-  const { data: verticals } = useQuery({
-    queryKey: ['settings', 'verticals', selectedBranchIds.join(',')],
-    queryFn: () => {
-      if (selectedBranchIds.length === 1) {
-        return settingsApi.verticals.list({ branch_id: selectedBranchIds[0] });
-      }
-      return settingsApi.verticals.list();
-    },
-    staleTime: 30_000,
-  });
-
-  const filteredVerticals = useMemo(() => {
-    if (selectedBranchIds.length === 0) return verticals ?? [];
-    return (verticals ?? []).filter((v: any) => selectedBranchIds.includes(v.branch_id));
-  }, [verticals, selectedBranchIds]);
-
-  const sortedRoles = useMemo(() => {
-    if (!roles) return [];
-    const systemRolesOrder = ['owner', 'admin', 'manager', 'member', 'viewer'];
-    const system = roles.filter((r) => r.is_system_role);
-    const custom = roles.filter((r) => !r.is_system_role);
-
-    const sortedSystem = system.sort((a, b) => {
-      const aIndex = systemRolesOrder.indexOf(a.slug);
-      const bIndex = systemRolesOrder.indexOf(b.slug);
-      return aIndex - bIndex;
-    });
-
-    const sortedCustom = custom.sort((a, b) => a.name.localeCompare(b.name));
-
-    return [...sortedSystem, ...sortedCustom];
-  }, [roles]);
-
   const inviteMutation = useMutation({
     mutationFn: (data: {
       name: string;
-      email?: string;
       phone_number: string;
       password?: string;
-      role_ids: string[];
-      vertical_ids?: string[];
     }) => settingsApi.users.invite(data),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['settings', 'users'] });
       toast.success('User created successfully');
       setCreatedUserCredentials({
         name: data.name,
-        email: data.email,
         phone_number: data.phone_number,
         password: data.temporary_password,
       });
       setInviteForm({
         name: '',
-        email: '',
         phone_number: '',
         password: '',
         autoGeneratePassword: true,
-        branchIds: [],
-        roleIds: [],
-        vertical_ids: [],
       });
     },
     onError: (error: any) => toast.error(error?.message || 'Failed to create user'),
@@ -139,7 +79,6 @@ export function UserManager() {
 
       if (!inviteForm.name.trim()) errors.name = 'Name is required';
       if (!inviteForm.phone_number.trim()) errors.phone_number = 'Phone number is required';
-      if (inviteForm.roleIds.length === 0) errors.roleIds = 'Select at least one role';
       if (!inviteForm.autoGeneratePassword && !inviteForm.password.trim()) errors.password = 'Enter a password or enable auto-generate';
 
       if (Object.keys(errors).length > 0) {
@@ -151,24 +90,12 @@ export function UserManager() {
 
       inviteMutation.mutate({
         name: inviteForm.name,
-        email: inviteForm.email.trim() || undefined,
         phone_number: inviteForm.phone_number.trim(),
         password: inviteForm.autoGeneratePassword ? undefined : inviteForm.password,
-        role_ids: inviteForm.roleIds,
-        vertical_ids: inviteForm.vertical_ids.length > 0 ? inviteForm.vertical_ids : undefined,
       });
     },
     [inviteForm, inviteMutation],
   );
-
-  const toggleRole = useCallback((roleId: string) => {
-    setInviteForm((f) => ({
-      ...f,
-      roleIds: f.roleIds.includes(roleId)
-        ? f.roleIds.filter((id) => id !== roleId)
-        : [...f.roleIds, roleId],
-    }));
-  }, []);
 
   if (isLoading) {
     return (
@@ -316,7 +243,7 @@ export function UserManager() {
                   Create User
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground">
-                  Add a new workspace member with roles and permissions
+                  Add a new workspace member
                 </DialogDescription>
               </DialogHeader>
 
@@ -336,17 +263,6 @@ export function UserManager() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">Email Address</label>
-                    <Input
-                      type="email"
-                      placeholder="john@company.com"
-                      value={inviteForm.email}
-                      onChange={(e) => setInviteForm((f) => ({ ...f, email: e.target.value }))}
-                      className="h-9 border-border bg-card text-foreground placeholder:text-muted-foreground"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
                     <label className="text-xs font-medium text-muted-foreground">Phone Number <span className="text-red-500">*</span></label>
                     <Input
                       type="tel"
@@ -358,130 +274,36 @@ export function UserManager() {
                     />
                     {validationErrors.phone_number && <p className="text-[10px] text-red-500">{validationErrors.phone_number}</p>}
                   </div>
-
-                  <div className="space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                      <Key size={12} className="text-muted-foreground" />
-                      Password
-                    </label>
-                    <div className="space-y-2 p-3 border border-border rounded-lg bg-background/50">
-                      <label className="flex items-center gap-2 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={inviteForm.autoGeneratePassword}
-                          onChange={(e) => setInviteForm((f) => ({ ...f, autoGeneratePassword: e.target.checked }))}
-                          className="rounded border-border bg-card accent-primary h-4 w-4"
-                        />
-                        <span className="text-xs font-medium text-foreground">Auto-generate secure password</span>
-                      </label>
-                      {!inviteForm.autoGeneratePassword && (
-                        <div className="animate-in fade-in-50 duration-200">
-                          <Input
-                            type="password"
-                            placeholder="Enter custom password"
-                            value={inviteForm.password}
-                            onChange={(e) => setInviteForm((f) => ({ ...f, password: e.target.value }))}
-                            required
-                            className="h-9 border-border bg-card text-foreground placeholder:text-muted-foreground"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
                 </div>
 
-                {/* Branch Selector (Multi-select) */}
-                {branches && branches.length > 0 ? (
-                  <div className="space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground">Branches</label>
-                    <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1.5 border border-border rounded-lg bg-background/50">
-                      {branches.map((b: any) => {
-                        const isSelected = inviteForm.branchIds.includes(b.id);
-                        return (
-                          <button
-                            key={b.id} type="button"
-                            onClick={() => setInviteForm((f) => ({
-                              ...f,
-                              branchIds: f.branchIds.includes(b.id)
-                                ? f.branchIds.filter((id) => id !== b.id)
-                                : [...f.branchIds, b.id],
-                              vertical_ids: f.branchIds.includes(b.id)
-                                ? f.vertical_ids
-                                : f.vertical_ids,
-                            }))}
-                            className={cn(
-                              "text-xs px-2.5 py-1 rounded-md border transition-all font-medium",
-                              isSelected ? "bg-primary text-white border-primary shadow-sm" : "bg-card text-muted-foreground border-border hover:border-slate-400 hover:text-foreground",
-                            )}
-                          >
-                            {b.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : null}
-
-                {/* Verticals Selector (filtered by selected branches) */}
-                {filteredVerticals && filteredVerticals.length > 0 ? (
-                  <div className="space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground">Department / Vertical</label>
-                    <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1.5 border border-border rounded-lg bg-background/50">
-                      {filteredVerticals.map((vert: any) => {
-                        const isSelected = inviteForm.vertical_ids.includes(vert.id);
-                        return (
-                          <button
-                            key={vert.id} type="button"
-                            onClick={() => setInviteForm((f) => ({
-                              ...f,
-                              vertical_ids: f.vertical_ids.includes(vert.id)
-                                ? f.vertical_ids.filter((id) => id !== vert.id)
-                                : [...f.vertical_ids, vert.id],
-                            }))}
-                            className={cn(
-                              "text-xs px-2.5 py-1 rounded-md border transition-all font-medium",
-                              isSelected ? "bg-primary text-white border-primary shadow-sm" : "bg-card text-muted-foreground border-border hover:border-slate-400 hover:text-foreground",
-                            )}
-                          >
-                            {vert.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {inviteForm.branchIds.length === 0 && (
-                      <p className="text-[10px] text-muted-foreground">Select a branch above to see available verticals</p>
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                    <Key size={12} className="text-muted-foreground" />
+                    Password
+                  </label>
+                  <div className="space-y-2 p-3 border border-border rounded-lg bg-background/50">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={inviteForm.autoGeneratePassword}
+                        onChange={(e) => setInviteForm((f) => ({ ...f, autoGeneratePassword: e.target.checked }))}
+                        className="rounded border-border bg-card accent-primary h-4 w-4"
+                      />
+                      <span className="text-xs font-medium text-foreground">Auto-generate secure password</span>
+                    </label>
+                    {!inviteForm.autoGeneratePassword && (
+                      <div className="animate-in fade-in-50 duration-200">
+                        <Input
+                          type="password"
+                          placeholder="Enter custom password"
+                          value={inviteForm.password}
+                          onChange={(e) => setInviteForm((f) => ({ ...f, password: e.target.value }))}
+                          required
+                          className="h-9 border-border bg-card text-foreground placeholder:text-muted-foreground"
+                        />
+                      </div>
                     )}
                   </div>
-                ) : inviteForm.branchIds.length > 0 ? (
-                  <div className="bg-background/30 p-2 rounded border border-border/40 flex items-center gap-2">
-                    <span className="text-[10px] font-semibold text-muted-foreground uppercase">Vertical:</span>
-                    <span className="text-xs text-muted-foreground">No verticals found for selected branches</span>
-                  </div>
-                ) : null}
-
-                {/* Roles Selector */}
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Assigned Roles <span className="text-red-500">*</span>
-                  </label>
-                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1.5 border border-border rounded-lg bg-background/50">
-                    {sortedRoles.map((role) => {
-                      const isSelected = inviteForm.roleIds.includes(role.id);
-                      return (
-                        <button
-                          key={role.id} type="button"
-                          onClick={() => toggleRole(role.id)}
-                          className={cn(
-                            "text-xs px-2.5 py-1 rounded-md border transition-all font-medium",
-                            isSelected ? "bg-primary text-white border-primary shadow-sm" : "bg-card text-muted-foreground border-border hover:border-slate-400 hover:text-foreground",
-                          )}
-                        >
-                          {role.name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {validationErrors.roleIds && <p className="text-[10px] text-red-500">{validationErrors.roleIds}</p>}
                 </div>
 
                 <DialogFooter className="pt-2 flex gap-2">
@@ -514,9 +336,6 @@ export function UserManager() {
                   <span className="font-medium text-muted-foreground">Name:</span>
                   <span className="font-semibold text-foreground">{createdUserCredentials.name}</span>
 
-                  <span className="font-medium text-muted-foreground">Email:</span>
-                  <span className="font-mono text-foreground select-all">{createdUserCredentials.email || '—'}</span>
-
                   {createdUserCredentials.phone_number && (
                     <>
                       <span className="font-medium text-muted-foreground">Phone:</span>
@@ -533,7 +352,7 @@ export function UserManager() {
 
               <DialogFooter className="flex gap-2">
                 <Button type="button" variant="outline" onClick={() => {
-                  const text = `Name: ${createdUserCredentials.name}\nEmail: ${createdUserCredentials.email || 'None'}${createdUserCredentials.phone_number ? `\nPhone: ${createdUserCredentials.phone_number}` : ''}\nPassword: ${createdUserCredentials.password}`;
+                  const text = `Name: ${createdUserCredentials.name}${createdUserCredentials.phone_number ? `\nPhone: ${createdUserCredentials.phone_number}` : ''}\nPassword: ${createdUserCredentials.password}`;
                   navigator.clipboard.writeText(text);
                   toast.success('Copied to clipboard');
                 }} className="flex-1 text-xs h-9">
@@ -541,7 +360,7 @@ export function UserManager() {
                 </Button>
                 <Button type="button" onClick={() => {
                   setCreatedUserCredentials(null);
-                   setInviteForm({ name: '', email: '', phone_number: '', password: '', autoGeneratePassword: true, branchIds: [], roleIds: [], vertical_ids: [] });
+                   setInviteForm({ name: '', phone_number: '', password: '', autoGeneratePassword: true });
                 }} className="flex-1 bg-primary text-white hover:bg-primary/90 text-xs h-9">
                   Create Another
                 </Button>

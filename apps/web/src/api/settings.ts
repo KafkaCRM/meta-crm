@@ -142,11 +142,9 @@ export const settingsApi = {
     list: () => apiCall<User[]>('/users'),
     invite: (data: {
       name: string;
-      email?: string;
       phone_number: string;
       password?: string;
-      role_ids: string[];
-      branch_id?: string;
+      role_ids?: string[];
       vertical_ids?: string[];
     }) =>
       apiCall<User & { temporary_password?: string }>('/users/invite', {
