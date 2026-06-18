@@ -140,6 +140,7 @@ export const settingsApi = {
 
   users: {
     list: () => apiCall<User[]>('/users'),
+    get: (id: string) => apiCall<any>(`/users/${id}`),
     invite: (data: {
       name: string;
       phone_number: string;

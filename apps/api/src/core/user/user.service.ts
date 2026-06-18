@@ -80,6 +80,43 @@ export class UserService {
     }));
   }
 
+  async getById(tenantId: string, id: string) {
+    const user = await this.tenantDb.getClient().user.findFirst({
+      where: { id, tenant_id: tenantId },
+      include: {
+        userRoles: {
+          include: { role: true },
+        },
+        userVerticals: {
+          include: { vertical: true },
+        },
+      },
+    });
+
+    if (!user) return null;
+
+    return {
+      id: user.id,
+      tenant_id: user.tenant_id,
+      name: user.name,
+      email: user.email,
+      phone_number: user.phone_number ?? undefined,
+      status: user.status,
+      created_at: user.created_at,
+      roles: user.userRoles.map((ur) => ({
+        role_id: ur.role.id,
+        role_name: ur.role.display_name || ur.role.name,
+        assignment_id: ur.assignment_id ?? undefined,
+      })),
+      vertical_ids: user.userVerticals.map((uv) => uv.vertical_id),
+      verticals: user.userVerticals.map((uv) => ({
+        id: uv.vertical.id,
+        name: uv.vertical.name,
+        branch_id: uv.vertical.branch_id,
+      })),
+    };
+  }
+
   async invite(tenantId: string, input: InviteUserInput) {
     // 1. Seat limit enforcement checks
     const maxUsers = await this.getMaxUserLimit(tenantId);

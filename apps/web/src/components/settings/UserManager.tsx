@@ -40,11 +40,24 @@ export function UserManager() {
   const [settingsVerticalIds, setSettingsVerticalIds] = useState<string[]>([]);
   const [settingsRoleIds, setSettingsRoleIds] = useState<string[]>([]);
 
+  const { data: settingsUserDetail } = useQuery({
+    queryKey: ['settings', 'users', settingsUser?.id],
+    queryFn: () => settingsApi.users.get(settingsUser!.id),
+    enabled: !!settingsUser,
+  });
+
   useEffect(() => {
-    if (settingsUser) {
+    if (settingsUserDetail) {
+      setSettingsRoleIds(settingsUserDetail.roles?.map((r: any) => r.role_id) ?? []);
+      setSettingsVerticalIds(settingsUserDetail.vertical_ids ?? []);
+      const branchIds: string[] = settingsUserDetail.verticals
+        ?.map((v: any) => v.branch_id)
+        .filter((id: string, i: number, arr: string[]) => arr.indexOf(id) === i) ?? [];
+      setSettingsBranchIds(branchIds);
+    } else if (settingsUser) {
       setSettingsRoleIds(settingsUser.roles?.map((r) => r.role_id) ?? []);
     }
-  }, [settingsUser]);
+  }, [settingsUserDetail, settingsUser]);
 
   const { data: branches } = useQuery({
     queryKey: ['settings', 'branches'],

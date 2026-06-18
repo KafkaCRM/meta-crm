@@ -85,6 +85,12 @@ export class UserController {
     return this.service.list(user.tenant_id);
   }
 
+  @Get(':id')
+  @CheckPermissions('read', 'User')
+  async get(@CurrentUser() user: RequestScope, @Param('id') id: string) {
+    return this.service.getById(user.tenant_id, id);
+  }
+
   @Post('invite')
   @HttpCode(HttpStatus.CREATED)
   @CheckPermissions('manage', 'User')
