@@ -35,6 +35,7 @@ export function WorkflowBuilder() {
   // Pipeline management states
   const [activePipelineId, setActivePipelineId] = useState<string | null>(null);
   const [activePipelineName, setActivePipelineName] = useState('');
+  const [activePipelineVertical, setActivePipelineVertical] = useState<{ name: string; branchName: string } | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newPipelineName, setNewPipelineName] = useState('');
   const [selectedBranchId, setSelectedBranchId] = useState('');
@@ -164,9 +165,10 @@ export function WorkflowBuilder() {
   });
 
   // Set local state when editing a pipeline
-  const handleEditPipeline = (id: string, name: string, pipelineStages: Stage[]) => {
+  const handleEditPipeline = (id: string, name: string, pipelineStages: Stage[], verticalInfo?: { verticalName: string; branchName: string } | null) => {
     setActivePipelineId(id);
     setActivePipelineName(name);
+    setActivePipelineVertical(verticalInfo ? { name: verticalInfo.verticalName, branchName: verticalInfo.branchName } : null);
     
     // Order stages chronologically
     const sorted = [...pipelineStages].sort((a, b) => a.order - b.order);
@@ -405,7 +407,7 @@ export function WorkflowBuilder() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleEditPipeline(pipe.id, pipe.name, pipe.stages || [])}
+                      onClick={() => handleEditPipeline(pipe.id, pipe.name, pipe.stages || [], pipe.vertical ? { verticalName: pipe.vertical.name, branchName: pipe.vertical.branch?.name ?? '' } : null)}
                       className="border-border text-foreground hover:bg-muted font-semibold h-8 rounded-lg text-xs"
                     >
                       Design Pipeline
@@ -575,8 +577,13 @@ export function WorkflowBuilder() {
                     Designing
                   </Badge>
                 </h1>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Set up stages and configure terminal Won/Lost outcomes.
+                <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
+                  {activePipelineVertical && (
+                    <span className="inline-flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-md font-medium">
+                      {activePipelineVertical.branchName} / {activePipelineVertical.name}
+                    </span>
+                  )}
+                  <span>Set up stages and configure terminal Won/Lost outcomes.</span>
                 </p>
               </div>
             </div>

@@ -35,7 +35,7 @@ export class WorkflowService {
         where,
         include: {
           stages: { orderBy: { order: 'asc' } },
-          vertical: { select: { id: true, name: true, branch_id: true } },
+          vertical: { select: { id: true, name: true, branch_id: true, branch: { select: { name: true } } } },
         },
       });
       return ok(pipelines);
