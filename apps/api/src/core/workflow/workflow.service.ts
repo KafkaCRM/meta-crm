@@ -18,10 +18,13 @@ export class WorkflowService {
     private readonly cls: ClsService,
   ) {}
 
-  async list(filters?: { branch_id?: string; vertical_id?: string }): Promise<Result<any[], WorkflowError>> {
+  async list(filters?: { branch_id?: string; vertical_id?: string; vertical_ids?: string }): Promise<Result<any[], WorkflowError>> {
     try {
       const where: Record<string, unknown> = {};
-      if (filters?.vertical_id) {
+      if (filters?.vertical_ids) {
+        const ids = filters.vertical_ids.split(',').filter(Boolean);
+        where.vertical_id = { in: ids };
+      } else if (filters?.vertical_id) {
         where.vertical_id = filters.vertical_id;
       } else if (filters?.branch_id) {
         // Filter by branch through the vertical relation

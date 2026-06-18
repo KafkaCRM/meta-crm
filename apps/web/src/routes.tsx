@@ -10,7 +10,6 @@ import { useQuery } from '@tanstack/react-query';
 import { settingsApi } from '@/api/settings';
 import { CurrencyProvider, useCurrency } from '@/contexts/currency.context';
 import { Dashboard } from '@/components/dashboard';
-import { toast } from 'sonner';
 import {
   Sidebar,
   SidebarContent,
@@ -109,26 +108,20 @@ const getPipelineColor = (id: string) => {
 };
 
 function BranchSelector() {
-  const { selectedBranchId, setSelectedBranchId, branches } = useBranch();
+  const { selectedBranchId, setSelectedBranchId, branches, isLoading } = useBranch();
   const selectedBranch = branches.find((b: any) => b.id === selectedBranchId);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newId = e.target.value;
-    setSelectedBranchId(newId);
-    const branchName = branches.find((b: any) => b.id === newId)?.name;
-    if (branchName) {
-      toast.success(`Switched to ${branchName}`);
-    } else {
-      toast('Showing all branches');
-    }
-  }, [setSelectedBranchId, branches]);
+    setSelectedBranchId(e.target.value);
+  }, [setSelectedBranchId]);
 
   return (
     <div className="relative w-full">
       <select
         value={selectedBranchId}
         onChange={handleChange}
-        className="flex h-8 w-full rounded-lg border border-sidebar-border bg-sidebar-accent/30 px-2.5 py-1 text-xs font-medium text-sidebar-foreground shadow-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+        disabled={isLoading}
+        className="flex h-8 w-full rounded-lg border border-sidebar-border bg-sidebar-accent/30 px-2.5 py-1 text-xs font-medium text-sidebar-foreground shadow-none focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50"
       >
         <option value="">All Branches</option>
         {branches.map((b: any) => (
@@ -147,9 +140,10 @@ function AppSidebar() {
 
   const { selectedVerticalIds } = useBranch();
 
-  const { data: workflows = [] } = useQuery({
+  const { data: workflows = [], isLoading: pipelinesLoading } = useQuery({
     queryKey: ['settings', 'pipelines', ...(selectedVerticalIds.length > 0 ? selectedVerticalIds : ['all'])],
     queryFn: () => settingsApi.pipelines.list(selectedVerticalIds.length > 0 ? { vertical_ids: selectedVerticalIds.join(',') } : undefined),
+    staleTime: 10_000,
   });
 
   const initials = user?.name
@@ -282,8 +276,17 @@ function AppSidebar() {
                             Select Pipeline
                           </DropdownMenuLabel>
                           <DropdownMenuSeparator className="bg-sidebar-border/40 mx-1" />
-                          
-                          {workflows.map((wf: any) => {
+
+                          {pipelinesLoading ? (
+                            <div className="space-y-1.5 px-2.5 py-2">
+                              <div className="h-5 bg-sidebar-accent/50 rounded-md animate-pulse" />
+                              <div className="h-5 bg-sidebar-accent/50 rounded-md animate-pulse w-3/4" />
+                            </div>
+                          ) : workflows.length === 0 ? (
+                            <p className="text-xs text-sidebar-foreground/50 px-2.5 py-2 text-center">
+                              No pipelines in this branch
+                            </p>
+                          ) : workflows.map((wf: any) => {
                             const isWfActive = (location.pathname === '/pipeline' || location.pathname === '/cases') && search.pipelineId === wf.id;
                             return (
                               <DropdownMenuItem key={wf.id} asChild className="p-0 focus:bg-transparent">

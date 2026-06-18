@@ -41,8 +41,9 @@ export class WorkflowController {
   async list(
     @Query('branch_id') branchId?: string,
     @Query('vertical_id') verticalId?: string,
+    @Query('vertical_ids') verticalIds?: string,
   ) {
-    const result = await this.service.list({ branch_id: branchId, vertical_id: verticalId });
+    const result = await this.service.list({ branch_id: branchId, vertical_id: verticalId, vertical_ids: verticalIds });
     if (result.isErr()) {
       throw new InternalServerErrorException(result.error.message);
     }
