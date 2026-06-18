@@ -47,11 +47,14 @@ interface LeadKanbanProps {
 export function LeadKanban({ pipelineDefinitionId: initialPipelineId }: LeadKanbanProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { selectedVerticalIds } = useBranch();
+  const { selectedBranchId, selectedVerticalIds, isLoading: branchLoading } = useBranch();
+  const pipelineVerticalIds = selectedBranchId ? selectedVerticalIds : [];
+  const hasBranchFilter = !!selectedBranchId && pipelineVerticalIds.length > 0;
 
   const { data: pipelines = [] } = useQuery({
-    queryKey: ['settings', 'pipelines', ...(selectedVerticalIds.length > 0 ? selectedVerticalIds : ['all'])],
-    queryFn: () => settingsApi.pipelines.list(selectedVerticalIds.length > 0 ? { vertical_ids: selectedVerticalIds.join(',') } : undefined),
+    queryKey: ['settings', 'pipelines', selectedBranchId || 'all', ...pipelineVerticalIds],
+    queryFn: () => settingsApi.pipelines.list(hasBranchFilter ? { vertical_ids: pipelineVerticalIds.join(',') } : undefined),
+    enabled: !selectedBranchId || selectedVerticalIds.length > 0,
   });
 
   const [selectedPipelineId, setSelectedPipelineId] = useState(
