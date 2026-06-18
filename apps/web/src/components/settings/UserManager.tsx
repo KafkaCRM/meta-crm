@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Plus, Trash2, Loader2, Mail, Shield, UserPlus, X, Phone, Key } from 'lucide-react';
-import { settingsApi, type User } from '@/api/settings';
+import { settingsApi, type User, type Role } from '@/api/settings';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,7 @@ export function UserManager() {
     phone_number: '',
     password: '',
     autoGeneratePassword: true,
+    roleIds: [] as string[],
   });
 
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -39,11 +40,18 @@ export function UserManager() {
     staleTime: 30_000,
   });
 
+  const { data: roles } = useQuery({
+    queryKey: ['settings', 'roles'],
+    queryFn: () => settingsApi.roles.list(),
+    staleTime: 30_000,
+  });
+
   const inviteMutation = useMutation({
     mutationFn: (data: {
       name: string;
       phone_number: string;
       password?: string;
+      role_ids?: string[];
     }) => settingsApi.users.invite(data),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['settings', 'users'] });
@@ -58,6 +66,7 @@ export function UserManager() {
         phone_number: '',
         password: '',
         autoGeneratePassword: true,
+        roleIds: [],
       });
     },
     onError: (error: any) => toast.error(error?.message || 'Failed to create user'),
@@ -80,6 +89,7 @@ export function UserManager() {
       if (!inviteForm.name.trim()) errors.name = 'Name is required';
       if (!inviteForm.phone_number.trim()) errors.phone_number = 'Phone number is required';
       if (!inviteForm.autoGeneratePassword && !inviteForm.password.trim()) errors.password = 'Enter a password or enable auto-generate';
+      if (inviteForm.roleIds.length === 0) errors.roleIds = 'Select at least one role';
 
       if (Object.keys(errors).length > 0) {
         setValidationErrors(errors);
@@ -92,6 +102,7 @@ export function UserManager() {
         name: inviteForm.name,
         phone_number: inviteForm.phone_number.trim(),
         password: inviteForm.autoGeneratePassword ? undefined : inviteForm.password,
+        role_ids: inviteForm.roleIds,
       });
     },
     [inviteForm, inviteMutation],
@@ -225,6 +236,9 @@ export function UserManager() {
       <Dialog
         open={isInviteModalOpen}
         onOpenChange={(open) => {
+          if (open) {
+            setInviteForm({ name: '', phone_number: '', password: '', autoGeneratePassword: true, roleIds: [] });
+          }
           if (!open) {
             setValidationErrors({});
           }
@@ -306,6 +320,38 @@ export function UserManager() {
                   </div>
                 </div>
 
+                {/* Roles Selector */}
+                {roles && roles.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Assigned Roles <span className="text-red-500">*</span>
+                    </label>
+                    <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1.5 border border-border rounded-lg bg-background/50">
+                      {roles.map((role) => {
+                        const isSelected = inviteForm.roleIds.includes(role.id);
+                        return (
+                          <button
+                            key={role.id} type="button"
+                            onClick={() => setInviteForm((f) => ({
+                              ...f,
+                              roleIds: f.roleIds.includes(role.id)
+                                ? f.roleIds.filter((id) => id !== role.id)
+                                : [...f.roleIds, role.id],
+                            }))}
+                            className={cn(
+                              "text-xs px-2.5 py-1 rounded-md border transition-all font-medium",
+                              isSelected ? "bg-primary text-white border-primary shadow-sm" : "bg-card text-muted-foreground border-border hover:border-slate-400 hover:text-foreground",
+                            )}
+                          >
+                            {role.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {validationErrors.roleIds && <p className="text-[10px] text-red-500">{validationErrors.roleIds}</p>}
+                  </div>
+                )}
+
                 <DialogFooter className="pt-2 flex gap-2">
                   <Button type="button" variant="outline" onClick={() => { setIsInviteModalOpen(false); setValidationErrors({}); }}
                     className="flex-1 h-9 text-xs border-border text-muted-foreground bg-card hover:bg-muted">
@@ -360,7 +406,7 @@ export function UserManager() {
                 </Button>
                 <Button type="button" onClick={() => {
                   setCreatedUserCredentials(null);
-                   setInviteForm({ name: '', phone_number: '', password: '', autoGeneratePassword: true });
+                   setInviteForm({ name: '', phone_number: '', password: '', autoGeneratePassword: true, roleIds: [] });
                 }} className="flex-1 bg-primary text-white hover:bg-primary/90 text-xs h-9">
                   Create Another
                 </Button>
