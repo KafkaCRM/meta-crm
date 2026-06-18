@@ -11,6 +11,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { leadsApi, type LeadResponse } from '@/api/leads';
 import { settingsApi } from '@/api/settings';
+import { useBranch } from '@/contexts/branch.context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -46,10 +47,11 @@ interface LeadKanbanProps {
 export function LeadKanban({ pipelineDefinitionId: initialPipelineId }: LeadKanbanProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { selectedVerticalIds } = useBranch();
 
   const { data: pipelines = [] } = useQuery({
-    queryKey: ['settings', 'pipelines'],
-    queryFn: () => settingsApi.pipelines.list(),
+    queryKey: ['settings', 'pipelines', ...(selectedVerticalIds.length > 0 ? selectedVerticalIds : ['all'])],
+    queryFn: () => settingsApi.pipelines.list(selectedVerticalIds.length > 0 ? { vertical_ids: selectedVerticalIds.join(',') } : undefined),
   });
 
   const [selectedPipelineId, setSelectedPipelineId] = useState(

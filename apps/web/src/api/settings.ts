@@ -94,10 +94,11 @@ export interface Plugin {
 }
 
 const pipelineSettingsApi = {
-  list: (params?: { branch_id?: string; vertical_id?: string }) => {
+  list: (params?: { branch_id?: string; vertical_id?: string; vertical_ids?: string }) => {
     const qs = new URLSearchParams();
     if (params?.branch_id) qs.set('branch_id', params.branch_id);
     if (params?.vertical_id) qs.set('vertical_id', params.vertical_id);
+    if (params?.vertical_ids) qs.set('vertical_ids', params.vertical_ids);
     const query = qs.toString();
     return apiCall<any[]>(`/pipelines${query ? `?${query}` : ''}`);
   },

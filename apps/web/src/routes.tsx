@@ -1,15 +1,16 @@
 import { createRootRoute, createRoute, createRouter, Outlet } from '@tanstack/react-router';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, Link, useLocation } from '@tanstack/react-router';
 import { useAuth } from '@/contexts/auth.context';
 import { AbilityProvider } from '@/contexts/permissions.context';
 import { LabelsProvider } from '@/contexts/labels.context';
-import { BranchProvider } from '@/contexts/branch.context';
+import { BranchProvider, useBranch } from '@/contexts/branch.context';
 import { useLabels } from '@/hooks/useLabels';
 import { useQuery } from '@tanstack/react-query';
 import { settingsApi } from '@/api/settings';
 import { CurrencyProvider, useCurrency } from '@/contexts/currency.context';
 import { Dashboard } from '@/components/dashboard';
+import { toast } from 'sonner';
 import {
   Sidebar,
   SidebarContent,
@@ -81,7 +82,6 @@ import { useCapabilities } from '@/hooks/useCapabilities';
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
 import { CommandPalette } from '@/components/shared/CommandPalette';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { useBranch } from '@/contexts/branch.context';
 
 
 /* ------------------------------------------------------------------ */
@@ -111,11 +111,22 @@ function BranchSelector() {
   const { selectedBranchId, setSelectedBranchId, branches } = useBranch();
   const selectedBranch = branches.find((b: any) => b.id === selectedBranchId);
 
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newId = e.target.value;
+    setSelectedBranchId(newId);
+    const branchName = branches.find((b: any) => b.id === newId)?.name;
+    if (branchName) {
+      toast.success(`Switched to ${branchName}`);
+    } else {
+      toast('Showing all branches');
+    }
+  }, [setSelectedBranchId, branches]);
+
   return (
     <div className="relative w-full">
       <select
         value={selectedBranchId}
-        onChange={(e) => setSelectedBranchId(e.target.value)}
+        onChange={handleChange}
         className="flex h-8 w-full rounded-lg border border-sidebar-border bg-sidebar-accent/30 px-2.5 py-1 text-xs font-medium text-sidebar-foreground shadow-none focus:outline-none focus:ring-2 focus:ring-primary/30"
       >
         <option value="">All Branches</option>
@@ -220,6 +231,22 @@ function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="px-2 pt-1 pb-3 bg-sidebar">
+        {/* Branch Selector */}
+        <SidebarGroup className="pt-0 pb-1">
+          <SidebarGroupLabel className="text-sidebar-foreground/50 text-[10px] font-bold uppercase tracking-wider px-2 mb-1">
+            Branch
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <BranchSelector />
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <Separator className="my-2 bg-sidebar-border/40" />
+
         {/* Main Section */}
         <SidebarGroup className="pt-0 pb-1">
           <SidebarGroupLabel className="text-sidebar-foreground/50 text-[10px] font-bold uppercase tracking-wider px-2 mb-1">
@@ -299,22 +326,6 @@ function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        {/* Branch Selector */}
-        <SidebarGroup className="pt-0 pb-1">
-          <SidebarGroupLabel className="text-sidebar-foreground/50 text-[10px] font-bold uppercase tracking-wider px-2 mb-1">
-            Branch
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <BranchSelector />
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <Separator className="my-2 bg-sidebar-border/40" />
 
         {/* Settings/Configuration Section */}
         {visibleSettingsItems.length > 0 && (
