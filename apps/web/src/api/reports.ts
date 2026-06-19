@@ -7,6 +7,16 @@ export interface ReportParams {
   workflow_id?: string;
 }
 
+function buildQuery(params: ReportParams): string {
+  const qs = new URLSearchParams();
+  if (params.date_from) qs.set('date_from', params.date_from);
+  if (params.date_to) qs.set('date_to', params.date_to);
+  if (params.assignment_id) qs.set('assignment_id', params.assignment_id);
+  if (params.workflow_id) qs.set('workflow_id', params.workflow_id);
+  const query = qs.toString();
+  return query ? `&${query}` : '';
+}
+
 export interface PipelineFunnelResponse {
   stages: { name: string; count: number; percentage: number }[];
 }
@@ -30,6 +40,47 @@ export interface InteractionVolumeResponse {
 export interface PartySourcesResponse {
   sources: { source: string; count: number }[];
   total: number;
+}
+
+export interface CampaignReportEntry {
+  id: string;
+  name: string;
+  channel: string;
+  status: string;
+  total_leads: number;
+  contacted: number;
+  converted: number;
+  conversion_rate: number;
+  call_connect_rate: number;
+  untouched_leads: number;
+}
+
+export interface CampaignReportResponse {
+  campaigns: CampaignReportEntry[];
+  next_cursor?: string;
+}
+
+export interface CampaignComparisonResponse {
+  campaigns: {
+    id: string;
+    name: string;
+    channel: string;
+    total_leads: number;
+    converted: number;
+    conversion_rate: number;
+    call_connect_rate: number;
+    untouched_leads: number;
+  }[];
+}
+
+export interface ChannelPerformanceResponse {
+  channels: {
+    channel: string;
+    total_leads: number;
+    converted: number;
+    conversion_rate: number;
+    total_interactions: number;
+  }[];
 }
 
 export interface MyCasesResponse {
@@ -87,14 +138,26 @@ export const reportsApi = {
     const qs = buildQuery(params);
     return apiCall<MyFollowUpsResponse>(`/interactions?follow_up_today=true&limit=5${qs}`);
   },
-};
 
-function buildQuery(params: ReportParams): string {
-  const qs = new URLSearchParams();
-  if (params.date_from) qs.set('date_from', params.date_from);
-  if (params.date_to) qs.set('date_to', params.date_to);
-  if (params.assignment_id) qs.set('assignment_id', params.assignment_id);
-  if (params.workflow_id) qs.set('workflow_id', params.workflow_id);
-  const query = qs.toString();
-  return query ? `&${query}` : '';
-}
+  campaigns: (params: ReportParams & { vertical_id?: string; channel?: string; cursor?: string; limit?: string } = {}) => {
+    const { vertical_id, channel, cursor, limit, ...rest } = params as any;
+    let qs = buildQuery(rest);
+    if (vertical_id) qs += `&vertical_id=${encodeURIComponent(vertical_id)}`;
+    if (channel) qs += `&channel=${encodeURIComponent(channel)}`;
+    if (cursor) qs += `&cursor=${encodeURIComponent(cursor)}`;
+    if (limit) qs += `&limit=${encodeURIComponent(limit)}`;
+    return apiCall<CampaignReportResponse>(`/reports/campaigns${qs}`);
+  },
+
+  campaignComparison: (campaignIds: string[]) => {
+    const qs = campaignIds.map((id) => `campaign_ids=${encodeURIComponent(id)}`).join('&');
+    return apiCall<CampaignComparisonResponse>(`/reports/campaign-comparison?${qs}`);
+  },
+
+  channelPerformance: (params: ReportParams & { vertical_id?: string } = {}) => {
+    const { vertical_id, ...rest } = params as any;
+    let qs = buildQuery(rest);
+    if (vertical_id) qs += `&vertical_id=${encodeURIComponent(vertical_id)}`;
+    return apiCall<ChannelPerformanceResponse>(`/reports/channel-performance${qs}`);
+  },
+};

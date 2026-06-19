@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Plus, MoreHorizontal, Pencil, Trash2, ClipboardList } from 'lucide-react';
+import { Plus, MoreHorizontal, Pencil, Trash2, ClipboardList, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { settingsApi } from '@/api/settings';
 import { Button } from '@/components/ui/button';
@@ -65,9 +65,50 @@ function TestForm({ test, onSuccess }: { test?: any; onSuccess: () => void }) {
   );
 }
 
+function TestScoresDialog({ testId, open, onOpenChange }: { testId: string; open: boolean; onOpenChange: (v: boolean) => void }) {
+  const { data: scores, isLoading } = useQuery({
+    queryKey: ['test-scores', testId],
+    queryFn: () => settingsApi.testScores.list(testId),
+    enabled: open,
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[550px] max-h-[80vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>Test Scores</DialogTitle></DialogHeader>
+        {isLoading ? <p className="text-sm text-muted-foreground py-4 text-center">Loading...</p>
+        : !scores?.length ? <p className="text-sm text-muted-foreground py-4 text-center">No scores recorded yet</p>
+        : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Student</TableHead>
+                <TableHead>Roll No</TableHead>
+                <TableHead>Marks</TableHead>
+                <TableHead>Grade</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {scores.map((s: any) => (
+                <TableRow key={s.id}>
+                  <TableCell className="font-medium">{s.enrollment?.party?.name ?? s.enrollment_id}</TableCell>
+                  <TableCell>{s.enrollment?.roll_number ?? '—'}</TableCell>
+                  <TableCell>{s.marks_obtained}</TableCell>
+                  <TableCell>{s.grade ?? '—'}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function TestList() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
+  const [scoresTestId, setScoresTestId] = useState<string | null>(null);
   const { data, isLoading } = useQuery({ queryKey: ['tests'], queryFn: () => settingsApi.tests.list() });
   const qc = useQueryClient();
   const removeMutation = useMutation({
@@ -112,12 +153,17 @@ export function TestList() {
                   <TableCell className="capitalize"><Badge variant="outline">{t.type}</Badge></TableCell>
                   <TableCell>{t.max_marks}</TableCell>
                   <TableCell>{t.held_on ? new Date(t.held_on).toLocaleDateString() : '-'}</TableCell>
-                  <TableCell>{t._count?.scores ?? 0}</TableCell>
+                  <TableCell>
+                    <button onClick={() => setScoresTestId(t.id)} className="text-primary hover:underline text-sm font-semibold cursor-pointer">
+                      {t._count?.scores ?? 0} scores
+                    </button>
+                  </TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal size={14} /></Button></DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => { setEditing(t); setOpen(true); }}><Pencil size={13} className="mr-2" /> Edit</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setScoresTestId(t.id)}><Eye size={13} className="mr-2" /> Scores</DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive" onClick={() => removeMutation.mutate(t.id)}><Trash2 size={13} className="mr-2" /> Delete</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -128,6 +174,7 @@ export function TestList() {
           </Table>
         </CardContent>
       </Card>
+      <TestScoresDialog testId={scoresTestId!} open={!!scoresTestId} onOpenChange={(v) => { if (!v) setScoresTestId(null); }} />
     </div>
   );
 }

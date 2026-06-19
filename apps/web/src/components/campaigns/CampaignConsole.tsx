@@ -24,6 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { usePermissions } from '@/hooks/usePermissions';
 import { CampaignFormModal } from './CampaignFormModal';
+import { CampaignReportsTab } from './CampaignReportsTab';
 import { VirtualTable } from '@/components/shared/VirtualTable';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LeadDetail } from '../leads/LeadDetail';
@@ -35,6 +36,7 @@ export function CampaignConsole() {
   const canManage = can('create', 'Campaign');
   const queryClient = useQueryClient();
 
+  const [activeTab, setActiveTab] = useState<'campaigns' | 'reports'>('campaigns');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
   
@@ -479,7 +481,7 @@ export function CampaignConsole() {
             <RefreshCw size={13} />
             Refresh
           </Button>
-          {canManage && (
+          {canManage && activeTab === 'campaigns' && (
             <Button
               size="sm"
               onClick={() => setIsModalOpen(true)}
@@ -492,7 +494,36 @@ export function CampaignConsole() {
         </div>
       </div>
 
-      {/* Aggregate Telemetry Cards */}
+      <div className="flex items-center gap-1 border-b border-border">
+        <button
+          onClick={() => { setActiveTab('campaigns'); setSelectedCampaignId(null); }}
+          className={cn(
+            'px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px cursor-pointer',
+            activeTab === 'campaigns'
+              ? 'border-primary text-foreground'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          )}
+        >
+          Campaigns
+        </button>
+        <button
+          onClick={() => { setActiveTab('reports'); setSelectedCampaignId(null); }}
+          className={cn(
+            'px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px cursor-pointer',
+            activeTab === 'reports'
+              ? 'border-primary text-foreground'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          )}
+        >
+          Reports
+        </button>
+      </div>
+
+      {activeTab === 'reports' && <CampaignReportsTab />}
+
+      {activeTab === 'campaigns' && (
+        <>
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="bg-card border-border rounded-xl shadow-none">
           <CardContent className="p-5 flex items-center gap-4">
@@ -543,7 +574,6 @@ export function CampaignConsole() {
         </Card>
       </div>
 
-      {/* Campaigns Listing */}
       <Card className="bg-card border-border rounded-xl shadow-none overflow-hidden">
         <CardHeader className="border-b border-border px-6 py-4">
           <CardTitle className="text-sm font-semibold text-foreground">Active Channels & UTM Configurations</CardTitle>
@@ -623,6 +653,8 @@ export function CampaignConsole() {
           refetch();
         }}
       />
+        </>
+      )}
     </div>
   );
 }

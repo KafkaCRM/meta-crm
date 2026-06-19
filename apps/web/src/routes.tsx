@@ -75,6 +75,7 @@ import {
   ArrowRight,
   MessageSquare,
   Search,
+  TrendingUp,
   UserCheck,
   BookOpen,
   CalendarRange,
@@ -84,6 +85,7 @@ import {
   Package,
   Monitor,
   FileText,
+  Award,
   Pencil,
   Check,
   X,
@@ -172,6 +174,7 @@ function AppSidebar() {
     { label: t('party.plural') ?? 'Contacts', path: '/parties', icon: Users },
     { label: 'Pipeline', path: '/pipeline', icon: Workflow },
     { label: 'Campaigns', path: '/campaigns', icon: Megaphone },
+    { label: 'Reports', path: '/reports', icon: TrendingUp },
     { label: 'Integrations', path: '/integrations', icon: Link2 },
   ];
 
@@ -193,11 +196,14 @@ function AppSidebar() {
       ...(isEnabled('capability/property-listing') ? [{ label: 'Properties', path: '/properties', icon: Home as any }] : []),
     ].filter(i => i) },
     { id: 'academics', label: 'Academics', icon: BookOpen, items: isEnabled('capability/academics') ? [
+      { label: 'Enrollments', path: '/enrollments', icon: UserCheck as any },
       { label: 'Courses', path: '/courses', icon: BookOpen as any },
       { label: 'Batches', path: '/batches', icon: CalendarRange as any },
       { label: 'Attendance', path: '/attendance', icon: ClipboardCheck as any },
       { label: 'Tests', path: '/tests', icon: ClipboardList as any },
       { label: 'Assignments', path: '/assignments', icon: ClipboardList as any },
+      { label: 'Study Materials', path: '/study-materials', icon: FileText as any },
+      { label: 'Certificates', path: '/certificates', icon: Award as any },
     ] : [] },
     { id: 'telephony', label: 'Communications', icon: Phone, items: isEnabled('capability/telephony') ? [
       { label: 'Call Logs', path: '/call-logs', icon: Phone as any },
@@ -1235,7 +1241,8 @@ import {
   settingsLayoutBuilderRoute,
 } from './routes/settings';
 
-import { appointmentsRoute } from './routes/appointments';
+  import { reportsRoute } from './routes/reports';
+  import { appointmentsRoute } from './routes/appointments';
 import { billingRoute } from './routes/billing';
 import { propertiesRoute } from './routes/properties';
 import { ordersRoute } from './routes/orders';
@@ -1244,7 +1251,7 @@ import { campaignsRoute } from './routes/campaigns';
 import { leadsRoute, leadDetailRoute } from './routes/leads';
 import { pipelineRoute } from './routes/pipeline';
 import { integrationsRoute } from './routes/integrations';
-import { coursesRoute, batchesRoute, attendanceRoute, testsRoute, assignmentsRoute } from './routes/academics';
+import { coursesRoute, batchesRoute, attendanceRoute, testsRoute, assignmentsRoute, enrollmentsRoute, studyMaterialsRoute, certificatesRoute } from './routes/academics';
 import { feePlansRoute, studentFeesRoute, scholarshipsRoute } from './routes/finance';
 import { callLogsRoute } from './routes/telephony';
 import { departmentsRoute, employeesRoute, leaveRequestsRoute, payslipsRoute, employeeAttendanceRoute } from './routes/hr';
@@ -1276,6 +1283,9 @@ export const routeTree = rootRoute.addChildren([
   attendanceRoute,
   testsRoute,
   assignmentsRoute,
+  enrollmentsRoute,
+  studyMaterialsRoute,
+  certificatesRoute,
   feePlansRoute,
   studentFeesRoute,
   scholarshipsRoute,
@@ -1295,6 +1305,7 @@ export const routeTree = rootRoute.addChildren([
   stockMovementsRoute,
   assetsRoute,
   campaignsRoute,
+  reportsRoute,
   integrationsRoute,
   settingsRoute,
   settingsBranchesRoute,

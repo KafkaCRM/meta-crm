@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Plus, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { Plus, MoreHorizontal, Pencil, Trash2, Eye, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { settingsApi } from '@/api/settings';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 
 function AssignmentForm({ assignment, onSuccess }: { assignment?: any; onSuccess: () => void }) {
   const qc = useQueryClient();
@@ -52,9 +53,77 @@ function AssignmentForm({ assignment, onSuccess }: { assignment?: any; onSuccess
   );
 }
 
+function SubmissionsDialog({ assignmentId, open, onOpenChange }: { assignmentId: string; open: boolean; onOpenChange: (v: boolean) => void }) {
+  const { data: submissions, isLoading } = useQuery({
+    queryKey: ['assignment-submissions', assignmentId],
+    queryFn: () => settingsApi.assignmentSubmissions.list(assignmentId),
+    enabled: open,
+  });
+  const qc = useQueryClient();
+  const [gradingId, setGradingId] = useState<string | null>(null);
+  const [marks, setMarks] = useState('');
+  const [feedback, setFeedback] = useState('');
+
+  const gradeMutation = useMutation({
+    mutationFn: () => settingsApi.assignmentSubmissions.grade(gradingId!, { marks_obtained: Number(marks), feedback: feedback || undefined }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['assignment-submissions', assignmentId] }); toast.success('Graded'); setGradingId(null); setMarks(''); setFeedback(''); },
+    onError: () => toast.error('Failed to grade'),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>Assignment Submissions</DialogTitle></DialogHeader>
+        {isLoading ? <p className="text-sm text-muted-foreground py-4 text-center">Loading...</p>
+        : !submissions?.length ? <p className="text-sm text-muted-foreground py-4 text-center">No submissions yet</p>
+        : (
+          <div className="space-y-4">
+            {submissions.map((s: any) => (
+              <Card key={s.id} className="border-border rounded-xl shadow-none">
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold text-sm">{s.enrollment?.party?.name ?? s.enrollment_id}</p>
+                    {s.marks_obtained != null ? (
+                      <Badge variant="success" className="text-xs">{s.marks_obtained} marks</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs text-amber-600">Ungraded</Badge>
+                    )}
+                  </div>
+                  {s.submission_text && <p className="text-sm text-muted-foreground">{s.submission_text}</p>}
+                  {s.file_url && <a href={s.file_url} target="_blank" rel="noopener noreferrer" className="text-primary text-xs underline">View attachment</a>}
+                  {s.feedback && <p className="text-xs text-muted-foreground mt-1">Feedback: {s.feedback}</p>}
+                  {s.marks_obtained == null && gradingId !== s.id && (
+                    <Button size="sm" variant="outline" onClick={() => { setGradingId(s.id); setMarks(''); setFeedback(''); }} className="text-xs">Grade</Button>
+                  )}
+                  {gradingId === s.id && (
+                    <div className="flex items-end gap-2 mt-2">
+                      <div className="space-y-1 flex-1">
+                        <Label className="text-xs">Marks</Label>
+                        <Input type="number" value={marks} onChange={(e) => setMarks(e.target.value)} className="h-8" placeholder="Max marks" />
+                      </div>
+                      <div className="space-y-1 flex-1">
+                        <Label className="text-xs">Feedback</Label>
+                        <Input value={feedback} onChange={(e) => setFeedback(e.target.value)} className="h-8" placeholder="Optional" />
+                      </div>
+                      <Button size="sm" onClick={() => gradeMutation.mutate()} disabled={!marks || gradeMutation.isPending} className="h-8">
+                        <CheckCircle size={13} className="mr-1" />Save
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function AssignmentList() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
+  const [submissionsId, setSubmissionsId] = useState<string | null>(null);
   const { data, isLoading } = useQuery({ queryKey: ['assignments'], queryFn: () => settingsApi.assignments.list() });
   const qc = useQueryClient();
   const removeMutation = useMutation({
@@ -97,12 +166,17 @@ export function AssignmentList() {
                   <TableCell>{a.course?.name}</TableCell>
                   <TableCell>{a.due_date ? new Date(a.due_date).toLocaleDateString() : '-'}</TableCell>
                   <TableCell>{a.max_marks ?? '-'}</TableCell>
-                  <TableCell>{a._count?.submissions ?? 0}</TableCell>
+                  <TableCell>
+                    <button onClick={() => setSubmissionsId(a.id)} className="text-primary hover:underline text-sm font-semibold cursor-pointer">
+                      {a._count?.submissions ?? 0} submitted
+                    </button>
+                  </TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal size={14} /></Button></DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => { setEditing(a); setOpen(true); }}><Pencil size={13} className="mr-2" /> Edit</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setSubmissionsId(a.id)}><Eye size={13} className="mr-2" /> Submissions</DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive" onClick={() => removeMutation.mutate(a.id)}><Trash2 size={13} className="mr-2" /> Delete</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -113,6 +187,7 @@ export function AssignmentList() {
           </Table>
         </CardContent>
       </Card>
+      <SubmissionsDialog assignmentId={submissionsId!} open={!!submissionsId} onOpenChange={(v) => { if (!v) setSubmissionsId(null); }} />
     </div>
   );
 }

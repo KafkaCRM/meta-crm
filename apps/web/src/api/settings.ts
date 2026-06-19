@@ -395,73 +395,12 @@ export const settingsApi = {
   },
 
   certificates: {
-  departments: {
-    list: (params?: { status?: string; cursor?: string; limit?: number }) => apiCall<{ data: any[]; next_cursor?: string }>(`/departments${params?.status ? `?status=${params.status}` : ''}`),
-    create: (data: { name: string; description?: string }) => apiCall<any>('/departments', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: Partial<{ name: string; description: string; status: string }>) => apiCall<any>(`/departments/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-    remove: (id: string) => apiCall<{ message: string }>(`/departments/${id}`, { method: 'DELETE' }),
-  },
-  employees: {
-    list: (params?: { department_id?: string; status?: string; search?: string; cursor?: string; limit?: number }) => {
-      const qs = new URLSearchParams();
-      if (params?.department_id) qs.set('department_id', params.department_id);
-      if (params?.status) qs.set('status', params.status);
-      if (params?.search) qs.set('search', params.search);
-      if (params?.cursor) qs.set('cursor', params.cursor);
-      if (params?.limit) qs.set('limit', String(params.limit));
-      return apiCall<{ data: any[]; next_cursor?: string }>(`/employees?${qs.toString()}`);
-    },
-    get: (id: string) => apiCall<any>(`/employees/${id}`),
-    create: (data: { employee_code: string; user_id?: string; department_id?: string; designation?: string; joining_date?: string; salary?: number }) =>
-      apiCall<any>('/employees', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: Partial<{ employee_code: string; department_id: string; designation: string; joining_date: string; salary: number; status: string }>) =>
-      apiCall<any>(`/employees/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-    remove: (id: string) => apiCall<{ message: string }>(`/employees/${id}`, { method: 'DELETE' }),
-  },
-  leaveTypes: {
-    list: (params?: { status?: string; cursor?: string; limit?: number }) => apiCall<{ data: any[]; next_cursor?: string }>(`/leave-types${params?.status ? `?status=${params.status}` : ''}`),
-    create: (data: { name: string; days_per_year: number; carry_forward?: boolean }) => apiCall<any>('/leave-types', { method: 'POST', body: JSON.stringify(data) }),
-    remove: (id: string) => apiCall<{ message: string }>(`/leave-types/${id}`, { method: 'DELETE' }),
-  },
-  leaveRequests: {
-    list: (params?: { employee_id?: string; status?: string; from_date?: string; to_date?: string; cursor?: string; limit?: number }) => {
-      const qs = new URLSearchParams();
-      if (params?.employee_id) qs.set('employee_id', params.employee_id);
-      if (params?.status) qs.set('status', params.status);
-      if (params?.from_date) qs.set('from_date', params.from_date);
-      if (params?.to_date) qs.set('to_date', params.to_date);
-      if (params?.cursor) qs.set('cursor', params.cursor);
-      if (params?.limit) qs.set('limit', String(params.limit));
-      return apiCall<{ data: any[]; next_cursor?: string }>(`/leave-requests?${qs.toString()}`);
-    },
-    create: (data: { employee_id: string; leave_type_id: string; from_date: string; to_date: string; reason?: string }) =>
-      apiCall<any>('/leave-requests', { method: 'POST', body: JSON.stringify(data) }),
-    approve: (id: string) => apiCall<any>(`/leave-requests/${id}/approve`, { method: 'POST' }),
-    reject: (id: string) => apiCall<any>(`/leave-requests/${id}/reject`, { method: 'POST' }),
-  },
-  payslips: {
-    list: (params?: { employee_id?: string; month?: number; year?: number; status?: string; cursor?: string; limit?: number }) => {
-      const qs = new URLSearchParams();
-      if (params?.employee_id) qs.set('employee_id', params.employee_id);
-      if (params?.month) qs.set('month', String(params.month));
-      if (params?.year) qs.set('year', String(params.year));
-      if (params?.status) qs.set('status', params.status);
-      if (params?.cursor) qs.set('cursor', params.cursor);
-      if (params?.limit) qs.set('limit', String(params.limit));
-      return apiCall<{ data: any[]; next_cursor?: string }>(`/payslips?${qs.toString()}`);
-    },
-    create: (data: { employee_id: string; month: number; year: number; basic?: number; hra?: number; allowances?: number; deductions?: number; net_pay: number }) =>
-      apiCall<any>('/payslips', { method: 'POST', body: JSON.stringify(data) }),
-    updateStatus: (id: string, status: string) => apiCall<any>(`/payslips/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
-  },
-  templates: {
-      list: () => apiCall<any[]>('/certificates/templates'),
-      create: (data: { name: string; content: string; description?: string; variables?: any }) =>
-        apiCall<any>('/certificates/templates', { method: 'POST', body: JSON.stringify(data) }),
-    },
-    issue: (data: { enrollment_id: string; template_id?: string; serial_number?: string; completion_date?: string }) =>
-      apiCall<any>('/certificates/issue', { method: 'POST', body: JSON.stringify(data) }),
     list: (enrollment_id: string) => apiCall<any[]>(`/certificates?enrollment_id=${enrollment_id}`),
+    listTemplates: () => apiCall<any[]>('/certificates/templates'),
+    createTemplate: (data: { name: string; content: string; variables?: string[] }) =>
+      apiCall<any>('/certificates/templates', { method: 'POST', body: JSON.stringify(data) }),
+    issue: (data: { enrollment_id: string; template_id?: string }) =>
+      apiCall<any>('/certificates/issue', { method: 'POST', body: JSON.stringify(data) }),
   },
 
   feePlans: {
