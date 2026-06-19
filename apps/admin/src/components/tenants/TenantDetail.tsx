@@ -15,6 +15,11 @@ import {
   installTenantPlugin,
   uninstallTenantPlugin,
   getTenantHierarchy,
+  updateTenant,
+  deleteTenant,
+  pauseTenant,
+  cancelTenant,
+  deactivateTenant,
   type TenantDetail as TenantDetailInfo,
   type PlatformTenantPlugin,
   type PlatformTenantCapability,
@@ -22,7 +27,7 @@ import {
 import { useAuth } from '@/contexts/auth.context';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { DangerousActionModal } from '@/components/shared/DangerousActionModal';
 import {
   Building,
@@ -57,7 +62,12 @@ import {
   GitFork,
   ChevronDown,
   ChevronUp,
-  ChevronRight
+  ChevronRight,
+  Phone,
+  Layout,
+  Settings,
+  Pencil,
+  Trash2
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -313,11 +323,17 @@ function AdminLicenseManager({
 /* ------------------------------------------------------------------ */
 const CAPABILITY_ICONS: Record<string, any> = {
   'capability/enrollment': GraduationCap,
+  'capability/academics': GraduationCap,
   'capability/appointment': Calendar,
   'capability/billing': CreditCard,
+  'capability/finance': Landmark,
   'capability/property-listing': Home,
   'capability/order-management': ShoppingBag,
   'capability/customer-onboarding': ClipboardList,
+  'capability/telephony': Phone,
+  'capability/hr': Users,
+  'capability/workspace': Layout,
+  'capability/operations': Settings,
 };
 
 const CAPABILITY_INDUSTRY_THEME: Record<string, { bg: string; text: string; dot: string }> = {
@@ -951,6 +967,7 @@ interface TenantDetailProps {
 export function TenantDetail({ tenantId }: TenantDetailProps) {
   const { ability } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   
   const [selectedPlanId, setSelectedPlanId] = useState('');
   const [assignError, setAssignError] = useState('');
@@ -962,6 +979,20 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
   // Owner Credentials Reset states
   const [resetResult, setResetResult] = useState<{ email: string; temporary_password: string } | null>(null);
   const [resetCopied, setResetCopied] = useState(false);
+
+  // Edit mode state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editSlug, setEditSlug] = useState('');
+  const [editIndustry, setEditIndustry] = useState('');
+
+  // Delete modal state
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  // Status management modals
+  const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
 
   const { data: tenant, isLoading } = useQuery({
     queryKey: ['tenant', tenantId],
@@ -1007,6 +1038,62 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: (data: { name?: string; slug?: string; industry?: string }) => updateTenant(tenantId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tenant', tenantId] });
+      setIsEditing(false);
+      toast.success('Tenant updated successfully');
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Failed to update tenant');
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteTenant(tenantId),
+    onSuccess: () => {
+      toast.success(`Tenant "${tenant?.name}" deleted permanently`);
+      navigate({ to: '/admin/tenants' });
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Failed to delete tenant');
+    },
+  });
+
+  const pauseMutation = useMutation({
+    mutationFn: (reason: string) => pauseTenant(tenantId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tenant', tenantId] });
+      toast.success('Tenant paused successfully');
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Failed to pause tenant');
+    },
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: (reason: string) => cancelTenant(tenantId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tenant', tenantId] });
+      toast.success('Tenant cancelled successfully');
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Failed to cancel tenant');
+    },
+  });
+
+  const deactivateMutation = useMutation({
+    mutationFn: (reason: string) => deactivateTenant(tenantId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tenant', tenantId] });
+      toast.success('Tenant deactivated successfully');
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Failed to deactivate tenant');
+    },
+  });
+
   const resetMutation = useMutation({
     mutationFn: () => resetTenantOwnerPassword(tenantId),
     onSuccess: (data) => {
@@ -1033,6 +1120,7 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
   const canSuspend = ability?.can('update', 'PlatformTenant') ?? false;
   const canAssignPlan = ability?.can('assign', 'PlatformPlan') ?? false;
   const canUpdateBilling = ability?.can('update', 'Billing') ?? false;
+  const canEdit = ability?.can('update', 'PlatformTenant') ?? false;
 
   if (isLoading) {
     return (
@@ -1053,7 +1141,30 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
     );
   }
 
-  const TenantIndustryIcon = getIndustryIcon(tenant.industry);
+  const TenantIndustryIcon = getIndustryIcon(tenant!.industry);
+
+  const handleStartEdit = () => {
+    setEditName(tenant!.name);
+    setEditSlug(tenant!.slug);
+    setEditIndustry(tenant!.industry);
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+  };
+
+  const handleSaveEdit = () => {
+    const payload: { name?: string; slug?: string; industry?: string } = {};
+    if (editName.trim() !== tenant!.name) payload.name = editName.trim();
+    if (editSlug.trim() !== tenant!.slug) payload.slug = editSlug.trim();
+    if (editIndustry !== tenant!.industry) payload.industry = editIndustry;
+    if (Object.keys(payload).length === 0) {
+      setIsEditing(false);
+      return;
+    }
+    updateMutation.mutate(payload);
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1069,72 +1180,152 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
                 <TenantIndustryIcon size={18} />
               </div>
               <div>
-                <h2 className="text-base font-semibold text-foreground tracking-tight">{tenant.name}</h2>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="text-base font-semibold text-foreground tracking-tight bg-card border border-border rounded-lg px-2 py-1 w-full focus:outline-none focus:ring-1 focus:ring-indigo-600"
+                  />
+                ) : (
+                  <h2 className="text-base font-semibold text-foreground tracking-tight">{tenant.name}</h2>
+                )}
                 <p className="text-[10px] text-muted-foreground font-mono leading-none mt-1">ID: {tenant.id}</p>
               </div>
             </div>
 
-            <span
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold capitalize border ${
-                tenant.status === 'active'
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
-                  : 'bg-rose-50 text-rose-700 border-rose-200/60'
-              }`}
-            >
-              <span className={`w-1.5 h-1.5 rounded-full ${tenant.status === 'active' ? 'bg-emerald-600' : 'bg-rose-600'}`} />
-              {tenant.status}
-            </span>
+            <div className="flex items-center gap-2">
+              <span
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold capitalize border ${
+                  tenant.status === 'active'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
+                    : 'bg-rose-50 text-rose-700 border-rose-200/60'
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${tenant.status === 'active' ? 'bg-emerald-600' : 'bg-rose-600'}`} />
+                {tenant.status}
+              </span>
+
+              {canEdit && !isEditing && (
+                <button
+                  type="button"
+                  onClick={handleStartEdit}
+                  className="p-1.5 rounded-lg border border-border hover:bg-muted hover:border-slate-300 transition-all cursor-pointer"
+                  title="Edit tenant"
+                >
+                  <Pencil size={13} className="text-muted-foreground" />
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
-            {/* Slug / Domain */}
-            <div className="p-3 bg-muted rounded-xl border border-border/50 space-y-1">
-              <span className="text-muted-foreground font-medium block">Workspace Domain</span>
-              <a
-                href={`https://${tenant.slug}.meta-crm.local`}
-                target="_blank"
-                rel="noreferrer"
-                className="font-semibold text-foreground flex items-center gap-1 hover:underline select-all font-mono text-[11px]"
-              >
-                <Globe size={13} className="text-muted-foreground" />
-                https://{tenant.slug}.meta-crm.local
-                <ArrowUpRight size={10} className="text-muted-foreground" />
-              </a>
+          {isEditing ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase">Workspace Domain (Slug)</label>
+                  <input
+                    type="text"
+                    value={editSlug}
+                    onChange={(e) => setEditSlug(e.target.value)}
+                    className="w-full rounded-lg border border-border px-3 py-2 text-xs bg-card focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 font-mono"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase">Industry Scope</label>
+                  <select
+                    value={editIndustry}
+                    onChange={(e) => setEditIndustry(e.target.value)}
+                    className="w-full rounded-lg border border-border px-3 py-2 text-xs bg-card focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 capitalize cursor-pointer"
+                  >
+                    <option value="education">Education</option>
+                    <option value="healthcare">Healthcare</option>
+                    <option value="finance">Finance</option>
+                    <option value="real-estate">Real Estate</option>
+                    <option value="retail">Retail</option>
+                    <option value="technology">Technology</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 justify-end pt-2 border-t border-border/50">
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="px-4 py-1.5 rounded-lg border border-border text-xs font-semibold text-muted-foreground hover:bg-muted transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveEdit}
+                  disabled={updateMutation.isPending}
+                  className="px-4 py-1.5 rounded-lg bg-fin-orange hover:bg-fin-orange/90 text-white text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  {updateMutation.isPending ? (
+                    <>
+                      <RefreshCw size={12} className="animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Check size={12} />
+                      Save Changes
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
+              {/* Slug / Domain */}
+              <div className="p-3 bg-muted rounded-xl border border-border/50 space-y-1">
+                <span className="text-muted-foreground font-medium block">Workspace Domain</span>
+                <a
+                  href={`https://${tenant.slug}.meta-crm.local`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-semibold text-foreground flex items-center gap-1 hover:underline select-all font-mono text-[11px]"
+                >
+                  <Globe size={13} className="text-muted-foreground" />
+                  https://{tenant.slug}.meta-crm.local
+                  <ArrowUpRight size={10} className="text-muted-foreground" />
+                </a>
+              </div>
 
-            {/* Industry Scope */}
-            <div className="p-3 bg-muted rounded-xl border border-border/50 space-y-1">
-              <span className="text-muted-foreground font-medium block">Industry Scope</span>
-              <span className="font-semibold text-foreground flex items-center gap-1.5 capitalize">
-                <TenantIndustryIcon size={13} className="text-muted-foreground" />
-                {tenant.industry}
-              </span>
-            </div>
-
-            {/* Capacity Usage */}
-            <div className="p-3 bg-muted rounded-xl border border-border/50 space-y-2">
-              <span className="text-muted-foreground font-medium block">Active Capacity</span>
-              <div className="flex items-center gap-4 text-foreground font-semibold">
-                <span className="flex items-center gap-1">
-                  <Layers size={13} className="text-muted-foreground" />
-                  {tenant.branch_count} Branches
+              {/* Industry Scope */}
+              <div className="p-3 bg-muted rounded-xl border border-border/50 space-y-1">
+                <span className="text-muted-foreground font-medium block">Industry Scope</span>
+                <span className="font-semibold text-foreground flex items-center gap-1.5 capitalize">
+                  <TenantIndustryIcon size={13} className="text-muted-foreground" />
+                  {tenant.industry}
                 </span>
-                <span className="flex items-center gap-1">
-                  <Users size={13} className="text-muted-foreground" />
-                  {tenant.user_count} Users
+              </div>
+
+              {/* Capacity Usage */}
+              <div className="p-3 bg-muted rounded-xl border border-border/50 space-y-2">
+                <span className="text-muted-foreground font-medium block">Active Capacity</span>
+                <div className="flex items-center gap-4 text-foreground font-semibold">
+                  <span className="flex items-center gap-1">
+                    <Layers size={13} className="text-muted-foreground" />
+                    {tenant.branch_count} Branches
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Users size={13} className="text-muted-foreground" />
+                    {tenant.user_count} Users
+                  </span>
+                </div>
+              </div>
+
+              {/* Created On */}
+              <div className="p-3 bg-muted rounded-xl border border-border/50 space-y-1">
+                <span className="text-muted-foreground font-medium block">Provisioned Date</span>
+                <span className="font-semibold text-foreground flex items-center gap-1.5">
+                  <Calendar size={13} className="text-muted-foreground" />
+                  {new Date(tenant.created_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}
                 </span>
               </div>
             </div>
-
-            {/* Created On */}
-            <div className="p-3 bg-muted rounded-xl border border-border/50 space-y-1">
-              <span className="text-muted-foreground font-medium block">Provisioned Date</span>
-              <span className="font-semibold text-foreground flex items-center gap-1.5">
-                <Calendar size={13} className="text-muted-foreground" />
-                {new Date(tenant.created_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}
-              </span>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Tenant Hierarchy Section */}
@@ -1337,7 +1528,7 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
           />
         </div>
 
-        {/* Danger Zone / Suspend */}
+        {/* Danger Zone / Suspend + Delete */}
         {canSuspend && (
           <div className="bg-card border border-rose-200 rounded-xl p-5 shadow-sm space-y-4">
             <div>
@@ -1377,6 +1568,56 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
                 </button>
               </div>
             )}
+
+            {/* Pause / Cancel / Deactivate */}
+            {tenant.status === 'active' && (
+              <div className="border-t border-rose-200 pt-4 space-y-3">
+                <p className="text-[10px] text-rose-700/80 leading-normal bg-rose-50/50 p-2.5 rounded-lg border border-rose-100">
+                  Additional lifecycle actions for this workspace.
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsPauseModalOpen(true)}
+                    className="py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-semibold flex items-center justify-center gap-1 transition-all shadow-sm cursor-pointer"
+                  >
+                    <Power size={11} />
+                    Pause
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsCancelModalOpen(true)}
+                    className="py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-semibold flex items-center justify-center gap-1 transition-all shadow-sm cursor-pointer"
+                  >
+                    <Power size={11} />
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsDeactivateModalOpen(true)}
+                    className="py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-[10px] font-semibold flex items-center justify-center gap-1 transition-all shadow-sm cursor-pointer"
+                  >
+                    <Power size={11} />
+                    Deactivate
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="border-t border-rose-200 pt-4 mt-4">
+              <p className="text-[10px] text-rose-700/80 leading-normal bg-rose-50/50 p-2.5 rounded-lg border border-rose-100 mb-3">
+                Permanently deletes this tenant and all associated data (users, branches, campaigns, interactions). This action cannot be undone.
+              </p>
+              <button
+                type="button"
+                onClick={() => setIsDeleteModalOpen(true)}
+                disabled={deleteMutation.isPending}
+                className="w-full py-2.5 rounded-lg bg-red-700 hover:bg-red-800 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer disabled:opacity-50"
+              >
+                <Trash2 size={13} />
+                {deleteMutation.isPending ? 'Deleting...' : 'Delete Tenant Permanently'}
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -1407,6 +1648,54 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
             targetName={tenant.name}
             confirmButtonText="Reactivate Workspace"
             isPending={reactivateMutation.isPending}
+          />
+          <DangerousActionModal
+            isOpen={isPauseModalOpen}
+            onClose={() => setIsPauseModalOpen(false)}
+            onConfirm={async (reason) => {
+              await pauseMutation.mutateAsync(reason);
+            }}
+            title="Pause Tenant Workspace"
+            description={`You are about to pause "${tenant.name}". The tenant will retain all data but users will be blocked from logging in. Can be resumed later.`}
+            targetName={tenant.name}
+            confirmButtonText="Pause Workspace"
+            isPending={pauseMutation.isPending}
+          />
+          <DangerousActionModal
+            isOpen={isCancelModalOpen}
+            onClose={() => setIsCancelModalOpen(false)}
+            onConfirm={async (reason) => {
+              await cancelMutation.mutateAsync(reason);
+            }}
+            title="Cancel Tenant Workspace"
+            description={`You are about to cancel "${tenant.name}". The tenant will be scheduled for deletion after a grace period.`}
+            targetName={tenant.name}
+            confirmButtonText="Cancel Workspace"
+            isPending={cancelMutation.isPending}
+          />
+          <DangerousActionModal
+            isOpen={isDeactivateModalOpen}
+            onClose={() => setIsDeactivateModalOpen(false)}
+            onConfirm={async (reason) => {
+              await deactivateMutation.mutateAsync(reason);
+            }}
+            title="Deactivate Tenant Workspace"
+            description={`You are about to deactivate "${tenant.name}". The tenant will be permanently disabled and data will become inaccessible.`}
+            targetName={tenant.name}
+            confirmButtonText="Deactivate Workspace"
+            isPending={deactivateMutation.isPending}
+          />
+          <DangerousActionModal
+            isOpen={isDeleteModalOpen}
+            onClose={() => setIsDeleteModalOpen(false)}
+            onConfirm={async () => {
+              await deleteMutation.mutateAsync();
+            }}
+            title="Delete Tenant Permanently"
+            description={`You are about to permanently delete "${tenant.name}". This will remove all users, branches, campaigns, interactions, and associated data. This action cannot be undone.`}
+            targetName={tenant.name}
+            confirmButtonText="Delete Permanently"
+            isPending={deleteMutation.isPending}
           />
         </>
       )}

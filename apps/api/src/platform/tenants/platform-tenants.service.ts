@@ -197,6 +197,98 @@ export class PlatformTenantsService {
     });
   }
 
+  async update(
+    id: string,
+    data: { name?: string; slug?: string; industry?: string },
+    auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
+  ): Promise<Result<TenantDetail, PlatformTenantError>> {
+    const tenant = await this.db.client.tenant.findUnique({ where: { id } });
+    if (!tenant) {
+      return err({ code: 'TENANT_NOT_FOUND', message: 'Tenant not found' });
+    }
+
+    if (data.slug && data.slug !== tenant.slug) {
+      const slugTaken = await this.db.client.tenant.findUnique({ where: { slug: data.slug } });
+      if (slugTaken) {
+        return err({ code: 'SLUG_TAKEN', message: `Slug "${data.slug}" is already taken` });
+      }
+    }
+
+    try {
+      await this.db.client.tenant.update({
+        where: { id },
+        data: {
+          ...(data.name !== undefined ? { name: data.name } : {}),
+          ...(data.slug !== undefined ? { slug: data.slug } : {}),
+          ...(data.industry !== undefined ? { industry: data.industry } : {}),
+        },
+      });
+
+      if (auditMeta) {
+        await this.audit.writeLog({
+          actor_id: auditMeta.actor_id,
+          actor_role: auditMeta.actor_role,
+          action: 'tenant:update',
+          target_id: id,
+          actor_ip: auditMeta.actor_ip,
+          user_agent: auditMeta.user_agent,
+          details: { tenant_id: id, ...data },
+          reason: auditMeta.reason,
+        });
+      }
+
+      return this.findOne(id);
+    } catch (e: any) {
+      return err({
+        code: 'TRANSACTION_FAILED',
+        message: e?.message ?? 'Transaction failed to update tenant',
+      });
+    }
+  }
+
+  async delete(
+    id: string,
+    auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
+  ): Promise<Result<{ message: string }, PlatformTenantError>> {
+    const tenant = await this.db.client.tenant.findUnique({ where: { id } });
+    if (!tenant) {
+      return err({ code: 'TENANT_NOT_FOUND', message: 'Tenant not found' });
+    }
+
+    try {
+      await this.db.client.$transaction(async (tx: any) => {
+        await tx.interaction.deleteMany({ where: { tenant_id: id } });
+        await tx.party.deleteMany({ where: { tenant_id: id } });
+        await tx.campaign.deleteMany({ where: { tenant_id: id } });
+        await tx.user.deleteMany({ where: { tenant_id: id } });
+        await tx.branch.deleteMany({ where: { tenant_id: id } });
+        await tx.tenantPlugin.deleteMany({ where: { tenant_id: id } });
+        await tx.tenantPlan.deleteMany({ where: { tenant_id: id } });
+        await tx.tenant.delete({ where: { id } });
+      });
+
+      if (auditMeta) {
+        await this.audit.writeLog({
+          actor_id: auditMeta.actor_id,
+          actor_role: auditMeta.actor_role,
+          action: 'tenant:delete',
+          target_id: id,
+          actor_ip: auditMeta.actor_ip,
+          user_agent: auditMeta.user_agent,
+          details: { tenant_id: id },
+          reason: auditMeta.reason,
+        });
+      }
+
+      return ok({ message: 'Tenant deleted successfully' });
+    } catch (e: any) {
+      return err({
+        code: 'TRANSACTION_FAILED',
+        message: e?.message ?? 'Transaction failed to delete tenant',
+      });
+    }
+  }
+
   async updateEntitlements(
     id: string,
     pluginIds: string[],
@@ -595,6 +687,96 @@ export class PlatformTenantsService {
         actor_id: auditMeta.actor_id,
         actor_role: auditMeta.actor_role,
         action: 'tenant:reactivate',
+        target_id: id,
+        actor_ip: auditMeta.actor_ip,
+        user_agent: auditMeta.user_agent,
+        details: { tenant_id: id, tenant_name: tenant.name },
+        reason: auditMeta.reason,
+      });
+    }
+
+    return ok(undefined);
+  }
+
+  async pause(
+    id: string,
+    auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
+  ): Promise<Result<void, PlatformTenantError>> {
+    const tenant = await this.db.client.tenant.findUnique({ where: { id } });
+    if (!tenant) {
+      return err({ code: 'TENANT_NOT_FOUND', message: 'Tenant not found' });
+    }
+
+    await this.db.client.tenant.update({
+      where: { id },
+      data: { status: 'paused' },
+    });
+
+    if (auditMeta) {
+      await this.audit.writeLog({
+        actor_id: auditMeta.actor_id,
+        actor_role: auditMeta.actor_role,
+        action: 'tenant:pause',
+        target_id: id,
+        actor_ip: auditMeta.actor_ip,
+        user_agent: auditMeta.user_agent,
+        details: { tenant_id: id, tenant_name: tenant.name },
+        reason: auditMeta.reason,
+      });
+    }
+
+    return ok(undefined);
+  }
+
+  async cancel(
+    id: string,
+    auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
+  ): Promise<Result<void, PlatformTenantError>> {
+    const tenant = await this.db.client.tenant.findUnique({ where: { id } });
+    if (!tenant) {
+      return err({ code: 'TENANT_NOT_FOUND', message: 'Tenant not found' });
+    }
+
+    await this.db.client.tenant.update({
+      where: { id },
+      data: { status: 'cancelled' },
+    });
+
+    if (auditMeta) {
+      await this.audit.writeLog({
+        actor_id: auditMeta.actor_id,
+        actor_role: auditMeta.actor_role,
+        action: 'tenant:cancel',
+        target_id: id,
+        actor_ip: auditMeta.actor_ip,
+        user_agent: auditMeta.user_agent,
+        details: { tenant_id: id, tenant_name: tenant.name },
+        reason: auditMeta.reason,
+      });
+    }
+
+    return ok(undefined);
+  }
+
+  async deactivate(
+    id: string,
+    auditMeta?: { actor_id: string; actor_role: string; actor_ip: string; user_agent: string; reason?: string },
+  ): Promise<Result<void, PlatformTenantError>> {
+    const tenant = await this.db.client.tenant.findUnique({ where: { id } });
+    if (!tenant) {
+      return err({ code: 'TENANT_NOT_FOUND', message: 'Tenant not found' });
+    }
+
+    await this.db.client.tenant.update({
+      where: { id },
+      data: { status: 'deactivated' },
+    });
+
+    if (auditMeta) {
+      await this.audit.writeLog({
+        actor_id: auditMeta.actor_id,
+        actor_role: auditMeta.actor_role,
+        action: 'tenant:deactivate',
         target_id: id,
         actor_ip: auditMeta.actor_ip,
         user_agent: auditMeta.user_agent,

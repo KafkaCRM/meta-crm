@@ -13,7 +13,7 @@ import {
   HttpStatus,
   Req,
 } from '@nestjs/common';
-import { IsString, IsNumber, IsOptional, Min } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsArray, Min } from 'class-validator';
 import type { FastifyRequest } from 'fastify';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { PlatformPermissionsGuard } from '../../core/permissions/permissions.guard';
@@ -41,6 +41,11 @@ class CreatePlanBody {
   @IsOptional()
   @IsNumber()
   price_monthly?: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  capabilities?: string[];
 }
 
 class UpdatePlanBody {
@@ -62,6 +67,11 @@ class UpdatePlanBody {
   @IsOptional()
   @IsNumber()
   price_monthly?: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  capabilities?: string[];
 }
 
 class AssignPlanBody {

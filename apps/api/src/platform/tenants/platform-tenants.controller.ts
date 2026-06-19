@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -83,6 +84,20 @@ class TenantListQuery {
   @Min(1)
   @Max(100)
   limit?: number;
+}
+
+class UpdateTenantBody {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  slug?: string;
+
+  @IsOptional()
+  @IsString()
+  industry?: string;
 }
 
 class ApplyTemplateBody {
@@ -317,6 +332,81 @@ export class PlatformTenantsController {
     return result.value;
   }
 
+  @Patch(':id/pause')
+  @HttpCode(HttpStatus.OK)
+  @CheckPlatformPermissions('update', 'PlatformTenant')
+  async pause(
+    @Param('id') id: string,
+    @Body() body: DangerousActionBody,
+    @Req() req: FastifyRequest,
+    @CurrentUser() scope: RequestScope,
+  ) {
+    const result = await this.service.pause(id, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+      reason: body.reason,
+    });
+    if (result.isErr()) {
+      if (result.error.code === 'TENANT_NOT_FOUND') {
+        throw new NotFoundException(result.error);
+      }
+      throw new InternalServerErrorException(result.error);
+    }
+    return { message: 'Tenant paused' };
+  }
+
+  @Patch(':id/cancel')
+  @HttpCode(HttpStatus.OK)
+  @CheckPlatformPermissions('update', 'PlatformTenant')
+  async cancel(
+    @Param('id') id: string,
+    @Body() body: DangerousActionBody,
+    @Req() req: FastifyRequest,
+    @CurrentUser() scope: RequestScope,
+  ) {
+    const result = await this.service.cancel(id, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+      reason: body.reason,
+    });
+    if (result.isErr()) {
+      if (result.error.code === 'TENANT_NOT_FOUND') {
+        throw new NotFoundException(result.error);
+      }
+      throw new InternalServerErrorException(result.error);
+    }
+    return { message: 'Tenant cancelled' };
+  }
+
+  @Patch(':id/deactivate')
+  @HttpCode(HttpStatus.OK)
+  @CheckPlatformPermissions('manage', 'PlatformTenant')
+  async deactivate(
+    @Param('id') id: string,
+    @Body() body: DangerousActionBody,
+    @Req() req: FastifyRequest,
+    @CurrentUser() scope: RequestScope,
+  ) {
+    const result = await this.service.deactivate(id, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+      reason: body.reason,
+    });
+    if (result.isErr()) {
+      if (result.error.code === 'TENANT_NOT_FOUND') {
+        throw new NotFoundException(result.error);
+      }
+      throw new InternalServerErrorException(result.error);
+    }
+    return { message: 'Tenant deactivated' };
+  }
+
   @Patch(':id/overrides')
   @HttpCode(HttpStatus.OK)
   @CheckPlatformPermissions('update', 'PlatformTenant')
@@ -450,6 +540,57 @@ export class PlatformTenantsController {
         throw new NotFoundException(result.error);
       }
       throw new BadRequestException(result.error);
+    }
+    return result.value;
+  }
+
+  @Patch(':id')
+  @HttpCode(HttpStatus.OK)
+  @CheckPlatformPermissions('update', 'PlatformTenant')
+  async update(
+    @Param('id') id: string,
+    @Body() body: UpdateTenantBody,
+    @Req() req: FastifyRequest,
+    @CurrentUser() scope: RequestScope,
+  ) {
+    const result = await this.service.update(id, body, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+    });
+    if (result.isErr()) {
+      switch (result.error.code) {
+        case 'TENANT_NOT_FOUND':
+          throw new NotFoundException(result.error);
+        case 'SLUG_TAKEN':
+          throw new ConflictException(result.error);
+        default:
+          throw new InternalServerErrorException(result.error);
+      }
+    }
+    return result.value;
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  @CheckPlatformPermissions('manage', 'PlatformTenant')
+  async remove(
+    @Param('id') id: string,
+    @Req() req: FastifyRequest,
+    @CurrentUser() scope: RequestScope,
+  ) {
+    const result = await this.service.delete(id, {
+      actor_id: scope.user_id,
+      actor_role: scope.platform_role || scope.role,
+      actor_ip: req.ip,
+      user_agent: (req.headers['user-agent'] as string) || '',
+    });
+    if (result.isErr()) {
+      if (result.error.code === 'TENANT_NOT_FOUND') {
+        throw new NotFoundException(result.error);
+      }
+      throw new InternalServerErrorException(result.error);
     }
     return result.value;
   }

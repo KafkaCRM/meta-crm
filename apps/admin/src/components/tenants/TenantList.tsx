@@ -48,7 +48,7 @@ export function TenantList() {
     queryFn: () => listTenants(cursor, 100),
   });
 
-  useMemo(() => {
+  useEffect(() => {
     if (data?.data) {
       setAllData((prev) => {
         const existingIds = new Set(prev.map((t) => t.id));

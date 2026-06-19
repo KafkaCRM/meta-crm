@@ -8,7 +8,7 @@ import { TenantList, TenantDetail, CreateTenantForm, ImpersonateView } from '@/c
 import { PluginRegistry, PublishPlugin, PluginDetail } from '@/components/plugins';
 import { PlatformUserList, InvitePlatformUser, PlatformRoleMatrix } from '@/components/team';
 import { PlatformReports } from '@/components/reports';
-import { QueueMonitor, WebhookFailures, PlanList, PlanForm, PlatformBilling, PlatformDashboard, SystemHealth, PlatformAuditLogs } from '@/components/system';
+import { QueueMonitor, WebhookFailures, PlanList, PlanForm, PlatformBilling, PlatformDashboard, SystemHealth, PlatformAuditLogs, CapabilityPricingPanel } from '@/components/system';
 import { queryClient } from '@/lib/query-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -498,6 +498,30 @@ const billingRoute = createRoute({
 });
 
 /* ------------------------------------------------------------------ */
+/*  Capability Pricing                                                 */
+/* ------------------------------------------------------------------ */
+
+const capabilityPricingRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/capabilities/pricing',
+  component: () => (
+    <AuthGuard>
+      <div className="space-y-5 max-w-[1280px]">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Capability Pricing</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Set monthly and per-user prices for each capability module</p>
+        </div>
+        <Card className="bg-card border-border rounded-xl shadow-sm">
+          <CardContent className="pt-6">
+            <CapabilityPricingPanel />
+          </CardContent>
+        </Card>
+      </div>
+    </AuthGuard>
+  ),
+});
+
+/* ------------------------------------------------------------------ */
 /*  Audit Logs                                                        */
 /* ------------------------------------------------------------------ */
 
@@ -533,6 +557,7 @@ const routeTree = rootRoute.addChildren([
   usersRoute,
   healthRoute,
   billingRoute,
+  capabilityPricingRoute,
   auditRoute,
 ]);
 

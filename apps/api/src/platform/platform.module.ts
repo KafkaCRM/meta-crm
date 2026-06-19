@@ -16,6 +16,8 @@ import { PlatformAuditService } from './audit/platform-audit.service';
 import { TenantModule } from '../core/tenant/tenant.module';
 import { BullModule } from '@nestjs/bullmq';
 import { PlatformSystemController } from './system/platform-system.controller';
+import { PricingController } from './pricing/pricing.controller';
+import { PricingService } from './pricing/pricing.service';
 
 @Module({
   imports: [
@@ -33,6 +35,7 @@ import { PlatformSystemController } from './system/platform-system.controller';
     PlatformTeamController,
     PlatformAuditController,
     PlatformSystemController,
+    PricingController,
   ],
   providers: [
     PlatformTenantsService,
@@ -41,7 +44,8 @@ import { PlatformSystemController } from './system/platform-system.controller';
     PlatformPluginsService,
     PlatformTeamService,
     PlatformAuditService,
+    PricingService,
   ],
-  exports: [PlatformAuditService],
+  exports: [PlatformAuditService, PricingService],
 })
 export class PlatformModule {}

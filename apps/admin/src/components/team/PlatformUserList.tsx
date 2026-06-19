@@ -1,10 +1,31 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { listPlatformUsers, deactivatePlatformUser, PlatformUser } from '@/api/platform';
+import { listPlatformUsers, deactivatePlatformUser, changePlatformUserRole, PlatformUser } from '@/api/platform';
 import { useAuth } from '@/contexts/auth.context';
-import { ShieldAlert, Ban, UserCheck, Calendar } from 'lucide-react';
+import { PlatformRole } from '@meta-crm/types';
+import { ShieldAlert, Ban, UserCheck, Calendar, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+
+const ALL_ROLES: PlatformRole[] = [
+  PlatformRole.PlatformAdmin,
+  PlatformRole.PlatformSupport,
+  PlatformRole.PlatformSales,
+  PlatformRole.PlatformBilling,
+  PlatformRole.PlatformDeveloper,
+  PlatformRole.PlatformOps,
+];
+
+const ROLE_LABELS: Record<PlatformRole, string> = {
+  [PlatformRole.PlatformOwner]: 'Platform Owner',
+  [PlatformRole.PlatformAdmin]: 'Platform Admin',
+  [PlatformRole.PlatformSupport]: 'Platform Support',
+  [PlatformRole.PlatformSales]: 'Platform Sales',
+  [PlatformRole.PlatformBilling]: 'Platform Billing',
+  [PlatformRole.PlatformDeveloper]: 'Platform Developer',
+  [PlatformRole.PlatformOps]: 'Platform Ops',
+};
 
 const AVATAR_COLORS = [
   'bg-indigo-100 text-fin-orange',
@@ -23,6 +44,8 @@ export function PlatformUserList() {
     queryFn: listPlatformUsers,
   });
 
+  const [changingRole, setChangingRole] = useState<string | null>(null);
+
   const deactivateMutation = useMutation({
     mutationFn: (userId: string) => deactivatePlatformUser(userId),
     onSuccess: () => {
@@ -34,7 +57,21 @@ export function PlatformUserList() {
     },
   });
 
+  const roleMutation = useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: string }) => changePlatformUserRole(userId, role),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['platform-users'] });
+      setChangingRole(null);
+      toast.success('Platform user role updated');
+    },
+    onError: (err: any) => {
+      setChangingRole(null);
+      toast.error(err.message ?? 'Failed to update role');
+    },
+  });
+
   const canDelete = ability?.can('delete', 'PlatformUser') ?? false;
+  const canUpdate = ability?.can('update', 'PlatformUser') ?? false;
 
   if (isLoading) {
     return (
@@ -92,9 +129,32 @@ export function PlatformUserList() {
 
                 {/* Role */}
                 <td className="px-4 py-3">
-                  <Badge className="bg-fin-orange/10 hover:bg-indigo-100 border-transparent text-fin-orange text-[10px] font-semibold px-2 py-0.5 rounded">
-                    {user.role?.replace('Platform', '') ?? 'Support'}
-                  </Badge>
+                  {canUpdate && isActive ? (
+                    <div className="flex items-center gap-1.5">
+                      <select
+                        value={user.role ?? ''}
+                        disabled={roleMutation.isPending && changingRole === user.id}
+                        onChange={(e) => {
+                          setChangingRole(user.id);
+                          roleMutation.mutate({ userId: user.id, role: e.target.value });
+                        }}
+                        className="text-[10px] font-semibold rounded-lg border border-border px-2 py-1 bg-card focus:outline-none focus:ring-1 focus:ring-indigo-600 cursor-pointer disabled:opacity-50"
+                      >
+                        {ALL_ROLES.map((r) => (
+                          <option key={r} value={r}>
+                            {ROLE_LABELS[r]}
+                          </option>
+                        ))}
+                      </select>
+                      {roleMutation.isPending && changingRole === user.id && (
+                        <RefreshCw size={10} className="animate-spin text-muted-foreground" />
+                      )}
+                    </div>
+                  ) : (
+                    <Badge className="bg-fin-orange/10 hover:bg-indigo-100 border-transparent text-fin-orange text-[10px] font-semibold px-2 py-0.5 rounded">
+                      {ROLE_LABELS[user.role as PlatformRole] ?? user.role?.replace('Platform', '') ?? 'Support'}
+                    </Badge>
+                  )}
                 </td>
 
                 {/* Status */}

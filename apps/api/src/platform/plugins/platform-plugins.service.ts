@@ -58,6 +58,19 @@ export class PlatformPluginsService {
     return ok(parsed.data);
   }
 
+  async findOne(id: string): Promise<Result<any, PlatformPluginError>> {
+    const plugin = await this.db.client.pluginRegistry.findUnique({ where: { id } });
+    if (!plugin) {
+      return err({ code: 'PLUGIN_NOT_FOUND', message: 'Plugin not found' });
+    }
+
+    const tenantCount = await this.db.client.tenantPlugin.count({
+      where: { plugin_registry_id: id },
+    });
+
+    return ok({ ...plugin, tenant_count: tenantCount });
+  }
+
   async list(): Promise<Result<any[], PlatformPluginError>> {
     const plugins = await this.db.client.pluginRegistry.findMany({
       orderBy: { created_at: 'desc' },

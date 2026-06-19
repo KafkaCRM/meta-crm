@@ -40,6 +40,7 @@ import {
   History,
   Search,
   X,
+  DollarSign,
 } from 'lucide-react';
 import { CommandPalette } from './shared/CommandPalette';
 import { SupportImpersonationBanner } from './shared/SupportImpersonationBanner';
@@ -66,6 +67,7 @@ const navItems: NavItem[] = [
   { label: 'Platform Team', path: '/admin/users', icon: Users, requiredPermission: ['read', 'PlatformUser'] },
   { label: 'System Health', path: '/admin/health', icon: Activity, requiredPermission: ['read', 'SystemHealth'] },
   { label: 'Billing', path: '/admin/billing', icon: CreditCard, requiredPermission: ['read', 'Billing'] },
+  { label: 'Capability Pricing', path: '/admin/capabilities/pricing', icon: DollarSign, requiredPermission: ['read', 'Billing'] },
   { label: 'Audit Trail', path: '/admin/audit', icon: History, requiredPermission: ['read', 'PlatformReport'] },
 ];
 

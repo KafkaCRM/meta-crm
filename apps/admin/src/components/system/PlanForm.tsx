@@ -4,7 +4,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { listPlans, createPlan, updatePlan } from '@/api/platform';
 import { useAuth } from '@/contexts/auth.context';
-import { Shield, Sparkles, Building, Briefcase, GraduationCap, CheckSquare, Layers, Landmark } from 'lucide-react';
+import { Shield, Sparkles, Building, Briefcase, GraduationCap, CheckSquare, Layers, Landmark, Phone, Users, Layout, Settings, Heart, Laptop, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface PlanFormProps {
@@ -66,6 +66,12 @@ export function PlanForm({ planId }: PlanFormProps) {
             description: 'Coordinate applicant pipelines, course catalogs, and grade records.',
             icon: GraduationCap,
           },
+          {
+            key: 'academics',
+            name: 'Academics Management',
+            description: 'Full academics suite: courses, grades, attendance, and employee scheduling.',
+            icon: GraduationCap,
+          },
         ],
       },
       {
@@ -89,6 +95,60 @@ export function PlanForm({ planId }: PlanFormProps) {
             name: 'Tenant Invoicing & Billing',
             description: 'Dispatch invoices, handle stripe hooks, and view platform payments.',
             icon: Landmark,
+          },
+          {
+            key: 'finance',
+            name: 'Finance Management',
+            description: 'Chart of accounts, ledgers, payment tracking, and financial reports.',
+            icon: Landmark,
+          },
+        ],
+      },
+      {
+        categoryName: 'Telephony & Communications',
+        description: 'Phone system, IVR, call routing, and voice analytics',
+        items: [
+          {
+            key: 'telephony',
+            name: 'Telephony System',
+            description: 'Inbound/outbound call management, IVR menus, call recording, and analytics.',
+            icon: Phone,
+          },
+        ],
+      },
+      {
+        categoryName: 'Human Resources',
+        description: 'Employee records, payroll, attendance, and performance reviews',
+        items: [
+          {
+            key: 'hr',
+            name: 'HR Management',
+            description: 'Employee directory, document management, payroll integration, and reviews.',
+            icon: Users,
+          },
+        ],
+      },
+      {
+        categoryName: 'Workplace Productivity',
+        description: 'Tasks, notes, inbox, and internal collaboration tools',
+        items: [
+          {
+            key: 'workspace',
+            name: 'Workspace Productivity',
+            description: 'Team tasks, shared notes, unified inbox, and collaboration hub.',
+            icon: Layout,
+          },
+        ],
+      },
+      {
+        categoryName: 'Operations & Inventory',
+        description: 'Product catalogs, warehouse stock, assets, and supply chain',
+        items: [
+          {
+            key: 'operations',
+            name: 'Operations Suite',
+            description: 'Product categories, inventory management, stock movements, and asset tracking.',
+            icon: Settings,
           },
         ],
       },
@@ -124,8 +184,8 @@ export function PlanForm({ planId }: PlanFormProps) {
   const defaultCapabilitiesMap = useMemo(() => {
     return {
       starter: ['customer-onboarding', 'appointment'],
-      professional: ['customer-onboarding', 'appointment', 'property', 'enrollment'],
-      enterprise: ['customer-onboarding', 'appointment', 'property', 'enrollment', 'billing', 'order-management'],
+      professional: ['customer-onboarding', 'appointment', 'property', 'enrollment', 'workspace'],
+      enterprise: ['customer-onboarding', 'appointment', 'property', 'enrollment', 'billing', 'order-management', 'academics', 'finance', 'telephony', 'hr', 'workspace', 'operations'],
     };
   }, []);
 
@@ -152,14 +212,19 @@ export function PlanForm({ planId }: PlanFormProps) {
           : ''
       );
 
-      // Match capability keys based on name or assign defaults
-      const lowName = plan.name.toLowerCase();
-      if (lowName.includes('starter') || lowName.includes('free')) {
-        setSelectedCapabilities(defaultCapabilitiesMap.starter);
-      } else if (lowName.includes('professional') || lowName.includes('pro')) {
-        setSelectedCapabilities(defaultCapabilitiesMap.professional);
+      // Use persisted capabilities from API, fall back to name-based defaults
+      const persisted = (plan as any).capabilities;
+      if (persisted && Array.isArray(persisted) && persisted.length > 0) {
+        setSelectedCapabilities(persisted);
       } else {
-        setSelectedCapabilities(defaultCapabilitiesMap.enterprise);
+        const lowName = plan.name.toLowerCase();
+        if (lowName.includes('starter') || lowName.includes('free')) {
+          setSelectedCapabilities(defaultCapabilitiesMap.starter);
+        } else if (lowName.includes('professional') || lowName.includes('pro')) {
+          setSelectedCapabilities(defaultCapabilitiesMap.professional);
+        } else {
+          setSelectedCapabilities(defaultCapabilitiesMap.enterprise);
+        }
       }
     } else if (!planId) {
       // Create mode default
@@ -170,12 +235,14 @@ export function PlanForm({ planId }: PlanFormProps) {
   const mutation = useMutation({
     mutationFn: async () => {
       const price = priceMonthly === '' ? undefined : Number(priceMonthly);
+      const caps = selectedCapabilities.length > 0 ? selectedCapabilities : undefined;
       if (planId) {
         return updatePlan(planId, {
           max_branches: maxBranches,
           max_users: maxUsers,
           max_plugins: maxPlugins,
           price_monthly: price,
+          capabilities: caps,
         });
       } else {
         return createPlan({
@@ -184,6 +251,7 @@ export function PlanForm({ planId }: PlanFormProps) {
           max_users: maxUsers,
           max_plugins: maxPlugins,
           price_monthly: price,
+          capabilities: caps,
         });
       }
     },

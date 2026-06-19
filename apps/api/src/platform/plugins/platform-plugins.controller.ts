@@ -48,6 +48,19 @@ export class PlatformPluginsController {
     return result.value;
   }
 
+  @Get(':id')
+  @CheckPlatformPermissions('read', 'PlatformPlugin')
+  async findOne(@Param('id') id: string) {
+    const result = await this.service.findOne(id);
+    if (result.isErr()) {
+      if (result.error.code === 'PLUGIN_NOT_FOUND') {
+        throw new NotFoundException(result.error);
+      }
+      throw new InternalServerErrorException(result.error);
+    }
+    return result.value;
+  }
+
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @CheckPlatformPermissions('manage', 'PlatformPlugin')

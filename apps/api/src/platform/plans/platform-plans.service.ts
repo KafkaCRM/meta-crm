@@ -20,6 +20,7 @@ export interface CreatePlanInput {
   max_users: number;
   max_plugins: number;
   price_monthly?: number;
+  capabilities?: string[];
 }
 
 export interface UpdatePlanInput {
@@ -27,6 +28,7 @@ export interface UpdatePlanInput {
   max_users?: number;
   max_plugins?: number;
   price_monthly?: number;
+  capabilities?: string[];
 }
 
 @Injectable()
@@ -55,6 +57,7 @@ export class PlatformPlansService {
           max_users: input.max_users,
           max_plugins: input.max_plugins,
           price_monthly: input.price_monthly ?? null,
+          capabilities: input.capabilities ?? [],
         },
       });
 
@@ -94,6 +97,7 @@ export class PlatformPlansService {
         ...(input.max_users !== undefined ? { max_users: input.max_users } : {}),
         ...(input.max_plugins !== undefined ? { max_plugins: input.max_plugins } : {}),
         ...(input.price_monthly !== undefined ? { price_monthly: input.price_monthly } : {}),
+        ...(input.capabilities !== undefined ? { capabilities: input.capabilities } : {}),
       },
     });
 

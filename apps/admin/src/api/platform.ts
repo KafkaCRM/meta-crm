@@ -107,6 +107,25 @@ export async function reactivateTenant(id: string, reason?: string): Promise<{ m
   });
 }
 
+export interface UpdateTenantRequest {
+  name?: string;
+  slug?: string;
+  industry?: string;
+}
+
+export async function updateTenant(id: string, data: UpdateTenantRequest): Promise<TenantDetail> {
+  return apiCall<TenantDetail>(`/platform/tenants/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteTenant(id: string): Promise<{ message: string }> {
+  return apiCall<{ message: string }>(`/platform/tenants/${id}`, {
+    method: 'DELETE',
+  });
+}
+
 export async function applyTemplate(id: string, industry: string): Promise<{ message: string }> {
   return apiCall<{ message: string }>(`/platform/tenants/${id}/apply-template`, {
     method: 'POST',
@@ -120,6 +139,7 @@ export interface CreatePlanRequest {
   max_users: number;
   max_plugins: number;
   price_monthly?: number;
+  capabilities?: string[];
 }
 
 export interface UpdatePlanRequest {
@@ -127,6 +147,7 @@ export interface UpdatePlanRequest {
   max_users?: number;
   max_plugins?: number;
   price_monthly?: number;
+  capabilities?: string[];
 }
 
 export async function listPlans(): Promise<SubscriptionPlan[]> {
@@ -523,5 +544,58 @@ export async function pauseQueueWorkers(): Promise<{ message: string }> {
 export async function resumeQueueWorkers(): Promise<{ message: string }> {
   return apiCall<{ message: string }>('/platform/system/queue/resume', {
     method: 'POST',
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/*  Capability Pricing                                                 */
+/* ------------------------------------------------------------------ */
+export interface CapabilityPricingItem {
+  id: string;
+  capability_id: string;
+  name: string;
+  description: string | null;
+  price_monthly: number;
+  price_per_user: number;
+}
+
+export async function listCapabilityPricing(): Promise<CapabilityPricingItem[]> {
+  return apiCall<CapabilityPricingItem[]>('/platform/capabilities/pricing');
+}
+
+export async function upsertCapabilityPricing(capabilityId: string, data: { price_monthly: number; price_per_user: number }): Promise<CapabilityPricingItem> {
+  return apiCall<CapabilityPricingItem>(`/platform/capabilities/pricing/${capabilityId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteCapabilityPricing(capabilityId: string): Promise<{ message: string }> {
+  return apiCall<{ message: string }>(`/platform/capabilities/pricing/${capabilityId}`, {
+    method: 'DELETE',
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/*  Tenant Status Management                                           */
+/* ------------------------------------------------------------------ */
+export async function pauseTenant(id: string, reason?: string): Promise<{ message: string }> {
+  return apiCall<{ message: string }>(`/platform/tenants/${id}/pause`, {
+    method: 'PATCH',
+    body: reason ? JSON.stringify({ reason }) : undefined,
+  });
+}
+
+export async function cancelTenant(id: string, reason?: string): Promise<{ message: string }> {
+  return apiCall<{ message: string }>(`/platform/tenants/${id}/cancel`, {
+    method: 'PATCH',
+    body: reason ? JSON.stringify({ reason }) : undefined,
+  });
+}
+
+export async function deactivateTenant(id: string, reason?: string): Promise<{ message: string }> {
+  return apiCall<{ message: string }>(`/platform/tenants/${id}/deactivate`, {
+    method: 'PATCH',
+    body: reason ? JSON.stringify({ reason }) : undefined,
   });
 }

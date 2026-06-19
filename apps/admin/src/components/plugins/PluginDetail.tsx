@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { deprecatePlugin, disablePlugin } from '@/api/platform';
+import { getPlugin, deprecatePlugin, disablePlugin } from '@/api/platform';
 import { useAuth } from '@/contexts/auth.context';
 import { ShieldAlert, AlertTriangle, Play, Database, Layers, Radio, HelpCircle, CheckCircle2, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -22,11 +22,7 @@ export function PluginDetail({ pluginId }: PluginDetailProps) {
 
   const { data: plugin, isLoading } = useQuery({
     queryKey: ['plugin', pluginId],
-    queryFn: () =>
-      fetch(`/api/platform/plugins/${pluginId}`).then((res) => {
-        if (!res.ok) throw new Error('Failed to fetch plugin metadata');
-        return res.json();
-      }),
+    queryFn: () => getPlugin(pluginId),
   });
 
   const deprecateMutation = useMutation({

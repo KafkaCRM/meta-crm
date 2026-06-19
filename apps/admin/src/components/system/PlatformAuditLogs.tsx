@@ -21,25 +21,52 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
+const PAGE_LIMIT = 50;
+
 export function PlatformAuditLogs() {
   const [search, setSearch] = useState('');
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
+  const [cursor, setCursor] = useState<string | undefined>(undefined);
+  const [allLogs, setAllLogs] = useState<any[]>([]);
+  const [hasMore, setHasMore] = useState(true);
 
   // Fetch platform audit logs
   const { data: response, isLoading, isFetching, refetch } = useQuery({
     queryKey: ['platform', 'audit-logs'],
     queryFn: () => getPlatformAuditLogs(),
-    refetchInterval: 15000, // Auto refresh every 15s for admin monitoring
+    refetchInterval: 15000,
   });
 
   const logs = response?.data ?? [];
 
+  // Reset accumulated logs when initial fetch changes
+  const initialLogs = useMemo(() => {
+    if (response) {
+      setAllLogs(response.data ?? []);
+      setCursor(response.next_cursor);
+      setHasMore(!!response.next_cursor);
+    }
+    return response;
+  }, [response]);
+
+  const loadMore = async () => {
+    if (!cursor || !hasMore) return;
+    try {
+      const nextPage = await getPlatformAuditLogs(cursor, PAGE_LIMIT);
+      setAllLogs((prev) => [...prev, ...(nextPage.data ?? [])]);
+      setCursor(nextPage.next_cursor);
+      setHasMore(!!nextPage.next_cursor);
+    } catch {
+      // silently fail
+    }
+  };
+
   // Filter logs based on search query
   const filteredLogs = useMemo(() => {
-    if (!search.trim()) return logs;
+    if (!search.trim()) return allLogs;
 
     const term = search.toLowerCase();
-    return logs.filter((log) => {
+    return allLogs.filter((log) => {
       const action = (log.action || '').toLowerCase();
       const actorEmail = (log.actor_email || '').toLowerCase();
       const actorRole = (log.actor_role || '').toLowerCase();
@@ -120,7 +147,7 @@ export function PlatformAuditLogs() {
               />
             </div>
             <div className="text-xs text-muted-foreground font-medium">
-              Showing {filteredLogs.length} of {logs.length} recent operations
+              Showing {filteredLogs.length} of {allLogs.length} operations
             </div>
           </div>
         </CardHeader>
@@ -238,7 +265,21 @@ export function PlatformAuditLogs() {
                 );
               })}
             </div>
-          ) : (
+          ) : null}
+            {filteredLogs.length > 0 && hasMore && (
+              <div className="p-4 border-t border-border/50 flex justify-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={loadMore}
+                  className="h-8 text-xs font-semibold border-border bg-card text-muted-foreground rounded-lg hover:bg-muted"
+                >
+                  <RefreshCw className="h-3 w-3 mr-1.5" />
+                  Load More
+                </Button>
+              </div>
+            )}
+            {filteredLogs.length === 0 && (
             <div className="py-16 text-center space-y-3">
               <div className="mx-auto w-10 h-10 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground">
                 <ShieldAlert className="h-5 w-5" />

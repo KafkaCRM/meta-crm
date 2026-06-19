@@ -6,4 +6,5 @@ export { PlatformBilling } from './PlatformBilling';
 export { PlatformDashboard } from './PlatformDashboard';
 export { SystemHealth } from './SystemHealth';
 export { PlatformAuditLogs } from './PlatformAuditLogs';
+export { CapabilityPricingPanel } from './CapabilityPricingPanel';
 

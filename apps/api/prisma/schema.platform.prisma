@@ -5,6 +5,7 @@ model SubscriptionPlan {
   max_users    Int
   max_plugins  Int
   price_monthly Decimal?
+  capabilities Json     @default("[]")
   created_at   DateTime @default(now())
 
   tenantPlans TenantPlan[]
@@ -19,6 +20,17 @@ model TenantPlan {
 
   tenant Tenant             @relation(fields: [tenant_id], references: [id])
   plan   SubscriptionPlan   @relation(fields: [plan_id], references: [id])
+}
+
+model CapabilityPricing {
+  id              String   @id @default(cuid())
+  capability_id   String   @unique
+  name            String
+  description     String?
+  price_monthly   Decimal  @default(0)
+  price_per_user  Decimal  @default(0)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
 }
 
 model PlatformAuditLog {
