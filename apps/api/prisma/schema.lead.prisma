@@ -23,6 +23,7 @@ model Lead {
   party               Party?              @relation(fields: [party_id], references: [id])
   pipelineDefinition  PipelineDefinition? @relation(fields: [pipeline_definition_id], references: [id])
   events              LeadEvent[]
+  callLogs            CallLog[]
 
   @@index([tenant_id, status])
   @@index([tenant_id, vertical_id])

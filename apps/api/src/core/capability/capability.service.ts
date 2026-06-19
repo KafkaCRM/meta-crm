@@ -21,10 +21,28 @@ export interface CapabilityError {
 
 export const AVAILABLE_CAPABILITIES = [
   {
-    id: 'capability/enrollment',
+    id: 'capability/academics',
     name: 'Enrollment',
     description: 'Enables academic courses, cohort tracking, and enrollment workflow stages.',
     industry: 'education',
+  },
+  {
+    id: 'capability/finance',
+    name: 'Finance & Collections',
+    description: 'Enables fee plans, installment schedules, student fee tracking, payment recording, scholarships, and discounts.',
+    industry: 'education',
+  },
+  {
+    id: 'capability/telephony',
+    name: 'Telephony',
+    description: 'Enables call logging, Twilio integration, inbound/outbound call tracking, and call history.',
+    industry: 'general',
+  },
+  {
+    id: 'capability/hr',
+    name: 'HR & Workforce',
+    description: 'Enables employee directory, departments, leave management, attendance tracking, and payroll.',
+    industry: 'general',
   },
   {
     id: 'capability/appointment',
@@ -55,6 +73,18 @@ export const AVAILABLE_CAPABILITIES = [
     name: 'Customer Onboarding',
     description: 'Adds multi-step customer onboarding workflows, tracking setup steps and contract values.',
     industry: 'technology',
+  },
+  {
+    id: 'capability/operations',
+    name: 'Catalog, Inventory & Assets',
+    description: 'Enables product catalog, inventory tracking with warehouses, stock movements, and asset management.',
+    industry: 'general',
+  },
+  {
+    id: 'capability/workspace',
+    name: 'Workspace Tasks & Notes',
+    description: 'Enables task management and internal note-taking across workspace entities.',
+    industry: 'general',
   },
 ];
 

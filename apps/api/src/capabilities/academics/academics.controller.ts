@@ -11,7 +11,7 @@ import { PermissionsGuard } from '../../core/permissions/permissions.guard';
 import { CheckPermissions } from '../../core/permissions/permissions.decorator';
 import { CapabilityGuard } from '../../core/capability/capability.guard';
 import { RequireCapability } from '../../core/capability/capability.decorator';
-import { EnrollmentService } from './enrollment.service';
+import { EnrollmentService } from './academics.service';
 
 class EnrollmentListQuery {
   @IsOptional()
@@ -30,7 +30,7 @@ class EnrollmentListQuery {
 }
 
 @Controller('enrollments')
-@RequireCapability('capability/enrollment')
+@RequireCapability('capability/academics')
 @UseGuards(JwtAuthGuard, CapabilityGuard, PermissionsGuard)
 export class EnrollmentController {
   constructor(private readonly service: EnrollmentService) {}

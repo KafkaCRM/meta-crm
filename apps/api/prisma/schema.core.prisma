@@ -24,6 +24,8 @@ model Party {
   invoices              Invoice[]
   orders                Order[]
   onboardings           Onboarding[]
+  enrollments           Enrollment[]
+  callLogs              CallLog[]
 
   @@index([tenant_id, phone_normalized])
   @@index([tenant_id, created_at])

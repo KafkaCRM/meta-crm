@@ -78,6 +78,14 @@ export const INTEGRATION_MANIFESTS = [
     credential_fields: ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass'],
   },
   {
+    id: 'integration/twilio',
+    provider: 'twilio',
+    name: 'Twilio Telephony',
+    description: 'Twilio Voice API — make and receive calls, log call history, and auto-create call records.',
+    icon: 'PhoneCall',
+    credential_fields: ['account_sid', 'auth_token', 'twilio_phone_number'],
+  },
+  {
     id: 'integration/zapier',
     provider: 'zapier',
     name: 'Zapier',

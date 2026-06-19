@@ -64,7 +64,7 @@ describe('EnrollmentTriggersService', () => {
 
     mockDb.getClient().tenant.findFirst.mockResolvedValue({
       id: 'tenant-1',
-      config_json: { enabled_capabilities: ['capability/enrollment'] },
+      config_json: { enabled_capabilities: ['capability/academics'] },
     });
   });
 

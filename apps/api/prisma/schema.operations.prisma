@@ -1,0 +1,104 @@
+model ProductCategory {
+  id          String             @id @default(cuid())
+  tenant_id   String
+  tenant      Tenant             @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  parent_id   String?
+  parent      ProductCategory?   @relation("CategoryHierarchy", fields: [parent_id], references: [id])
+  children    ProductCategory[]  @relation("CategoryHierarchy")
+  products    Product[]
+
+  @@index([tenant_id])
+}
+
+model Product {
+  id          String           @id @default(cuid())
+  tenant_id   String
+  tenant      Tenant           @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  name        String
+  sku         String
+  description String?
+  unit        String?
+  price       Float?
+  category_id String?
+  category    ProductCategory? @relation(fields: [category_id], references: [id])
+  status      String           @default("active")
+  stock          Stock[]
+  stockMovements StockMovement[]
+  created_at  DateTime         @default(now())
+  updated_at  DateTime         @updatedAt
+
+  @@unique([tenant_id, sku])
+  @@index([tenant_id])
+}
+
+model Warehouse {
+  id         String   @id @default(cuid())
+  tenant_id  String
+  tenant     Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  name       String
+  location   String?
+  status     String   @default("active")
+  created_at DateTime @default(now())
+  stock          Stock[]
+  stockMovements StockMovement[]
+
+  @@index([tenant_id])
+}
+
+model Stock {
+  id              String    @id @default(cuid())
+  tenant_id       String
+  tenant          Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  product_id      String
+  product         Product   @relation(fields: [product_id], references: [id])
+  warehouse_id    String
+  warehouse       Warehouse @relation(fields: [warehouse_id], references: [id])
+  quantity        Int       @default(0)
+  min_stock_level Int       @default(0)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  @@unique([tenant_id, product_id, warehouse_id])
+  @@index([tenant_id])
+}
+
+model StockMovement {
+  id           String    @id @default(cuid())
+  tenant_id    String
+  tenant       Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  product_id   String
+  product      Product   @relation(fields: [product_id], references: [id])
+  warehouse_id String
+  warehouse    Warehouse @relation(fields: [warehouse_id], references: [id])
+  type         String
+  quantity     Int
+  reference    String?
+  notes        String?
+  created_at   DateTime  @default(now())
+
+  @@index([tenant_id])
+  @@index([product_id])
+  @@index([warehouse_id])
+}
+
+model Asset {
+  id             String   @id @default(cuid())
+  tenant_id      String
+  tenant         Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  name           String
+  asset_code     String
+  type           String?
+  status         String   @default("available")
+  assigned_to_id String?
+  assigned_to    User?    @relation(fields: [assigned_to_id], references: [id], onDelete: SetNull)
+  purchase_date  DateTime?
+  purchase_cost  Float?
+  notes          String?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  @@unique([tenant_id, asset_code])
+  @@index([tenant_id])
+}

@@ -17,13 +17,18 @@ import { GenericWebhookModule } from './integrations/generic-webhook/generic-web
 import { WhatsAppModule } from './integrations/whatsapp/whatsapp.module';
 import { FacebookModule } from './integrations/facebook/facebook.module';
 import { JustDialModule } from './integrations/justdial/justdial.module';
-import { EnrollmentModule } from './capabilities/enrollment/enrollment.module';
+import { AcademicsModule } from './capabilities/academics/academics.module';
+import { FinanceModule } from './capabilities/finance/finance.module';
+import { TelephonyModule } from './capabilities/telephony/telephony.module';
+import { HrModule } from './capabilities/hr/hr.module';
 import { CapabilityModule } from './core/capability/capability.module';
 import { AppointmentModule } from './capabilities/appointment/appointment.module';
 import { BillingModule } from './capabilities/billing/billing.module';
 import { PropertyModule } from './capabilities/property/property.module';
 import { OrderManagementModule } from './capabilities/order-management/order-management.module';
 import { CustomerOnboardingModule } from './capabilities/customer-onboarding/customer-onboarding.module';
+import { WorkspaceModule } from './capabilities/workspace/workspace.module';
+import { OperationsModule } from './capabilities/operations/operations.module';
 import { UserModule } from './core/user/user.module';
 import { BranchModule } from './core/branch/branch.module';
 import { VerticalModule } from './core/vertical/vertical.module';
@@ -33,12 +38,17 @@ import { IntegrationModule } from './core/integration/integration.module';
 import { LeadModule } from './core/lead/lead.module';
 
 const CAPABILITY_MODULES = [
-  EnrollmentModule,
+  AcademicsModule,
+  FinanceModule,
+  TelephonyModule,
+  HrModule,
   AppointmentModule,
   BillingModule,
   PropertyModule,
   OrderManagementModule,
   CustomerOnboardingModule,
+  WorkspaceModule,
+  OperationsModule,
 ];
 
 @Module({

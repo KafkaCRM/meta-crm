@@ -1,0 +1,241 @@
+model Course {
+  id             String   @id @default(cuid())
+  tenant_id      String
+  vertical_id    String?
+  name           String
+  code           String
+  description    String?
+  category       String?
+  duration_value Int?
+  duration_unit  String?
+  mode           String   @default("offline")
+  fee            Float?
+  syllabus       Json?
+  status         String   @default("active")
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  vertical      Vertical?         @relation(fields: [vertical_id], references: [id])
+  batches       Batch[]
+  enrollments   Enrollment[]
+  tests         Test[]
+  assignments   Assignment[]
+  studyMaterials StudyMaterial[]
+  feePlans       FeePlan[]
+
+  @@index([tenant_id, code])
+  @@index([tenant_id, vertical_id])
+  @@index([tenant_id, status])
+}
+
+model Batch {
+  id             String   @id @default(cuid())
+  tenant_id      String
+  course_id      String
+  branch_id      String?
+  name           String
+  code           String
+  trainer_id     String?
+  room           String?
+  start_date     DateTime?
+  end_date       DateTime?
+  schedule_json  Json?
+  capacity       Int?
+  enrolled_count Int      @default(0)
+  status         String   @default("upcoming")
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  course        Course            @relation(fields: [course_id], references: [id])
+  branch        Branch?           @relation(fields: [branch_id], references: [id])
+  enrollments   Enrollment[]
+  attendances   Attendance[]
+  tests         Test[]
+  assignments   Assignment[]
+  studyMaterials StudyMaterial[]
+
+  @@index([tenant_id, course_id])
+  @@index([tenant_id, branch_id])
+  @@index([tenant_id, status])
+}
+
+model Enrollment {
+  id             String   @id @default(cuid())
+  tenant_id      String
+  batch_id       String?
+  course_id      String?
+  party_id       String
+  student_id     String?
+  roll_number    String?
+  admission_date DateTime @default(now())
+  status         String   @default("active")
+  parent_name    String?
+  parent_phone   String?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  batch        Batch?                 @relation(fields: [batch_id], references: [id])
+  course       Course?                @relation(fields: [course_id], references: [id])
+  party        Party                  @relation(fields: [party_id], references: [id])
+  attendances  Attendance[]
+  testScores   TestScore[]
+  assignmentSubmissions AssignmentSubmission[]
+  certificates      Certificate[]
+  studentFees       StudentFee[]
+  studentScholarships StudentScholarship[]
+
+  @@index([tenant_id, party_id])
+  @@index([tenant_id, batch_id])
+  @@index([tenant_id, student_id])
+  @@index([tenant_id, status])
+}
+
+model Attendance {
+  id            String   @id @default(cuid())
+  tenant_id     String
+  batch_id      String
+  enrollment_id String
+  date          DateTime
+  status        String
+  marked_by_id  String?
+  marked_at     DateTime @default(now())
+  remarks       String?
+
+  batch      Batch      @relation(fields: [batch_id], references: [id])
+  enrollment Enrollment @relation(fields: [enrollment_id], references: [id])
+
+  @@unique([batch_id, enrollment_id, date])
+  @@index([tenant_id, batch_id, date])
+  @@index([tenant_id, enrollment_id])
+}
+
+model Test {
+  id             String   @id @default(cuid())
+  tenant_id      String
+  course_id      String
+  batch_id       String?
+  name           String
+  type           String   @default("exam")
+  max_marks      Float
+  grading_scheme Json?
+  held_on        DateTime?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  course    Course      @relation(fields: [course_id], references: [id])
+  batch     Batch?      @relation(fields: [batch_id], references: [id])
+  scores    TestScore[]
+
+  @@index([tenant_id, course_id])
+  @@index([tenant_id, batch_id])
+}
+
+model TestScore {
+  id             String   @id @default(cuid())
+  tenant_id      String
+  test_id        String
+  enrollment_id  String
+  marks_obtained Float
+  grade          String?
+  remarks        String?
+  created_at     DateTime @default(now())
+
+  test       Test       @relation(fields: [test_id], references: [id], onDelete: Cascade)
+  enrollment Enrollment @relation(fields: [enrollment_id], references: [id])
+
+  @@unique([test_id, enrollment_id])
+  @@index([tenant_id, test_id])
+  @@index([tenant_id, enrollment_id])
+}
+
+model Assignment {
+  id          String   @id @default(cuid())
+  tenant_id   String
+  course_id   String
+  batch_id    String?
+  title       String
+  description String?
+  due_date    DateTime?
+  max_marks   Float?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  course      Course                 @relation(fields: [course_id], references: [id])
+  batch       Batch?                 @relation(fields: [batch_id], references: [id])
+  submissions AssignmentSubmission[]
+
+  @@index([tenant_id, course_id])
+  @@index([tenant_id, batch_id])
+}
+
+model AssignmentSubmission {
+  id              String   @id @default(cuid())
+  tenant_id       String
+  assignment_id   String
+  enrollment_id   String
+  submission_text String?
+  file_url        String?
+  submitted_at    DateTime @default(now())
+  marks_obtained  Float?
+  feedback        String?
+  status          String   @default("submitted")
+
+  assignment Assignment @relation(fields: [assignment_id], references: [id], onDelete: Cascade)
+  enrollment Enrollment @relation(fields: [enrollment_id], references: [id])
+
+  @@unique([assignment_id, enrollment_id])
+  @@index([tenant_id, assignment_id])
+  @@index([tenant_id, enrollment_id])
+}
+
+model StudyMaterial {
+  id          String   @id @default(cuid())
+  tenant_id   String
+  course_id   String
+  batch_id    String?
+  title       String
+  description String?
+  type        String   @default("pdf")
+  url         String
+  uploaded_by String?
+  created_at  DateTime @default(now())
+
+  course Course @relation(fields: [course_id], references: [id])
+  batch  Batch? @relation(fields: [batch_id], references: [id])
+
+  @@index([tenant_id, course_id])
+  @@index([tenant_id, batch_id])
+}
+
+model CertificateTemplate {
+  id          String   @id @default(cuid())
+  tenant_id   String
+  name        String
+  description String?
+  content     String
+  variables   Json?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  certificates Certificate[]
+
+  @@index([tenant_id])
+}
+
+model Certificate {
+  id              String   @id @default(cuid())
+  tenant_id       String
+  enrollment_id   String
+  template_id     String?
+  serial_number   String   @unique
+  issued_date     DateTime @default(now())
+  completion_date DateTime?
+  metadata        Json?
+  status          String   @default("active")
+
+  enrollment Enrollment          @relation(fields: [enrollment_id], references: [id])
+  template   CertificateTemplate? @relation(fields: [template_id], references: [id])
+
+  @@index([tenant_id, enrollment_id])
+  @@index([tenant_id, serial_number])
+}

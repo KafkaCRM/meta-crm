@@ -12,7 +12,7 @@ import type { RequestScope } from '../../core/tenant/request-scope.interface';
 const BCRYPT_COST = 12;
 
 const CAPABILITY_MAPPINGS: Record<string, string> = {
-  education: 'capability/enrollment',
+  education: 'capability/academics',
   healthcare: 'capability/appointment',
   finance: 'capability/billing',
   'real-estate': 'capability/property-listing',

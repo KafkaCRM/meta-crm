@@ -76,6 +76,14 @@ import {
   MessageSquare,
   Search,
   UserCheck,
+  BookOpen,
+  CalendarRange,
+  ClipboardCheck,
+  DollarSign,
+  Phone,
+  Package,
+  Monitor,
+  FileText,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useCapabilities } from '@/hooks/useCapabilities';
@@ -176,6 +184,53 @@ function AppSidebar() {
       : []),
     ...(isEnabled('capability/customer-onboarding')
       ? [{ label: 'Onboardings', path: '/onboardings', icon: ClipboardList }]
+      : []),
+    ...(isEnabled('capability/academics')
+      ? [
+          { label: 'Courses', path: '/courses', icon: BookOpen },
+          { label: 'Batches', path: '/batches', icon: CalendarRange },
+          { label: 'Attendance', path: '/attendance', icon: ClipboardCheck },
+          { label: 'Tests', path: '/tests', icon: ClipboardList },
+          { label: 'Assignments', path: '/assignments', icon: ClipboardList },
+        ]
+      : []),
+    ...(isEnabled('capability/finance')
+      ? [
+          { label: 'Fee Plans', path: '/fee-plans', icon: Receipt },
+          { label: 'Student Fees', path: '/student-fees', icon: DollarSign },
+          { label: 'Scholarships', path: '/scholarships', icon: DollarSign },
+        ]
+      : []),
+    ...(isEnabled('capability/telephony')
+      ? [
+          { label: 'Call Logs', path: '/call-logs', icon: Phone },
+        ]
+      : []),
+    ...(isEnabled('capability/workspace')
+      ? [
+          { label: 'Inbox', path: '/inbox', icon: MessageSquare },
+          { label: 'Tasks', path: '/tasks', icon: ClipboardList },
+          { label: 'Notes', path: '/notes', icon: FileText },
+        ]
+      : []),
+    ...(isEnabled('capability/operations')
+      ? [
+          { label: 'Products', path: '/products', icon: Package },
+          { label: 'Categories', path: '/product-categories', icon: Tags },
+          { label: 'Warehouses', path: '/warehouses', icon: Building2 },
+          { label: 'Stock', path: '/stock', icon: Layers },
+          { label: 'Movements', path: '/stock-movements', icon: ArrowRight },
+          { label: 'Assets', path: '/assets', icon: Monitor },
+        ]
+      : []),
+    ...(isEnabled('capability/hr')
+      ? [
+          { label: 'Departments', path: '/departments', icon: Building2 },
+          { label: 'Employees', path: '/employees', icon: Users },
+          { label: 'Leave Requests', path: '/leave-requests', icon: Calendar },
+          { label: 'Payslips', path: '/payslips', icon: Receipt },
+          { label: 'Attendance', path: '/employee-attendance', icon: Calendar },
+        ]
       : []),
   ];
 
@@ -1090,6 +1145,12 @@ import { campaignsRoute } from './routes/campaigns';
 import { leadsRoute, leadDetailRoute } from './routes/leads';
 import { pipelineRoute } from './routes/pipeline';
 import { integrationsRoute } from './routes/integrations';
+import { coursesRoute, batchesRoute, attendanceRoute, testsRoute, assignmentsRoute } from './routes/academics';
+import { feePlansRoute, studentFeesRoute, scholarshipsRoute } from './routes/finance';
+import { callLogsRoute } from './routes/telephony';
+import { departmentsRoute, employeesRoute, leaveRequestsRoute, payslipsRoute, employeeAttendanceRoute } from './routes/hr';
+import { tasksRoute, notesRoute, inboxRoute } from './routes/workspace';
+import { productCategoriesRoute, productsRoute, warehousesRoute, stockRoute, stockMovementsRoute, assetsRoute } from './routes/operations';
 
 /* ------------------------------------------------------------------ */
 /*  Route tree + router                                                */
@@ -1111,6 +1172,29 @@ export const routeTree = rootRoute.addChildren([
   propertiesRoute,
   ordersRoute,
   onboardingsRoute,
+  coursesRoute,
+  batchesRoute,
+  attendanceRoute,
+  testsRoute,
+  assignmentsRoute,
+  feePlansRoute,
+  studentFeesRoute,
+  scholarshipsRoute,
+  callLogsRoute,
+  departmentsRoute,
+  employeesRoute,
+  leaveRequestsRoute,
+  payslipsRoute,
+  employeeAttendanceRoute,
+  inboxRoute,
+  tasksRoute,
+  notesRoute,
+  productCategoriesRoute,
+  productsRoute,
+  warehousesRoute,
+  stockRoute,
+  stockMovementsRoute,
+  assetsRoute,
   campaignsRoute,
   integrationsRoute,
   settingsRoute,

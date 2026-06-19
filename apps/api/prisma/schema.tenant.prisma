@@ -30,6 +30,14 @@ model Tenant {
   tenantExtensions       TenantExtension[]
   secureCredentials      SecureCredential[]
   leads                  Lead[]
+  tasks                  Task[]
+  notes                  Note[]
+  productCategories      ProductCategory[]
+  products               Product[]
+  warehouses             Warehouse[]
+  stock                  Stock[]
+  stockMovements         StockMovement[]
+  assets                 Asset[]
 }
 
 model Branch {
@@ -45,6 +53,7 @@ model Branch {
   verticals    Vertical[]
   users        User[]        @relation("UserDefaultBranch")
   userBranches UserBranch[]
+  batches      Batch[]
 }
 
 model Vertical {
@@ -61,6 +70,7 @@ model Vertical {
   parties             Party[]
   leads               Lead[]
   userVerticals       UserVertical[]
+  courses             Course[]
 
   @@unique([branch_id, name])
 }
@@ -84,6 +94,10 @@ model User {
   leads         Lead[]
   userVerticals UserVertical[]
   userBranches  UserBranch[]
+  callLogs      CallLog[]
+  employees     Employee[]
+  tasks         Task[]
+  assets        Asset[]
 
   @@unique([email, tenant_id])
   @@unique([phone_number, tenant_id])

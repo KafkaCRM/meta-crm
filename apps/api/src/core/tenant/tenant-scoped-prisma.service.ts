@@ -26,10 +26,48 @@ export const TENANT_SCOPED_MODELS: readonly string[] = [
   'Vertical',
   'Campaign',
   'Lead',
+  // Academics
+  'Course',
+  'Batch',
+  'Enrollment',
+  'Attendance',
+  'Test',
+  'TestScore',
+  'Assignment',
+  'AssignmentSubmission',
+  'StudyMaterial',
+  'CertificateTemplate',
+  'Certificate',
+  // Telephony
+  'CallLog',
+  // HR
+  'Department',
+  'Employee',
+  'LeaveType',
+  'LeaveRequest',
+  'EmployeeAttendance',
+  'Payslip',
+  // Finance
+  'FeePlan',
+  'FeePlanInstallment',
+  'StudentFee',
+  'StudentFeeInstallment',
+  'Scholarship',
+  'StudentScholarship',
   // Phase 2 — Extension Registry
   'TenantExtension',
   'SecureCredential',
   'IntegrationConnection',
+  // Workspace
+  'Task',
+  'Note',
+  // Operations
+  'ProductCategory',
+  'Product',
+  'Warehouse',
+  'Stock',
+  'StockMovement',
+  'Asset',
   // NOTE: ExtensionRegistry is a GLOBAL catalog (no tenant_id) — intentionally excluded
   // NOTE: IntegrationIntakeRoute, IntegrationFieldMapping, InboundEvent,
   //       IntegrationDeliveryAttempt, IntegrationSyncCursor inherit tenant
@@ -74,7 +112,7 @@ export async function applyTenantScope<T>(
     });
   }
 
-  const verticalScopedModels = ['Party', 'Campaign', 'PipelineDefinition', 'Lead'];
+  const verticalScopedModels = ['Party', 'Campaign', 'PipelineDefinition', 'Lead', 'Course'];
   let verticalFilter: Record<string, unknown> = {};
   if (scope.vertical_ids && scope.vertical_ids.length > 0 && verticalScopedModels.includes(model)) {
     const existingVerticalId = args.where?.vertical_id;

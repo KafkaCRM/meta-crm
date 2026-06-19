@@ -1,0 +1,29 @@
+model CallLog {
+  id             String   @id @default(cuid())
+  tenant_id      String
+  direction      String   @default("inbound")
+  from_number    String
+  to_number      String
+  party_id       String?
+  lead_id        String?
+  user_id        String?
+  duration_secs  Int?
+  status         String   @default("completed")
+  recording_url  String?
+  twilio_call_sid String?
+  notes          String?
+  started_at     DateTime @default(now())
+  ended_at       DateTime?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  party Party? @relation(fields: [party_id], references: [id])
+  lead  Lead?  @relation(fields: [lead_id], references: [id])
+  user  User?  @relation(fields: [user_id], references: [id])
+
+  @@index([tenant_id, started_at])
+  @@index([tenant_id, party_id])
+  @@index([tenant_id, lead_id])
+  @@index([tenant_id, user_id])
+  @@index([tenant_id, twilio_call_sid])
+}

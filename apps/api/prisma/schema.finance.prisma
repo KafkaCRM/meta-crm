@@ -1,0 +1,106 @@
+model FeePlan {
+  id          String   @id @default(cuid())
+  tenant_id   String
+  name        String
+  description String?
+  course_id   String
+  total_fee   Float
+  status      String   @default("active")
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  course       Course                @relation(fields: [course_id], references: [id])
+  installments FeePlanInstallment[]
+  studentFees  StudentFee[]
+
+  @@index([tenant_id, course_id])
+  @@index([tenant_id, status])
+}
+
+model FeePlanInstallment {
+  id         String @id @default(cuid())
+  tenant_id  String
+  plan_id    String
+  name       String
+  amount     Float
+  due_days   Int
+  late_fee   Float  @default(0)
+
+  plan FeePlan @relation(fields: [plan_id], references: [id], onDelete: Cascade)
+
+  @@index([tenant_id, plan_id])
+}
+
+model StudentFee {
+  id              String   @id @default(cuid())
+  tenant_id       String
+  enrollment_id   String
+  fee_plan_id     String?
+  total_fee       Float
+  discount_amount Float    @default(0)
+  net_fee         Float
+  paid_amount     Float    @default(0)
+  status          String   @default("pending")
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  enrollment    Enrollment             @relation(fields: [enrollment_id], references: [id])
+  feePlan       FeePlan?               @relation(fields: [fee_plan_id], references: [id])
+  installments  StudentFeeInstallment[]
+
+  @@index([tenant_id, enrollment_id])
+  @@index([tenant_id, status])
+}
+
+model StudentFeeInstallment {
+  id             String    @id @default(cuid())
+  tenant_id      String
+  student_fee_id String
+  name           String
+  amount         Float
+  due_date       DateTime
+  late_fee       Float     @default(0)
+  paid_amount    Float     @default(0)
+  status         String    @default("pending")
+  paid_date      DateTime?
+  notes          String?
+
+  studentFee StudentFee @relation(fields: [student_fee_id], references: [id], onDelete: Cascade)
+
+  @@index([tenant_id, student_fee_id])
+  @@index([tenant_id, status])
+}
+
+model Scholarship {
+  id                 String   @id @default(cuid())
+  tenant_id          String
+  name               String
+  type               String   @default("percentage")
+  value              Float
+  eligibility        String?
+  approval_required  Boolean  @default(true)
+  status             String   @default("active")
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  studentScholarships StudentScholarship[]
+
+  @@index([tenant_id, status])
+}
+
+model StudentScholarship {
+  id             String   @id @default(cuid())
+  tenant_id      String
+  enrollment_id  String
+  scholarship_id String
+  amount         Float
+  approved_by    String?
+  status         String   @default("pending")
+  created_at     DateTime @default(now())
+
+  enrollment  Enrollment @relation(fields: [enrollment_id], references: [id])
+  scholarship Scholarship @relation(fields: [scholarship_id], references: [id])
+
+  @@unique([enrollment_id, scholarship_id])
+  @@index([tenant_id, enrollment_id])
+}

@@ -1,0 +1,116 @@
+model Department {
+  id          String   @id @default(cuid())
+  tenant_id   String
+  name        String
+  description String?
+  status      String   @default("active")
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  employees Employee[]
+
+  @@index([tenant_id])
+  @@index([tenant_id, status])
+}
+
+model Employee {
+  id            String   @id @default(cuid())
+  tenant_id     String
+  user_id       String?
+  department_id String?
+  employee_code String
+  designation   String?
+  joining_date  DateTime?
+  salary        Float?
+  status        String   @default("active")
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  department Department?          @relation(fields: [department_id], references: [id])
+  user       User?                @relation(fields: [user_id], references: [id])
+  leaves     LeaveRequest[]
+  attendance EmployeeAttendance[]
+  payslips   Payslip[]
+
+  @@index([tenant_id, department_id])
+  @@index([tenant_id, employee_code])
+  @@index([tenant_id, status])
+}
+
+model LeaveType {
+  id             String   @id @default(cuid())
+  tenant_id      String
+  name           String
+  days_per_year  Int
+  carry_forward  Boolean  @default(false)
+  status         String   @default("active")
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  leaveRequests LeaveRequest[]
+
+  @@index([tenant_id])
+  @@index([tenant_id, status])
+}
+
+model LeaveRequest {
+  id            String   @id @default(cuid())
+  tenant_id     String
+  employee_id   String
+  leave_type_id String
+  from_date     DateTime
+  to_date       DateTime
+  reason        String?
+  status        String   @default("pending")
+  approved_by   String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  employee Employee @relation(fields: [employee_id], references: [id])
+  leaveType LeaveType @relation(fields: [leave_type_id], references: [id])
+
+  @@index([tenant_id, employee_id])
+  @@index([tenant_id, status])
+}
+
+model EmployeeAttendance {
+  id        String   @id @default(cuid())
+  tenant_id String
+  employee_id String
+  date      DateTime
+  check_in  DateTime?
+  check_out DateTime?
+  status    String   @default("present")
+  notes     String?
+  created_at DateTime @default(now())
+
+  employee Employee @relation(fields: [employee_id], references: [id])
+
+  @@unique([employee_id, date])
+  @@index([tenant_id, employee_id, date])
+  @@index([tenant_id, date])
+}
+
+model Payslip {
+  id              String   @id @default(cuid())
+  tenant_id       String
+  employee_id     String
+  month           Int
+  year            Int
+  basic           Float    @default(0)
+  hra             Float    @default(0)
+  allowances      Float    @default(0)
+  deductions      Float    @default(0)
+  net_pay         Float
+  status          String   @default("draft")
+  generated_at    DateTime?
+  paid_at         DateTime?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  employee Employee @relation(fields: [employee_id], references: [id])
+
+  @@unique([employee_id, month, year])
+  @@index([tenant_id, employee_id])
+  @@index([tenant_id, month, year])
+}

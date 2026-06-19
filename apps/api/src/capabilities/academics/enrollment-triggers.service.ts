@@ -5,7 +5,7 @@ import { TenantScopedPrismaService } from '../../core/tenant/tenant-scoped-prism
 import { MessagingAdapter } from '../../core/communication/messaging-adapter.interface';
 import type { RequestScope } from '../../core/tenant/request-scope.interface';
 
-const ENROLLMENT_CAPABILITY_KEY = 'capability/enrollment';
+const ENROLLMENT_CAPABILITY_KEY = 'capability/academics';
 
 @Injectable()
 export class EnrollmentTriggersService implements OnModuleInit {
