@@ -345,6 +345,17 @@ const CAPABILITY_INDUSTRY_THEME: Record<string, { bg: string; text: string; dot:
   'real-estate': { bg: 'bg-rose-50/50 border-rose-100', text: 'text-rose-800', dot: 'bg-rose-500' },
 };
 
+const CAPABILITY_DOMAINS: { id: string; label: string; icon: any; ids: string[] }[] = [
+  { id: 'crm-sales', label: 'CRM & Sales', icon: Building, ids: ['capability/appointment', 'capability/order-management', 'capability/customer-onboarding'] },
+  { id: 'finance', label: 'Finance & Billing', icon: Landmark, ids: ['capability/billing', 'capability/finance'] },
+  { id: 'academics', label: 'Academics', icon: GraduationCap, ids: ['capability/academics', 'capability/enrollment'] },
+  { id: 'hr', label: 'HR & People', icon: Users, ids: ['capability/hr'] },
+  { id: 'operations', label: 'Operations', icon: Settings, ids: ['capability/operations'] },
+  { id: 'telephony', label: 'Communications', icon: Phone, ids: ['capability/telephony'] },
+  { id: 'workspace', label: 'Workspace', icon: Layout, ids: ['capability/workspace'] },
+  { id: 'property', label: 'Property', icon: Home, ids: ['capability/property-listing'] },
+];
+
 interface AdminCapabilityManagerProps {
   tenantId: string;
   tenantIndustry: string;
@@ -411,13 +422,6 @@ function AdminCapabilityManager({
       </div>
     );
   }
-
-  const recommendedCaps = capabilities.filter(
-    (cap) => cap.industry.toLowerCase() === tenantIndustry?.toLowerCase()
-  );
-  const otherCaps = capabilities.filter(
-    (cap) => cap.industry.toLowerCase() !== tenantIndustry?.toLowerCase()
-  );
 
   const renderCard = (cap: PlatformTenantCapability, isRecommended: boolean) => {
     const isEnabled = cap.enabled;
@@ -524,33 +528,26 @@ function AdminCapabilityManager({
     );
   };
 
+  const grouped = CAPABILITY_DOMAINS.map((domain) => {
+    const domainCaps = capabilities.filter((cap) => domain.ids.includes(cap.id));
+    return { ...domain, capabilities: domainCaps };
+  }).filter((g) => g.capabilities.length > 0);
+
   return (
     <div className="space-y-6">
-      {/* Recommended Core Industry Scope */}
-      {recommendedCaps.length > 0 && (
-        <div className="space-y-3.5">
+      {grouped.map((domain) => (
+        <div key={domain.id} className="space-y-3.5">
           <h4 className="text-[11px] font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-            <Sparkles size={12} className="text-fin-orange animate-pulse" />
-            Recommended Core Scope
+            <domain.icon size={12} className="text-muted-foreground" />
+            {domain.label}
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {recommendedCaps.map((cap) => renderCard(cap, true))}
+            {domain.capabilities.map((cap) =>
+              renderCard(cap, cap.industry.toLowerCase() === tenantIndustry?.toLowerCase())
+            )}
           </div>
         </div>
-      )}
-
-      {/* Additional Cross-Domain Add-ons */}
-      {otherCaps.length > 0 && (
-        <div className="space-y-3.5 pt-1.5">
-          <h4 className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-            <Layers size={12} className="text-muted-foreground" />
-            Additional Cross-Domain Add-ons
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {otherCaps.map((cap) => renderCard(cap, false))}
-          </div>
-        </div>
-      )}
+      ))}
     </div>
   );
 }

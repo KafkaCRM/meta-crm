@@ -84,6 +84,9 @@ import {
   Package,
   Monitor,
   FileText,
+  Pencil,
+  Check,
+  X,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useCapabilities } from '@/hooks/useCapabilities';
@@ -163,76 +166,144 @@ function AppSidebar() {
     ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : 'U';
 
-  const mainItems = [
+  const coreItems = [
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
     { label: 'Leads', path: '/leads', icon: UserCheck },
     { label: t('party.plural') ?? 'Contacts', path: '/parties', icon: Users },
     { label: 'Pipeline', path: '/pipeline', icon: Workflow },
     { label: 'Campaigns', path: '/campaigns', icon: Megaphone },
     { label: 'Integrations', path: '/integrations', icon: Link2 },
-    ...(isEnabled('capability/appointment')
-      ? [{ label: 'Appointments', path: '/appointments', icon: Calendar }]
-      : []),
-    ...(isEnabled('capability/billing')
-      ? [{ label: 'Invoices', path: '/invoices', icon: Receipt }]
-      : []),
-    ...(isEnabled('capability/property-listing')
-      ? [{ label: 'Properties', path: '/properties', icon: Home }]
-      : []),
-    ...(isEnabled('capability/order-management')
-      ? [{ label: 'Orders', path: '/orders', icon: ShoppingCart }]
-      : []),
-    ...(isEnabled('capability/customer-onboarding')
-      ? [{ label: 'Onboardings', path: '/onboardings', icon: ClipboardList }]
-      : []),
-    ...(isEnabled('capability/academics')
-      ? [
-          { label: 'Courses', path: '/courses', icon: BookOpen },
-          { label: 'Batches', path: '/batches', icon: CalendarRange },
-          { label: 'Attendance', path: '/attendance', icon: ClipboardCheck },
-          { label: 'Tests', path: '/tests', icon: ClipboardList },
-          { label: 'Assignments', path: '/assignments', icon: ClipboardList },
-        ]
-      : []),
-    ...(isEnabled('capability/finance')
-      ? [
-          { label: 'Fee Plans', path: '/fee-plans', icon: Receipt },
-          { label: 'Student Fees', path: '/student-fees', icon: DollarSign },
-          { label: 'Scholarships', path: '/scholarships', icon: DollarSign },
-        ]
-      : []),
-    ...(isEnabled('capability/telephony')
-      ? [
-          { label: 'Call Logs', path: '/call-logs', icon: Phone },
-        ]
-      : []),
-    ...(isEnabled('capability/workspace')
-      ? [
-          { label: 'Inbox', path: '/inbox', icon: MessageSquare },
-          { label: 'Tasks', path: '/tasks', icon: ClipboardList },
-          { label: 'Notes', path: '/notes', icon: FileText },
-        ]
-      : []),
-    ...(isEnabled('capability/operations')
-      ? [
-          { label: 'Products', path: '/products', icon: Package },
-          { label: 'Categories', path: '/product-categories', icon: Tags },
-          { label: 'Warehouses', path: '/warehouses', icon: Building2 },
-          { label: 'Stock', path: '/stock', icon: Layers },
-          { label: 'Movements', path: '/stock-movements', icon: ArrowRight },
-          { label: 'Assets', path: '/assets', icon: Monitor },
-        ]
-      : []),
-    ...(isEnabled('capability/hr')
-      ? [
-          { label: 'Departments', path: '/departments', icon: Building2 },
-          { label: 'Employees', path: '/employees', icon: Users },
-          { label: 'Leave Requests', path: '/leave-requests', icon: Calendar },
-          { label: 'Payslips', path: '/payslips', icon: Receipt },
-          { label: 'Attendance', path: '/employee-attendance', icon: Calendar },
-        ]
-      : []),
   ];
+
+  const capabilityGroups: { id: string; label: string; icon: any; items: { label: string; path: string; icon: any }[] }[] = [
+    { id: 'crm-sales', label: 'CRM & Sales', icon: Calendar, items: [
+      ...(isEnabled('capability/appointment') ? [{ label: 'Appointments', path: '/appointments', icon: Calendar as any }] : []),
+      ...(isEnabled('capability/order-management') ? [{ label: 'Orders', path: '/orders', icon: ShoppingCart as any }] : []),
+      ...(isEnabled('capability/customer-onboarding') ? [{ label: 'Onboardings', path: '/onboardings', icon: ClipboardList as any }] : []),
+    ].filter(i => i) },
+    { id: 'finance', label: 'Finance & Billing', icon: Receipt, items: [
+      ...(isEnabled('capability/billing') ? [{ label: 'Invoices', path: '/invoices', icon: Receipt as any }] : []),
+      ...(isEnabled('capability/finance') ? [
+        { label: 'Fee Plans', path: '/fee-plans', icon: Receipt as any },
+        { label: 'Student Fees', path: '/student-fees', icon: DollarSign as any },
+        { label: 'Scholarships', path: '/scholarships', icon: DollarSign as any },
+      ] : []),
+    ].filter(i => i) },
+    { id: 'property', label: 'Property', icon: Home, items: [
+      ...(isEnabled('capability/property-listing') ? [{ label: 'Properties', path: '/properties', icon: Home as any }] : []),
+    ].filter(i => i) },
+    { id: 'academics', label: 'Academics', icon: BookOpen, items: isEnabled('capability/academics') ? [
+      { label: 'Courses', path: '/courses', icon: BookOpen as any },
+      { label: 'Batches', path: '/batches', icon: CalendarRange as any },
+      { label: 'Attendance', path: '/attendance', icon: ClipboardCheck as any },
+      { label: 'Tests', path: '/tests', icon: ClipboardList as any },
+      { label: 'Assignments', path: '/assignments', icon: ClipboardList as any },
+    ] : [] },
+    { id: 'telephony', label: 'Communications', icon: Phone, items: isEnabled('capability/telephony') ? [
+      { label: 'Call Logs', path: '/call-logs', icon: Phone as any },
+    ] : [] },
+    { id: 'workspace', label: 'Workspace', icon: MessageSquare, items: isEnabled('capability/workspace') ? [
+      { label: 'Inbox', path: '/inbox', icon: MessageSquare as any },
+      { label: 'Tasks', path: '/tasks', icon: ClipboardList as any },
+      { label: 'Notes', path: '/notes', icon: FileText as any },
+    ] : [] },
+    { id: 'operations', label: 'Operations', icon: Package, items: isEnabled('capability/operations') ? [
+      { label: 'Products', path: '/products', icon: Package as any },
+      { label: 'Categories', path: '/product-categories', icon: Tags as any },
+      { label: 'Warehouses', path: '/warehouses', icon: Building2 as any },
+      { label: 'Stock', path: '/stock', icon: Layers as any },
+      { label: 'Movements', path: '/stock-movements', icon: ArrowRight as any },
+      { label: 'Assets', path: '/assets', icon: Monitor as any },
+    ] : [] },
+    { id: 'hr', label: 'HR & People', icon: Users, items: isEnabled('capability/hr') ? [
+      { label: 'Departments', path: '/departments', icon: Building2 as any },
+      { label: 'Employees', path: '/employees', icon: Users as any },
+      { label: 'Leave Requests', path: '/leave-requests', icon: Calendar as any },
+      { label: 'Payslips', path: '/payslips', icon: Receipt as any },
+      { label: 'Attendance', path: '/employee-attendance', icon: Calendar as any },
+    ] : [] },
+  ].filter(g => g.items.length > 0);
+
+  const mainItems = coreItems;
+
+  const renderNavItem = (item: { label: string; path: string; icon: any }) => {
+    const search = location.search as any;
+    const isActive = location.pathname === item.path ||
+      (item.path !== '/' && location.pathname.startsWith(item.path));
+    
+    if (item.path === '/pipeline' && workflows.length > 0) {
+      const isSubActive = location.pathname === '/pipeline' || location.pathname === '/cases';
+      return (
+        <DropdownMenu key={item.path}>
+          <SidebarMenuItem>
+            <DropdownMenuTrigger asChild>
+              <SidebarMenuButton isActive={isSubActive} tooltip={item.label} className="w-full justify-between pr-2.5">
+                <div className="flex items-center gap-2.5 font-medium">
+                  <item.icon size={15} strokeWidth={isSubActive ? 2.5 : 1.75} className={isSubActive ? 'text-sidebar-accent-foreground' : 'text-sidebar-foreground/60'} />
+                  <span className="text-sm font-medium">{item.label}</span>
+                </div>
+                <ChevronRight size={13} className="text-sidebar-foreground/50 ml-auto" />
+              </SidebarMenuButton>
+            </DropdownMenuTrigger>
+            
+              <DropdownMenuContent side="right" align="start" alignOffset={-6} className="w-56 bg-popover border border-border shadow-md rounded-xl p-1.5 space-y-0.5 animate-in slide-in-from-left-2 duration-150">
+              <DropdownMenuLabel className="text-[10px] text-sidebar-foreground/50 font-bold uppercase tracking-wider px-2.5 py-1.5">
+                Select Pipeline
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-sidebar-border/40 mx-1" />
+
+              {pipelineDropdownLoading ? (
+                <div className="space-y-1.5 px-2.5 py-2">
+                  <div className="h-5 bg-sidebar-accent/50 rounded-md animate-pulse" />
+                  <div className="h-5 bg-sidebar-accent/50 rounded-md animate-pulse w-3/4" />
+                </div>
+              ) : workflows.length === 0 ? (
+                <p className="text-xs text-sidebar-foreground/50 px-2.5 py-2 text-center">
+                  No pipelines in this branch
+                </p>
+              ) : workflows.map((wf: any) => {
+                const isWfActive = (location.pathname === '/pipeline' || location.pathname === '/cases') && search.pipelineId === wf.id;
+                return (
+                  <DropdownMenuItem key={wf.id} asChild className="p-0 focus:bg-transparent">
+                    <Link
+                      to="/pipeline"
+                      search={{ pipelineId: wf.id }}
+                      className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all w-full duration-150 cursor-pointer ${
+                        isWfActive
+                          ? 'text-sidebar-accent-foreground bg-sidebar-accent font-bold'
+                          : 'text-sidebar-foreground/90 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/40'
+                      }`}
+                    >
+                      <span className={`w-2 h-2 rounded-full flex-shrink-0 mr-1.5 shadow-sm border border-white/10 ${getPipelineColor(wf.id)}`} />
+                      <span className="truncate flex-1 text-left">{wf.name}</span>
+                    </Link>
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </SidebarMenuItem>
+        </DropdownMenu>
+      );
+    }
+
+    return (
+      <SidebarMenuItem key={item.path}>
+        <SidebarMenuButton asChild isActive={isActive}>
+          <Link
+            to={item.path}
+            className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-sm transition-all duration-150 ${
+              isActive
+                ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-sm border border-sidebar-border/50'
+                : 'text-sidebar-foreground hover:bg-sidebar-accent/55 hover:text-sidebar-accent-foreground'
+            }`}
+          >
+            <item.icon size={15} strokeWidth={isActive ? 2.5 : 1.75} className={isActive ? 'text-sidebar-accent-foreground' : 'text-sidebar-foreground/60'} />
+            <span className="flex-1">{item.label}</span>
+          </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  };
 
   const settingsPermissions: Record<string, [string, string]> = {
     '/settings/users': ['manage', 'User'],
@@ -273,6 +344,47 @@ function AppSidebar() {
 
   const isSettingsActive = location.pathname.startsWith('/settings');
 
+  const [expandedDomains, setExpandedDomains] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(capabilityGroups.map((g) => [g.id, true]))
+  );
+
+  const [customNames, setCustomNames] = useState<Record<string, string>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('sidebar_domain_names') || '{}');
+    } catch { return {}; }
+  });
+
+  const [editingName, setEditingName] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+
+  const toggleDomain = (id: string) => {
+    setExpandedDomains((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const startRename = (id: string, currentLabel: string) => {
+    setEditingName(id);
+    setEditValue(customNames[id] || currentLabel);
+  };
+
+  const saveRename = (id: string) => {
+    const val = editValue.trim();
+    if (!val) {
+      const updated = { ...customNames };
+      delete updated[id];
+      setCustomNames(updated);
+      localStorage.setItem('sidebar_domain_names', JSON.stringify(updated));
+    } else {
+      const updated = { ...customNames, [id]: val };
+      setCustomNames(updated);
+      localStorage.setItem('sidebar_domain_names', JSON.stringify(updated));
+    }
+    setEditingName(null);
+  };
+
+  const cancelRename = () => {
+    setEditingName(null);
+  };
+
   return (
     <Sidebar className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
       <SidebarHeader className="px-4 py-4 border-b border-sidebar-border bg-sidebar">
@@ -304,94 +416,81 @@ function AppSidebar() {
 
         <Separator className="my-2 bg-sidebar-border/40" />
 
-        {/* Main Section */}
+        {/* Core Section */}
         <SidebarGroup className="pt-0 pb-1">
           <SidebarGroupLabel className="text-sidebar-foreground/50 text-[10px] font-bold uppercase tracking-wider px-2 mb-1">
             Main
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainItems.map((item) => {
-                const search = location.search as any;
-                const isActive = location.pathname === item.path ||
-                  (item.path !== '/' && location.pathname.startsWith(item.path));
-                
-                if (item.path === '/pipeline' && workflows.length > 0) {
-                  const isSubActive = location.pathname === '/pipeline' || location.pathname === '/cases';
-                  return (
-                    <DropdownMenu key={item.path}>
-                      <SidebarMenuItem>
-                        <DropdownMenuTrigger asChild>
-                          <SidebarMenuButton isActive={isSubActive} tooltip={item.label} className="w-full justify-between pr-2.5">
-                            <div className="flex items-center gap-2.5 font-medium">
-                              <item.icon size={15} strokeWidth={isSubActive ? 2.5 : 1.75} className={isSubActive ? 'text-sidebar-accent-foreground' : 'text-sidebar-foreground/60'} />
-                              <span className="text-sm font-medium">{item.label}</span>
-                            </div>
-                            <ChevronRight size={13} className="text-sidebar-foreground/50 ml-auto" />
-                          </SidebarMenuButton>
-                        </DropdownMenuTrigger>
-                        
-                          <DropdownMenuContent side="right" align="start" alignOffset={-6} className="w-56 bg-popover border border-border shadow-md rounded-xl p-1.5 space-y-0.5 animate-in slide-in-from-left-2 duration-150">
-                          <DropdownMenuLabel className="text-[10px] text-sidebar-foreground/50 font-bold uppercase tracking-wider px-2.5 py-1.5">
-                            Select Pipeline
-                          </DropdownMenuLabel>
-                          <DropdownMenuSeparator className="bg-sidebar-border/40 mx-1" />
-
-                          {pipelineDropdownLoading ? (
-                            <div className="space-y-1.5 px-2.5 py-2">
-                              <div className="h-5 bg-sidebar-accent/50 rounded-md animate-pulse" />
-                              <div className="h-5 bg-sidebar-accent/50 rounded-md animate-pulse w-3/4" />
-                            </div>
-                          ) : workflows.length === 0 ? (
-                            <p className="text-xs text-sidebar-foreground/50 px-2.5 py-2 text-center">
-                              No pipelines in this branch
-                            </p>
-                          ) : workflows.map((wf: any) => {
-                            const isWfActive = (location.pathname === '/pipeline' || location.pathname === '/cases') && search.pipelineId === wf.id;
-                            return (
-                              <DropdownMenuItem key={wf.id} asChild className="p-0 focus:bg-transparent">
-                                <Link
-                                  to="/pipeline"
-                                  search={{ pipelineId: wf.id }}
-                                  className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all w-full duration-150 cursor-pointer ${
-                                    isWfActive
-                                      ? 'text-sidebar-accent-foreground bg-sidebar-accent font-bold'
-                                      : 'text-sidebar-foreground/90 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/40'
-                                  }`}
-                                >
-                                  <span className={`w-2 h-2 rounded-full flex-shrink-0 mr-1.5 shadow-sm border border-white/10 ${getPipelineColor(wf.id)}`} />
-                                  <span className="truncate flex-1 text-left">{wf.name}</span>
-                                </Link>
-                              </DropdownMenuItem>
-                            );
-                          })}
-                        </DropdownMenuContent>
-                      </SidebarMenuItem>
-                    </DropdownMenu>
-                  );
-                }
-
-                return (
-                  <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton asChild isActive={isActive}>
-                      <Link
-                        to={item.path}
-                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-sm transition-all duration-150 ${
-                          isActive
-                            ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-sm border border-sidebar-border/50'
-                            : 'text-sidebar-foreground hover:bg-sidebar-accent/55 hover:text-sidebar-accent-foreground'
-                        }`}
-                      >
-                        <item.icon size={15} strokeWidth={isActive ? 2.5 : 1.75} className={isActive ? 'text-sidebar-accent-foreground' : 'text-sidebar-foreground/60'} />
-                        <span className="flex-1">{item.label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
+              {coreItems.map((item) => renderNavItem(item))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Capability Domain Sections */}
+        {capabilityGroups.map((group) => {
+          const displayName = customNames[group.id] || group.label;
+          const isEditing = editingName === group.id;
+
+          return (
+          <Collapsible
+            key={group.id}
+            open={expandedDomains[group.id] ?? true}
+            onOpenChange={() => toggleDomain(group.id)}
+            className="group/collapsible"
+          >
+            <SidebarGroup className="pt-1 pb-0">
+              <div className="flex items-center gap-1 px-2 mb-1 group/header">
+                {isEditing ? (
+                  <div className="flex items-center gap-1 flex-1 min-w-0">
+                    <group.icon size={12} className="text-sidebar-foreground/40 flex-shrink-0" />
+                    <input
+                      autoFocus
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') saveRename(group.id);
+                        if (e.key === 'Escape') cancelRename();
+                      }}
+                      className="flex-1 text-xs font-bold text-sidebar-foreground bg-sidebar-accent/60 rounded border border-sidebar-border px-1.5 py-0.5 outline-none min-w-0"
+                    />
+                    <button onClick={() => saveRename(group.id)} className="p-0.5 rounded text-sidebar-foreground/50 hover:text-emerald-500 hover:bg-sidebar-accent/60 transition-colors flex-shrink-0 cursor-pointer">
+                      <Check size={11} />
+                    </button>
+                    <button onClick={cancelRename} className="p-0.5 rounded text-sidebar-foreground/50 hover:text-rose-500 hover:bg-sidebar-accent/60 transition-colors flex-shrink-0 cursor-pointer">
+                      <X size={11} />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <CollapsibleTrigger asChild>
+                      <button className="flex items-center gap-1.5 flex-1 min-w-0 cursor-pointer select-none text-left">
+                        <group.icon size={14} className="text-blue-500 flex-shrink-0" />
+                        <span className="text-sm font-semibold text-blue-600/90 tracking-tight truncate">{displayName}</span>
+                        <ChevronDown size={12} className="text-blue-400/60 flex-shrink-0 transition-transform duration-200 group-data-[state=closed]/collapsible:-rotate-90" />
+                      </button>
+                    </CollapsibleTrigger>
+                    <button
+                      onClick={() => startRename(group.id, displayName)}
+                      className="opacity-0 group-hover/header:opacity-100 p-0.5 rounded text-sidebar-foreground/30 hover:text-sidebar-foreground hover:bg-sidebar-accent/60 transition-all flex-shrink-0 cursor-pointer"
+                    >
+                      <Pencil size={11} />
+                    </button>
+                  </>
+                )}
+              </div>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {group.items.map((item) => renderNavItem(item))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
+          );
+        })}
 
         {/* Settings/Configuration Section */}
         {visibleSettingsItems.length > 0 && (
