@@ -1,14 +1,57 @@
 import { pgTable, text, timestamp, jsonb, boolean, integer, index, uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
-import { tenants } from './tenants';
+import { tenants, users, branches } from './tenants';
+
+export const customObjects = pgTable(
+  'custom_objects',
+  {
+    id: text('id').primaryKey().$defaultFn(createId),
+    tenantId: text('tenant_id').references(() => tenants.id, { onDelete: 'cascade' }).notNull(),
+    key: text('key').notNull(),                 // e.g. 'hearing', 'solar_quote', 'vehicle'
+    label: text('label').notNull(),             // 'Court Hearing'
+    pluralLabel: text('plural_label').notNull(), // 'Court Hearings'
+    domain: text('domain').default('Custom Domain').notNull(), // Grouping under sidebar e.g. 'Legal Practice'
+    description: text('description'),
+    icon: text('icon').default('Layers').notNull(),
+    primaryField: text('primary_field').default('name').notNull(),
+    trackActivities: boolean('track_activities').default(true).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()).notNull(),
+  },
+  (table) => [
+    uniqueIndex('idx_custom_objects_tenant_key').on(table.tenantId, table.key),
+  ]
+);
+
+export const flexRecords = pgTable(
+  'flex_records',
+  {
+    id: text('id').primaryKey().$defaultFn(createId),
+    tenantId: text('tenant_id').references(() => tenants.id, { onDelete: 'cascade' }).notNull(),
+    customObjectId: text('custom_object_id').references(() => customObjects.id, { onDelete: 'cascade' }).notNull(),
+    objectKey: text('object_key').notNull(),
+    name: text('name').notNull(),
+    status: text('status').default('active').notNull(),
+    data: jsonb('data').default({}).notNull(),
+    assignedToId: text('assigned_to_id').references(() => users.id, { onDelete: 'set null' }),
+    branchId: text('branch_id').references(() => branches.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()).notNull(),
+  },
+  (table) => [
+    index('idx_flex_records_tenant_obj').on(table.tenantId, table.objectKey),
+    index('idx_flex_records_status').on(table.status),
+    index('idx_flex_records_created').on(table.createdAt),
+  ]
+);
 
 export const fieldDefinitions = pgTable(
   'field_definitions',
   {
     id: text('id').primaryKey().$defaultFn(createId),
     tenantId: text('tenant_id').references(() => tenants.id, { onDelete: 'cascade' }).notNull(),
-    entityType: text('entity_type').notNull(), // Lead | Party | Task | etc.
+    entityType: text('entity_type').notNull(), // Lead | Party | Task | or custom object key e.g. hearing
     name: text('name').notNull(),
     label: text('label').notNull(),
     fieldType: text('field_type').notNull(), // text, number, select, date, boolean, lookup
@@ -66,6 +109,18 @@ export const setupAuditTrails = pgTable(
     index('idx_setup_audit_trails_tenant').on(table.tenantId),
   ]
 );
+
+export const customObjectsRelations = relations(customObjects, ({ one, many }) => ({
+  tenant: one(tenants, { fields: [customObjects.tenantId], references: [tenants.id] }),
+  records: many(flexRecords),
+}));
+
+export const flexRecordsRelations = relations(flexRecords, ({ one }) => ({
+  tenant: one(tenants, { fields: [flexRecords.tenantId], references: [tenants.id] }),
+  customObject: one(customObjects, { fields: [flexRecords.customObjectId], references: [customObjects.id] }),
+  assignedTo: one(users, { fields: [flexRecords.assignedToId], references: [users.id] }),
+  branch: one(branches, { fields: [flexRecords.branchId], references: [branches.id] }),
+}));
 
 export const fieldDefinitionsRelations = relations(fieldDefinitions, ({ one }) => ({
   tenant: one(tenants, { fields: [fieldDefinitions.tenantId], references: [tenants.id] }),
