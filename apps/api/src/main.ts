@@ -1,39 +1,41 @@
-import { NestFactory } from '@nestjs/core';
-import {
-  FastifyAdapter,
-  NestFastifyApplication,
-} from '@nestjs/platform-fastify';
-import fastifyCookie from '@fastify/cookie';
-import { AppModule } from './app.module';
-import { SafeValidationPipe } from './core/auth/safe-validation.pipe';
-import { RedisIoAdapter } from './core/realtime/redis-io.adapter';
+import { serve } from '@hono/node-server';
+import { Server as SocketIOServer } from 'socket.io';
+import * as dotenv from 'dotenv';
+import { resolve } from 'path';
+import { app } from './app';
 
-async function bootstrap() {
-  const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule,
-    new FastifyAdapter(),
-  );
+dotenv.config({ path: resolve(__dirname, '../../../.env') });
+dotenv.config();
 
-  await app.register(fastifyCookie as any, {
-    secret: process.env['COOKIE_SECRET'] || 'secure-cookie-secret-change-in-production',
+const port = Number(process.env.PORT) || 3000;
+
+const server = serve(
+  {
+    fetch: app.fetch,
+    port,
+  },
+  (info) => {
+    console.log(`🚀 Meta CRM API running on http://localhost:${info.port}`);
+  }
+);
+
+// Attach Socket.IO for realtime lead notifications and interactions
+const io = new SocketIOServer(server as any, {
+  cors: {
+    origin: '*',
+    credentials: true,
+  },
+  path: '/socket.io',
+});
+
+io.on('connection', (socket) => {
+  socket.on('join_tenant', (tenantId: string) => {
+    if (tenantId) socket.join(`tenant:${tenantId}`);
   });
 
-  app.useGlobalPipes(new SafeValidationPipe({
-    whitelist: true,
-    transform: true,
-  }));
+  socket.on('join_room', (roomId: string) => {
+    if (roomId) socket.join(roomId);
+  });
+});
 
-  const redisIoAdapter = new RedisIoAdapter(app);
-  await redisIoAdapter.connectToRedis();
-  app.useWebSocketAdapter(redisIoAdapter);
-
-  app.setGlobalPrefix('api/v1');
-
-  await app.listen(process.env['PORT'] ?? 3000, '0.0.0.0');
-  console.warn(`API running on port ${process.env['PORT'] ?? 3000}`);
-}
-
-void bootstrap();
-
-
-
+export { io };

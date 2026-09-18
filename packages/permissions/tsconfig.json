@@ -1,5 +1,5 @@
 {
-  "extends": "@meta-crm/config-ts/base",
+  "extends": "../config-ts/base.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src"

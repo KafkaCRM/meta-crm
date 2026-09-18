@@ -1,7 +1,0 @@
-import { IsString, IsOptional } from 'class-validator';
-
-export class UpdateVerticalDto {
-  @IsOptional()
-  @IsString()
-  name?: string;
-}

@@ -240,8 +240,8 @@ function AppSidebar() {
     if (item.path === '/pipeline' && workflows.length > 0) {
       const isSubActive = location.pathname === '/pipeline' || location.pathname === '/cases';
       return (
-        <DropdownMenu key={item.path}>
-          <SidebarMenuItem>
+        <SidebarMenuItem key={item.path}>
+          <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <SidebarMenuButton isActive={isSubActive} tooltip={item.label} className="w-full justify-between pr-2.5">
                 <div className="flex items-center gap-2.5 font-medium">
@@ -252,7 +252,7 @@ function AppSidebar() {
               </SidebarMenuButton>
             </DropdownMenuTrigger>
             
-              <DropdownMenuContent side="right" align="start" alignOffset={-6} className="w-56 bg-popover border border-border shadow-md rounded-xl p-1.5 space-y-0.5 animate-in slide-in-from-left-2 duration-150">
+            <DropdownMenuContent side="right" align="start" alignOffset={-6} className="w-56 bg-popover border border-border shadow-md rounded-xl p-1.5 space-y-0.5 animate-in slide-in-from-left-2 duration-150">
               <DropdownMenuLabel className="text-[10px] text-sidebar-foreground/50 font-bold uppercase tracking-wider px-2.5 py-1.5">
                 Select Pipeline
               </DropdownMenuLabel>
@@ -287,8 +287,8 @@ function AppSidebar() {
                 );
               })}
             </DropdownMenuContent>
-          </SidebarMenuItem>
-        </DropdownMenu>
+          </DropdownMenu>
+        </SidebarMenuItem>
       );
     }
 
@@ -586,6 +586,13 @@ function RootLayout() {
   const location = useLocation();
   const router = useRouter();
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [workspaceName] = useState(() => {
+    try {
+      return localStorage.getItem('meta_crm_tenant_name') || 'Workspace';
+    } catch {
+      return 'Workspace';
+    }
+  });
 
   // Redirect to login if not authenticated (called unconditionally)
   useEffect(() => {
@@ -678,7 +685,7 @@ function RootLayout() {
 
                   {/* Tenant Workspace Selector */}
                   <div className="text-xs font-semibold text-foreground border border-border px-2.5 py-1 rounded-xl bg-muted select-none">
-                    Workspace: {localStorage.getItem('meta_crm_tenant_name') || 'Workspace'}
+                    Workspace: {workspaceName}
                   </div>
                 </div>
               </header>
@@ -825,6 +832,7 @@ function LoginPage() {
 
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground select-none font-sans">
+      <style>{loginStyles}</style>
       <div className="grid w-full lg:grid-cols-2">
         {/* Left Column: Form Panel */}
         <div className="flex min-h-screen flex-col justify-between px-6 py-6 sm:px-10 lg:max-w-lg">
