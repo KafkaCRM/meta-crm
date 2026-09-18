@@ -168,4 +168,47 @@ describe('Hono + Drizzle API Core', () => {
     expect(verified?.admin_user_id).toBe('platform_support_agent_42');
     expect(verified?.tenant_id).toBe('tenant_abc_123');
   });
+
+  it('Custom Objects API enforces authentication on /api/v1/objects (401)', async () => {
+    const res = await app.request('/api/v1/objects');
+    expect(res.status).toBe(401);
+    const json = await res.json();
+    expect(json.code).toBe('UNAUTHORIZED');
+  });
+
+  it('Custom Objects API enforces authentication on /api/v1/custom-objects (401)', async () => {
+    const res = await app.request('/api/v1/custom-objects');
+    expect(res.status).toBe(401);
+  });
+
+  it('Capability Package Installer enforces authentication (401)', async () => {
+    const res = await app.request('/api/v1/objects/package/install', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ domain: 'Healthcare', objects: [] }),
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it('Capability Package Installer validates input payload (400) when malformed', async () => {
+    const tenantToken = signJwt({
+      sub: 'tenant_user_1',
+      tenant_id: 'tenant_test_1',
+      role: 'admin',
+      vertical_ids: [],
+      assignment_ids: [],
+    });
+
+    const res = await app.request('/api/v1/objects/package/install', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${tenantToken}`,
+      },
+      body: JSON.stringify({ domain: '' }), // missing objects array
+    });
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.code).toBe('VALIDATION_FAILED');
+  });
 });
