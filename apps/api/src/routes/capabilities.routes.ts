@@ -15,6 +15,8 @@ import {
   tasks,
   notes,
   callLogs,
+  stock,
+  stockMovements,
 } from '../db/schema';
 import { requireAuth } from '../middleware/auth';
 import { requireTenant } from '../middleware/tenant';
@@ -207,7 +209,13 @@ capabilitiesRouter.post('/invoices', async (c) => {
       .values({
         tenantId: scope.tenant_id,
         partyId: b.party_id,
+        orderId: b.order_id || null,
+        branchId: b.branch_id || scope.branch_id || null,
+        subtotal: b.subtotal !== undefined ? Number(b.subtotal) : null,
+        taxAmount: Number(b.tax_amount) || 0,
+        discountAmount: Number(b.discount_amount) || 0,
         amount: Number(b.amount) || 0,
+        currency: b.currency || 'USD',
         status: b.status || 'draft',
         issueDate: b.issue_date ? new Date(b.issue_date) : new Date(),
         dueDate: new Date(b.due_date),
@@ -219,6 +227,7 @@ capabilitiesRouter.post('/invoices', async (c) => {
       await tx.insert(invoiceLineItems).values(
         b.items.map((item: any) => ({
           invoiceId: inv!.id,
+          productId: item.product_id || null,
           description: item.description,
           quantity: item.quantity,
           unitPrice: item.unit_price,
@@ -272,8 +281,15 @@ capabilitiesRouter.post('/invoices/:id/payments', async (c) => {
 // --- ORDERS ---
 capabilitiesRouter.get('/orders', async (c) => {
   const scope = c.get('scope');
+  const partyId = c.req.query('party_id');
+  const status = c.req.query('status');
+
+  const conditions = [eq(orders.tenantId, scope.tenant_id)];
+  if (partyId) conditions.push(eq(orders.partyId, partyId));
+  if (status) conditions.push(eq(orders.status, status as any));
+
   const list = await db.query.orders.findMany({
-    where: eq(orders.tenantId, scope.tenant_id),
+    where: and(...conditions),
     orderBy: [desc(orders.createdAt)],
     with: {
       party: { columns: { id: true, name: true, email: true } },
@@ -281,6 +297,23 @@ capabilitiesRouter.get('/orders', async (c) => {
     },
   });
   return c.json(list);
+});
+
+capabilitiesRouter.get('/orders/:id', async (c) => {
+  const scope = c.get('scope');
+  const id = c.req.param('id');
+
+  const order = await db.query.orders.findFirst({
+    where: and(eq(orders.id, id), eq(orders.tenantId, scope.tenant_id)),
+    with: {
+      party: { columns: { id: true, name: true, email: true } },
+      items: true,
+      invoices: true,
+    },
+  });
+
+  if (!order) return c.json({ code: 'NOT_FOUND', message: 'Order not found' }, 404);
+  return c.json(order);
 });
 
 capabilitiesRouter.post('/orders', async (c) => {
@@ -293,10 +326,13 @@ capabilitiesRouter.post('/orders', async (c) => {
       .values({
         tenantId: scope.tenant_id,
         partyId: b.party_id,
+        branchId: b.branch_id || scope.branch_id || null,
         totalAmount: Number(b.total_amount) || 0,
+        currency: b.currency || 'USD',
         status: b.status || 'pending',
-        paymentMethod: b.payment_method,
+        paymentMethod: b.payment_method || null,
         paymentStatus: b.payment_status || 'unpaid',
+        notes: b.notes || null,
       })
       .returning();
 
@@ -304,12 +340,48 @@ capabilitiesRouter.post('/orders', async (c) => {
       await tx.insert(orderLineItems).values(
         b.items.map((it: any) => ({
           orderId: ord!.id,
+          productId: it.product_id || null,
           productName: it.product_name,
-          quantity: it.quantity,
-          unitPrice: it.unit_price,
-          amount: it.amount,
+          quantity: Number(it.quantity) || 1,
+          unitPrice: Number(it.unit_price) || 0,
+          amount: Number(it.amount) || (Number(it.quantity) || 1) * (Number(it.unit_price) || 0),
         }))
       );
+
+      // Optional ERP stock deduction if warehouse specified
+      if (b.deduct_stock && b.warehouse_id) {
+        for (const it of b.items) {
+          if (it.product_id) {
+            const qty = Number(it.quantity) || 1;
+            const currentStock = await tx.query.stock.findFirst({
+              where: and(
+                eq(stock.tenantId, scope.tenant_id),
+                eq(stock.productId, it.product_id),
+                eq(stock.warehouseId, b.warehouse_id)
+              ),
+            });
+
+            if (currentStock) {
+              await tx
+                .update(stock)
+                .set({
+                  quantity: Math.max(currentStock.quantity - qty, 0),
+                })
+                .where(eq(stock.id, currentStock.id));
+
+              await tx.insert(stockMovements).values({
+                tenantId: scope.tenant_id,
+                productId: it.product_id,
+                warehouseId: b.warehouse_id,
+                type: 'out',
+                quantity: qty,
+                reference: ord!.id,
+                notes: `Fulfilled for Order ${ord!.id}`,
+              });
+            }
+          }
+        }
+      }
     }
 
     return tx.query.orders.findFirst({
@@ -319,6 +391,91 @@ capabilitiesRouter.post('/orders', async (c) => {
   });
 
   return c.json(result, 201);
+});
+
+capabilitiesRouter.patch('/orders/:id', async (c) => {
+  const scope = c.get('scope');
+  const id = c.req.param('id');
+  const b = await c.req.json();
+
+  const updateFields: Record<string, any> = {};
+  if (b.status !== undefined) updateFields['status'] = b.status;
+  if (b.payment_status !== undefined) updateFields['paymentStatus'] = b.payment_status;
+  if (b.payment_method !== undefined) updateFields['paymentMethod'] = b.payment_method;
+  if (b.notes !== undefined) updateFields['notes'] = b.notes;
+  if (b.total_amount !== undefined) updateFields['totalAmount'] = Number(b.total_amount);
+
+  const [updated] = await db
+    .update(orders)
+    .set(updateFields)
+    .where(and(eq(orders.id, id), eq(orders.tenantId, scope.tenant_id)))
+    .returning();
+
+  if (!updated) return c.json({ code: 'NOT_FOUND', message: 'Order not found' }, 404);
+
+  const fullOrder = await db.query.orders.findFirst({
+    where: eq(orders.id, id),
+    with: { items: true, party: { columns: { id: true, name: true, email: true } } },
+  });
+
+  return c.json(fullOrder);
+});
+
+// POST /orders/:id/create-invoice - Seamless CRM/ERP Conversion
+capabilitiesRouter.post('/orders/:id/create-invoice', async (c) => {
+  const scope = c.get('scope');
+  const orderId = c.req.param('id');
+
+  const order = await db.query.orders.findFirst({
+    where: and(eq(orders.id, orderId), eq(orders.tenantId, scope.tenant_id)),
+    with: { items: true },
+  });
+
+  if (!order) {
+    return c.json({ code: 'NOT_FOUND', message: 'Order not found' }, 404);
+  }
+
+  const createdInvoice = await db.transaction(async (tx) => {
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 30); // 30-day payment term
+
+    const [inv] = await tx
+      .insert(invoices)
+      .values({
+        tenantId: scope.tenant_id,
+        partyId: order.partyId,
+        orderId: order.id,
+        branchId: order.branchId,
+        amount: order.totalAmount,
+        subtotal: order.totalAmount,
+        currency: order.currency,
+        status: 'draft',
+        issueDate: new Date(),
+        dueDate,
+        billingDetails: { source: 'order_conversion', order_id: order.id },
+      })
+      .returning();
+
+    if (order.items && order.items.length > 0) {
+      await tx.insert(invoiceLineItems).values(
+        order.items.map((item) => ({
+          invoiceId: inv!.id,
+          productId: item.productId,
+          description: item.productName,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          amount: item.amount,
+        }))
+      );
+    }
+
+    return tx.query.invoices.findFirst({
+      where: eq(invoices.id, inv!.id),
+      with: { items: true, order: true },
+    });
+  });
+
+  return c.json(createdInvoice, 201);
 });
 
 // --- PROPERTIES ---

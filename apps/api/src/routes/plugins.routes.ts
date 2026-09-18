@@ -12,6 +12,7 @@ import {
 } from '../db/schema';
 import { requireAuth } from '../middleware/auth';
 import { requireTenant } from '../middleware/tenant';
+import { encryptVaultData } from '../lib/crypto';
 import type { AppEnv } from '../types/context';
 
 export const pluginsRouter = new Hono<AppEnv>();
@@ -240,21 +241,52 @@ pluginsRouter.post('/integrations/:provider/configure', async (c) => {
   const provider = c.req.param('provider');
   const body = await c.req.json().catch(() => ({}));
 
+  const known = KNOWN_PROVIDERS.find((p) => p.provider === provider);
+  const credFields = known?.credential_fields || [];
+  const credentials: Record<string, any> = {};
+  const safeConfig: Record<string, any> = {};
+
+  for (const [key, value] of Object.entries(body)) {
+    if (credFields.includes(key)) {
+      credentials[key] = value;
+    } else {
+      safeConfig[key] = value;
+    }
+  }
+
+  const encrypted = Object.keys(credentials).length > 0 ? encryptVaultData(credentials) : null;
+
   let conn = await db.query.integrationConnections.findFirst({
     where: and(eq(integrationConnections.tenantId, scope.tenant_id), eq(integrationConnections.provider, provider)),
   });
 
   if (conn) {
+    const updateData: Record<string, any> = {
+      configJson: safeConfig,
+      status: 'connected',
+      lastTestedAt: new Date(),
+    };
+    if (encrypted) {
+      updateData['credentialsCipherText'] = encrypted.cipherText;
+      updateData['credentialsIv'] = encrypted.iv;
+      updateData['credentialsTag'] = encrypted.tag;
+    }
+
     const [updated] = await db
       .update(integrationConnections)
-      .set({
-        configJson: body,
-        status: 'connected',
-        lastTestedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(integrationConnections.id, conn.id))
       .returning();
-    return c.json(updated);
+
+    return c.json({
+      id: updated!.id,
+      provider: updated!.provider,
+      name: updated!.name,
+      status: updated!.status,
+      has_credentials: Boolean(updated!.credentialsCipherText),
+      configured_at: updated!.updatedAt?.toISOString(),
+      config_json: updated!.configJson,
+    });
   } else {
     const [created] = await db
       .insert(integrationConnections)
@@ -263,11 +295,26 @@ pluginsRouter.post('/integrations/:provider/configure', async (c) => {
         provider,
         name: `${provider.toUpperCase()} Integration`,
         status: 'connected',
-        configJson: body,
+        configJson: safeConfig,
+        credentialsCipherText: encrypted?.cipherText || null,
+        credentialsIv: encrypted?.iv || null,
+        credentialsTag: encrypted?.tag || null,
         lastTestedAt: new Date(),
       })
       .returning();
-    return c.json(created, 201);
+
+    return c.json(
+      {
+        id: created!.id,
+        provider: created!.provider,
+        name: created!.name,
+        status: created!.status,
+        has_credentials: Boolean(created!.credentialsCipherText),
+        configured_at: created!.updatedAt?.toISOString(),
+        config_json: created!.configJson,
+      },
+      201
+    );
   }
 });
 

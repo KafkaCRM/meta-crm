@@ -5,6 +5,8 @@ export interface RequestScope {
   tenant_id: string;
   role: TenantRole | PlatformRole | string;
   platform_role?: PlatformRole | string;
+  branch_id?: string;
+  branch_ids?: string[];
   vertical_ids: string[];
   assignment_ids: string[];
   is_impersonating?: boolean;

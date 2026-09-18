@@ -14,6 +14,8 @@ export interface JwtPayload {
   tenant_id: string;
   role: string;
   platform_role?: string;
+  branch_id?: string;
+  branch_ids?: string[];
   vertical_ids?: string[];
   assignment_ids?: string[];
   is_impersonating?: boolean;
@@ -42,6 +44,8 @@ export function payloadToScope(payload: JwtPayload): RequestScope {
     tenant_id: payload.tenant_id,
     role: payload.role,
     platform_role: payload.platform_role,
+    branch_id: payload.branch_id,
+    branch_ids: payload.branch_ids,
     vertical_ids: payload.vertical_ids ?? [],
     assignment_ids: payload.assignment_ids ?? [],
     is_impersonating: payload.is_impersonating,

@@ -181,6 +181,7 @@ export interface ListPropertiesParams {
 // --- ORDER MANAGEMENT CAPABILITY ---
 export interface OrderLineItem {
   id: string;
+  product_id?: string | null;
   product_name: string;
   quantity: number;
   unit_price: number;
@@ -191,10 +192,13 @@ export interface Order {
   id: string;
   tenant_id: string;
   party_id: string;
+  branch_id?: string | null;
   total_amount: number;
+  currency?: string;
   status: string;
   payment_method?: string | null;
   payment_status: string;
+  notes?: string | null;
   created_at: string;
   party?: {
     id: string;
@@ -203,16 +207,24 @@ export interface Order {
     phone_normalized?: string | null;
   };
   items?: OrderLineItem[];
+  invoices?: any[];
 }
 
 export interface CreateOrderInput {
   party_id: string;
+  branch_id?: string;
   total_amount: number;
+  currency?: string;
   payment_method?: string;
+  notes?: string;
+  deduct_stock?: boolean;
+  warehouse_id?: string;
   items: {
+    product_id?: string | null;
     product_name: string;
     quantity: number;
     unit_price: number;
+    amount?: number;
   }[];
 }
 
@@ -368,6 +380,10 @@ export const capabilitiesApi = {
       apiCall<Order>(`/orders/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(data),
+      }),
+    createInvoice: (orderId: string) =>
+      apiCall<Invoice>(`/orders/${orderId}/create-invoice`, {
+        method: 'POST',
       }),
   },
 

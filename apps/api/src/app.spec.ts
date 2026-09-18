@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { app } from './app';
 import { signJwt, verifyJwt } from './lib/jwt';
-import { hashPassword, verifyPassword } from './lib/crypto';
+import { hashPassword, verifyPassword, encryptVaultData, decryptVaultData } from './lib/crypto';
 
 describe('Hono + Drizzle API Core', () => {
   it('GET /health returns 200 and healthy status', async () => {
@@ -65,5 +65,23 @@ describe('Hono + Drizzle API Core', () => {
     expect(valid).toBe(true);
     const invalid = await verifyPassword('WrongPassword', hash);
     expect(invalid).toBe(false);
+  });
+
+  it('AES-256-GCM Vault encrypts and decrypts sensitive integration credentials', () => {
+    const credentials = {
+      api_key: 'sk_live_938472918472918',
+      webhook_secret: 'whsec_abcdef123456789',
+    };
+    const encrypted = encryptVaultData(credentials);
+    expect(encrypted.cipherText).toBeDefined();
+    expect(encrypted.iv).toHaveLength(24); // 12 bytes hex
+    expect(encrypted.tag).toHaveLength(32); // 16 bytes hex
+
+    const decrypted = decryptVaultData<typeof credentials>(
+      encrypted.cipherText,
+      encrypted.iv,
+      encrypted.tag
+    );
+    expect(decrypted).toEqual(credentials);
   });
 });

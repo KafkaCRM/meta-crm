@@ -1,7 +1,8 @@
 import { pgTable, text, timestamp, jsonb, boolean, integer, doublePrecision, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
-import { tenants, users } from './tenants';
+import { tenants, users, branches } from './tenants';
+import { products } from './operations';
 import { parties } from './core';
 import {
   appointmentStatusEnum,
@@ -42,7 +43,13 @@ export const invoices = pgTable(
     id: text('id').primaryKey().$defaultFn(createId),
     tenantId: text('tenant_id').references(() => tenants.id, { onDelete: 'cascade' }).notNull(),
     partyId: text('party_id').references(() => parties.id, { onDelete: 'cascade' }).notNull(),
+    orderId: text('order_id').references(() => orders.id, { onDelete: 'set null' }),
+    branchId: text('branch_id').references(() => branches.id, { onDelete: 'set null' }),
+    subtotal: doublePrecision('subtotal'),
+    taxAmount: doublePrecision('tax_amount').default(0).notNull(),
+    discountAmount: doublePrecision('discount_amount').default(0).notNull(),
     amount: doublePrecision('amount').notNull(),
+    currency: text('currency').default('USD').notNull(),
     status: invoiceStatusEnum('status').default('draft').notNull(),
     issueDate: timestamp('issue_date').defaultNow().notNull(),
     dueDate: timestamp('due_date').notNull(),
@@ -53,6 +60,8 @@ export const invoices = pgTable(
   (table) => [
     index('idx_invoices_tenant_due').on(table.tenantId, table.dueDate),
     index('idx_invoices_tenant_party').on(table.tenantId, table.partyId),
+    index('idx_invoices_tenant_order').on(table.tenantId, table.orderId),
+    index('idx_invoices_tenant_branch').on(table.tenantId, table.branchId),
   ]
 );
 
@@ -61,6 +70,7 @@ export const invoiceLineItems = pgTable(
   {
     id: text('id').primaryKey().$defaultFn(createId),
     invoiceId: text('invoice_id').references(() => invoices.id, { onDelete: 'cascade' }).notNull(),
+    productId: text('product_id').references(() => products.id, { onDelete: 'set null' }),
     description: text('description').notNull(),
     quantity: doublePrecision('quantity').notNull(),
     unitPrice: doublePrecision('unit_price').notNull(),
@@ -68,6 +78,7 @@ export const invoiceLineItems = pgTable(
   },
   (table) => [
     index('idx_invoice_items_invoice').on(table.invoiceId),
+    index('idx_invoice_items_product').on(table.productId),
   ]
 );
 
@@ -120,16 +131,20 @@ export const orders = pgTable(
     id: text('id').primaryKey().$defaultFn(createId),
     tenantId: text('tenant_id').references(() => tenants.id, { onDelete: 'cascade' }).notNull(),
     partyId: text('party_id').references(() => parties.id, { onDelete: 'cascade' }).notNull(),
+    branchId: text('branch_id').references(() => branches.id, { onDelete: 'set null' }),
     totalAmount: doublePrecision('total_amount').notNull(),
+    currency: text('currency').default('USD').notNull(),
     status: orderStatusEnum('status').default('pending').notNull(),
     paymentMethod: text('payment_method'),
     paymentStatus: paymentStatusEnum('payment_status').default('unpaid').notNull(),
+    notes: text('notes'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()).notNull(),
   },
   (table) => [
     index('idx_orders_tenant_status').on(table.tenantId, table.status),
     index('idx_orders_tenant_party').on(table.tenantId, table.partyId),
+    index('idx_orders_tenant_branch').on(table.tenantId, table.branchId),
   ]
 );
 
@@ -138,6 +153,7 @@ export const orderLineItems = pgTable(
   {
     id: text('id').primaryKey().$defaultFn(createId),
     orderId: text('order_id').references(() => orders.id, { onDelete: 'cascade' }).notNull(),
+    productId: text('product_id').references(() => products.id, { onDelete: 'set null' }),
     productName: text('product_name').notNull(),
     quantity: integer('quantity').notNull(),
     unitPrice: doublePrecision('unit_price').notNull(),
@@ -145,6 +161,7 @@ export const orderLineItems = pgTable(
   },
   (table) => [
     index('idx_order_items_order').on(table.orderId),
+    index('idx_order_items_product').on(table.productId),
   ]
 );
 
@@ -229,11 +246,25 @@ export const appointmentsRelations = relations(appointments, ({ one }) => ({
 
 export const invoicesRelations = relations(invoices, ({ one, many }) => ({
   party: one(parties, { fields: [invoices.partyId], references: [parties.id] }),
+  order: one(orders, { fields: [invoices.orderId], references: [orders.id] }),
+  branch: one(branches, { fields: [invoices.branchId], references: [branches.id] }),
   items: many(invoiceLineItems),
   payments: many(payments),
 }));
 
+export const invoiceLineItemsRelations = relations(invoiceLineItems, ({ one }) => ({
+  invoice: one(invoices, { fields: [invoiceLineItems.invoiceId], references: [invoices.id] }),
+  product: one(products, { fields: [invoiceLineItems.productId], references: [products.id] }),
+}));
+
 export const ordersRelations = relations(orders, ({ one, many }) => ({
   party: one(parties, { fields: [orders.partyId], references: [parties.id] }),
+  branch: one(branches, { fields: [orders.branchId], references: [branches.id] }),
   items: many(orderLineItems),
+  invoices: many(invoices),
+}));
+
+export const orderLineItemsRelations = relations(orderLineItems, ({ one }) => ({
+  order: one(orders, { fields: [orderLineItems.orderId], references: [orders.id] }),
+  product: one(products, { fields: [orderLineItems.productId], references: [products.id] }),
 }));

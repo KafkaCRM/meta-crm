@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { capabilitiesApi, type Order, type OrderLineItem } from '@/api/capabilities';
 import { partiesApi } from '@/api/parties';
+import { settingsApi } from '@/api/settings';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -31,8 +32,8 @@ export function Orders() {
   // Forms state
   const [partyId, setPartyId] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('credit_card');
-  const [items, setItems] = useState<{ product_name: string; quantity: number; unit_price: number }[]>([
-    { product_name: '', quantity: 1, unit_price: 0 },
+  const [items, setItems] = useState<{ product_id?: string; product_name: string; quantity: number; unit_price: number }[]>([
+    { product_id: undefined, product_name: '', quantity: 1, unit_price: 0 },
   ]);
 
   // Fetch orders list
@@ -48,6 +49,25 @@ export function Orders() {
     queryFn: () => partiesApi.list({ limit: 100 }),
   });
   const contacts = contactsData?.data ?? [];
+
+  // Fetch product catalog for SKU autocomplete
+  const { data: productsData } = useQuery({
+    queryKey: ['products', 'catalog'],
+    queryFn: () => settingsApi.products.list({ limit: 100 }),
+  });
+  const catalogProducts = productsData?.data ?? [];
+
+  // Convert Order to Invoice mutation
+  const createInvoiceMutation = useMutation({
+    mutationFn: (orderId: string) => capabilitiesApi.orders.createInvoice(orderId),
+    onSuccess: (inv) => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      toast.success(`Invoice #${inv.id.slice(0, 8)} created successfully from Order!`);
+      setIsDetailOpen(false);
+    },
+    onError: () => toast.error('Failed to convert order to invoice'),
+  });
 
   // Create Order mutation
   const createMutation = useMutation({
@@ -87,6 +107,19 @@ export function Orders() {
   const handleRemoveItem = (index: number) => {
     if (items.length === 1) return;
     setItems(items.filter((_, idx) => idx !== index));
+  };
+
+  const handleSelectProduct = (index: number, productId: string) => {
+    const prod = catalogProducts.find((p: any) => p.id === productId);
+    if (!prod) return;
+    const updated = [...items];
+    updated[index] = {
+      product_id: prod.id,
+      product_name: prod.name,
+      quantity: updated[index]?.quantity || 1,
+      unit_price: Number(prod.price) || 0,
+    };
+    setItems(updated);
   };
 
   const handleItemChange = (index: number, key: 'product_name' | 'quantity' | 'unit_price', val: any) => {
@@ -234,12 +267,43 @@ export function Orders() {
                 <div className="max-h-56 overflow-y-auto space-y-2 border border-border rounded-lg p-2 bg-background">
                   {items.map((item, idx) => (
                     <div key={idx} className="flex gap-2 items-center">
-                      <Input
-                        placeholder="Product Name"
-                        value={item.product_name}
-                        onChange={(e) => handleItemChange(idx, 'product_name', e.target.value)}
-                        className="bg-card border-border h-8 text-xs flex-grow focus-visible:ring-[#0f172a]"
-                      />
+                      {catalogProducts.length > 0 ? (
+                        <div className="flex gap-1 flex-grow">
+                          <select
+                            value={item.product_id || ''}
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                handleSelectProduct(idx, e.target.value);
+                              } else {
+                                handleItemChange(idx, 'product_name', '');
+                              }
+                            }}
+                            className="bg-card border border-border rounded-md h-8 text-xs px-2 flex-grow focus:outline-none"
+                          >
+                            <option value="">-- Choose Product SKU or Custom --</option>
+                            {catalogProducts.map((p: any) => (
+                              <option key={p.id} value={p.id}>
+                                {p.name} {p.sku ? `[${p.sku}]` : ''} - {formatCurrency(p.price || 0)}
+                              </option>
+                            ))}
+                          </select>
+                          {!item.product_id && (
+                            <Input
+                              placeholder="Custom name"
+                              value={item.product_name}
+                              onChange={(e) => handleItemChange(idx, 'product_name', e.target.value)}
+                              className="bg-card border-border h-8 text-xs w-32 focus-visible:ring-[#0f172a]"
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <Input
+                          placeholder="Product Name"
+                          value={item.product_name}
+                          onChange={(e) => handleItemChange(idx, 'product_name', e.target.value)}
+                          className="bg-card border-border h-8 text-xs flex-grow focus-visible:ring-[#0f172a]"
+                        />
+                      )}
                       <Input
                         type="number"
                         placeholder="Qty"
@@ -453,8 +517,17 @@ export function Orders() {
             </div>
           )}
 
-          <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setIsDetailOpen(false)} className="border-border text-muted-foreground w-full">
+          <DialogFooter className="mt-4 flex sm:justify-between items-center gap-2">
+            <Button
+              type="button"
+              onClick={() => selectedOrder && createInvoiceMutation.mutate(selectedOrder.id)}
+              disabled={createInvoiceMutation.isPending}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 text-xs h-8 cursor-pointer"
+            >
+              <CreditCard size={13} />
+              {createInvoiceMutation.isPending ? 'Generating...' : 'Convert to Invoice'}
+            </Button>
+            <Button variant="outline" onClick={() => setIsDetailOpen(false)} className="border-border text-muted-foreground text-xs h-8 cursor-pointer">
               Close Detail
             </Button>
           </DialogFooter>
