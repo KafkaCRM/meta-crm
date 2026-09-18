@@ -12,6 +12,7 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
 export interface JwtPayload {
   sub: string;
   tenant_id: string;
+  email?: string;
   role: string;
   platform_role?: string;
   branch_id?: string;
@@ -42,6 +43,7 @@ export function payloadToScope(payload: JwtPayload): RequestScope {
   return {
     user_id: payload.sub,
     tenant_id: payload.tenant_id,
+    email: payload.email,
     role: payload.role,
     platform_role: payload.platform_role,
     branch_id: payload.branch_id,

@@ -124,6 +124,7 @@ authRouter.post('/login', validateJson(loginSchema), async (c) => {
       const accessToken = signJwt({
         sub: platformUser.id,
         tenant_id: '',
+        email: platformUser.email,
         role: platformRole,
         platform_role: platformRole,
         assignment_ids: [],
@@ -150,6 +151,7 @@ authRouter.post('/login', validateJson(loginSchema), async (c) => {
           name: platformUser.name,
           email: platformUser.email,
           role: platformRole,
+          platform_role: platformRole,
           assignment_ids: [],
         },
       });
@@ -316,6 +318,7 @@ authRouter.post('/refresh', validateJson(refreshSchema), async (c) => {
     const accessToken = signJwt({
       sub: platformUser.id,
       tenant_id: '',
+      email: platformUser.email,
       role: platformRole,
       platform_role: platformRole,
       assignment_ids: [],

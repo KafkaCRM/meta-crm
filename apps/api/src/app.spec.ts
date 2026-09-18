@@ -89,4 +89,83 @@ describe('Hono + Drizzle API Core', () => {
     const res = await app.request('/api/v1/franchise/status');
     expect(res.status).toBe(401);
   });
+
+  it('Platform API enforces authentication on /api/v1/platform/tenants (401)', async () => {
+    const res = await app.request('/api/v1/platform/tenants');
+    expect(res.status).toBe(401);
+  });
+
+  it('Platform API rejects non-platform tenant users with 403 Forbidden', async () => {
+    const regularToken = signJwt({
+      sub: 'tenant_user_1',
+      tenant_id: 'tenant_1',
+      role: 'admin',
+      vertical_ids: [],
+      assignment_ids: [],
+    });
+
+    const res = await app.request('/api/v1/platform/tenants', {
+      headers: { Authorization: `Bearer ${regularToken}` },
+    });
+    expect(res.status).toBe(403);
+    const json = await res.json();
+    expect(json.code).toBe('FORBIDDEN');
+  });
+
+  it('Platform API allows authenticated platform_admin to query capabilities catalog', async () => {
+    const platformAdminToken = signJwt({
+      sub: 'platform_super_admin',
+      tenant_id: '',
+      role: 'platform_admin',
+      platform_role: 'platform_admin',
+      vertical_ids: [],
+      assignment_ids: [],
+    });
+
+    const res = await app.request('/api/v1/platform/tenants/capabilities', {
+      headers: { Authorization: `Bearer ${platformAdminToken}` },
+    });
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(Array.isArray(json)).toBe(true);
+    expect(json.some((c: any) => c.id === 'capability/appointment')).toBe(true);
+    expect(json.some((c: any) => c.id === 'capability/billing')).toBe(true);
+  });
+
+  it('Platform API allows platform_admin to inspect queue monitors', async () => {
+    const platformAdminToken = signJwt({
+      sub: 'platform_super_admin',
+      tenant_id: '',
+      role: 'platform_admin',
+      platform_role: 'platform_admin',
+      vertical_ids: [],
+      assignment_ids: [],
+    });
+
+    const res = await app.request('/api/v1/platform/system/queue/status', {
+      headers: { Authorization: `Bearer ${platformAdminToken}` },
+    });
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.processing_rate).toBeDefined();
+    expect(json.waiting).toBe(0);
+  });
+
+  it('Support Impersonation generates signed token with is_impersonating flag and admin_user_id', () => {
+    const impersonationToken = signJwt({
+      sub: 'impersonated_tenant_user_99',
+      tenant_id: 'tenant_abc_123',
+      role: 'admin',
+      is_impersonating: true,
+      admin_user_id: 'platform_support_agent_42',
+      vertical_ids: [],
+      assignment_ids: [],
+    });
+
+    const verified = verifyJwt(impersonationToken);
+    expect(verified).not.toBeNull();
+    expect(verified?.is_impersonating).toBe(true);
+    expect(verified?.admin_user_id).toBe('platform_support_agent_42');
+    expect(verified?.tenant_id).toBe('tenant_abc_123');
+  });
 });

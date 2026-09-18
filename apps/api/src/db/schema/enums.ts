@@ -1,6 +1,13 @@
 import { pgEnum } from 'drizzle-orm/pg-core';
 
-export const tenantStatusEnum = pgEnum('tenant_status', ['active', 'suspended', 'archived']);
+export const tenantStatusEnum = pgEnum('tenant_status', [
+  'active',
+  'suspended',
+  'archived',
+  'paused',
+  'cancelled',
+  'inactive',
+]);
 export const tenantTypeEnum = pgEnum('tenant_type', ['franchisor', 'franchisee', 'independent']);
 export const userStatusEnum = pgEnum('user_status', ['active', 'suspended', 'inactive']);
 export const leadStatusEnum = pgEnum('lead_status', [
