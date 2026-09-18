@@ -84,4 +84,9 @@ describe('Hono + Drizzle API Core', () => {
     );
     expect(decrypted).toEqual(credentials);
   });
+
+  it('Franchise API enforces authentication on /api/v1/franchise/status (401)', async () => {
+    const res = await app.request('/api/v1/franchise/status');
+    expect(res.status).toBe(401);
+  });
 });

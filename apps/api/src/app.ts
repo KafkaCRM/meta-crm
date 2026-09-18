@@ -22,6 +22,7 @@ import { operationsRouter } from './routes/operations.routes';
 import { reportsRouter } from './routes/reports.routes';
 import { pluginsRouter } from './routes/plugins.routes';
 import { platformRouter } from './routes/platform.routes';
+import { franchiseRouter } from './routes/franchise.routes';
 
 export const app = new Hono<AppEnv>();
 
@@ -93,6 +94,7 @@ apiV1.route('/field-definitions', fieldsRouter);
 apiV1.route('/labels', labelsRouter);
 apiV1.route('/reports', reportsRouter);
 apiV1.route('/platform', platformRouter);
+apiV1.route('/franchise', franchiseRouter);
 
 // Capabilities & Domain Verticals
 apiV1.route('/', capabilitiesRouter);

@@ -1,7 +1,7 @@
-import { pgTable, text, timestamp, jsonb, uniqueIndex, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, jsonb, uniqueIndex, index, doublePrecision, type AnyPgColumn } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
-import { tenantStatusEnum, userStatusEnum } from './enums';
+import { tenantStatusEnum, tenantTypeEnum, userStatusEnum } from './enums';
 
 export const tenants = pgTable(
   'tenants',
@@ -10,12 +10,20 @@ export const tenants = pgTable(
     name: text('name').notNull(),
     slug: text('slug').notNull().unique(),
     industry: text('industry').notNull(),
+    tenantType: tenantTypeEnum('tenant_type').default('independent').notNull(),
+    parentTenantId: text('parent_tenant_id').references((): AnyPgColumn => tenants.id, { onDelete: 'set null' }),
+    royaltyPercentage: doublePrecision('royalty_percentage').default(0).notNull(),
+    territoryCodes: jsonb('territory_codes').default([]).notNull(),
     configJson: jsonb('config_json').default({}).notNull(),
     schemaName: text('schema_name'),
     status: tenantStatusEnum('status').default('active').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()).notNull(),
-  }
+  },
+  (table) => [
+    index('idx_tenants_parent_id').on(table.parentTenantId),
+    index('idx_tenants_type').on(table.tenantType),
+  ]
 );
 
 export const branches = pgTable(
@@ -144,11 +152,58 @@ export const refreshTokens = pgTable(
   ]
 );
 
+export const franchiseRoyaltyStatements = pgTable(
+  'franchise_royalty_statements',
+  {
+    id: text('id').primaryKey().$defaultFn(createId),
+    franchisorTenantId: text('franchisor_tenant_id').references(() => tenants.id, { onDelete: 'cascade' }).notNull(),
+    franchiseeTenantId: text('franchisee_tenant_id').references(() => tenants.id, { onDelete: 'cascade' }).notNull(),
+    periodStart: timestamp('period_start').notNull(),
+    periodEnd: timestamp('period_end').notNull(),
+    grossSales: doublePrecision('gross_sales').notNull(),
+    royaltyRate: doublePrecision('royalty_rate').notNull(),
+    royaltyAmount: doublePrecision('royalty_amount').notNull(),
+    status: text('status').default('pending').notNull(), // pending | invoiced | paid
+    generatedAt: timestamp('generated_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('idx_royalty_franchisor').on(table.franchisorTenantId),
+    index('idx_royalty_franchisee').on(table.franchiseeTenantId),
+  ]
+);
+
 // Relations
-export const tenantsRelations = relations(tenants, ({ many }) => ({
+export const tenantsRelations = relations(tenants, ({ one, many }) => ({
+  parent: one(tenants, {
+    fields: [tenants.parentTenantId],
+    references: [tenants.id],
+    relationName: 'franchise_hierarchy',
+  }),
+  franchisees: many(tenants, {
+    relationName: 'franchise_hierarchy',
+  }),
   branches: many(branches),
   verticals: many(verticals),
   users: many(users),
+  royaltyStatementsAsFranchisor: many(franchiseRoyaltyStatements, {
+    relationName: 'franchisor_statements',
+  }),
+  royaltyStatementsAsFranchisee: many(franchiseRoyaltyStatements, {
+    relationName: 'franchisee_statements',
+  }),
+}));
+
+export const franchiseRoyaltyStatementsRelations = relations(franchiseRoyaltyStatements, ({ one }) => ({
+  franchisor: one(tenants, {
+    fields: [franchiseRoyaltyStatements.franchisorTenantId],
+    references: [tenants.id],
+    relationName: 'franchisor_statements',
+  }),
+  franchisee: one(tenants, {
+    fields: [franchiseRoyaltyStatements.franchiseeTenantId],
+    references: [tenants.id],
+    relationName: 'franchisee_statements',
+  }),
 }));
 
 export const branchesRelations = relations(branches, ({ one, many }) => ({

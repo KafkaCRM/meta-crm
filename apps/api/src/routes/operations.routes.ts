@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, inArray } from 'drizzle-orm';
 import { db } from '../db';
 import {
+  tenants,
   products,
   productCategories,
   warehouses,
@@ -20,14 +21,31 @@ operationsRouter.use('*', requireAuth, requireTenant);
 // --- PRODUCTS & CATEGORIES ---
 operationsRouter.get('/products', async (c) => {
   const scope = c.get('scope');
+
+  const currentTenant = await db.query.tenants.findFirst({
+    where: eq(tenants.id, scope.tenant_id),
+    columns: { id: true, parentTenantId: true },
+  });
+
+  const targetTenantIds = [scope.tenant_id];
+  if (currentTenant?.parentTenantId) {
+    targetTenantIds.push(currentTenant.parentTenantId);
+  }
+
   const list = await db.query.products.findMany({
-    where: eq(products.tenantId, scope.tenant_id),
+    where: inArray(products.tenantId, targetTenantIds),
     orderBy: [desc(products.createdAt)],
     with: {
       category: { columns: { id: true, name: true } },
     },
   });
-  return c.json(list);
+
+  const formatted = list.map((p) => ({
+    ...p,
+    is_master_catalog: p.tenantId !== scope.tenant_id,
+  }));
+
+  return c.json(formatted);
 });
 
 operationsRouter.post('/products', async (c) => {

@@ -33,10 +33,39 @@ leadsRouter.post('/public', validateJson(publicLeadSchema), async (c) => {
     return c.json({ code: 'TENANT_NOT_FOUND', message: 'Target workspace not found or inactive' }, 404);
   }
 
+  let targetTenantId = tenant.id;
+  let routedFranchisee = null;
+
+  // Automated Franchise Lead Routing if current tenant is a Franchisor
+  if (tenant.tenantType === 'franchisor') {
+    const childFranchisees = await db.query.tenants.findMany({
+      where: and(eq(tenants.parentTenantId, tenant.id), eq(tenants.status, 'active')),
+    });
+
+    if (childFranchisees.length > 0) {
+      const attrs = (data.attributes as Record<string, any>) || {};
+      const postal = String(attrs['postal_code'] || attrs['zip'] || attrs['zip_code'] || '').trim().toLowerCase();
+      const city = String(attrs['city'] || '').trim().toLowerCase();
+
+      const matched = childFranchisees.find((f) => {
+        const codes = (f.territoryCodes as string[]) || [];
+        return codes.some((code) => {
+          const cLower = String(code).trim().toLowerCase();
+          return (postal && cLower === postal) || (city && cLower === city);
+        });
+      });
+
+      if (matched) {
+        targetTenantId = matched.id;
+        routedFranchisee = matched;
+      }
+    }
+  }
+
   const [created] = await db
     .insert(leads)
     .values({
-      tenantId: tenant.id,
+      tenantId: targetTenantId,
       name: data.name,
       email: data.email,
       phone: data.phone,
@@ -51,14 +80,27 @@ leadsRouter.post('/public', validateJson(publicLeadSchema), async (c) => {
   if (created) {
     await db.insert(leadEvents).values({
       leadId: created.id,
-      tenantId: tenant.id,
+      tenantId: targetTenantId,
       eventType: 'lead_created',
       actorId: 'public_api',
-      metadata: { source: data.source },
+      metadata: {
+        source: data.source,
+        ...(routedFranchisee
+          ? {
+              routed_from_franchisor: tenant.name,
+              routed_from_franchisor_id: tenant.id,
+              franchisee_name: routedFranchisee.name,
+            }
+          : {}),
+      },
     });
   }
 
-  return c.json({ success: true, lead_id: created?.id }, 201);
+  return c.json({
+    success: true,
+    lead_id: created?.id,
+    routed_to_franchise: routedFranchisee ? routedFranchisee.name : null,
+  }, 201);
 });
 
 // All routes below require tenant authentication
@@ -536,4 +578,60 @@ leadsRouter.post('/:id/convert', async (c) => {
   });
 
   return c.json({ party_id: result.id });
+});
+
+// POST /leads/:id/route-to-franchise - Manual routing from Franchisor to Franchisee
+leadsRouter.post('/:id/route-to-franchise', async (c) => {
+  const scope = c.get('scope');
+  const id = c.req.param('id');
+  const { franchisee_tenant_id } = await c.req.json().catch(() => ({}));
+
+  if (!franchisee_tenant_id) {
+    return c.json({ code: 'VALIDATION_FAILED', message: 'franchisee_tenant_id is required' }, 400);
+  }
+
+  // Ensure target franchisee belongs to this franchisor
+  const franchisee = await db.query.tenants.findFirst({
+    where: and(eq(tenants.id, franchisee_tenant_id), eq(tenants.parentTenantId, scope.tenant_id)),
+  });
+
+  if (!franchisee) {
+    return c.json({ code: 'FORBIDDEN', message: 'Target workspace is not a child franchisee of your organization' }, 403);
+  }
+
+  const lead = await db.query.leads.findFirst({
+    where: and(eq(leads.id, id), eq(leads.tenantId, scope.tenant_id)),
+  });
+
+  if (!lead) {
+    return c.json({ code: 'NOT_FOUND', message: 'Lead not found' }, 404);
+  }
+
+  const [updated] = await db
+    .update(leads)
+    .set({
+      tenantId: franchisee.id,
+      assignedToId: null,
+      verticalId: null,
+    })
+    .where(eq(leads.id, id))
+    .returning();
+
+  await db.insert(leadEvents).values({
+    leadId: id,
+    tenantId: franchisee.id,
+    eventType: 'franchise_routed',
+    actorId: scope.user_id,
+    metadata: {
+      from_franchisor_id: scope.tenant_id,
+      to_franchisee_id: franchisee.id,
+      to_franchisee_name: franchisee.name,
+    },
+  });
+
+  return c.json({
+    success: true,
+    message: `Lead successfully transferred to franchise store: ${franchisee.name}`,
+    lead: updated,
+  });
 });
