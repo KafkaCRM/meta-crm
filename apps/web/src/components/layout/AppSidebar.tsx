@@ -6,6 +6,7 @@ import { useLabels } from '@/hooks/useLabels';
 import { useBranch } from '@/contexts/branch.context';
 import { useQuery } from '@tanstack/react-query';
 import { settingsApi } from '@/api/settings';
+import { objectsApi, type CustomObjectMeta } from '@/api/objects';
 import { BranchSelector } from './HeaderSelectors';
 import {
   Sidebar,
@@ -86,6 +87,32 @@ const getPipelineColor = (id: string) => {
     sum += id.charCodeAt(i);
   }
   return colors[sum % colors.length];
+};
+
+const ICON_MAP: Record<string, any> = {
+  Layers,
+  Calendar,
+  Receipt,
+  Home,
+  BookOpen,
+  Phone,
+  MessageSquare,
+  Package,
+  Users,
+  Building2,
+  FileText,
+  DollarSign,
+  UserCheck,
+  Award,
+  Monitor,
+  Workflow,
+  Shield,
+  Tags,
+};
+
+const resolveIcon = (name?: string) => {
+  if (!name) return Layers;
+  return ICON_MAP[name] || Layers;
 };
 
 export function AppSidebar() {
@@ -223,6 +250,52 @@ export function AppSidebar() {
     },
   ].filter((g) => g.items.length > 0);
 
+  const { data: customObjects = [] } = useQuery({
+    queryKey: ['custom-objects'],
+    queryFn: () => objectsApi.list(),
+    staleTime: 30_000,
+  });
+
+  // Dynamic distribution of custom objects
+  const dynamicDomainGroups: Array<{ id: string; label: string; icon: any; items: Array<{ label: string; path: string; icon: any }> }> = [];
+  const customByDomain: Record<string, CustomObjectMeta[]> = {};
+
+  customObjects.forEach((obj) => {
+    const domainNorm = (obj.domain || '').trim().toLowerCase();
+    const matchedBuiltin = capabilityGroups.find(
+      (g) => g.label.toLowerCase() === domainNorm || g.id === domainNorm
+    );
+    if (matchedBuiltin) {
+      matchedBuiltin.items.push({
+        label: obj.plural_label,
+        path: `/objects/${obj.key}`,
+        icon: resolveIcon(obj.icon),
+      });
+    } else {
+      const d = obj.domain || 'Custom Objects';
+      if (!customByDomain[d]) customByDomain[d] = [];
+      customByDomain[d].push(obj);
+    }
+  });
+
+  Object.entries(customByDomain).forEach(([domain, objs]) => {
+    dynamicDomainGroups.push({
+      id: `custom-domain-${domain.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+      label: domain,
+      icon: resolveIcon(objs[0]?.icon),
+      items: objs.map((obj) => ({
+        label: obj.plural_label,
+        path: `/objects/${obj.key}`,
+        icon: resolveIcon(obj.icon),
+      })),
+    });
+  });
+
+  const allCapabilityGroups = [
+    ...capabilityGroups.filter((g) => g.items.length > 0),
+    ...dynamicDomainGroups,
+  ];
+
   const renderNavItem = (item: { label: string; path: string; icon: any }) => {
     const search = location.search as any;
     const isActive = location.pathname === item.path ||
@@ -314,6 +387,7 @@ export function AppSidebar() {
     '/settings/capabilities': ['manage', 'Plugin'],
     '/settings/plugins': ['manage', 'Plugin'],
     '/settings/integrations': ['manage', 'Integration'],
+    '/settings/objects': ['manage', 'FieldDefinition'],
   };
 
   const settingsItems = [
@@ -323,6 +397,7 @@ export function AppSidebar() {
     { label: 'Verticals', path: '/settings/verticals', icon: Layers },
     { label: 'Pipeline Settings', path: '/settings/pipelines', icon: Workflow },
     { label: 'Fields', path: '/settings/fields', icon: Sliders },
+    { label: 'Custom Objects', path: '/settings/objects', icon: Layers },
     { label: 'Labels', path: '/settings/labels', icon: Tags },
     { label: 'Capabilities', path: '/settings/capabilities', icon: Layers },
     { label: 'Plugins', path: '/settings/plugins', icon: Puzzle },
@@ -426,7 +501,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         {/* Capability Domain Sections */}
-        {capabilityGroups.map((group) => {
+        {allCapabilityGroups.map((group) => {
           const displayName = customNames[group.id] || group.label;
           const isEditing = editingName === group.id;
 
