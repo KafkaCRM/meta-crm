@@ -286,6 +286,7 @@ import {
   stockMovementsRoute,
   assetsRoute,
 } from './routes/operations';
+import { customObjectsIndexRoute, customObjectRecordsRoute } from './routes/objects';
 
 /* ------------------------------------------------------------------ */
 /*  Route Tree & Router                                                */
@@ -336,6 +337,8 @@ export const routeTree = rootRoute.addChildren([
   campaignsRoute,
   reportsRoute,
   integrationsRoute,
+  customObjectsIndexRoute,
+  customObjectRecordsRoute,
   settingsRoute,
   settingsBranchesRoute,
   settingsVerticalsRoute,
