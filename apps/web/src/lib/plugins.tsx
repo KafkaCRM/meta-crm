@@ -78,8 +78,17 @@ export function PluginSlot({
 
   const matchedComponents = resolvedActivePlugins
     .map((plugin) => {
-      // Check registry by plugin.id, then by plugin.name
-      const component = pluginUIRegistry.getComponent(plugin.id, anchor) || pluginUIRegistry.getComponent(plugin.name, anchor);
+      // Check registry by package_name, packageId, manifest.id, plugin.id, then by plugin.name
+      const p = plugin as any;
+      const component =
+        (p.package_name && pluginUIRegistry.getComponent(p.package_name, anchor)) ||
+        (p.packageName && pluginUIRegistry.getComponent(p.packageName, anchor)) ||
+        (p.packageId && pluginUIRegistry.getComponent(p.packageId, anchor)) ||
+        (p.manifestId && pluginUIRegistry.getComponent(p.manifestId, anchor)) ||
+        (p.manifest?.id && pluginUIRegistry.getComponent(p.manifest.id, anchor)) ||
+        pluginUIRegistry.getComponent(plugin.id, anchor) ||
+        pluginUIRegistry.getComponent(plugin.name, anchor);
+
       if (!component) return null;
       return {
         pluginId: plugin.id,
@@ -119,9 +128,18 @@ export function usePluginTabs(context: SlotContextData, activePlugins?: string[]
 
   const tabs = resolvedActivePlugins
     .map((plugin) => {
-      const Component = pluginUIRegistry.getComponent(plugin.id, 'CaseMainTabs') || pluginUIRegistry.getComponent(plugin.name, 'CaseMainTabs');
+      const p = plugin as any;
+      const Component =
+        (p.package_name && pluginUIRegistry.getComponent(p.package_name, 'CaseMainTabs')) ||
+        (p.packageName && pluginUIRegistry.getComponent(p.packageName, 'CaseMainTabs')) ||
+        (p.packageId && pluginUIRegistry.getComponent(p.packageId, 'CaseMainTabs')) ||
+        (p.manifestId && pluginUIRegistry.getComponent(p.manifestId, 'CaseMainTabs')) ||
+        (p.manifest?.id && pluginUIRegistry.getComponent(p.manifest.id, 'CaseMainTabs')) ||
+        pluginUIRegistry.getComponent(plugin.id, 'CaseMainTabs') ||
+        pluginUIRegistry.getComponent(plugin.name, 'CaseMainTabs');
+
       if (!Component) return null;
-      const key = plugin.id.replace('@meta-crm/plugin-', '').toLowerCase();
+      const key = (p.packageId || p.manifestId || plugin.id).replace('@meta-crm/plugin-', '').toLowerCase();
       return {
         id: key,
         label: plugin.name.includes('@meta-crm/plugin-')

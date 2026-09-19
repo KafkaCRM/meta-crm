@@ -30,6 +30,7 @@ import { requireAuth } from '../middleware/auth';
 import { requirePlatformAdmin } from '../middleware/tenant';
 import { hashPassword } from '../lib/crypto';
 import { signJwt } from '../lib/jwt';
+import { PLUGIN_CATALOGUE } from '../plugins/registry/plugin-catalogue';
 import type { AppEnv } from '../types/context';
 
 export const platformRouter = new Hono<AppEnv>();
@@ -39,6 +40,81 @@ platformRouter.use('*', requireAuth, requirePlatformAdmin);
 /* ------------------------------------------------------------------ */
 /*  Constants & Helpers                                               */
 /* ------------------------------------------------------------------ */
+
+async function ensurePlatformPluginsSeeded() {
+  const existing = await db.query.pluginRegistry.findMany({ limit: 1 });
+  if (existing.length === 0) {
+    for (const entry of PLUGIN_CATALOGUE) {
+      await db
+        .insert(pluginRegistry)
+        .values({
+          packageName: entry.package_name,
+          version: entry.version,
+          manifest: {
+            ...entry.manifest,
+            category: entry.category,
+            icon: entry.icon,
+          },
+          status: 'active',
+        })
+        .onConflictDoNothing();
+    }
+  }
+}
+
+async function setTenantCapabilityState(
+  tenantId: string,
+  capabilityId: string,
+  enabled: boolean,
+  userId: string
+) {
+  const tenant = await db.query.tenants.findFirst({
+    where: eq(tenants.id, tenantId),
+  });
+  if (!tenant) return null;
+
+  const currentConfig = (tenant.configJson as Record<string, any>) || {};
+  let currentList: string[] = [
+    ...(Array.isArray(currentConfig.enabled_capabilities) ? currentConfig.enabled_capabilities : []),
+    ...(Array.isArray(currentConfig.capabilities) ? currentConfig.capabilities : []),
+  ];
+  currentList = Array.from(new Set(currentList));
+
+  if (enabled) {
+    if (!currentList.includes(capabilityId)) currentList.push(capabilityId);
+  } else {
+    currentList = currentList.filter((id) => id !== capabilityId);
+  }
+
+  const updatedConfig = {
+    ...currentConfig,
+    enabled_capabilities: currentList,
+    capabilities: currentList,
+  };
+
+  const existing = await db.query.tenantCapabilities.findFirst({
+    where: and(eq(tenantCapabilities.tenantId, tenantId), eq(tenantCapabilities.capabilityId, capabilityId)),
+  });
+
+  await Promise.all([
+    db.update(tenants).set({ configJson: updatedConfig }).where(eq(tenants.id, tenantId)),
+    existing
+      ? db
+          .update(tenantCapabilities)
+          .set({ enabled, enabledBy: userId, enabledAt: new Date() })
+          .where(eq(tenantCapabilities.id, existing.id))
+      : enabled
+      ? db.insert(tenantCapabilities).values({
+          tenantId,
+          capabilityId,
+          enabled: true,
+          enabledBy: userId,
+        })
+      : Promise.resolve(),
+  ]);
+
+  return { id: capabilityId, enabled };
+}
 
 const ALL_PLATFORM_CAPABILITIES = [
   { id: 'capability/appointment', name: 'Appointments & Scheduling', description: 'Schedule and manage client appointments and rooms', industry: 'healthcare' },
@@ -112,6 +188,14 @@ async function buildTenantDetail(tenantId: string) {
     }),
   ]);
 
+  const cfg = (tenant.configJson as Record<string, any>) || {};
+  const configCaps: string[] = [
+    ...(Array.isArray(cfg.enabled_capabilities) ? cfg.enabled_capabilities : []),
+    ...(Array.isArray(cfg.capabilities) ? cfg.capabilities : []),
+  ];
+  const dbCapList = enabledCaps.map((c) => c.capabilityId);
+  const mergedCapabilities = Array.from(new Set([...configCaps, ...dbCapList]));
+
   return {
     id: tenant.id,
     name: tenant.name,
@@ -123,8 +207,8 @@ async function buildTenantDetail(tenantId: string) {
     user_count: tenant.users?.length || 0,
     plugin_list: installedPlugins.map((p) => p.pluginRegistry?.packageName).filter(Boolean) as string[],
     plugin_ids: installedPlugins.map((p) => p.pluginRegistryId),
-    enabled_capabilities: enabledCaps.map((c) => c.capabilityId),
-    custom_limits: (tenant.configJson as Record<string, any>)?.custom_limits || {},
+    enabled_capabilities: mergedCapabilities,
+    custom_limits: cfg.custom_limits || {},
     plan: tenantPlanRecord?.plan
       ? {
           id: tenantPlanRecord.plan.id,
@@ -590,6 +674,19 @@ platformRouter.patch('/tenants/:id/capabilities', async (c) => {
   const { capabilities } = await c.req.json().catch(() => ({}));
 
   if (Array.isArray(capabilities)) {
+    const tenant = await db.query.tenants.findFirst({
+      where: eq(tenants.id, tenantId),
+    });
+    if (tenant) {
+      const currentConfig = (tenant.configJson as Record<string, any>) || {};
+      const newConfig = {
+        ...currentConfig,
+        enabled_capabilities: capabilities,
+        capabilities: capabilities,
+      };
+      await db.update(tenants).set({ configJson: newConfig }).where(eq(tenants.id, tenantId));
+    }
+
     await db
       .update(tenantCapabilities)
       .set({ enabled: false, enabledBy: scope.user_id })
@@ -623,10 +720,23 @@ platformRouter.patch('/tenants/:id/capabilities', async (c) => {
 // GET /platform/tenants/:id/capabilities
 platformRouter.get('/tenants/:id/capabilities', async (c) => {
   const id = c.req.param('id');
-  const enabledRecords = await db.query.tenantCapabilities.findMany({
-    where: and(eq(tenantCapabilities.tenantId, id), eq(tenantCapabilities.enabled, true)),
-  });
-  const enabledSet = new Set(enabledRecords.map((r) => r.capabilityId));
+  const [tenant, enabledRecords] = await Promise.all([
+    db.query.tenants.findFirst({
+      where: eq(tenants.id, id),
+      columns: { configJson: true },
+    }),
+    db.query.tenantCapabilities.findMany({
+      where: and(eq(tenantCapabilities.tenantId, id), eq(tenantCapabilities.enabled, true)),
+    }),
+  ]);
+
+  const cfg = (tenant?.configJson as Record<string, any>) || {};
+  const configList: string[] = [
+    ...(Array.isArray(cfg.enabled_capabilities) ? cfg.enabled_capabilities : []),
+    ...(Array.isArray(cfg.capabilities) ? cfg.capabilities : []),
+  ];
+  const dbList = enabledRecords.map((r) => r.capabilityId);
+  const enabledSet = new Set([...configList, ...dbList]);
 
   const result = ALL_PLATFORM_CAPABILITIES.map((cap) => ({
     ...cap,
@@ -636,32 +746,78 @@ platformRouter.get('/tenants/:id/capabilities', async (c) => {
   return c.json(result);
 });
 
+// POST /platform/tenants/:id/capabilities/toggle - Resilient body-based capability toggle
+platformRouter.post('/tenants/:id/capabilities/toggle', async (c) => {
+  const tenantId = c.req.param('id');
+  const scope = c.get('scope');
+  const body = await c.req.json().catch(() => ({}));
+  const capabilityId = body.capability_id || body.capabilityId || body.id;
+  const enabled = Boolean(body.enabled);
+
+  if (!capabilityId) {
+    return c.json({ code: 'VALIDATION_FAILED', message: 'capability_id is required' }, 400);
+  }
+
+  const result = await setTenantCapabilityState(tenantId, capabilityId, enabled, scope.user_id);
+  if (!result) {
+    return c.json({ code: 'NOT_FOUND', message: 'Tenant not found' }, 404);
+  }
+
+  await logPlatformAudit(c, enabled ? 'capability_enabled' : 'capability_disabled', tenantId, { capabilityId });
+  return c.json(result);
+});
+
+// POST /platform/tenants/:id/capabilities/* - Wildcard capability route to handle slashes in capability IDs
+platformRouter.post('/tenants/:id/capabilities/*', async (c) => {
+  const tenantId = c.req.param('id');
+  const scope = c.get('scope');
+  const rawPath = c.req.path;
+
+  if (rawPath.endsWith('/toggle')) {
+    const body = await c.req.json().catch(() => ({}));
+    const capabilityId = body.capability_id || body.capabilityId || body.id;
+    const enabled = Boolean(body.enabled);
+    if (!capabilityId) {
+      return c.json({ code: 'VALIDATION_FAILED', message: 'capability_id is required' }, 400);
+    }
+    const result = await setTenantCapabilityState(tenantId, capabilityId, enabled, scope.user_id);
+    if (!result) return c.json({ code: 'NOT_FOUND', message: 'Tenant not found' }, 404);
+    await logPlatformAudit(c, enabled ? 'capability_enabled' : 'capability_disabled', tenantId, { capabilityId });
+    return c.json(result);
+  }
+
+  const isEnable = rawPath.endsWith('/enable');
+  const isDisable = rawPath.endsWith('/disable');
+
+  if (isEnable || isDisable) {
+    const enabled = isEnable;
+    const match = rawPath.match(/\/capabilities\/(.+)\/(enable|disable)$/);
+    const capabilityId = match && match[1] ? decodeURIComponent(match[1]) : '';
+
+    if (capabilityId) {
+      const result = await setTenantCapabilityState(tenantId, capabilityId, enabled, scope.user_id);
+      if (!result) return c.json({ code: 'NOT_FOUND', message: 'Tenant not found' }, 404);
+      await logPlatformAudit(c, enabled ? 'capability_enabled' : 'capability_disabled', tenantId, { capabilityId });
+      return c.json(result);
+    }
+  }
+
+  return c.json({ code: 'NOT_FOUND', message: 'Route not found' }, 404);
+});
+
 // POST /platform/tenants/:id/capabilities/:capabilityId/enable
 platformRouter.post('/tenants/:id/capabilities/:capabilityId/enable', async (c) => {
   const tenantId = c.req.param('id');
   const capabilityId = decodeURIComponent(c.req.param('capabilityId'));
   const scope = c.get('scope');
 
-  const existing = await db.query.tenantCapabilities.findFirst({
-    where: and(eq(tenantCapabilities.tenantId, tenantId), eq(tenantCapabilities.capabilityId, capabilityId)),
-  });
-
-  if (existing) {
-    await db
-      .update(tenantCapabilities)
-      .set({ enabled: true, enabledBy: scope.user_id, enabledAt: new Date() })
-      .where(eq(tenantCapabilities.id, existing.id));
-  } else {
-    await db.insert(tenantCapabilities).values({
-      tenantId,
-      capabilityId,
-      enabled: true,
-      enabledBy: scope.user_id,
-    });
+  const result = await setTenantCapabilityState(tenantId, capabilityId, true, scope.user_id);
+  if (!result) {
+    return c.json({ code: 'NOT_FOUND', message: 'Tenant not found' }, 404);
   }
 
   await logPlatformAudit(c, 'capability_enabled', tenantId, { capabilityId });
-  return c.json({ id: capabilityId, enabled: true });
+  return c.json(result);
 });
 
 // POST /platform/tenants/:id/capabilities/:capabilityId/disable
@@ -670,18 +826,19 @@ platformRouter.post('/tenants/:id/capabilities/:capabilityId/disable', async (c)
   const capabilityId = decodeURIComponent(c.req.param('capabilityId'));
   const scope = c.get('scope');
 
-  await db
-    .update(tenantCapabilities)
-    .set({ enabled: false, enabledBy: scope.user_id })
-    .where(and(eq(tenantCapabilities.tenantId, tenantId), eq(tenantCapabilities.capabilityId, capabilityId)));
+  const result = await setTenantCapabilityState(tenantId, capabilityId, false, scope.user_id);
+  if (!result) {
+    return c.json({ code: 'NOT_FOUND', message: 'Tenant not found' }, 404);
+  }
 
   await logPlatformAudit(c, 'capability_disabled', tenantId, { capabilityId });
-  return c.json({ id: capabilityId, enabled: false });
+  return c.json(result);
 });
 
 // GET /platform/tenants/:id/plugins
 platformRouter.get('/tenants/:id/plugins', async (c) => {
   const tenantId = c.req.param('id');
+  await ensurePlatformPluginsSeeded();
   const allPlugins = await db.query.pluginRegistry.findMany({
     orderBy: [desc(pluginRegistry.createdAt)],
   });
@@ -1073,6 +1230,7 @@ platformRouter.delete('/capabilities/pricing/:capabilityId', async (c) => {
 
 // GET /platform/plugins
 platformRouter.get('/plugins', async (c) => {
+  await ensurePlatformPluginsSeeded();
   const plugins = await db.query.pluginRegistry.findMany({
     orderBy: [desc(pluginRegistry.createdAt)],
   });

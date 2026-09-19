@@ -423,16 +423,19 @@ export async function getTenantCapabilities(tenantId: string): Promise<PlatformT
   return apiCall<PlatformTenantCapability[]>(`/platform/tenants/${tenantId}/capabilities`);
 }
 
-export async function enableTenantCapability(tenantId: string, capabilityId: string): Promise<{ id: string; enabled: boolean }> {
-  return apiCall<{ id: string; enabled: boolean }>(`/platform/tenants/${tenantId}/capabilities/${capabilityId}/enable`, {
+export async function toggleTenantCapability(tenantId: string, capabilityId: string, enabled: boolean): Promise<{ id: string; enabled: boolean }> {
+  return apiCall<{ id: string; enabled: boolean }>(`/platform/tenants/${tenantId}/capabilities/toggle`, {
     method: 'POST',
+    body: JSON.stringify({ capability_id: capabilityId, enabled }),
   });
 }
 
+export async function enableTenantCapability(tenantId: string, capabilityId: string): Promise<{ id: string; enabled: boolean }> {
+  return toggleTenantCapability(tenantId, capabilityId, true);
+}
+
 export async function disableTenantCapability(tenantId: string, capabilityId: string): Promise<{ id: string; enabled: boolean }> {
-  return apiCall<{ id: string; enabled: boolean }>(`/platform/tenants/${tenantId}/capabilities/${capabilityId}/disable`, {
-    method: 'POST',
-  });
+  return toggleTenantCapability(tenantId, capabilityId, false);
 }
 
 export async function getTenantPlugins(tenantId: string): Promise<PlatformTenantPlugin[]> {

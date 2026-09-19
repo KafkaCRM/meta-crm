@@ -211,4 +211,24 @@ describe('Hono + Drizzle API Core', () => {
     const json = await res.json();
     expect(json.code).toBe('VALIDATION_FAILED');
   });
+
+  it('Platform API auto-seeds and lists plugin catalogue on /api/v1/platform/plugins', async () => {
+    const platformAdminToken = signJwt({
+      sub: 'platform_super_admin',
+      tenant_id: '',
+      role: 'platform_admin',
+      platform_role: 'platform_admin',
+      vertical_ids: [],
+      assignment_ids: [],
+    });
+
+    const res = await app.request('/api/v1/platform/plugins', {
+      headers: { Authorization: `Bearer ${platformAdminToken}` },
+    });
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(Array.isArray(json)).toBe(true);
+    expect(json.length).toBeGreaterThan(0);
+    expect(json.some((p: any) => p.package_name === '@meta-crm/plugin-whatsapp')).toBe(true);
+  });
 });

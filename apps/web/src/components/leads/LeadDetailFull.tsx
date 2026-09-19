@@ -57,6 +57,7 @@ import {
 } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
 import { CampaignOptInModal } from './CampaignOptInModal';
+import { PluginSlot } from '@/lib/plugins';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 
@@ -595,6 +596,19 @@ export function LeadDetailFull({ leadId }: LeadDetailFullProps) {
               )}
             </div>
           </Card>
+
+          {/* Plugin UI Slots: CaseMainTabs */}
+          <PluginSlot
+            anchor="CaseMainTabs"
+            contextData={{
+              caseData: {
+                id: lead.id,
+                title: lead.name,
+                status: lead.status,
+                metadata: (lead.attributes as Record<string, any>) || {},
+              },
+            }}
+          />
         </div>
 
         {/* Right Column (2/5): Dossier & Contact Cards */}
@@ -829,6 +843,19 @@ export function LeadDetailFull({ leadId }: LeadDetailFullProps) {
               </div>
             </CardContent>
           </Card>
+
+          {/* Plugin UI Slots: CaseSidePanel */}
+          <PluginSlot
+            anchor="CaseSidePanel"
+            contextData={{
+              caseData: {
+                id: lead.id,
+                title: lead.name,
+                status: lead.status,
+                metadata: (lead.attributes as Record<string, any>) || {},
+              },
+            }}
+          />
 
           {/* Promoted Contact Card (if converted) */}
           {isConverted && lead.party && (

@@ -149,6 +149,11 @@ pluginsRouter.get('/plugins', async (c) => {
     const manifest = (p.manifest as any) || {};
     return {
       id: p.id,
+      package_name: p.packageName,
+      packageName: p.packageName,
+      packageId: p.packageName.replace('@meta-crm/plugin-', ''),
+      manifestId: manifest.id || p.packageName.replace('@meta-crm/plugin-', ''),
+      manifest,
       name: manifest.name || p.packageName,
       description: manifest.description || '',
       version: p.version,

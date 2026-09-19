@@ -189,23 +189,27 @@ function AdminLicenseManager({
 
   const compatiblePlugins = tenantPlugins.filter((plugin) => {
     const manifest = plugin.manifest;
+    const industries = Array.isArray(manifest?.compatible_industries)
+      ? manifest.compatible_industries
+      : ['*'];
     return (
-      manifest.compatible_industries.includes('*') ||
-      manifest.compatible_industries
+      industries.includes('*') ||
+      industries
         .map((i) => i.toLowerCase())
-        .includes(tenantIndustry.toLowerCase())
+        .includes((tenantIndustry || '').toLowerCase())
     );
   });
 
   const installedCount = tenantPlugins.filter((p) => p.installed).length;
-  const limitReached = installedCount >= maxPlugins;
+  const isUnlimited = maxPlugins <= 0;
+  const limitReached = !isUnlimited && installedCount >= maxPlugins;
 
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between text-xs text-muted-foreground font-semibold border-b border-border/50 pb-2 mb-2">
         <span>Installed Count</span>
         <span className={limitReached ? 'text-rose-600 font-bold' : 'text-fin-orange font-bold'}>
-          {installedCount} / {maxPlugins} Plugins Used
+          {installedCount} / {isUnlimited ? '∞' : maxPlugins} Plugins Used
         </span>
       </div>
 
@@ -1340,7 +1344,7 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
           <AdminLicenseManager
             tenantId={tenantId}
             tenantIndustry={tenant.industry}
-            canUpdate={canUpdateBilling}
+            canUpdate={canEdit || canUpdateBilling || (ability?.can('manage', 'PlatformPlugin') ?? false)}
             maxPlugins={tenant.plan?.max_plugins ?? 5}
           />
         </div>
@@ -1357,7 +1361,7 @@ export function TenantDetail({ tenantId }: TenantDetailProps) {
           <AdminCapabilityManager
             tenantId={tenantId}
             tenantIndustry={tenant.industry}
-            canUpdate={canSuspend}
+            canUpdate={canEdit || canSuspend}
           />
         </div>
       </div>
