@@ -10,6 +10,7 @@ export interface LeadListParams {
   pipeline_definition_id?: string;
   stage?: string;
   vertical_ids?: string;
+  campaign_id?: string;
 }
 
 export interface LeadEventResponse {
@@ -58,6 +59,12 @@ export interface LeadResponse {
     source: string;
   } | null;
   pipelineDefinition?: LeadPipelineInfo | null;
+  campaign?: {
+    id: string;
+    name: string;
+    channel?: string;
+    status?: string;
+  } | null;
   events?: LeadEventResponse[];
   attributes: Record<string, any>;
   created_at: string;
@@ -90,6 +97,7 @@ export const leadsApi = {
     if (params.pipeline_definition_id) qs.set('pipeline_definition_id', params.pipeline_definition_id);
     if (params.stage) qs.set('stage', params.stage);
     if (params.vertical_ids) qs.set('vertical_ids', params.vertical_ids);
+    if (params.campaign_id) qs.set('campaign_id', params.campaign_id);
     const query = qs.toString();
     return apiCall<CursorPaginatedLeads>(`/leads${query ? `?${query}` : ''}`);
   },
@@ -105,6 +113,18 @@ export const leadsApi = {
   update: (id: string, data: Partial<LeadResponse>) =>
     apiCall<LeadResponse>(`/leads/${id}`, {
       method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
+  bulkAction: (data: {
+    action: 'enroll_campaign' | 'assign_rep' | 'update_status' | 'delete';
+    lead_ids: string[];
+    campaign_id?: string | null;
+    assigned_to_id?: string | null;
+    status?: string;
+  }) =>
+    apiCall<{ success: boolean; count: number }>('/leads/bulk-action', {
+      method: 'POST',
       body: JSON.stringify(data),
     }),
 

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Link, useLocation } from '@tanstack/react-router';
 import { useAuth } from '@/contexts/auth.context';
 import { useCapabilities } from '@/hooks/useCapabilities';
@@ -23,6 +23,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,7 +69,16 @@ import {
   X,
   ArrowRight,
   MessageSquare,
-  TrendingUp,
+  Search,
+  Sparkles,
+  GraduationCap,
+  CheckCircle2,
+  BarChart3,
+  Inbox,
+  CreditCard,
+  ShieldCheck,
+  PhoneCall,
+  ArrowRightLeft,
 } from 'lucide-react';
 
 const getPipelineColor = (id: string) => {
@@ -108,6 +118,8 @@ const ICON_MAP: Record<string, any> = {
   Workflow,
   Shield,
   Tags,
+  Sparkles,
+  GraduationCap,
 };
 
 const resolveIcon = (name?: string) => {
@@ -115,11 +127,29 @@ const resolveIcon = (name?: string) => {
   return ICON_MAP[name] || Layers;
 };
 
+interface NavItem {
+  label: string;
+  path: string;
+  icon: any;
+  badge?: string;
+  badgeVariant?: 'default' | 'outline' | 'secondary' | 'success';
+}
+
+interface NavGroup {
+  id: string;
+  label: string;
+  icon: any;
+  items: NavItem[];
+}
+
 export function AppSidebar() {
   const { user, ability, logout } = useAuth();
   const location = useLocation();
   const { isEnabled } = useCapabilities();
   const { t } = useLabels();
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const { selectedBranchId, selectedVerticalIds, isLoading: branchLoading } = useBranch();
   const pipelineVerticalIds = selectedBranchId ? selectedVerticalIds : [];
@@ -138,144 +168,165 @@ export function AppSidebar() {
     ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : 'U';
 
-  const coreItems = [
+  // Keyboard shortcut: "/" to focus filter search input
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === '/' && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // --- 1. Main Workspace Group ---
+  const coreItems: NavItem[] = [
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
     { label: 'Leads', path: '/leads', icon: UserCheck },
     { label: t('party.plural') ?? 'Contacts', path: '/parties', icon: Users },
     { label: 'Pipeline', path: '/pipeline', icon: Workflow },
     { label: 'Campaigns', path: '/campaigns', icon: Megaphone },
-    { label: 'Reports', path: '/reports', icon: TrendingUp },
+    { label: 'Reports & Analytics', path: '/reports', icon: BarChart3 },
     { label: 'Integrations', path: '/integrations', icon: Link2 },
   ];
 
-  const capabilityGroups = [
+  // --- 2. Modular Capability Domain Groups ---
+  const capabilityGroups: NavGroup[] = [
+    // Academics & Students (Higher Ed / Coaching)
     {
-      id: 'crm-sales',
-      label: 'CRM & Sales',
-      icon: Calendar,
-      items: [
-        ...(isEnabled('capability/appointment') ? [{ label: 'Appointments', path: '/appointments', icon: Calendar }] : []),
-        ...(isEnabled('capability/order-management') ? [{ label: 'Orders', path: '/orders', icon: ShoppingCart }] : []),
-        ...(isEnabled('capability/customer-onboarding') ? [{ label: 'Onboardings', path: '/onboardings', icon: ClipboardList }] : []),
-      ],
-    },
-    {
-      id: 'finance',
-      label: 'Finance & Billing',
-      icon: Receipt,
-      items: [
-        ...(isEnabled('capability/billing') ? [{ label: 'Invoices', path: '/invoices', icon: Receipt }] : []),
-        ...(isEnabled('capability/finance')
-          ? [
-              { label: 'Fee Plans', path: '/fee-plans', icon: Receipt },
-              { label: 'Student Fees', path: '/student-fees', icon: DollarSign },
-              { label: 'Scholarships', path: '/scholarships', icon: DollarSign },
-            ]
-          : []),
-      ],
-    },
-    {
-      id: 'property',
-      label: 'Property',
-      icon: Home,
-      items: [
-        ...(isEnabled('capability/property-listing') ? [{ label: 'Properties', path: '/properties', icon: Home }] : []),
-      ],
-    },
-    {
-      id: 'academics',
-      label: 'Academics',
-      icon: BookOpen,
+      id: 'academics-admin',
+      label: 'Student & Academics',
+      icon: GraduationCap,
       items: isEnabled('capability/academics')
         ? [
-            { label: 'Enrollments', path: '/enrollments', icon: UserCheck },
-            { label: 'Courses', path: '/courses', icon: BookOpen },
-            { label: 'Batches', path: '/batches', icon: CalendarRange },
+            { label: 'Admissions & Enrolment', path: '/enrollments', icon: UserCheck },
+            { label: 'Courses & Programs', path: '/courses', icon: BookOpen },
+            { label: 'Batches & Cohorts', path: '/batches', icon: CalendarRange },
             { label: 'Attendance', path: '/attendance', icon: ClipboardCheck },
-            { label: 'Tests', path: '/tests', icon: ClipboardList },
-            { label: 'Assignments', path: '/assignments', icon: ClipboardList },
-            { label: 'Study Materials', path: '/study-materials', icon: FileText },
             { label: 'Certificates', path: '/certificates', icon: Award },
           ]
         : [],
     },
+    // Learning & LMS (Assessments & Study)
     {
-      id: 'telephony',
-      label: 'Communications',
-      icon: Phone,
-      items: isEnabled('capability/telephony')
-        ? [{ label: 'Call Logs', path: '/call-logs', icon: Phone }]
+      id: 'learning-assessment',
+      label: 'Learning & Assessment',
+      icon: BookOpen,
+      items: isEnabled('capability/academics')
+        ? [
+            { label: 'Study Materials', path: '/study-materials', icon: FileText },
+            { label: 'Assignments', path: '/assignments', icon: ClipboardList },
+            { label: 'Tests & Scores', path: '/tests', icon: CheckCircle2 },
+          ]
         : [],
     },
+    // Finance, Billing & Fee Collections
     {
-      id: 'workspace',
-      label: 'Workspace',
+      id: 'finance-collections',
+      label: 'Finance & Collections',
+      icon: Receipt,
+      items: [
+        ...(isEnabled('capability/billing')
+          ? [{ label: 'Fee Invoices', path: '/invoices', icon: Receipt }]
+          : []),
+        ...(isEnabled('capability/finance')
+          ? [
+              { label: 'Fee Management & Plans', path: '/fee-plans', icon: CreditCard },
+              { label: 'Fee Collections & Online', path: '/student-fees', icon: DollarSign },
+              { label: 'Scholarships & Discounts', path: '/scholarships', icon: Sparkles },
+            ]
+          : []),
+      ],
+    },
+    // Sales, Orders & Conversions
+    {
+      id: 'sales-conversion',
+      label: 'Sales & Conversion',
+      icon: ShoppingCart,
+      items: [
+        ...(isEnabled('capability/order-management')
+          ? [{ label: 'Orders & Closures', path: '/orders', icon: ShoppingCart }]
+          : []),
+        ...(isEnabled('capability/appointment')
+          ? [{ label: 'Appointments & Visits', path: '/appointments', icon: Calendar }]
+          : []),
+        ...(isEnabled('capability/customer-onboarding')
+          ? [{ label: 'Customer Onboarding', path: '/onboardings', icon: ClipboardList }]
+          : []),
+        ...(isEnabled('capability/property-listing')
+          ? [{ label: 'Property Inventory', path: '/properties', icon: Home }]
+          : []),
+      ],
+    },
+    // Communications & Telephony
+    {
+      id: 'telephony-calls',
+      label: 'Calls & Telephony',
+      icon: PhoneCall,
+      items: isEnabled('capability/telephony')
+        ? [{ label: 'Call Logs & Recordings', path: '/call-logs', icon: PhoneCall }]
+        : [],
+    },
+    // Workspace, Tasks & Collaboration
+    {
+      id: 'workspace-team',
+      label: 'Workspace & Team',
       icon: MessageSquare,
       items: isEnabled('capability/workspace')
         ? [
-            { label: 'Inbox', path: '/inbox', icon: MessageSquare },
-            { label: 'Tasks', path: '/tasks', icon: ClipboardList },
-            { label: 'Notes', path: '/notes', icon: FileText },
+            { label: 'Team Inbox', path: '/inbox', icon: Inbox },
+            { label: 'Tasks & Follow-ups', path: '/tasks', icon: ClipboardList },
+            { label: 'Notes & Knowledge', path: '/notes', icon: FileText },
           ]
         : [],
     },
+    // Operations & Supply / ERP
     {
-      id: 'operations',
-      label: 'Operations',
+      id: 'operations-erp',
+      label: 'Operations & Stock',
       icon: Package,
       items: isEnabled('capability/operations')
         ? [
-            { label: 'Products', path: '/products', icon: Package },
-            { label: 'Categories', path: '/product-categories', icon: Tags },
+            { label: 'Product Catalog', path: '/products', icon: Package },
+            { label: 'Product Categories', path: '/product-categories', icon: Tags },
             { label: 'Warehouses', path: '/warehouses', icon: Building2 },
-            { label: 'Stock', path: '/stock', icon: Layers },
-            { label: 'Movements', path: '/stock-movements', icon: ArrowRight },
-            { label: 'Assets', path: '/assets', icon: Monitor },
+            { label: 'Stock Inventory', path: '/stock', icon: Layers },
+            { label: 'Stock Movements', path: '/stock-movements', icon: ArrowRightLeft },
+            { label: 'Assets & Facilities', path: '/assets', icon: Monitor },
           ]
         : [],
     },
+    // HR & Workforce
     {
-      id: 'hr',
-      label: 'HR & People',
+      id: 'hr-workforce',
+      label: 'HR & Workforce',
       icon: Users,
       items: isEnabled('capability/hr')
         ? [
             { label: 'Departments', path: '/departments', icon: Building2 },
-            { label: 'Employees', path: '/employees', icon: Users },
+            { label: 'Employee Directory', path: '/employees', icon: Users },
             { label: 'Leave Requests', path: '/leave-requests', icon: Calendar },
-            { label: 'Payslips', path: '/payslips', icon: Receipt },
-            { label: 'Attendance', path: '/employee-attendance', icon: Calendar },
+            { label: 'Staff Attendance', path: '/employee-attendance', icon: ClipboardCheck },
+            { label: 'Payslips & Salary', path: '/payslips', icon: Receipt },
           ]
         : [],
     },
   ].filter((g) => g.items.length > 0);
 
+  // --- 3. Custom Objects Dynamic Groups ---
   const { data: customObjects = [] } = useQuery({
     queryKey: ['custom-objects'],
     queryFn: () => objectsApi.list(),
     staleTime: 30_000,
   });
 
-  // Dynamic distribution of custom objects
-  const dynamicDomainGroups: Array<{ id: string; label: string; icon: any; items: Array<{ label: string; path: string; icon: any }> }> = [];
+  const dynamicDomainGroups: NavGroup[] = [];
   const customByDomain: Record<string, CustomObjectMeta[]> = {};
-
   customObjects.forEach((obj) => {
-    const domainNorm = (obj.domain || '').trim().toLowerCase();
-    const matchedBuiltin = capabilityGroups.find(
-      (g) => g.label.toLowerCase() === domainNorm || g.id === domainNorm
-    );
-    if (matchedBuiltin) {
-      matchedBuiltin.items.push({
-        label: obj.plural_label,
-        path: `/objects/${obj.key}`,
-        icon: resolveIcon(obj.icon),
-      });
-    } else {
-      const d = obj.domain || 'Custom Objects';
-      if (!customByDomain[d]) customByDomain[d] = [];
-      customByDomain[d].push(obj);
-    }
+    const domain = obj.domain || 'Custom Objects';
+    if (!customByDomain[domain]) customByDomain[domain] = [];
+    customByDomain[domain]!.push(obj);
   });
 
   Object.entries(customByDomain).forEach(([domain, objs]) => {
@@ -291,90 +342,7 @@ export function AppSidebar() {
     });
   });
 
-  const allCapabilityGroups = [
-    ...capabilityGroups.filter((g) => g.items.length > 0),
-    ...dynamicDomainGroups,
-  ];
-
-  const renderNavItem = (item: { label: string; path: string; icon: any }) => {
-    const search = location.search as any;
-    const isActive = location.pathname === item.path ||
-      (item.path !== '/' && location.pathname.startsWith(item.path));
-
-    if (item.path === '/pipeline' && workflows.length > 0) {
-      const isSubActive = location.pathname === '/pipeline' || location.pathname === '/cases';
-      return (
-        <SidebarMenuItem key={item.path}>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <SidebarMenuButton isActive={isSubActive} tooltip={item.label} className="w-full justify-between pr-2.5">
-                <div className="flex items-center gap-2.5 font-medium">
-                  <item.icon size={15} strokeWidth={isSubActive ? 2.5 : 1.75} className={isSubActive ? 'text-sidebar-accent-foreground' : 'text-sidebar-foreground/60'} />
-                  <span className="text-sm font-medium">{item.label}</span>
-                </div>
-                <ChevronRight size={13} className="text-sidebar-foreground/50 ml-auto" />
-              </SidebarMenuButton>
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent side="right" align="start" alignOffset={-6} className="w-56 bg-popover border border-border shadow-md rounded-xl p-1.5 space-y-0.5 animate-in slide-in-from-left-2 duration-150">
-              <DropdownMenuLabel className="text-[10px] text-sidebar-foreground/50 font-bold uppercase tracking-wider px-2.5 py-1.5">
-                Select Pipeline
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-sidebar-border/40 mx-1" />
-
-              {pipelineDropdownLoading ? (
-                <div className="space-y-1.5 px-2.5 py-2">
-                  <div className="h-5 bg-sidebar-accent/50 rounded-md animate-pulse" />
-                  <div className="h-5 bg-sidebar-accent/50 rounded-md animate-pulse w-3/4" />
-                </div>
-              ) : workflows.length === 0 ? (
-                <p className="text-xs text-sidebar-foreground/50 px-2.5 py-2 text-center">
-                  No pipelines in this branch
-                </p>
-              ) : workflows.map((wf: any) => {
-                const isWfActive = (location.pathname === '/pipeline' || location.pathname === '/cases') && search.pipelineId === wf.id;
-                return (
-                  <DropdownMenuItem key={wf.id} asChild className="p-0 focus:bg-transparent">
-                    <Link
-                      to="/pipeline"
-                      search={{ pipelineId: wf.id }}
-                      className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all w-full duration-150 cursor-pointer ${
-                        isWfActive
-                          ? 'text-sidebar-accent-foreground bg-sidebar-accent font-bold'
-                          : 'text-sidebar-foreground/90 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/40'
-                      }`}
-                    >
-                      <span className={`w-2 h-2 rounded-full flex-shrink-0 mr-1.5 shadow-sm border border-white/10 ${getPipelineColor(wf.id)}`} />
-                      <span className="truncate flex-1 text-left">{wf.name}</span>
-                    </Link>
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </SidebarMenuItem>
-      );
-    }
-
-    return (
-      <SidebarMenuItem key={item.path}>
-        <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
-          <Link
-            to={item.path}
-            className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-sm transition-all duration-150 ${
-              isActive
-                ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-sm border border-sidebar-border/50'
-                : 'text-sidebar-foreground hover:bg-sidebar-accent/55 hover:text-sidebar-accent-foreground'
-            }`}
-          >
-            <item.icon size={15} strokeWidth={isActive ? 2.5 : 1.75} className={isActive ? 'text-sidebar-accent-foreground' : 'text-sidebar-foreground/60'} />
-            <span className="flex-1">{item.label}</span>
-          </Link>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-    );
-  };
-
+  // --- 4. Administration & Configuration Section ---
   const settingsPermissions: Record<string, [string, string]> = {
     '/settings/users': ['manage', 'User'],
     '/settings/roles': ['manage', 'Role'],
@@ -388,20 +356,23 @@ export function AppSidebar() {
     '/settings/plugins': ['manage', 'Plugin'],
     '/settings/integrations': ['manage', 'Integration'],
     '/settings/objects': ['manage', 'FieldDefinition'],
+    '/settings/audit': ['manage', 'AuditLog'],
   };
 
-  const settingsItems = [
-    { label: 'Users', path: '/settings/users', icon: Users },
-    { label: 'Roles', path: '/settings/roles', icon: Shield },
-    { label: 'Branches', path: '/settings/branches', icon: GitBranch },
-    { label: 'Verticals', path: '/settings/verticals', icon: Layers },
-    { label: 'Pipeline Settings', path: '/settings/pipelines', icon: Workflow },
-    { label: 'Fields', path: '/settings/fields', icon: Sliders },
+  const settingsItems: NavItem[] = [
+    { label: 'Overview', path: '/settings', icon: Settings },
+    { label: 'Branch Management', path: '/settings/branches', icon: GitBranch },
+    { label: 'Vertical Management', path: '/settings/verticals', icon: Layers },
+    { label: 'Pipeline Setup', path: '/settings/pipelines', icon: Workflow },
+    { label: 'Users & Team', path: '/settings/users', icon: Users },
+    { label: 'Roles & Permissions', path: '/settings/roles', icon: Shield },
+    { label: 'Custom Fields', path: '/settings/fields', icon: Sliders },
     { label: 'Custom Objects', path: '/settings/objects', icon: Layers },
-    { label: 'Labels', path: '/settings/labels', icon: Tags },
-    { label: 'Capabilities', path: '/settings/capabilities', icon: Layers },
-    { label: 'Plugins', path: '/settings/plugins', icon: Puzzle },
-    { label: 'Integrations', path: '/settings/integrations', icon: Link2 },
+    { label: 'Terminology & Labels', path: '/settings/labels', icon: Tags },
+    { label: 'Capability Matrix', path: '/settings/capabilities', icon: Layers },
+    { label: 'Plugins & Store', path: '/settings/plugins', icon: Puzzle },
+    { label: 'Integrations Setup', path: '/settings/integrations', icon: Link2 },
+    { label: 'Audit Trail', path: '/settings/audit', icon: ShieldCheck },
   ];
 
   const visibleSettingsItems = settingsItems.filter((item) => {
@@ -414,16 +385,29 @@ export function AppSidebar() {
     );
   });
 
-  const isSettingsActive = location.pathname.startsWith('/settings');
+  const allCapabilityGroups = [
+    ...capabilityGroups,
+    ...dynamicDomainGroups,
+  ];
 
-  const [expandedDomains, setExpandedDomains] = useState<Record<string, boolean>>(
-    () => Object.fromEntries(capabilityGroups.map((g) => [g.id, true]))
-  );
+  // Collapsible state per group
+  const [expandedDomains, setExpandedDomains] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {
+      main: true,
+      administration: false,
+    };
+    capabilityGroups.forEach((g) => {
+      initial[g.id] = true;
+    });
+    return initial;
+  });
 
   const [customNames, setCustomNames] = useState<Record<string, string>>(() => {
     try {
       return JSON.parse(localStorage.getItem('sidebar_domain_names') || '{}');
-    } catch { return {}; }
+    } catch {
+      return {};
+    }
   });
 
   const [editingName, setEditingName] = useState<string | null>(null);
@@ -457,66 +441,288 @@ export function AppSidebar() {
     setEditingName(null);
   };
 
+  // --- Filtering Logic for "Filter menu…" ---
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const isFiltering = normalizedQuery.length > 0;
+
+  const filteredCoreItems = useMemo(() => {
+    if (!isFiltering) return coreItems;
+    return coreItems.filter(
+      (item) =>
+        item.label.toLowerCase().includes(normalizedQuery) ||
+        item.path.toLowerCase().includes(normalizedQuery)
+    );
+  }, [coreItems, normalizedQuery, isFiltering]);
+
+  const filteredCapabilityGroups = useMemo(() => {
+    if (!isFiltering) return allCapabilityGroups;
+    return allCapabilityGroups
+      .map((group) => {
+        const groupMatches = group.label.toLowerCase().includes(normalizedQuery);
+        const matchingItems = group.items.filter(
+          (item) =>
+            groupMatches ||
+            item.label.toLowerCase().includes(normalizedQuery) ||
+            item.path.toLowerCase().includes(normalizedQuery)
+        );
+        return {
+          ...group,
+          items: groupMatches ? group.items : matchingItems,
+        };
+      })
+      .filter((group) => group.items.length > 0);
+  }, [allCapabilityGroups, normalizedQuery, isFiltering]);
+
+  const filteredSettingsItems = useMemo(() => {
+    if (!isFiltering) return visibleSettingsItems;
+    return visibleSettingsItems.filter(
+      (item) =>
+        'administration'.includes(normalizedQuery) ||
+        'settings'.includes(normalizedQuery) ||
+        item.label.toLowerCase().includes(normalizedQuery) ||
+        item.path.toLowerCase().includes(normalizedQuery)
+    );
+  }, [visibleSettingsItems, normalizedQuery, isFiltering]);
+
+  const totalMatches =
+    filteredCoreItems.length +
+    filteredCapabilityGroups.reduce((acc, g) => acc + g.items.length, 0) +
+    filteredSettingsItems.length;
+
+  const renderNavItem = (item: NavItem) => {
+    const search = location.search as any;
+    const isActive =
+      location.pathname === item.path ||
+      (item.path !== '/' && location.pathname.startsWith(item.path));
+
+    if (item.path === '/pipeline' && workflows.length > 0) {
+      const isSubActive = location.pathname === '/pipeline' || location.pathname === '/cases';
+      return (
+        <SidebarMenuItem key={item.path}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <SidebarMenuButton
+                isActive={isSubActive}
+                tooltip={item.label}
+                className="w-full justify-between pr-2.5 h-8.5 rounded-lg"
+              >
+                <div className="flex items-center gap-2.5 font-medium min-w-0">
+                  <item.icon
+                    size={14}
+                    strokeWidth={isSubActive ? 2.5 : 1.75}
+                    className={isSubActive ? 'text-primary' : 'text-muted-foreground/70'}
+                  />
+                  <span className="text-xs font-medium truncate">{item.label}</span>
+                </div>
+                <ChevronRight size={12} className="text-muted-foreground/50 ml-auto flex-shrink-0" />
+              </SidebarMenuButton>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent
+              side="right"
+              align="start"
+              alignOffset={-6}
+              className="w-56 bg-popover border border-border shadow-md rounded-xl p-1.5 space-y-0.5 animate-in slide-in-from-left-2 duration-150"
+            >
+              <DropdownMenuLabel className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider px-2.5 py-1.5">
+                Select Pipeline
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-border/60 mx-1" />
+
+              {pipelineDropdownLoading ? (
+                <div className="space-y-1.5 px-2.5 py-2">
+                  <div className="h-5 bg-muted rounded-md animate-pulse" />
+                  <div className="h-5 bg-muted rounded-md animate-pulse w-3/4" />
+                </div>
+              ) : workflows.length === 0 ? (
+                <p className="text-xs text-muted-foreground px-2.5 py-2 text-center">
+                  No pipelines in this branch
+                </p>
+              ) : (
+                workflows.map((wf: any) => {
+                  const isWfActive =
+                    (location.pathname === '/pipeline' || location.pathname === '/cases') &&
+                    search.pipelineId === wf.id;
+                  return (
+                    <DropdownMenuItem key={wf.id} asChild className="p-0 focus:bg-transparent">
+                      <Link
+                        to="/pipeline"
+                        search={{ pipelineId: wf.id }}
+                        className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all w-full duration-150 cursor-pointer ${
+                          isWfActive
+                            ? 'text-primary bg-primary/10 font-bold'
+                            : 'text-foreground/80 hover:text-foreground hover:bg-accent'
+                        }`}
+                      >
+                        <span
+                          className={`w-2 h-2 rounded-full flex-shrink-0 mr-1.5 shadow-sm border border-white/10 ${getPipelineColor(wf.id)}`}
+                        />
+                        <span className="truncate flex-1 text-left">{wf.name}</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  );
+                })
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </SidebarMenuItem>
+      );
+    }
+
+    return (
+      <SidebarMenuItem key={item.path}>
+        <SidebarMenuButton asChild isActive={isActive} tooltip={item.label} className="h-8.5 rounded-lg">
+          <Link
+            to={item.path}
+            className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs transition-all duration-150 ${
+              isActive
+                ? 'bg-primary/10 text-primary font-bold shadow-xs border border-primary/20'
+                : 'text-sidebar-foreground/85 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground'
+            }`}
+          >
+            <item.icon
+              size={14}
+              strokeWidth={isActive ? 2.5 : 1.75}
+              className={isActive ? 'text-primary' : 'text-sidebar-foreground/60'}
+            />
+            <span className="flex-1 truncate">{item.label}</span>
+            {item.badge && (
+              <Badge
+                variant={item.badgeVariant || 'secondary'}
+                className="text-[9px] px-1 py-0 h-4 uppercase font-bold"
+              >
+                {item.badge}
+              </Badge>
+            )}
+          </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  };
+
   return (
-    <Sidebar className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
-      <SidebarHeader className="px-4 py-4 border-b border-sidebar-border bg-sidebar">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center flex-shrink-0 shadow-sm shadow-primary/10">
-            <span className="text-white text-xs font-bold">M</span>
+    <Sidebar className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground w-[260px]">
+      {/* Workspace Brand Header */}
+      <SidebarHeader className="px-3.5 py-3 border-b border-sidebar-border bg-sidebar">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center flex-shrink-0 shadow-sm shadow-primary/20">
+              <span className="text-white text-xs font-bold tracking-tight">M</span>
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-sidebar-foreground leading-none tracking-tight truncate">
+                Meta CRM
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5 font-medium truncate">
+                Enterprise Workspace
+              </p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-sidebar-primary leading-none tracking-tight">Meta CRM</p>
-            <p className="text-[10px] text-sidebar-foreground/70 mt-0.5 font-medium">Workspace Console</p>
-          </div>
+          <Badge
+            variant="outline"
+            className="text-[9px] font-mono font-semibold text-primary border-primary/30 bg-primary/5 px-1.5 py-0 h-4.5"
+          >
+            v2.4
+          </Badge>
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-2 pt-1 pb-3 bg-sidebar">
-        {/* Branch Selector */}
-        <SidebarGroup className="pt-0 pb-1">
-          <SidebarGroupLabel className="text-sidebar-foreground/50 text-[10px] font-bold uppercase tracking-wider px-2 mb-1">
-            Branch
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <BranchSelector />
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+      <SidebarContent className="px-2 pt-2 pb-3 bg-sidebar space-y-1">
+        {/* Branch Context Selector */}
+        <div className="px-1 mb-1">
+          <BranchSelector />
+        </div>
 
-        <Separator className="my-2 bg-sidebar-border/40" />
+        {/* Live Filter Menu Input (Matching user's friend's CRM) */}
+        <div className="px-1 pb-1">
+          <div className="relative flex items-center">
+            <Search
+              size={13}
+              className="absolute left-2.5 text-muted-foreground/60 pointer-events-none"
+            />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Filter menu…"
+              className="w-full bg-sidebar-accent/50 hover:bg-sidebar-accent/75 focus:bg-background border border-sidebar-border/70 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 rounded-lg pl-8 pr-7 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 transition-all outline-none font-medium"
+            />
+            {searchQuery ? (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 text-muted-foreground hover:text-foreground cursor-pointer p-0.5 rounded transition-colors"
+                title="Clear filter"
+              >
+                <X size={12} />
+              </button>
+            ) : (
+              <span className="absolute right-2 text-[9px] font-mono text-muted-foreground/50 bg-background/80 border border-border/40 px-1 py-0.2 rounded select-none pointer-events-none">
+                /
+              </span>
+            )}
+          </div>
+        </div>
 
-        {/* Core Section */}
-        <SidebarGroup className="pt-0 pb-1">
-          <SidebarGroupLabel className="text-sidebar-foreground/50 text-[10px] font-bold uppercase tracking-wider px-2 mb-1">
-            Main
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {coreItems.map((item) => renderNavItem(item))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {isFiltering && (
+          <div className="px-2 py-1 flex items-center justify-between text-[10px] text-muted-foreground border-b border-border/40 mb-1">
+            <span>Filtering menu</span>
+            <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4 font-mono font-bold">
+              {totalMatches} match{totalMatches === 1 ? '' : 'es'}
+            </Badge>
+          </div>
+        )}
 
-        {/* Capability Domain Sections */}
-        {allCapabilityGroups.map((group) => {
+        {/* Empty Search State */}
+        {isFiltering && totalMatches === 0 && (
+          <div className="px-3 py-6 text-center space-y-2">
+            <p className="text-xs text-muted-foreground">No menu items found</p>
+            <button
+              onClick={() => setSearchQuery('')}
+              className="text-xs text-primary hover:underline font-medium cursor-pointer"
+            >
+              Clear filter
+            </button>
+          </div>
+        )}
+
+        {/* 1. Core Workspace Navigation */}
+        {filteredCoreItems.length > 0 && (
+          <SidebarGroup className="p-0">
+            <div className="px-2.5 py-1 flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">
+                Main
+              </span>
+              {isFiltering && (
+                <span className="text-[10px] text-muted-foreground font-mono">
+                  {filteredCoreItems.length}
+                </span>
+              )}
+            </div>
+            <SidebarGroupContent>
+              <SidebarMenu>{filteredCoreItems.map((item) => renderNavItem(item))}</SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* 2. Capability Domains (Academics, Finance, Sales, Telephony, etc.) */}
+        {filteredCapabilityGroups.map((group) => {
           const displayName = customNames[group.id] || group.label;
           const isEditing = editingName === group.id;
+          const isOpen = isFiltering ? true : (expandedDomains[group.id] ?? true);
 
           return (
             <Collapsible
               key={group.id}
-              open={expandedDomains[group.id] ?? true}
-              onOpenChange={() => toggleDomain(group.id)}
+              open={isOpen}
+              onOpenChange={() => !isFiltering && toggleDomain(group.id)}
               className="group/collapsible"
             >
-              <SidebarGroup className="pt-1 pb-0">
-                <div className="flex items-center gap-1 px-2 mb-1 group/header">
+              <SidebarGroup className="p-0 pt-1">
+                <div className="flex items-center justify-between px-2 py-1 group/header">
                   {isEditing ? (
                     <div className="flex items-center gap-1 flex-1 min-w-0">
-                      <group.icon size={12} className="text-sidebar-foreground/40 flex-shrink-0" />
+                      <group.icon size={13} className="text-primary flex-shrink-0" />
                       <input
                         autoFocus
                         value={editValue}
@@ -525,38 +731,57 @@ export function AppSidebar() {
                           if (e.key === 'Enter') saveRename(group.id);
                           if (e.key === 'Escape') cancelRename();
                         }}
-                        className="flex-1 text-xs font-bold text-sidebar-foreground bg-sidebar-accent/60 rounded border border-sidebar-border px-1.5 py-0.5 outline-none min-w-0"
+                        className="flex-1 text-xs font-bold text-foreground bg-background rounded border border-border px-1.5 py-0.5 outline-none min-w-0"
                       />
-                      <button onClick={() => saveRename(group.id)} className="p-0.5 rounded text-sidebar-foreground/50 hover:text-emerald-500 hover:bg-sidebar-accent/60 transition-colors flex-shrink-0 cursor-pointer">
+                      <button
+                        onClick={() => saveRename(group.id)}
+                        className="p-0.5 rounded text-emerald-600 hover:bg-emerald-50 transition-colors flex-shrink-0 cursor-pointer"
+                      >
                         <Check size={11} />
                       </button>
-                      <button onClick={cancelRename} className="p-0.5 rounded text-sidebar-foreground/50 hover:text-rose-500 hover:bg-sidebar-accent/60 transition-colors flex-shrink-0 cursor-pointer">
+                      <button
+                        onClick={cancelRename}
+                        className="p-0.5 rounded text-rose-600 hover:bg-rose-50 transition-colors flex-shrink-0 cursor-pointer"
+                      >
                         <X size={11} />
                       </button>
                     </div>
                   ) : (
                     <>
                       <CollapsibleTrigger asChild>
-                        <button className="flex items-center gap-1.5 flex-1 min-w-0 cursor-pointer select-none text-left">
-                          <group.icon size={14} className="text-primary flex-shrink-0" />
-                          <span className="text-sm font-semibold text-foreground/90 tracking-tight truncate">{displayName}</span>
-                          <ChevronDown size={12} className="text-muted-foreground/60 flex-shrink-0 transition-transform duration-200 group-data-[state=closed]/collapsible:-rotate-90" />
+                        <button className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer select-none text-left py-0.5">
+                          <group.icon size={13} className="text-primary/80 flex-shrink-0" />
+                          <span className="text-xs font-bold text-foreground/90 tracking-tight truncate flex-1">
+                            {displayName}
+                          </span>
+                          {isFiltering ? (
+                            <span className="text-[10px] text-muted-foreground font-mono pr-1">
+                              {group.items.length}
+                            </span>
+                          ) : (
+                            <ChevronDown
+                              size={12}
+                              className="text-muted-foreground/60 flex-shrink-0 transition-transform duration-200 group-data-[state=closed]/collapsible:-rotate-90"
+                            />
+                          )}
                         </button>
                       </CollapsibleTrigger>
-                      <button
-                        onClick={() => startRename(group.id, displayName)}
-                        className="opacity-0 group-hover/header:opacity-100 p-0.5 rounded text-sidebar-foreground/30 hover:text-sidebar-foreground hover:bg-sidebar-accent/60 transition-all flex-shrink-0 cursor-pointer"
-                      >
-                        <Pencil size={11} />
-                      </button>
+                      {!isFiltering && (
+                        <button
+                          onClick={() => startRename(group.id, displayName)}
+                          className="opacity-0 group-hover/header:opacity-100 p-0.5 rounded text-muted-foreground/50 hover:text-foreground hover:bg-accent transition-all flex-shrink-0 cursor-pointer ml-1"
+                          title="Rename domain"
+                        >
+                          <Pencil size={10} />
+                        </button>
+                      )}
                     </>
                   )}
                 </div>
+
                 <CollapsibleContent>
                   <SidebarGroupContent>
-                    <SidebarMenu>
-                      {group.items.map((item) => renderNavItem(item))}
-                    </SidebarMenu>
+                    <SidebarMenu>{group.items.map((item) => renderNavItem(item))}</SidebarMenu>
                   </SidebarGroupContent>
                 </CollapsibleContent>
               </SidebarGroup>
@@ -564,59 +789,95 @@ export function AppSidebar() {
           );
         })}
 
-        {/* Configuration Section */}
-        {visibleSettingsItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-sidebar-foreground/50 text-[10px] font-bold uppercase tracking-wider px-2 mb-1">
-              Configuration
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isSettingsActive}>
-                    <Link
-                      to="/settings"
-                      className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-sm w-full transition-all duration-150 ${
-                        isSettingsActive
-                          ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-sm border border-sidebar-border/50'
-                          : 'text-sidebar-foreground hover:bg-sidebar-accent/55 hover:text-sidebar-accent-foreground'
-                      }`}
-                    >
-                      <Settings size={15} strokeWidth={isSettingsActive ? 2.5 : 1.75} className={isSettingsActive ? 'text-sidebar-accent-foreground' : 'text-sidebar-foreground/60'} />
-                      <span className="flex-1">Settings</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+        {/* 3. Administration & Governance */}
+        {filteredSettingsItems.length > 0 && (
+          <Collapsible
+            open={isFiltering ? true : (expandedDomains['administration'] ?? false)}
+            onOpenChange={() => !isFiltering && toggleDomain('administration')}
+            className="group/collapsible"
+          >
+            <SidebarGroup className="p-0 pt-1">
+              <div className="flex items-center justify-between px-2 py-1">
+                <CollapsibleTrigger asChild>
+                  <button className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer select-none text-left py-0.5">
+                    <Settings size={13} className="text-muted-foreground/80 flex-shrink-0" />
+                    <span className="text-xs font-bold text-foreground/90 tracking-tight truncate flex-1">
+                      Administration
+                    </span>
+                    {isFiltering ? (
+                      <span className="text-[10px] text-muted-foreground font-mono pr-1">
+                        {filteredSettingsItems.length}
+                      </span>
+                    ) : (
+                      <ChevronDown
+                        size={12}
+                        className="text-muted-foreground/60 flex-shrink-0 transition-transform duration-200 group-data-[state=closed]/collapsible:-rotate-90"
+                      />
+                    )}
+                  </button>
+                </CollapsibleTrigger>
+              </div>
+
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {filteredSettingsItems.map((item) => renderNavItem(item))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
         )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-3 bg-sidebar">
+      {/* User Footer Account Card */}
+      <SidebarFooter className="border-t border-sidebar-border p-2 bg-sidebar">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2.5 w-full px-2 py-2 rounded-xl hover:bg-sidebar-accent/55 transition-colors text-left text-sidebar-foreground cursor-pointer">
+            <button className="flex items-center gap-2.5 w-full p-2 rounded-xl hover:bg-sidebar-accent/60 transition-colors text-left text-sidebar-foreground cursor-pointer">
               <Avatar className="w-7 h-7 flex-shrink-0">
-                <AvatarFallback className="bg-primary text-white text-xs font-semibold shadow-sm">
+                <AvatarFallback className="bg-primary text-white text-xs font-bold shadow-xs">
                   {initials}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-sidebar-primary truncate leading-tight">{user?.name ?? 'User'}</p>
-                <p className="text-[10px] text-sidebar-foreground/70 truncate mt-0.5">{user?.email ?? ''}</p>
+                <p className="text-xs font-semibold text-foreground truncate leading-tight">
+                  {user?.name ?? 'User'}
+                </p>
+                <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                  {user?.email ?? ''}
+                </p>
               </div>
-              <ChevronDown size={13} className="text-sidebar-foreground/60" />
+              <ChevronDown size={12} className="text-muted-foreground flex-shrink-0" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 bg-popover border-border text-popover-foreground shadow-md">
-            <DropdownMenuLabel className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator className="bg-border" />
+          <DropdownMenuContent
+            align="end"
+            className="w-52 bg-popover border-border text-popover-foreground shadow-lg rounded-xl p-1.5"
+          >
+            <DropdownMenuLabel className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground px-2 py-1">
+              Active Session
+            </DropdownMenuLabel>
+            <div className="px-2 py-1 text-xs font-medium text-foreground">
+              {user?.name}
+              <div className="text-[10px] text-muted-foreground font-normal">{user?.email}</div>
+            </div>
+            <DropdownMenuSeparator className="bg-border/60 my-1" />
+            <DropdownMenuItem asChild className="p-0">
+              <Link
+                to="/settings"
+                className="flex items-center gap-2 px-2.5 py-1.5 text-xs rounded-lg hover:bg-accent cursor-pointer"
+              >
+                <Settings size={13} />
+                Workspace Settings
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-border/60 my-1" />
             <DropdownMenuItem
               onClick={logout}
-              className="text-sm text-destructive focus:text-destructive focus:bg-accent cursor-pointer"
+              className="flex items-center gap-2 px-2.5 py-1.5 text-xs rounded-lg text-destructive hover:bg-destructive/10 focus:bg-destructive/10 focus:text-destructive cursor-pointer"
             >
-              <LogOut size={14} className="mr-2" />
+              <LogOut size={13} />
               Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>

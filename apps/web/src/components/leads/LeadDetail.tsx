@@ -14,7 +14,8 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Link } from '@tanstack/react-router';
-import { ShieldAlert, ArrowRight, UserCheck, Phone, Mail, FileText, Calendar } from 'lucide-react';
+import { ShieldAlert, ArrowRight, UserCheck, Phone, Mail, FileText, Calendar, Megaphone } from 'lucide-react';
+import { CampaignOptInModal } from './CampaignOptInModal';
 import dayjs from 'dayjs';
 
 interface LeadDetailProps {
@@ -26,6 +27,7 @@ interface LeadDetailProps {
 export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
   const queryClient = useQueryClient();
   const [showConvertForm, setShowConvertForm] = useState(false);
+  const [optInOpen, setOptInOpen] = useState(false);
 
   // Form State
   const [verticalId, setVerticalId] = useState('');
@@ -96,45 +98,61 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
       <div className="flex items-start justify-between gap-4 border-b border-border pb-5">
         <div>
           <h2 className="text-xl font-bold text-foreground leading-tight">{lead.name}</h2>
-          <div className="flex items-center gap-2 mt-2">
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
             <Badge variant="outline" className="capitalize">
               Source: {lead.source}
             </Badge>
             <Badge variant={isConverted ? 'success' : 'default'} className="capitalize">
               {lead.status}
             </Badge>
+            {lead.campaign && (
+              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 flex items-center gap-1 font-semibold text-xs">
+                <Megaphone size={11} />
+                {lead.campaign.name}
+              </Badge>
+            )}
           </div>
         </div>
-        {!isConverted && !showConvertForm && (
-          <div className="flex items-center gap-2">
-            {verticals.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <Button
+            onClick={() => setOptInOpen(true)}
+            variant="outline"
+            className="border-border text-foreground hover:bg-slate-100 flex items-center gap-1.5 h-9 text-xs rounded-lg font-bold"
+          >
+            <Megaphone size={14} />
+            {lead.campaign ? 'Campaign Opt-in' : 'Opt-in Campaign'}
+          </Button>
+          {!isConverted && !showConvertForm && (
+            <>
+              {verticals.length > 0 && (
+                <Button
+                  onClick={() => {
+                    const defaultVerticalId = verticalId || verticals[0]?.id;
+                    if (!defaultVerticalId) {
+                      toast.error('No vertical available');
+                      return;
+                    }
+                    convertMutation.mutate({
+                      vertical_id: defaultVerticalId,
+                    });
+                  }}
+                  disabled={convertMutation.isPending}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center gap-1.5 h-9 text-xs rounded-lg font-bold"
+                >
+                  <UserCheck size={14} />
+                  Quick Convert
+                </Button>
+              )}
               <Button
-                onClick={() => {
-                  const defaultVerticalId = verticalId || verticals[0]?.id;
-                  if (!defaultVerticalId) {
-                    toast.error('No vertical available');
-                    return;
-                  }
-                  convertMutation.mutate({
-                    vertical_id: defaultVerticalId,
-                  });
-                }}
-                disabled={convertMutation.isPending}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center gap-1.5 h-9 text-xs rounded-lg font-bold"
+                onClick={() => setShowConvertForm(true)}
+                variant="outline"
+                className="border-border text-foreground hover:bg-slate-100 flex items-center gap-1.5 h-9 text-xs rounded-lg font-bold"
               >
-                <UserCheck size={14} />
-                Quick Convert
+                Convert Settings...
               </Button>
-            )}
-            <Button
-              onClick={() => setShowConvertForm(true)}
-              variant="outline"
-              className="border-border text-foreground hover:bg-slate-100 flex items-center gap-1.5 h-9 text-xs rounded-lg font-bold"
-            >
-              Convert Settings...
-            </Button>
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Main Details */}
@@ -248,6 +266,20 @@ export function LeadDetail({ leadId, onClose, onChanged }: LeadDetailProps) {
           </div>
         </form>
       )}
+
+      {/* Campaign Opt-In Modal */}
+      <CampaignOptInModal
+        open={optInOpen}
+        onOpenChange={setOptInOpen}
+        leadIds={[lead.id]}
+        leadNames={[lead.name]}
+        currentCampaignId={lead.campaign?.id || null}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['lead', leadId] });
+          queryClient.invalidateQueries({ queryKey: ['leads'] });
+          onChanged?.();
+        }}
+      />
     </div>
   );
 }

@@ -144,6 +144,15 @@ leadsRouter.get('/', async (c) => {
   if (pipelineDefId) conditions.push(eq(leads.pipelineDefinitionId, pipelineDefId));
   if (stage) conditions.push(eq(leads.stage, stage));
 
+  const campaignId = query['campaign_id'];
+  if (campaignId) {
+    if (campaignId === 'none' || campaignId === 'unassigned') {
+      conditions.push(isNull(leads.campaignId));
+    } else {
+      conditions.push(eq(leads.campaignId, campaignId));
+    }
+  }
+
   if (assignedToId) {
     if (assignedToId === 'unassigned' || assignedToId === 'null') {
       conditions.push(isNull(leads.assignedToId));
@@ -175,6 +184,9 @@ leadsRouter.get('/', async (c) => {
       },
       pipelineDefinition: {
         columns: { id: true, name: true },
+      },
+      campaign: {
+        columns: { id: true, name: true, channel: true, status: true },
       },
     },
   });
@@ -228,6 +240,7 @@ leadsRouter.get('/by-stage', async (c) => {
         with: {
           assignedTo: { columns: { id: true, name: true, email: true } },
           party: { columns: { id: true, name: true, email: true } },
+          campaign: { columns: { id: true, name: true, channel: true, status: true } },
         },
       })
     : [];
@@ -262,6 +275,7 @@ leadsRouter.get('/:id', async (c) => {
     with: {
       assignedTo: { columns: { id: true, name: true, email: true } },
       party: { columns: { id: true, name: true, email: true, phoneRaw: true, source: true } },
+      campaign: { columns: { id: true, name: true, channel: true, status: true } },
       pipelineDefinition: {
         with: {
           stages: { orderBy: (stages, { asc }) => [asc(stages.order)] },
@@ -334,6 +348,90 @@ leadsRouter.post('/', validateJson(createLeadSchema), async (c) => {
   }
 
   return c.json(created, 201);
+});
+
+// POST /leads/bulk-action - Batch operations (Campaign enrollment, Rep assignment, Status, Delete)
+const bulkActionSchema = z.object({
+  action: z.enum(['enroll_campaign', 'assign_rep', 'update_status', 'delete']),
+  lead_ids: z.array(z.string()).min(1, 'At least one lead ID is required'),
+  campaign_id: z.string().optional().nullable(),
+  assigned_to_id: z.string().optional().nullable(),
+  status: z.string().optional(),
+});
+
+leadsRouter.post('/bulk-action', validateJson(bulkActionSchema), async (c) => {
+  const scope = c.get('scope');
+  const b = c.get('validatedJson' as any) as z.infer<typeof bulkActionSchema>;
+
+  const targetLeads = await db.query.leads.findMany({
+    where: and(
+      eq(leads.tenantId, scope.tenant_id),
+      inArray(leads.id, b.lead_ids),
+      isNull(leads.deletedAt)
+    ),
+    columns: { id: true },
+  });
+
+  const validIds = targetLeads.map((l) => l.id);
+  if (validIds.length === 0) {
+    return c.json({ success: true, count: 0 });
+  }
+
+  await db.transaction(async (tx) => {
+    if (b.action === 'enroll_campaign') {
+      await tx
+        .update(leads)
+        .set({ campaignId: b.campaign_id || null })
+        .where(inArray(leads.id, validIds));
+
+      for (const id of validIds) {
+        await tx.insert(leadEvents).values({
+          leadId: id,
+          tenantId: scope.tenant_id,
+          eventType: 'campaign_opted_in',
+          actorId: scope.user_id,
+          metadata: { campaign_id: b.campaign_id },
+        });
+      }
+    } else if (b.action === 'assign_rep') {
+      await tx
+        .update(leads)
+        .set({ assignedToId: b.assigned_to_id || null })
+        .where(inArray(leads.id, validIds));
+
+      for (const id of validIds) {
+        await tx.insert(leadEvents).values({
+          leadId: id,
+          tenantId: scope.tenant_id,
+          eventType: 'rep_assigned',
+          actorId: scope.user_id,
+          metadata: { assigned_to_id: b.assigned_to_id },
+        });
+      }
+    } else if (b.action === 'update_status') {
+      await tx
+        .update(leads)
+        .set({ status: (b.status as any) || 'new' })
+        .where(inArray(leads.id, validIds));
+
+      for (const id of validIds) {
+        await tx.insert(leadEvents).values({
+          leadId: id,
+          tenantId: scope.tenant_id,
+          eventType: 'status_updated',
+          actorId: scope.user_id,
+          metadata: { status: b.status },
+        });
+      }
+    } else if (b.action === 'delete') {
+      await tx
+        .update(leads)
+        .set({ deletedAt: new Date() })
+        .where(inArray(leads.id, validIds));
+    }
+  });
+
+  return c.json({ success: true, count: validIds.length });
 });
 
 // PATCH /leads/:id - Update lead with event tracking (Fixes BUG-07!)

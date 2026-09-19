@@ -4,6 +4,7 @@ import { createId } from '@paralleldrive/cuid2';
 import { tenants, verticals, users } from './tenants';
 import { parties } from './core';
 import { pipelineDefinitions } from './workflows';
+import { campaigns } from './campaigns';
 import { leadStatusEnum, partySourceEnum } from './enums';
 
 export const leads = pgTable(
@@ -65,6 +66,7 @@ export const leadsRelations = relations(leads, ({ one, many }) => ({
   assignedTo: one(users, { fields: [leads.assignedToId], references: [users.id] }),
   party: one(parties, { fields: [leads.partyId], references: [parties.id] }),
   pipelineDefinition: one(pipelineDefinitions, { fields: [leads.pipelineDefinitionId], references: [pipelineDefinitions.id] }),
+  campaign: one(campaigns, { fields: [leads.campaignId], references: [campaigns.id] }),
   events: many(leadEvents),
 }));
 

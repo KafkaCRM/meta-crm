@@ -208,7 +208,7 @@ export const settingsApi = {
   capabilities: {
     list: () => apiCall<{ id: string; name: string; description: string; enabled: boolean }[]>('/capabilities'),
     toggle: (id: string, enabled: boolean) =>
-      apiCall<{ id: string; enabled: boolean }>(`/capabilities/${id}`, { method: 'PATCH', body: JSON.stringify({ enabled }) }),
+      apiCall<{ id: string; enabled: boolean }>(`/capabilities/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ enabled }) }),
   },
 
   plugins: {

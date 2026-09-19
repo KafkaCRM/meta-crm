@@ -60,7 +60,7 @@ capabilitiesRouter.get('/capabilities', async (c) => {
 });
 
 // PATCH /capabilities/:id - Toggle capability
-capabilitiesRouter.patch('/capabilities/:id', async (c) => {
+capabilitiesRouter.patch('/capabilities/:id{.+}', async (c) => {
   const scope = c.get('scope');
   const capId = decodeURIComponent(c.req.param('id'));
   const { enabled } = await c.req.json().catch(() => ({}));

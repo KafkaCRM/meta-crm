@@ -7,14 +7,15 @@ export interface ReportParams {
   workflow_id?: string;
 }
 
-function buildQuery(params: ReportParams): string {
+function buildQuery(params: Record<string, any>): string {
   const qs = new URLSearchParams();
-  if (params.date_from) qs.set('date_from', params.date_from);
-  if (params.date_to) qs.set('date_to', params.date_to);
-  if (params.assignment_id) qs.set('assignment_id', params.assignment_id);
-  if (params.workflow_id) qs.set('workflow_id', params.workflow_id);
-  const query = qs.toString();
-  return query ? `&${query}` : '';
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== '') {
+      qs.set(key, String(value));
+    }
+  }
+  const str = qs.toString();
+  return str ? `?${str}` : '';
 }
 
 export interface PipelineFunnelResponse {
@@ -140,24 +141,19 @@ export const reportsApi = {
   },
 
   campaigns: (params: ReportParams & { vertical_id?: string; channel?: string; cursor?: string; limit?: string } = {}) => {
-    const { vertical_id, channel, cursor, limit, ...rest } = params as any;
-    let qs = buildQuery(rest);
-    if (vertical_id) qs += `&vertical_id=${encodeURIComponent(vertical_id)}`;
-    if (channel) qs += `&channel=${encodeURIComponent(channel)}`;
-    if (cursor) qs += `&cursor=${encodeURIComponent(cursor)}`;
-    if (limit) qs += `&limit=${encodeURIComponent(limit)}`;
+    const qs = buildQuery(params);
     return apiCall<CampaignReportResponse>(`/reports/campaigns${qs}`);
   },
 
   campaignComparison: (campaignIds: string[]) => {
-    const qs = campaignIds.map((id) => `campaign_ids=${encodeURIComponent(id)}`).join('&');
-    return apiCall<CampaignComparisonResponse>(`/reports/campaign-comparison?${qs}`);
+    const qs = new URLSearchParams();
+    campaignIds.forEach((id) => qs.append('campaign_ids', id));
+    const str = qs.toString();
+    return apiCall<CampaignComparisonResponse>(`/reports/campaign-comparison${str ? `?${str}` : ''}`);
   },
 
   channelPerformance: (params: ReportParams & { vertical_id?: string } = {}) => {
-    const { vertical_id, ...rest } = params as any;
-    let qs = buildQuery(rest);
-    if (vertical_id) qs += `&vertical_id=${encodeURIComponent(vertical_id)}`;
+    const qs = buildQuery(params);
     return apiCall<ChannelPerformanceResponse>(`/reports/channel-performance${qs}`);
   },
 };
