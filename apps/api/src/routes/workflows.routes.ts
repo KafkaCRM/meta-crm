@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { eq, and, inArray, desc, count } from 'drizzle-orm';
+import { eq, and, inArray, desc, count, or, isNull } from 'drizzle-orm';
 import { db } from '../db';
 import {
   pipelineDefinitions,
@@ -39,12 +39,14 @@ workflowsRouter.get('/', async (c) => {
 
   if (verticalIdsParam) {
     const ids = verticalIdsParam.split(',').filter(Boolean);
-    if (ids.length > 0) conditions.push(inArray(pipelineDefinitions.verticalId, ids));
+    if (ids.length > 0) {
+      conditions.push(or(inArray(pipelineDefinitions.verticalId, ids), isNull(pipelineDefinitions.verticalId))!);
+    }
   } else if (verticalId) {
-    conditions.push(eq(pipelineDefinitions.verticalId, verticalId));
+    conditions.push(or(eq(pipelineDefinitions.verticalId, verticalId), isNull(pipelineDefinitions.verticalId))!);
   }
 
-  const pipelines = await db.query.pipelineDefinitions.findMany({
+  let pipelines = await db.query.pipelineDefinitions.findMany({
     where: and(...conditions),
     with: {
       stages: { orderBy: (stages, { asc }) => [asc(stages.order)] },
@@ -54,6 +56,69 @@ workflowsRouter.get('/', async (c) => {
       },
     },
   });
+
+  // If no pipelines exist, auto-provision default pipeline
+  if (pipelines.length === 0) {
+    const anyExisting = await db.query.pipelineDefinitions.findFirst({
+      where: eq(pipelineDefinitions.tenantId, scope.tenant_id),
+    });
+
+    if (!anyExisting) {
+      const [newDef] = await db
+        .insert(pipelineDefinitions)
+        .values({
+          tenantId: scope.tenant_id,
+          name: 'Default Pipeline',
+          entityType: 'lead',
+        })
+        .returning();
+
+      const createdStages = await db
+        .insert(pipelineStages)
+        .values(
+          DEFAULT_STAGES.map((s) => ({
+            pipelineDefinitionId: newDef!.id,
+            name: s.name,
+            order: s.order,
+            slaHours: s.slaHours,
+            terminalOutcome: s.terminalOutcome,
+          }))
+        )
+        .returning();
+
+      const transitionsToInsert = [];
+      for (let i = 0; i < createdStages.length - 2; i++) {
+        transitionsToInsert.push({
+          pipelineDefinitionId: newDef!.id,
+          fromStageId: createdStages[i]!.id,
+          toStageId: createdStages[i + 1]!.id,
+        });
+      }
+      const wonStage = createdStages.find((s) => s.terminalOutcome === 'won');
+      const lostStage = createdStages.find((s) => s.terminalOutcome === 'lost');
+      if (wonStage && lostStage) {
+        transitionsToInsert.push(
+          { pipelineDefinitionId: newDef!.id, fromStageId: createdStages[2]!.id, toStageId: wonStage.id },
+          { pipelineDefinitionId: newDef!.id, fromStageId: createdStages[2]!.id, toStageId: lostStage.id }
+        );
+      }
+      if (transitionsToInsert.length > 0) {
+        await db.insert(pipelineTransitions).values(transitionsToInsert);
+      }
+
+      const defaultCreated = await db.query.pipelineDefinitions.findFirst({
+        where: eq(pipelineDefinitions.id, newDef!.id),
+        with: {
+          stages: { orderBy: (stages, { asc }) => [asc(stages.order)] },
+          vertical: {
+            columns: { id: true, name: true, branchId: true },
+            with: { branch: { columns: { name: true } } },
+          },
+        },
+      });
+      if (defaultCreated) pipelines = [defaultCreated];
+    }
+  }
 
   return c.json(pipelines);
 });

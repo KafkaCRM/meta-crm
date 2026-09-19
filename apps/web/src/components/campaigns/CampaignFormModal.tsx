@@ -184,7 +184,7 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
   const { data: pipelines = [], isLoading: pipelinesLoading } = useQuery({
     queryKey: ['settings', 'pipelines', verticalId],
     queryFn: () => settingsApi.pipelines.list(verticalId ? { vertical_id: verticalId } : {}),
-    enabled: isOpen && !!verticalId,
+    enabled: isOpen,
     staleTime: 30_000,
   });
 
@@ -326,10 +326,14 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
     
     // Validate all critical fields on basics step or final submit to prevent invalid transitions
     if (!tab || tab === 'basics' || tab === 'submit') {
+      const effBranch = branchId || branches[0]?.id;
+      const effVertical = verticalId || filteredVerticals[0]?.id || verticalsData[0]?.id;
+      const effPipeline = pipelineId || filteredPipelines[0]?.id;
+
       if (!name.trim()) nextErrors.name = 'Campaign Name is required';
-      if (!pipelineId) nextErrors.pipelineId = 'Target Pipeline is required';
-      if (branches.length > 1 && !branchId) nextErrors.branchId = 'Branch is required';
-      if (verticalsData.length > 1 && !verticalId) nextErrors.verticalId = 'Category Vertical is required';
+      if (!effPipeline) nextErrors.pipelineId = 'Target Pipeline is required';
+      if (branches.length > 1 && !effBranch) nextErrors.branchId = 'Branch is required';
+      if (verticalsData.length > 1 && !effVertical) nextErrors.verticalId = 'Category Vertical is required';
     }
 
     setErrors(nextErrors);
@@ -374,6 +378,10 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
         return;
       }
 
+      const effBranchId = branchId || branches[0]?.id || '';
+      const effVerticalId = verticalId || filteredVerticals[0]?.id || verticalsData[0]?.id || '';
+      const effPipelineId = pipelineId || filteredPipelines[0]?.id || '';
+
       let finalManagers = selectedManagers;
       let finalSupervisors = selectedSupervisors;
       let finalAgents = selectedAgents;
@@ -390,9 +398,9 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
         name: name.trim(),
         channel: 'direct',
         status,
-        branch_id: branchId,
-        vertical_id: verticalId,
-        pipeline_id: pipelineId,
+        branch_id: effBranchId,
+        vertical_id: effVerticalId,
+        pipeline_id: effPipelineId,
         start_date: new Date().toISOString(),
         ...(targetLeads ? { target_leads: parseInt(targetLeads, 10) } : {}),
         attributes: {
@@ -411,7 +419,7 @@ export function CampaignFormModal({ isOpen, onClose, onSuccess }: CampaignFormMo
       name, status, branchId, verticalId, pipelineId, targetLeads, 
       createMutation, selectedManagers, 
       selectedSupervisors, selectedAgents, distribution, priority, allowSpillover, 
-      dupCheckScope, dupResolution, showAccessTab, users, branches, verticalsData
+      dupCheckScope, dupResolution, showAccessTab, users, branches, verticalsData, filteredVerticals, filteredPipelines
     ]
   );
 

@@ -59,11 +59,53 @@ capabilitiesRouter.get('/capabilities', async (c) => {
   return c.json(results);
 });
 
-// PATCH /capabilities/:id - Toggle capability
-capabilitiesRouter.patch('/capabilities/:id{.+}', async (c) => {
+// POST /capabilities/toggle - Resilient body-based toggle
+capabilitiesRouter.post('/capabilities/toggle', async (c) => {
   const scope = c.get('scope');
-  const capId = decodeURIComponent(c.req.param('id'));
-  const { enabled } = await c.req.json().catch(() => ({}));
+  const body = await c.req.json().catch(() => ({}));
+  const capId = body.id;
+  const enabled = body.enabled;
+
+  if (!capId) {
+    return c.json({ code: 'VALIDATION_ERROR', message: 'Capability ID is required' }, 400);
+  }
+
+  const tenant = await db.query.tenants.findFirst({
+    where: eq(tenants.id, scope.tenant_id),
+  });
+
+  if (!tenant) {
+    return c.json({ code: 'NOT_FOUND', message: 'Tenant not found' }, 404);
+  }
+
+  const currentConfig = (tenant.configJson as Record<string, any>) || {};
+  let currentList: string[] = currentConfig['enabled_capabilities'] || [];
+
+  if (enabled) {
+    if (!currentList.includes(capId)) currentList.push(capId);
+  } else {
+    currentList = currentList.filter((id) => id !== capId);
+  }
+
+  const newConfig = { ...currentConfig, enabled_capabilities: currentList };
+
+  await db.update(tenants).set({ configJson: newConfig }).where(eq(tenants.id, scope.tenant_id));
+
+  return c.json({ id: capId, enabled: Boolean(enabled) });
+});
+
+// PATCH /capabilities/* - URL param or wildcard toggle
+capabilitiesRouter.patch('/capabilities/*', async (c) => {
+  const scope = c.get('scope');
+  const body = await c.req.json().catch(() => ({}));
+  const rawPath = c.req.path;
+  const match = rawPath.match(/\/capabilities\/(.+)$/);
+  const capId = body.id || (match && match[1] ? decodeURIComponent(match[1]) : '');
+  const enabled = body.enabled;
+
+  if (!capId) {
+    return c.json({ code: 'VALIDATION_ERROR', message: 'Capability ID is required' }, 400);
+  }
 
   const tenant = await db.query.tenants.findFirst({
     where: eq(tenants.id, scope.tenant_id),

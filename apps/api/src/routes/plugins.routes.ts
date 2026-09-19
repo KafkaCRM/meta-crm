@@ -13,6 +13,7 @@ import {
 import { requireAuth } from '../middleware/auth';
 import { requireTenant } from '../middleware/tenant';
 import { encryptVaultData } from '../lib/crypto';
+import { PLUGIN_CATALOGUE } from '../plugins/registry/plugin-catalogue';
 import type { AppEnv } from '../types/context';
 
 export const pluginsRouter = new Hono<AppEnv>();
@@ -113,9 +114,30 @@ pluginsRouter.use('*', requireAuth, requireTenant);
 pluginsRouter.get('/plugins', async (c) => {
   const scope = c.get('scope');
 
-  const allPlugins = await db.query.pluginRegistry.findMany({
+  let allPlugins = await db.query.pluginRegistry.findMany({
     where: eq(pluginRegistry.status, 'active'),
   });
+
+  if (allPlugins.length === 0) {
+    for (const entry of PLUGIN_CATALOGUE) {
+      await db
+        .insert(pluginRegistry)
+        .values({
+          packageName: entry.package_name,
+          version: entry.version,
+          manifest: {
+            ...entry.manifest,
+            category: entry.category,
+            icon: entry.icon,
+          },
+          status: 'active',
+        })
+        .onConflictDoNothing();
+    }
+    allPlugins = await db.query.pluginRegistry.findMany({
+      where: eq(pluginRegistry.status, 'active'),
+    });
+  }
 
   const installed = await db.query.tenantPlugins.findMany({
     where: eq(tenantPlugins.tenantId, scope.tenant_id),
@@ -130,6 +152,7 @@ pluginsRouter.get('/plugins', async (c) => {
       name: manifest.name || p.packageName,
       description: manifest.description || '',
       version: p.version,
+      requires_plan: manifest.requires_plan || null,
       enabled: installedIds.has(p.id),
       installed: installedIds.has(p.id),
     };
