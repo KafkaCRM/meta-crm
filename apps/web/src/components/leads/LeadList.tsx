@@ -30,6 +30,14 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/auth.context';
 import { LeadQuickActionDrawer } from './LeadQuickActionDrawer';
+import { InlineStatusSelect } from '@/components/shared/InlineStatusSelect';
+import {
+  ViewAndColumnManager,
+  type CustomViewDefinition,
+  type ColumnDefinition,
+} from '@/components/shared/ViewAndColumnManager';
+import { settingsApi } from '@/api/settings';
+import { toast } from 'sonner';
 import {
   CompactRecordRow,
   DEFAULT_RECORD_ACTIONS,
@@ -91,27 +99,26 @@ function LeadStatusBadge({ status }: { status: string }) {
   return <OperationalStatusBadge status={operationalStatus} label={status.replace('_', ' ')} />;
 }
 
-export type LeadTab =
-  | 'all'
-  | 'my'
-  | 'followups'
-  | 'untouched'
-  | 'hot'
-  | 'new'
-  | 'unassigned'
-  | 'duplicate'
-  | 'junk';
+const AVAILABLE_COLUMNS: ColumnDefinition[] = [
+  { id: 'name', label: 'Name', defaultVisible: true },
+  { id: 'phone', label: 'Phone', defaultVisible: true },
+  { id: 'source', label: 'Source', defaultVisible: true },
+  { id: 'campaign', label: 'Campaign', defaultVisible: true },
+  { id: 'status', label: 'Status', defaultVisible: true },
+  { id: 'created_at', label: 'SLA Status', defaultVisible: true },
+  { id: 'assigned_to', label: 'Assignee', defaultVisible: true },
+];
 
-const SEGMENT_TABS: { id: LeadTab; label: string; icon: React.ReactNode }[] = [
-  { id: 'all', label: 'All Leads', icon: <Users size={13} /> },
-  { id: 'my', label: 'My Assigned', icon: <UserCheck size={13} /> },
-  { id: 'followups', label: "Today's Follow-ups", icon: <Calendar size={13} /> },
-  { id: 'untouched', label: 'Untouched (>24h)', icon: <Clock size={13} /> },
-  { id: 'hot', label: 'Hot Priority', icon: <Flame size={13} className="text-red-500" /> },
-  { id: 'new', label: 'New', icon: <Sparkles size={13} className="text-blue-500" /> },
-  { id: 'unassigned', label: 'Unassigned', icon: <AlertCircle size={13} /> },
-  { id: 'duplicate', label: 'Duplicate Risk', icon: <AlertTriangle size={13} className="text-amber-500" /> },
-  { id: 'junk', label: 'Junk', icon: <Trash2 size={13} /> },
+const DEFAULT_VIEWS: CustomViewDefinition[] = [
+  { id: 'all', name: 'All Leads', icon: 'users' },
+  { id: 'my', name: 'My Assigned', icon: 'users' },
+  { id: 'followups', name: "Today's Follow-ups", icon: 'bookmark' },
+  { id: 'untouched', name: 'Untouched (>24h)', icon: 'flame' },
+  { id: 'hot', name: 'Hot Priority', icon: 'flame' },
+  { id: 'new', name: 'New', icon: 'sparkles' },
+  { id: 'unassigned', name: 'Unassigned', icon: 'target' },
+  { id: 'duplicate', name: 'Duplicate Risk', icon: 'star' },
+  { id: 'junk', name: 'Junk', icon: 'bookmark' },
 ];
 
 export function LeadList() {
@@ -123,7 +130,50 @@ export function LeadList() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<LeadTab>('all');
+
+  // Dynamic Views & Custom Columns State
+  const [activeViewId, setActiveViewId] = useState<string>('all');
+  const [activeCustomView, setActiveCustomView] = useState<CustomViewDefinition | null>(null);
+  const [visibleColumnIds, setVisibleColumnIds] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem('mc_columns_leads');
+      return stored ? JSON.parse(stored) : AVAILABLE_COLUMNS.map((c) => c.id);
+    } catch {
+      return AVAILABLE_COLUMNS.map((c) => c.id);
+    }
+  });
+
+  const handleVisibleColumnsChange = (cols: string[]) => {
+    setVisibleColumnIds(cols);
+    try {
+      localStorage.setItem('mc_columns_leads', JSON.stringify(cols));
+    } catch {}
+  };
+
+  // Keyboard shortcut: press 'C' anywhere on the page to trigger lead creation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable) {
+        return;
+      }
+      if (e.key === 'c' || e.key === 'C') {
+        if (!e.metaKey && !e.ctrlKey && !e.altKey) {
+          e.preventDefault();
+          setCreateOpen(true);
+        }
+      }
+    };
+    const handleOpenModal = () => setCreateOpen(true);
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('open-create-lead', handleOpenModal);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('open-create-lead', handleOpenModal);
+    };
+  }, []);
+
   const [filters, setFilters] = useState<LeadFilterState>({});
   const [selectedLeads, setSelectedLeads] = useState<LeadResponse[]>([]);
 
@@ -160,30 +210,32 @@ export function LeadList() {
   const verticalIdsStr = selectedVerticalIds.length > 0 ? selectedVerticalIds.join(',') : '';
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['leads', verticalIdsStr, debouncedSearch, activeTab, filters],
+    queryKey: ['leads', verticalIdsStr, debouncedSearch, activeViewId, filters, activeCustomView?.filters],
     queryFn: () => {
       const params: Record<string, string | number> = {};
       if (verticalIdsStr) params.vertical_ids = verticalIdsStr;
       if (debouncedSearch) params.name = debouncedSearch;
 
-      if (filters.status) {
-        params.status = filters.status;
-      } else if (activeTab === 'new') {
+      const effectiveFilters = { ...filters, ...(activeCustomView?.filters || {}) };
+
+      if (effectiveFilters.status) {
+        params.status = effectiveFilters.status;
+      } else if (activeViewId === 'new') {
         params.status = 'new';
-      } else if (activeTab === 'hot') {
+      } else if (activeViewId === 'hot') {
         params.status = 'hot';
-      } else if (activeTab === 'junk') {
+      } else if (activeViewId === 'junk') {
         params.status = 'junk';
       }
 
-      if (filters.source) params.source = filters.source;
-      if (filters.campaign_id) params.campaign_id = filters.campaign_id;
+      if (effectiveFilters.source) params.source = effectiveFilters.source;
+      if (effectiveFilters.campaign_id) params.campaign_id = effectiveFilters.campaign_id;
 
-      if (filters.assigned_to_id) {
-        params.assigned_to_id = filters.assigned_to_id;
-      } else if (activeTab === 'unassigned') {
+      if (effectiveFilters.assigned_to_id) {
+        params.assigned_to_id = effectiveFilters.assigned_to_id;
+      } else if (activeViewId === 'unassigned') {
         params.assigned_to_id = 'unassigned';
-      } else if (activeTab === 'my' && user?.id) {
+      } else if (activeViewId === 'my' && user?.id) {
         params.assigned_to_id = user.id;
       }
 
@@ -192,26 +244,72 @@ export function LeadList() {
     staleTime: 15_000,
   });
 
+  // Dynamic Custom Field Definitions
+  const { data: fieldDefs = [] } = useQuery({
+    queryKey: ['settings', 'fields', 'lead'],
+    queryFn: () => settingsApi.fieldDefinitions.list('lead'),
+    staleTime: 60_000,
+  });
+
+  const allAvailableColumns = useMemo<ColumnDefinition[]>(() => {
+    const existingIds = new Set(AVAILABLE_COLUMNS.map((c) => c.id));
+    const customCols: ColumnDefinition[] = fieldDefs
+      .filter((f) => !existingIds.has(f.name))
+      .map((f) => ({
+        id: `custom_${f.name}`,
+        label: f.label,
+        defaultVisible: false,
+        isCustomField: true,
+      }));
+    return [...AVAILABLE_COLUMNS, ...customCols];
+  }, [fieldDefs]);
+
   const rawLeads = data?.data ?? [];
 
-  // Client-side segmented filter for untouched, followups, duplicate tabs
+  // Client-side counts for custom view tabs
+  const viewCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    counts['all'] = rawLeads.length;
+    counts['my'] = rawLeads.filter((l: any) => l.assigned_to_id === user?.id).length;
+    counts['followups'] = rawLeads.filter((l: any) => {
+      const d = (l.attributes as any)?.follow_up_date;
+      return d && dayjs(d).isBefore(dayjs().endOf('day'));
+    }).length;
+    counts['untouched'] = rawLeads.filter((l: any) => {
+      const hours = dayjs().diff(dayjs(l.created_at), 'hour');
+      return hours >= 24 && l.status !== 'converted' && l.status !== 'junk';
+    }).length;
+    counts['hot'] = rawLeads.filter((l: any) => l.status === 'hot').length;
+    counts['new'] = rawLeads.filter((l: any) => l.status === 'new').length;
+    counts['unassigned'] = rawLeads.filter((l: any) => !l.assigned_to_id).length;
+    counts['duplicate'] = rawLeads.filter((l: any) => l.duplicate_risk).length;
+    counts['junk'] = rawLeads.filter((l: any) => l.status === 'junk').length;
+    return counts;
+  }, [rawLeads, user?.id]);
+
+  // Client-side segmented filter for untouched, followups, duplicate tabs and custom view criteria
   const leads = useMemo(() => {
     let result = rawLeads;
-    if (activeTab === 'duplicate') {
+    if (activeViewId === 'duplicate') {
       result = result.filter((l: any) => l.duplicate_risk);
-    } else if (activeTab === 'untouched') {
+    } else if (activeViewId === 'untouched') {
       result = result.filter((l: any) => {
         const hours = dayjs().diff(dayjs(l.created_at), 'hour');
         return hours >= 24 && l.status !== 'converted' && l.status !== 'junk';
       });
-    } else if (activeTab === 'followups') {
+    } else if (activeViewId === 'followups') {
       result = result.filter((l: any) => {
         const d = (l.attributes as any)?.follow_up_date;
         return d && dayjs(d).isBefore(dayjs().endOf('day'));
       });
+    } else if (activeCustomView?.filters) {
+      const cf = activeCustomView.filters;
+      if (cf.status) result = result.filter((l: any) => l.status === cf.status);
+      if (cf.source) result = result.filter((l: any) => l.source === cf.source);
+      if (cf.campaign_id) result = result.filter((l: any) => l.campaign_id === cf.campaign_id);
     }
     return result;
-  }, [rawLeads, activeTab]);
+  }, [rawLeads, activeViewId, activeCustomView]);
 
   const openPhone = useCallback((phone: string) => {
     window.location.href = `tel:${phone}`;
@@ -252,9 +350,23 @@ export function LeadList() {
     document.body.removeChild(link);
   };
 
-  const columns = useMemo(
-    () => [
+  const handleStatusChange = useCallback(
+    async (leadId: string, newStatus: string) => {
+      try {
+        await leadsApi.update(leadId, { status: newStatus as any });
+        toast.success(`Status updated to ${newStatus.replace('_', ' ')}`);
+        refetch();
+      } catch (err: any) {
+        toast.error(err?.message || 'Failed to update status');
+      }
+    },
+    [refetch]
+  );
+
+  const columns = useMemo(() => {
+    const baseCols = [
       columnHelper.accessor('name', {
+        id: 'name',
         header: 'Name',
         cell: (info) => {
           const row = info.row.original as any;
@@ -272,6 +384,7 @@ export function LeadList() {
         },
       }),
       columnHelper.accessor('phone', {
+        id: 'phone',
         header: 'Phone',
         cell: (info) => {
           const phone = info.getValue();
@@ -319,10 +432,12 @@ export function LeadList() {
         },
       }),
       columnHelper.accessor('source', {
+        id: 'source',
         header: 'Source',
         cell: (info) => <LeadSourceBadge source={info.getValue()} />,
       }),
       columnHelper.accessor('campaign', {
+        id: 'campaign',
         header: 'Campaign',
         cell: (info) => {
           const lead = info.row.original as any;
@@ -360,10 +475,22 @@ export function LeadList() {
         },
       }),
       columnHelper.accessor('status', {
+        id: 'status',
         header: 'Status',
-        cell: (info) => <LeadStatusBadge status={info.getValue()} />,
+        cell: (info) => {
+          const lead = info.row.original as any;
+          return (
+            <div onClick={(e) => e.stopPropagation()}>
+              <InlineStatusSelect
+                status={info.getValue()}
+                onStatusChange={(newStatus) => handleStatusChange(lead.id, newStatus)}
+              />
+            </div>
+          );
+        },
       }),
       columnHelper.accessor('created_at', {
+        id: 'created_at',
         header: 'SLA Status',
         cell: (info) => {
           const row = info.row.original as any;
@@ -402,6 +529,7 @@ export function LeadList() {
         },
       }),
       columnHelper.accessor('assigned_to', {
+        id: 'assigned_to',
         header: 'Assignee',
         cell: (info) => {
           const assignee = info.getValue() as any;
@@ -412,9 +540,30 @@ export function LeadList() {
           );
         },
       }),
-    ],
-    [handleQuickAction, handleOpenOptIn]
-  );
+    ];
+
+    // Dynamic custom fields columns from tenant field definitions
+    const customFieldCols = fieldDefs.map((field) => {
+      const colId = `custom_${field.name}`;
+      return columnHelper.accessor((row) => (row.attributes as any)?.[field.name], {
+        id: colId,
+        header: field.label,
+        cell: (info) => {
+          const val = info.getValue();
+          if (val === null || val === undefined || val === '') {
+            return <span className="text-muted-foreground/40 italic">—</span>;
+          }
+          if (typeof val === 'boolean') {
+            return val ? 'Yes' : 'No';
+          }
+          return <span className="text-sm text-foreground">{String(val)}</span>;
+        },
+      });
+    });
+
+    const allCols = [...baseCols, ...customFieldCols];
+    return allCols.filter((col) => visibleColumnIds.includes(col.id as string));
+  }, [visibleColumnIds, fieldDefs, handleQuickAction, handleOpenOptIn, handleStatusChange]);
 
   const handleRowClick = useCallback((row: LeadResponse) => {
     setPreviewId(row.id);
@@ -436,54 +585,24 @@ export function LeadList() {
       }
     >
       <div className="space-y-4">
-        {/* Tab Selector - Linear-Style Quick Views */}
-        <div className="flex border-b border-border gap-2 sm:gap-4 overflow-x-auto scrollbar-none text-sm pt-1">
-          {SEGMENT_TABS.map((tab) => {
-            const listForCount = rawLeads.filter((l: any) => {
-              if (tab.id === 'all') return true;
-              if (tab.id === 'my') return l.assigned_to_id === user?.id;
-              if (tab.id === 'followups') {
-                const d = l.attributes?.follow_up_date;
-                return d && dayjs(d).isBefore(dayjs().endOf('day'));
-              }
-              if (tab.id === 'untouched') {
-                const hours = dayjs().diff(dayjs(l.created_at), 'hour');
-                return hours >= 24 && l.status !== 'converted' && l.status !== 'junk';
-              }
-              if (tab.id === 'hot') return l.status === 'hot';
-              if (tab.id === 'new') return l.status === 'new';
-              if (tab.id === 'unassigned') return !l.assigned_to_id;
-              if (tab.id === 'duplicate') return l.duplicate_risk;
-              if (tab.id === 'junk') return l.status === 'junk';
-              return true;
-            });
-            const count = listForCount.length;
-
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  'pb-2.5 pt-1 px-1 font-medium border-b-2 transition-all relative text-xs md:text-sm whitespace-nowrap flex items-center gap-1.5 cursor-pointer',
-                  activeTab === tab.id
-                    ? 'border-primary text-foreground font-semibold'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                )}
-              >
-                {tab.icon}
-                <span>{tab.label}</span>
-                <span
-                  className={cn(
-                    'ml-1 text-[9px] px-1.5 py-0.5 rounded-full font-bold transition-colors',
-                    activeTab === tab.id ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
-                  )}
-                >
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        {/* Dynamic Saved Views and Column Chooser */}
+        <ViewAndColumnManager
+          entityType="Lead"
+          defaultViews={DEFAULT_VIEWS}
+          activeViewId={activeViewId}
+          onViewChange={(view) => {
+            setActiveViewId(view.id);
+            setActiveCustomView(view.isCustom ? view : null);
+            if (view.columnIds && view.columnIds.length > 0) {
+              handleVisibleColumnsChange(view.columnIds);
+            }
+          }}
+          availableColumns={allAvailableColumns}
+          visibleColumnIds={visibleColumnIds}
+          onVisibleColumnsChange={handleVisibleColumnsChange}
+          currentFilters={filters}
+          countsByViewId={viewCounts}
+        />
 
         {/* Toolbar with Search and Advanced Filter Builder */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 flex-wrap">
@@ -528,8 +647,8 @@ export function LeadList() {
                 <Megaphone size={36} className="text-muted-foreground/40 mb-3" />
                 <p className="font-semibold text-foreground">No leads found</p>
                 <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-                  {activeTab !== 'all'
-                    ? `No leads match the "${SEGMENT_TABS.find((t) => t.id === activeTab)?.label || activeTab}" view right now.`
+                  {activeViewId !== 'all'
+                    ? `No leads match the "${activeCustomView?.name || DEFAULT_VIEWS.find((t) => t.id === activeViewId)?.name || activeViewId}" view right now.`
                     : 'Add a lead manually or connect a third-party integration to start capturing leads.'}
                 </p>
               </div>

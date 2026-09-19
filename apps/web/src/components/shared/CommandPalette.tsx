@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { 
@@ -13,10 +13,8 @@ import {
 import { 
   LayoutDashboard, 
   Users, 
-  Workflow, 
   Megaphone, 
   Settings2, 
-  Layers, 
   Sliders, 
   Building2,
   Phone,
@@ -24,11 +22,18 @@ import {
   ExternalLink,
   UserPlus,
   Loader2,
-  User
+  Kanban,
+  Receipt,
+  GraduationCap,
+  Puzzle,
+  Shield,
+  Briefcase,
+  Layers,
+  ArrowRight,
+  Target,
 } from 'lucide-react';
-import { partiesApi } from '@/api/parties';
-import { PartyType } from '@meta-crm/types';
-import type { PartyResponse } from '@meta-crm/types';
+import { leadsApi, type LeadResponse } from '@/api/leads';
+import { campaignsApi, type Campaign } from '@/api/campaigns';
 import { cn } from '@/lib/utils';
 
 interface CommandPaletteProps {
@@ -39,9 +44,11 @@ interface CommandPaletteProps {
 interface CommandItemType {
   id: string;
   label: string;
-  to: string;
+  to?: string;
+  action?: () => void;
   icon: any;
   shortcut?: string;
+  keywords?: string[];
   highlight?: boolean;
 }
 
@@ -50,32 +57,67 @@ interface CommandGroupType {
   items: CommandItemType[];
 }
 
-const navigationCommands: CommandGroupType[] = [
+const STATIC_COMMANDS: CommandGroupType[] = [
   {
-    heading: "CRM Workspace Navigations",
+    heading: 'Quick Operations',
     items: [
-      { id: "dashboard", label: "Go to Dashboard", to: "/", icon: LayoutDashboard, shortcut: "⌘D" },
-      { id: "parties", label: "Browse Contacts / Leads", to: "/parties", icon: Users, shortcut: "⌘C" },
-      { id: "cases", label: "Manage Case Tickets", to: "/cases", icon: Workflow, shortcut: "⌘S" },
-      { id: "campaigns", label: "Campaign Promotions", to: "/campaigns", icon: Megaphone, shortcut: "⌘M" },
-    ]
+      {
+        id: 'create-lead',
+        label: 'Create New Lead',
+        icon: UserPlus,
+        shortcut: 'C',
+        keywords: ['add lead', 'new contact', 'capture lead', 'prospect'],
+        action: () => {
+          window.dispatchEvent(new CustomEvent('open-create-lead'));
+        },
+        to: '/leads',
+        highlight: true,
+      },
+      {
+        id: 'new-deal',
+        label: 'New Pipeline Deal',
+        icon: Kanban,
+        keywords: ['deal', 'opportunity', 'stage', 'sales pipeline'],
+        to: '/pipeline',
+      },
+      {
+        id: 'new-campaign',
+        label: 'Launch New Campaign',
+        icon: Megaphone,
+        keywords: ['marketing', 'campaign', 'ad', 'outreach'],
+        to: '/campaigns',
+      },
+    ],
   },
   {
-    heading: "Quick Operations",
+    heading: 'Core Workspace',
     items: [
-      { id: "create-lead", label: "Create New Contact / Lead", to: "/parties/new", icon: UserPlus },
-      { id: "create-case", label: "Create New Case Ticket", to: "/cases/new", icon: Workflow },
-    ]
+      { id: 'dashboard', label: 'Executive Dashboard', to: '/', icon: LayoutDashboard, shortcut: '⌘D', keywords: ['home', 'overview', 'stats', 'kpi'] },
+      { id: 'leads', label: 'Leads Cockpit', to: '/leads', icon: Users, shortcut: '⌘L', keywords: ['contacts', 'prospects', 'calling', 'speed to lead'] },
+      { id: 'pipeline', label: 'Deals & Pipeline Kanban', to: '/pipeline', icon: Kanban, shortcut: '⌘P', keywords: ['deals', 'sales', 'funnel', 'stages'] },
+      { id: 'campaigns', label: 'Campaigns & Marketing', to: '/campaigns', icon: Megaphone, shortcut: '⌘M', keywords: ['ads', 'channels', 'roi', 'utm'] },
+      { id: 'billing', label: 'Billing & Invoices', to: '/billing/invoices', icon: Receipt, keywords: ['payments', 'finance', 'invoice', 'receipts'] },
+      { id: 'finance', label: 'Financial Accounts & Ledger', to: '/finance', icon: Briefcase, keywords: ['money', 'accounting', 'ledger', 'balance'] },
+    ],
   },
   {
-    heading: "Administrative Setup Areas",
+    heading: 'Operations & Academics',
     items: [
-      { id: "settings-objects", label: "Platform Object Manager", to: "/settings/objects", icon: Settings2, shortcut: "⌘O", highlight: true },
-      { id: "settings-layout", label: "Visual Layout Designer", to: "/settings/layout-builder", icon: Layers, shortcut: "⌘L", highlight: true },
-      { id: "settings-fields", label: "Custom Fields Configurator", to: "/settings/fields", icon: Sliders },
-      { id: "settings-brands", label: "Tenant Brands Manager", to: "/settings/brands", icon: Building2 },
-    ]
-  }
+      { id: 'academics-courses', label: 'Course Catalog & Syllabus', to: '/academics/courses', icon: GraduationCap, keywords: ['education', 'courses', 'curriculum'] },
+      { id: 'academics-batches', label: 'Batches & Attendance', to: '/academics/batches', icon: Layers, keywords: ['students', 'classes', 'roster', 'cohorts'] },
+      { id: 'integrations', label: 'Integrations & Webhooks', to: '/integrations', icon: Puzzle, keywords: ['api', 'justdial', 'whatsapp', 'facebook', 'webhook', 'connect'] },
+    ],
+  },
+  {
+    heading: 'Administration & Studio',
+    items: [
+      { id: 'settings-fields', label: 'Custom Fields & Metadata', to: '/settings/fields', icon: Sliders, keywords: ['attributes', 'schema', 'properties', 'custom fields'] },
+      { id: 'settings-extensions', label: 'Extensions & Capabilities', to: '/settings/extensions', icon: Puzzle, keywords: ['plugins', 'modules', 'addons', 'capabilities'] },
+      { id: 'settings-branches', label: 'Franchise Branches', to: '/settings/branches', icon: Building2, keywords: ['stores', 'locations', 'franchise', 'units'] },
+      { id: 'settings-roles', label: 'Roles & Access Control', to: '/settings/roles', icon: Shield, keywords: ['permissions', 'rbac', 'users', 'access'] },
+      { id: 'settings-objects', label: 'Custom Objects Studio', to: '/settings/objects', icon: Settings2, keywords: ['schema', 'entities', 'custom objects'] },
+    ],
+  },
 ];
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
@@ -84,7 +126,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Handle global keydown events for shortcut
+  // Handle global keydown events for shortcut (⌘K / Ctrl+K)
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
@@ -102,7 +144,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     debounceRef.current = setTimeout(() => {
       setDebouncedSearch(searchQuery);
     }, 250);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, [searchQuery]);
 
   // Reset search state when closed
@@ -118,7 +162,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     const trimmed = searchQuery.trim();
     const callMatch = trimmed.match(/^call\s+(.+)$/i);
     const waMatch = trimmed.match(/^(wa|whatsapp)\s+(.+)$/i);
-    
+
     if (callMatch && callMatch[1]) {
       return { prefix: 'call', target: callMatch[1] };
     } else if (waMatch && waMatch[2]) {
@@ -130,78 +174,108 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   // Determine search term for API
   const apiSearchTerm = useMemo(() => {
     if (parsedAction) return parsedAction.target || '';
-    return debouncedSearch;
+    return debouncedSearch.trim();
   }, [parsedAction, debouncedSearch]);
 
-  // Fetch matching contacts/leads via API
-  const { data: matchingParties = [], isLoading } = useQuery({
-    queryKey: ['command-palette-parties', apiSearchTerm],
+  // Fetch matching leads via API
+  const { data: matchingLeadsData, isLoading: isLeadsLoading } = useQuery({
+    queryKey: ['command-palette-leads', apiSearchTerm],
     queryFn: async () => {
-      if (!apiSearchTerm.trim()) return [];
-      const params: any = { limit: 5 };
-      if (/^\+?\d/.test(apiSearchTerm)) {
-        params.phone = apiSearchTerm;
-      } else {
-        params.name = apiSearchTerm;
-      }
+      if (!apiSearchTerm) return [];
       try {
-        const res = await partiesApi.list(params);
-        return res.data ?? [];
-      } catch (err) {
-        console.error(err);
+        const res = await leadsApi.list({ name: apiSearchTerm, limit: 5 });
+        return res?.data ?? [];
+      } catch {
         return [];
       }
     },
-    enabled: apiSearchTerm.trim().length > 0,
+    enabled: apiSearchTerm.length > 0,
+    staleTime: 10_000,
   });
 
-  // Action methods
-  const openPhone = (phone: string) => {
+  const matchingLeads = matchingLeadsData ?? [];
+
+  // Fetch campaigns for cross-search
+  const { data: campaignsData = [] } = useQuery({
+    queryKey: ['command-palette-campaigns'],
+    queryFn: async () => {
+      try {
+        const res = await campaignsApi.list();
+        return Array.isArray(res) ? res : (res as any)?.data ?? [];
+      } catch {
+        return [];
+      }
+    },
+    staleTime: 60_000,
+  });
+
+  const matchingCampaigns = useMemo(() => {
+    if (!apiSearchTerm) return [];
+    const term = apiSearchTerm.toLowerCase();
+    return campaignsData
+      .filter((c: any) => c.name?.toLowerCase().includes(term) || c.channel?.toLowerCase().includes(term))
+      .slice(0, 4);
+  }, [campaignsData, apiSearchTerm]);
+
+  // Direct actions
+  const openPhone = useCallback((phone: string) => {
     window.location.href = `tel:${phone}`;
     onOpenChange(false);
-  };
+  }, [onOpenChange]);
 
-  const openWhatsApp = (phone: string) => {
+  const openWhatsApp = useCallback((phone: string) => {
     let cleaned = phone.replace(/\D/g, '');
     if (cleaned.length === 10) cleaned = `91${cleaned}`;
     window.open(`https://api.whatsapp.com/send?phone=${cleaned}`, '_blank');
     onOpenChange(false);
-  };
+  }, [onOpenChange]);
 
-  // Filter static commands manually (since shouldFilter={false} is set)
+  const handleSelectItem = useCallback((item: CommandItemType) => {
+    if (item.action) {
+      item.action();
+    }
+    if (item.to) {
+      navigate({ to: item.to });
+    }
+    onOpenChange(false);
+  }, [navigate, onOpenChange]);
+
+  // Filter static commands manually
   const filteredGroups = useMemo(() => {
-    if (!searchQuery.trim()) return navigationCommands;
+    if (!searchQuery.trim()) return STATIC_COMMANDS;
 
     const query = searchQuery.toLowerCase();
-    
-    return navigationCommands.map(group => {
-      const filteredItems = group.items.filter(item => 
-        item.label.toLowerCase().includes(query)
-      );
+
+    return STATIC_COMMANDS.map((group) => {
+      const filteredItems = group.items.filter((item) => {
+        if (item.label.toLowerCase().includes(query)) return true;
+        if (item.keywords?.some((k) => k.toLowerCase().includes(query))) return true;
+        return false;
+      });
       return {
         ...group,
-        items: filteredItems
+        items: filteredItems,
       };
-    }).filter(group => group.items.length > 0);
+    }).filter((group) => group.items.length > 0);
   }, [searchQuery]);
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange} shouldFilter={false}>
       <CommandInput 
-        placeholder="Type a command or record name (e.g. 'call John' or 'wa +1...')..." 
+        placeholder="Type a command, lead name, campaign, or action ('call 987...', 'wa +1...')..." 
         value={searchQuery}
         onValueChange={setSearchQuery}
       />
       <CommandList>
-        {isLoading && (
+        {isLeadsLoading && (
           <div className="flex items-center justify-center py-4 text-sm text-muted-foreground gap-2">
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
             <span>Searching CRM records...</span>
           </div>
         )}
-        
-        {filteredGroups.length === 0 && matchingParties.length === 0 && !parsedAction && (
-          <CommandEmpty>No administrative actions or contacts matched.</CommandEmpty>
+
+        {filteredGroups.length === 0 && matchingLeads.length === 0 && matchingCampaigns.length === 0 && !parsedAction && (
+          <CommandEmpty>No administrative actions, leads, or campaigns matched.</CommandEmpty>
         )}
 
         {/* Dynamic Action Trigger (Prefix matches) */}
@@ -212,7 +286,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 <Phone className="mr-2 h-4 w-4 text-emerald-500 animate-pulse" />
                 <div className="flex flex-col">
                   <span className="font-medium text-foreground">Dial "{parsedAction.target}"</span>
-                  <span className="text-[10px] text-muted-foreground">Press Enter to dial this number directly</span>
+                  <span className="text-[10px] text-muted-foreground">Press Enter to initiate phone call directly</span>
                 </div>
               </CommandItem>
             ) : (
@@ -227,71 +301,103 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           </CommandGroup>
         )}
 
-        {/* Dynamic Contact Search Results */}
-        {matchingParties.length > 0 && (
-          <CommandGroup heading="Matching Contacts / Leads">
-            {matchingParties.map((party: PartyResponse) => (
+        {/* Matching Leads Search Results */}
+        {matchingLeads.length > 0 && (
+          <CommandGroup heading="Matching Leads">
+            {matchingLeads.map((lead: LeadResponse) => (
               <CommandItem 
-                key={party.id} 
+                key={lead.id} 
                 onSelect={() => {
-                  navigate({ to: `/parties/${party.id}` });
+                  navigate({ to: `/leads/$id`, params: { id: lead.id } });
                   onOpenChange(false);
                 }}
                 className="group flex items-center justify-between py-2.5 cursor-pointer"
               >
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                  <div className="flex flex-col">
-                    <span className="font-medium text-foreground">{party.name}</span>
-                    <span className="text-xs text-muted-foreground font-mono">{party.phone_raw}</span>
+                <div className="flex items-center gap-2 truncate">
+                  <Users className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                  <div className="flex flex-col truncate">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-foreground truncate">{lead.name}</span>
+                      <span className={cn(
+                        "text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase border",
+                        lead.status === 'converted'
+                          ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                          : lead.status === 'hot'
+                            ? 'bg-rose-50 text-rose-700 border-rose-200'
+                            : 'bg-muted text-muted-foreground border-border'
+                      )}>
+                        {lead.status}
+                      </span>
+                    </div>
+                    <span className="text-xs text-muted-foreground font-mono truncate">{lead.phone}</span>
                   </div>
-                  <span className={cn(
-                    "text-[10px] font-semibold px-1.5 py-0.5 rounded-full ml-2 capitalize border",
-                    party.type === PartyType.Individual 
-                      ? "bg-blue-50 text-blue-700 border-blue-200" 
-                      : "bg-purple-50 text-purple-700 border-purple-200"
-                  )}>
-                    {party.type === PartyType.Individual ? 'Individual' : 'Organization'}
-                  </span>
                 </div>
-                
-                {/* Hover Action Shortcuts */}
+
+                {/* Quick Action Dial Buttons */}
                 <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity">
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
-                      openPhone(party.phone_raw);
+                      openPhone(lead.phone);
                     }}
-                    className="p-1.5 rounded-md hover:bg-emerald-50 hover:text-emerald-600 text-muted-foreground transition-all duration-200"
+                    className="p-1.5 rounded-md hover:bg-emerald-50 hover:text-emerald-600 text-muted-foreground transition-all duration-200 cursor-pointer"
                     title="Call"
                   >
                     <Phone size={13} />
                   </button>
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
-                      openWhatsApp(party.phone_raw);
+                      openWhatsApp(lead.phone);
                     }}
-                    className="p-1.5 rounded-md hover:bg-emerald-50 hover:text-emerald-600 text-muted-foreground transition-all duration-200"
+                    className="p-1.5 rounded-md hover:bg-emerald-50 hover:text-emerald-600 text-muted-foreground transition-all duration-200 cursor-pointer"
                     title="WhatsApp"
                   >
                     <MessageSquare size={13} />
                   </button>
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
-                      navigate({ to: `/parties/${party.id}` });
+                      navigate({ to: `/leads/$id`, params: { id: lead.id } });
                       onOpenChange(false);
                     }}
-                    className="p-1.5 rounded-md hover:bg-blue-50 hover:text-blue-600 text-muted-foreground transition-all duration-200"
+                    className="p-1.5 rounded-md hover:bg-blue-50 hover:text-blue-600 text-muted-foreground transition-all duration-200 cursor-pointer"
                     title="View Profile"
                   >
                     <ExternalLink size={13} />
                   </button>
                 </div>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+
+        {/* Matching Campaigns Search Results */}
+        {matchingCampaigns.length > 0 && (
+          <CommandGroup heading="Matching Campaigns">
+            {matchingCampaigns.map((camp: Campaign) => (
+              <CommandItem
+                key={camp.id}
+                onSelect={() => {
+                  navigate({ to: '/campaigns' });
+                  onOpenChange(false);
+                }}
+                className="group flex items-center justify-between py-2 cursor-pointer"
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <Megaphone className="h-4 w-4 text-primary shrink-0" />
+                  <div className="flex flex-col truncate">
+                    <span className="font-medium text-foreground truncate">{camp.name}</span>
+                    <span className="text-[10px] text-muted-foreground capitalize">Channel: {camp.channel || 'All'} · Status: {camp.status}</span>
+                  </div>
+                </div>
+                <ArrowRight size={12} className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
               </CommandItem>
             ))}
           </CommandGroup>
@@ -305,16 +411,13 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               return (
                 <CommandItem
                   key={item.id}
-                  onSelect={() => {
-                    navigate({ to: item.to });
-                    onOpenChange(false);
-                  }}
+                  onSelect={() => handleSelectItem(item)}
                   className={cn(
                     "cursor-pointer",
-                    item.highlight && "text-fin-orange font-medium"
+                    item.highlight && "text-primary font-semibold"
                   )}
                 >
-                  <Icon className={cn("mr-2 h-4 w-4", item.highlight ? "text-fin-orange" : "text-muted-foreground")} />
+                  <Icon className={cn("mr-2 h-4 w-4", item.highlight ? "text-primary" : "text-muted-foreground")} />
                   <span>{item.label}</span>
                   {item.shortcut && <CommandShortcut>{item.shortcut}</CommandShortcut>}
                 </CommandItem>

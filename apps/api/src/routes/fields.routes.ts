@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, ilike } from 'drizzle-orm';
 import { db } from '../db';
 import { fieldDefinitions } from '../db/schema';
 import { validateJson } from '../middleware/validator';
@@ -17,7 +17,7 @@ fieldsRouter.get('/', async (c) => {
   const entityType = c.req.query('entity_type');
 
   const conditions = [eq(fieldDefinitions.tenantId, scope.tenant_id)];
-  if (entityType) conditions.push(eq(fieldDefinitions.entityType, entityType));
+  if (entityType) conditions.push(ilike(fieldDefinitions.entityType, entityType));
 
   const results = await db.query.fieldDefinitions.findMany({
     where: and(...conditions),
