@@ -48,6 +48,11 @@ export interface CreateTenantRequest {
     name: string;
     email: string;
   };
+  tenant_type?: 'independent' | 'franchisor' | 'franchisee';
+  operational_mode?: 'independent' | 'branches' | 'verticals' | 'matrix' | 'franchise';
+  parent_tenant_id?: string | null;
+  royalty_percentage?: number;
+  territory_codes?: string[];
   capabilities?: string[];
   session_id?: string;
 }

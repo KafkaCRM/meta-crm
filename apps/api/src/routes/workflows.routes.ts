@@ -9,6 +9,7 @@ import {
   automationWorkflows,
   leads,
   campaigns,
+  verticals,
 } from '../db/schema';
 import { validateJson } from '../middleware/validator';
 import { requireAuth } from '../middleware/auth';
@@ -31,7 +32,7 @@ const DEFAULT_STAGES = [
 // GET /settings/pipelines - List pipelines with stages
 workflowsRouter.get('/', async (c) => {
   const scope = c.get('scope');
-  const branchId = c.req.query('branch_id');
+  const branchParam = c.req.query('branch_ids') || c.req.query('branch_id');
   const verticalId = c.req.query('vertical_id');
   const verticalIdsParam = c.req.query('vertical_ids');
 
@@ -40,10 +41,26 @@ workflowsRouter.get('/', async (c) => {
   if (verticalIdsParam) {
     const ids = verticalIdsParam.split(',').filter(Boolean);
     if (ids.length > 0) {
-      conditions.push(or(inArray(pipelineDefinitions.verticalId, ids), isNull(pipelineDefinitions.verticalId))!);
+      conditions.push(inArray(pipelineDefinitions.verticalId, ids));
+    } else {
+      conditions.push(eq(pipelineDefinitions.id, '__NO_MATCH__'));
     }
   } else if (verticalId) {
-    conditions.push(or(eq(pipelineDefinitions.verticalId, verticalId), isNull(pipelineDefinitions.verticalId))!);
+    // STRICT: Show ONLY pipelines that are part of this vertical
+    conditions.push(eq(pipelineDefinitions.verticalId, verticalId));
+  } else if (branchParam) {
+    const branchIds = branchParam.split(',').filter(Boolean);
+    // STRICT: Show ONLY pipelines belonging to verticals in these branch(es)
+    const branchVerticals = await db.query.verticals.findMany({
+      where: and(eq(verticals.tenantId, scope.tenant_id), inArray(verticals.branchId, branchIds)),
+      columns: { id: true },
+    });
+    const ids = branchVerticals.map((v) => v.id);
+    if (ids.length > 0) {
+      conditions.push(inArray(pipelineDefinitions.verticalId, ids));
+    } else {
+      conditions.push(eq(pipelineDefinitions.id, '__NO_MATCH__'));
+    }
   }
 
   let pipelines = await db.query.pipelineDefinitions.findMany({
@@ -57,19 +74,24 @@ workflowsRouter.get('/', async (c) => {
     },
   });
 
-  // If no pipelines exist, auto-provision default pipeline
-  if (pipelines.length === 0) {
+  // If no pipelines exist across tenant, auto-provision default pipeline
+  if (pipelines.length === 0 && !verticalId && !branchParam && !verticalIdsParam) {
     const anyExisting = await db.query.pipelineDefinitions.findFirst({
       where: eq(pipelineDefinitions.tenantId, scope.tenant_id),
     });
 
     if (!anyExisting) {
+      const firstVertical = await db.query.verticals.findFirst({
+        where: eq(verticals.tenantId, scope.tenant_id),
+      });
+
       const [newDef] = await db
         .insert(pipelineDefinitions)
         .values({
           tenantId: scope.tenant_id,
           name: 'Default Pipeline',
           entityType: 'lead',
+          verticalId: firstVertical ? firstVertical.id : null,
         })
         .returning();
 
@@ -120,7 +142,13 @@ workflowsRouter.get('/', async (c) => {
     }
   }
 
-  return c.json(pipelines);
+  return c.json(pipelines.map(p => ({
+    ...p,
+    vertical_id: p.verticalId,
+    tenant_id: p.tenantId,
+    created_at: p.createdAt,
+    updated_at: p.updatedAt,
+  })));
 });
 
 // GET /settings/pipelines/default - Get or atomically create default pipeline (Fixes BUG-02 & BUG-09)
@@ -198,12 +226,23 @@ workflowsRouter.get('/default', async (c) => {
 const createPipelineSchema = z.object({
   name: z.string().min(1, 'Pipeline name is required'),
   entity_type: z.string().default('lead'),
-  vertical_id: z.string().optional().nullable(),
+  vertical_id: z.string().min(1, 'Vertical is required for a pipeline'),
 });
 
 workflowsRouter.post('/', validateJson(createPipelineSchema), async (c) => {
   const scope = c.get('scope');
   const body = c.get('validatedJson' as any) as z.infer<typeof createPipelineSchema>;
+
+  const vertical = await db.query.verticals.findFirst({
+    where: and(
+      eq(verticals.id, body.vertical_id),
+      eq(verticals.tenantId, scope.tenant_id)
+    ),
+  });
+
+  if (!vertical) {
+    return c.json({ code: 'INVALID_VERTICAL', message: 'Vertical not found or does not belong to tenant' }, 400);
+  }
 
   const existing = await db.query.pipelineDefinitions.findFirst({
     where: and(
@@ -223,7 +262,7 @@ workflowsRouter.post('/', validateJson(createPipelineSchema), async (c) => {
         tenantId: scope.tenant_id,
         name: body.name.trim(),
         entityType: body.entity_type || 'lead',
-        verticalId: body.vertical_id || null,
+        verticalId: body.vertical_id,
       })
       .returning();
 

@@ -12,7 +12,7 @@ export const campaignsRouter = new Hono<AppEnv>();
 
 campaignsRouter.use('*', requireAuth, requireTenant);
 
-// GET /campaigns - List campaigns with vertical filtering (Fixes BUG-10!)
+// GET /campaigns - List campaigns with multi-level filtering and lead counts
 campaignsRouter.get('/', async (c) => {
   const scope = c.get('scope');
   const query = c.req.query();
@@ -20,11 +20,25 @@ campaignsRouter.get('/', async (c) => {
   const channel = query['channel'];
   const status = query['status'];
   const name = query['name'];
+  const branchParam = query['branch_ids'] || query['branch_id'];
+  const verticalId = query['vertical_id'];
+  const pipelineId = query['pipeline_id'];
   const verticalIdsParam = query['vertical_ids'];
+  const includeInactive = query['include_inactive'] === 'true';
 
   const conditions = [eq(campaigns.tenantId, scope.tenant_id)];
 
-  let allowedVerticals = scope.vertical_ids;
+  if (branchParam) {
+    const branchIds = branchParam.split(',').filter(Boolean);
+    if (branchIds.length > 0) {
+      conditions.push(inArray(campaigns.branchId, branchIds));
+    }
+  }
+  if (verticalId) conditions.push(eq(campaigns.verticalId, verticalId));
+  if (pipelineId) conditions.push(eq(campaigns.pipelineId, pipelineId));
+
+  const isAdmin = ['admin', 'tenant_admin', 'super_admin', 'platform_admin', 'owner'].includes(scope.role);
+  let allowedVerticals = isAdmin ? [] : scope.vertical_ids;
   if (verticalIdsParam) {
     const requested = verticalIdsParam.split(',').filter(Boolean);
     allowedVerticals = allowedVerticals.length
@@ -36,28 +50,85 @@ campaignsRouter.get('/', async (c) => {
   }
 
   if (channel) conditions.push(eq(campaigns.channel, channel));
-  if (status) conditions.push(eq(campaigns.status, status));
+  if (status) {
+    conditions.push(eq(campaigns.status, status));
+  }
   if (name) conditions.push(ilike(campaigns.name, `%${name}%`));
 
-  const results = await db.query.campaigns.findMany({
-    where: and(...conditions),
-    orderBy: [desc(campaigns.createdAt)],
-    with: {
-      vertical: { columns: { id: true, name: true } },
-      pipeline: { columns: { id: true, name: true } },
-    },
-  });
+  const [rawCampaigns, tenantLeads] = await Promise.all([
+    db.query.campaigns.findMany({
+      where: and(...conditions),
+      orderBy: [desc(campaigns.createdAt)],
+      with: {
+        branch: { columns: { id: true, name: true } },
+        vertical: { columns: { id: true, name: true } },
+        pipeline: { columns: { id: true, name: true } },
+      },
+    }),
+    db.query.leads.findMany({
+      where: and(eq(leads.tenantId, scope.tenant_id), isNull(leads.deletedAt)),
+      columns: { id: true, campaignId: true, status: true, stage: true, attributes: true, assignedToId: true },
+    }),
+  ]);
+
+  const assignedTo = query['assigned_to'];
+
+  const results = rawCampaigns
+    .filter((camp) => {
+      if (!includeInactive && !status && camp.status === 'inactive') return false;
+      if (assignedTo) {
+        const cLeads = tenantLeads.filter((l) => l.campaignId === camp.id);
+        const hasAgent = cLeads.some((l) => l.assignedToId === assignedTo) ||
+          (Array.isArray((camp.attributes as any)?.agent_ids) && (camp.attributes as any).agent_ids.includes(assignedTo));
+        if (!hasAgent) return false;
+      }
+      return true;
+    })
+    .map((camp) => {
+      const cLeads = tenantLeads.filter((l) => l.campaignId === camp.id);
+      const leadsCount = cLeads.length;
+      const wonLeads = cLeads.filter((l) => l.status === 'converted' || l.stage === 'won' || l.stage === 'closed_won');
+      const wonCount = wonLeads.length;
+      const revenue = wonLeads.reduce((acc, l) => {
+        const attr = (l.attributes as any) || {};
+        return acc + (Number(attr.deal_value || attr.amount || attr.value) || 0);
+      }, 0);
+      const spend = Number((camp.attributes as any)?.spend) || 0;
+      const cpl = leadsCount > 0 && spend > 0 ? Math.round(spend / leadsCount) : null;
+
+      return {
+        ...camp,
+        leads_count: leadsCount,
+        won_count: wonCount,
+        revenue,
+        cpl,
+      };
+    });
 
   return c.json(results);
 });
 
-// GET /campaigns/stats - Aggregate stats summary across campaigns
+// GET /campaigns/stats - Aggregate stats summary across campaigns matching the 8 operational KPIs
 campaignsRouter.get('/stats', async (c) => {
   const scope = c.get('scope');
-  const verticalIdsParam = c.req.query('vertical_ids');
+  const query = c.req.query();
+  const branchParam = query['branch_ids'] || query['branch_id'];
+  const verticalId = query['vertical_id'];
+  const pipelineId = query['pipeline_id'];
+  const verticalIdsParam = query['vertical_ids'];
 
   const conditions = [eq(campaigns.tenantId, scope.tenant_id)];
-  let allowedVerticals = scope.vertical_ids;
+  if (branchParam) {
+    const branchIds = branchParam.split(',').filter(Boolean);
+    if (branchIds.length > 0) {
+      conditions.push(inArray(campaigns.branchId, branchIds));
+    }
+  }
+  if (verticalId) conditions.push(eq(campaigns.verticalId, verticalId));
+  if (pipelineId) conditions.push(eq(campaigns.pipelineId, pipelineId));
+
+  const isAdmin = ['admin', 'tenant_admin', 'super_admin', 'platform_admin', 'owner'].includes(scope.role);
+  let allowedVerticals = isAdmin ? [] : scope.vertical_ids;
   if (verticalIdsParam) {
     const requested = verticalIdsParam.split(',').filter(Boolean);
     allowedVerticals = allowedVerticals.length
@@ -68,31 +139,54 @@ campaignsRouter.get('/stats', async (c) => {
     conditions.push(inArray(campaigns.verticalId, allowedVerticals));
   }
 
-  const allCampaigns = await db.query.campaigns.findMany({
-    where: and(...conditions),
-    orderBy: [desc(campaigns.createdAt)],
-  });
+  const [allCampaigns, tenantLeads] = await Promise.all([
+    db.query.campaigns.findMany({
+      where: and(...conditions),
+      orderBy: [desc(campaigns.createdAt)],
+    }),
+    db.query.leads.findMany({
+      where: and(eq(leads.tenantId, scope.tenant_id), isNull(leads.deletedAt)),
+      columns: { id: true, campaignId: true, status: true, stage: true, attributes: true, createdAt: true },
+    }),
+  ]);
 
-  const tenantLeads = await db.query.leads.findMany({
-    where: and(eq(leads.tenantId, scope.tenant_id), isNull(leads.deletedAt)),
-    columns: { id: true, campaignId: true, status: true },
-  });
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const channelCounts: Record<string, number> = {};
-  let totalConvertedAll = 0;
-  let totalLeadsAttributed = 0;
+  const activeCampaignsCount = allCampaigns.filter((c) => c.status === 'active').length;
+
+  const campaignIds = new Set(allCampaigns.map((c) => c.id));
+  const relevantLeads = tenantLeads.filter((l) => l.campaignId && campaignIds.has(l.campaignId));
+
+  const totalLeads = relevantLeads.length;
+  const leadsMtd = relevantLeads.filter((l) => new Date(l.createdAt) >= startOfMonth).length;
+
+  const wonLeads = relevantLeads.filter(
+    (l) => l.status === 'converted' || l.stage === 'won' || l.stage === 'closed_won'
+  );
+  const lostLeads = relevantLeads.filter(
+    (l) => l.status === 'lost' || l.stage === 'lost' || l.stage === 'closed_lost' || l.stage === 'disqualified'
+  );
+
+  const wonCount = wonLeads.length;
+  const lostCount = lostLeads.length;
+  const closedCount = wonCount + lostCount;
+  const activeLeadsCount = Math.max(0, totalLeads - closedCount);
+
+  const totalRevenue = wonLeads.reduce((acc, l) => {
+    const attr = (l.attributes as any) || {};
+    return acc + (Number(attr.deal_value || attr.amount || attr.value) || 0);
+  }, 0);
 
   const campaignStatsList = allCampaigns.map((camp) => {
     const cLeads = tenantLeads.filter((l) => l.campaignId === camp.id);
     const total = cLeads.length;
-    const converted = cLeads.filter((l) => l.status === 'converted').length;
+    const cWon = cLeads.filter((l) => l.status === 'converted' || l.stage === 'won' || l.stage === 'closed_won').length;
+    const cLost = cLeads.filter((l) => l.status === 'lost' || l.stage === 'lost' || l.stage === 'closed_lost').length;
     const untouched = cLeads.filter((l) => l.status === 'new').length;
-    const rate = total > 0 ? Math.round((converted / total) * 100) : 0;
-
-    totalLeadsAttributed += total;
-    totalConvertedAll += converted;
-
-    channelCounts[camp.channel] = (channelCounts[camp.channel] || 0) + total;
+    const rate = total > 0 ? Math.round((cWon / total) * 100) : 0;
+    const spend = Number((camp.attributes as any)?.spend) || 0;
+    const cpl = total > 0 && spend > 0 ? Math.round(spend / total) : null;
 
     return {
       id: camp.id,
@@ -100,34 +194,27 @@ campaignsRouter.get('/stats', async (c) => {
       channel: camp.channel,
       status: camp.status,
       total_leads: total,
-      converted,
+      converted: cWon,
+      lost: cLost,
       conversion_rate: rate,
-      call_connect_rate: total > 0 ? Math.min(100, Math.round(rate * 1.4 + 25)) : 0,
+      spend,
+      cpl,
       untouched_leads: untouched,
-      idle_agents: 0,
     };
   });
 
-  let topChannel = 'meta_ad';
-  let maxChannelCount = -1;
-  for (const [ch, cnt] of Object.entries(channelCounts)) {
-    if (cnt > maxChannelCount) {
-      maxChannelCount = cnt;
-      topChannel = ch;
-    }
-  }
-
-  const overallRate =
-    totalLeadsAttributed > 0
-      ? Math.round((totalConvertedAll / totalLeadsAttributed) * 100)
-      : 0;
-
   return c.json({
+    active_campaigns: activeCampaignsCount,
+    total_leads: totalLeads,
+    leads_mtd: leadsMtd,
+    won: wonCount,
+    lost: lostCount,
+    revenue: totalRevenue,
+    active_leads: activeLeadsCount,
+    closed: closedCount,
     campaigns: campaignStatsList,
-    top_channel: topChannel,
-    total_leads: totalLeadsAttributed,
-    total_converted: totalConvertedAll,
-    overall_conversion_rate: overallRate,
+    total_converted: wonCount,
+    overall_conversion_rate: totalLeads > 0 ? Math.round((wonCount / totalLeads) * 100) : 0,
   });
 });
 

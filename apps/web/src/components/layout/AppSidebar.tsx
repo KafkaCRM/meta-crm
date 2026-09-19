@@ -6,6 +6,7 @@ import { useLabels } from '@/hooks/useLabels';
 import { useBranch } from '@/contexts/branch.context';
 import { useQuery } from '@tanstack/react-query';
 import { settingsApi } from '@/api/settings';
+import { franchiseApi } from '@/api/franchise';
 import { objectsApi, type CustomObjectMeta } from '@/api/objects';
 import { BranchSelector } from './HeaderSelectors';
 import {
@@ -79,6 +80,7 @@ import {
   ShieldCheck,
   PhoneCall,
   ArrowRightLeft,
+  Network,
 } from 'lucide-react';
 
 const getPipelineColor = (id: string) => {
@@ -151,18 +153,17 @@ export function AppSidebar() {
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const { selectedBranchId, selectedVerticalIds, isLoading: branchLoading } = useBranch();
-  const pipelineVerticalIds = selectedBranchId ? selectedVerticalIds : [];
-  const hasBranchFilter = !!selectedBranchId && pipelineVerticalIds.length > 0;
+  const { selectedBranchIds, selectedVerticalIds, isLoading: branchLoading } = useBranch();
+  const hasBranchFilter = selectedBranchIds.length > 0;
 
   const { data: workflows = [], isLoading: pipelinesLoading } = useQuery({
-    queryKey: ['settings', 'pipelines', selectedBranchId || 'all', ...pipelineVerticalIds],
-    queryFn: () => settingsApi.pipelines.list(hasBranchFilter ? { vertical_ids: pipelineVerticalIds.join(',') } : undefined),
-    enabled: !selectedBranchId || selectedVerticalIds.length > 0,
+    queryKey: ['settings', 'pipelines', selectedBranchIds.slice().sort().join(',') || 'all', ...selectedVerticalIds],
+    queryFn: () => settingsApi.pipelines.list(hasBranchFilter ? { branch_ids: selectedBranchIds.join(',') } : undefined),
+    enabled: !hasBranchFilter || selectedVerticalIds.length > 0 || !branchLoading,
     staleTime: 10_000,
   });
 
-  const pipelineDropdownLoading = pipelinesLoading || (!!selectedBranchId && selectedVerticalIds.length === 0);
+  const pipelineDropdownLoading = pipelinesLoading || (hasBranchFilter && selectedVerticalIds.length === 0 && branchLoading);
 
   const initials = user?.name
     ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
@@ -180,6 +181,12 @@ export function AppSidebar() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const { data: franchiseStatus } = useQuery({
+    queryKey: ['franchise', 'status'],
+    queryFn: () => franchiseApi.getStatus(),
+    staleTime: 60_000,
+  });
+
   // --- 1. Main Workspace Group ---
   const coreItems: NavItem[] = [
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -188,7 +195,17 @@ export function AppSidebar() {
     { label: 'Pipeline', path: '/pipeline', icon: Workflow },
     { label: 'Campaigns', path: '/campaigns', icon: Megaphone },
     { label: 'Reports & Analytics', path: '/reports', icon: BarChart3 },
+    ...(franchiseStatus?.is_franchisor || franchiseStatus?.is_franchisee
+      ? [
+          {
+            label: franchiseStatus.is_franchisor ? 'Franchise Network' : 'Franchise Store',
+            path: '/franchise',
+            icon: Network,
+          },
+        ]
+      : []),
     { label: 'Integrations', path: '/integrations', icon: Link2 },
+    { label: 'Settings', path: '/settings', icon: Settings },
   ];
 
   // --- 2. Modular Capability Domain Groups ---
@@ -342,65 +359,30 @@ export function AppSidebar() {
     });
   });
 
-  // --- 4. Administration & Configuration Section ---
-  const settingsPermissions: Record<string, [string, string]> = {
-    '/settings/users': ['manage', 'User'],
-    '/settings/roles': ['manage', 'Role'],
-    '/settings/branches': ['manage', 'Branch'],
-    '/settings/verticals': ['manage', 'Vertical'],
-    '/settings/pipelines': ['manage', 'Workflow'],
-    '/settings/workflows': ['manage', 'Workflow'],
-    '/settings/fields': ['manage', 'FieldDefinition'],
-    '/settings/labels': ['manage', 'LabelOverride'],
-    '/settings/capabilities': ['manage', 'Plugin'],
-    '/settings/plugins': ['manage', 'Plugin'],
-    '/settings/integrations': ['manage', 'Integration'],
-    '/settings/objects': ['manage', 'FieldDefinition'],
-    '/settings/audit': ['manage', 'AuditLog'],
-  };
-
-  const settingsItems: NavItem[] = [
-    { label: 'Overview', path: '/settings', icon: Settings },
-    { label: 'Branch Management', path: '/settings/branches', icon: GitBranch },
-    { label: 'Vertical Management', path: '/settings/verticals', icon: Layers },
-    { label: 'Pipeline Setup', path: '/settings/pipelines', icon: Workflow },
-    { label: 'Users & Team', path: '/settings/users', icon: Users },
-    { label: 'Roles & Permissions', path: '/settings/roles', icon: Shield },
-    { label: 'Custom Fields', path: '/settings/fields', icon: Sliders },
-    { label: 'Custom Objects', path: '/settings/objects', icon: Layers },
-    { label: 'Terminology & Labels', path: '/settings/labels', icon: Tags },
-    { label: 'Capability Matrix', path: '/settings/capabilities', icon: Layers },
-    { label: 'Plugins & Store', path: '/settings/plugins', icon: Puzzle },
-    { label: 'Integrations Setup', path: '/settings/integrations', icon: Link2 },
-    { label: 'Audit Trail', path: '/settings/audit', icon: ShieldCheck },
-  ];
-
-  const visibleSettingsItems = settingsItems.filter((item) => {
-    const perm = settingsPermissions[item.path];
-    return (
-      !perm ||
-      (ability
-        ? ability.can(perm[0] as any, perm[1] as any) || ability.can('read' as any, perm[1] as any)
-        : false)
-    );
-  });
-
   const allCapabilityGroups = [
     ...capabilityGroups,
     ...dynamicDomainGroups,
   ];
 
-  // Collapsible state per group
+  // Collapsible state per group - persisted and defaulting to expanded so capabilities are prominently shown
   const [expandedDomains, setExpandedDomains] = useState<Record<string, boolean>>(() => {
-    const initial: Record<string, boolean> = {
-      main: true,
-      administration: false,
-    };
-    capabilityGroups.forEach((g) => {
-      initial[g.id] = true;
-    });
-    return initial;
+    try {
+      const stored = localStorage.getItem('sidebar_expanded_domains');
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    return { main: true };
   });
+
+  const toggleDomain = (id: string) => {
+    setExpandedDomains((prev) => {
+      const current = prev[id] !== undefined ? prev[id] : true;
+      const updated = { ...prev, [id]: !current };
+      try {
+        localStorage.setItem('sidebar_expanded_domains', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
 
   const [customNames, setCustomNames] = useState<Record<string, string>>(() => {
     try {
@@ -412,10 +394,6 @@ export function AppSidebar() {
 
   const [editingName, setEditingName] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
-
-  const toggleDomain = (id: string) => {
-    setExpandedDomains((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
 
   const startRename = (id: string, currentLabel: string) => {
     setEditingName(id);
@@ -473,21 +451,9 @@ export function AppSidebar() {
       .filter((group) => group.items.length > 0);
   }, [allCapabilityGroups, normalizedQuery, isFiltering]);
 
-  const filteredSettingsItems = useMemo(() => {
-    if (!isFiltering) return visibleSettingsItems;
-    return visibleSettingsItems.filter(
-      (item) =>
-        'administration'.includes(normalizedQuery) ||
-        'settings'.includes(normalizedQuery) ||
-        item.label.toLowerCase().includes(normalizedQuery) ||
-        item.path.toLowerCase().includes(normalizedQuery)
-    );
-  }, [visibleSettingsItems, normalizedQuery, isFiltering]);
-
   const totalMatches =
     filteredCoreItems.length +
-    filteredCapabilityGroups.reduce((acc, g) => acc + g.items.length, 0) +
-    filteredSettingsItems.length;
+    filteredCapabilityGroups.reduce((acc, g) => acc + g.items.length, 0);
 
   const renderNavItem = (item: NavItem) => {
     const search = location.search as any;
@@ -536,7 +502,7 @@ export function AppSidebar() {
                 </div>
               ) : workflows.length === 0 ? (
                 <p className="text-xs text-muted-foreground px-2.5 py-2 text-center">
-                  No pipelines in this branch
+                  No pipelines in selected scope
                 </p>
               ) : (
                 workflows.map((wf: any) => {
@@ -709,7 +675,10 @@ export function AppSidebar() {
         {filteredCapabilityGroups.map((group) => {
           const displayName = customNames[group.id] || group.label;
           const isEditing = editingName === group.id;
-          const isOpen = isFiltering ? true : (expandedDomains[group.id] ?? true);
+          const isChildActive = group.items.some(
+            (it) => location.pathname === it.path || (it.path !== '/' && location.pathname.startsWith(`${it.path}/`))
+          );
+          const isOpen = isFiltering || isChildActive || (expandedDomains[group.id] ?? true);
 
           return (
             <Collapsible
@@ -788,46 +757,6 @@ export function AppSidebar() {
             </Collapsible>
           );
         })}
-
-        {/* 3. Administration & Governance */}
-        {filteredSettingsItems.length > 0 && (
-          <Collapsible
-            open={isFiltering ? true : (expandedDomains['administration'] ?? false)}
-            onOpenChange={() => !isFiltering && toggleDomain('administration')}
-            className="group/collapsible"
-          >
-            <SidebarGroup className="p-0 pt-1">
-              <div className="flex items-center justify-between px-2 py-1">
-                <CollapsibleTrigger asChild>
-                  <button className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer select-none text-left py-0.5">
-                    <Settings size={13} className="text-muted-foreground/80 flex-shrink-0" />
-                    <span className="text-xs font-bold text-foreground/90 tracking-tight truncate flex-1">
-                      Administration
-                    </span>
-                    {isFiltering ? (
-                      <span className="text-[10px] text-muted-foreground font-mono pr-1">
-                        {filteredSettingsItems.length}
-                      </span>
-                    ) : (
-                      <ChevronDown
-                        size={12}
-                        className="text-muted-foreground/60 flex-shrink-0 transition-transform duration-200 group-data-[state=closed]/collapsible:-rotate-90"
-                      />
-                    )}
-                  </button>
-                </CollapsibleTrigger>
-              </div>
-
-              <CollapsibleContent>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {filteredSettingsItems.map((item) => renderNavItem(item))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </SidebarGroup>
-          </Collapsible>
-        )}
       </SidebarContent>
 
       {/* User Footer Account Card */}

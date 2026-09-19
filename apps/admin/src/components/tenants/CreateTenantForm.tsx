@@ -18,6 +18,7 @@ import {
   Loader2,
   CheckCircle,
   HelpCircle,
+  Network,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/auth.context';
@@ -34,9 +35,14 @@ export function CreateTenantForm() {
   const [currentProgress, setCurrentProgress] = useState(0);
   const [activeStage, setActiveStage] = useState('');
   
-  // Step 1: Basic Details
+  // Step 1: Basic Details & Operational Hierarchy
   const [name, setName] = useState('');
   const [industry, setIndustry] = useState('');
+  const [operationalMode, setOperationalMode] = useState<'independent' | 'branches' | 'verticals' | 'matrix'>('independent');
+  const [tenantType, setTenantType] = useState<'independent' | 'franchisor' | 'franchisee'>('independent');
+  const [parentTenantId, setParentTenantId] = useState<string>('');
+  const [royaltyPercentage, setRoyaltyPercentage] = useState<number>(5);
+  const [territoryCodes, setTerritoryCodes] = useState<string>('');
   
   // Step 2: Entitlements (Slug & Plans)
   const [slug, setSlug] = useState('');
@@ -173,6 +179,11 @@ export function CreateTenantForm() {
           name: ownerName,
           email: ownerEmail,
         },
+        tenant_type: tenantType,
+        operational_mode: operationalMode,
+        parent_tenant_id: tenantType === 'franchisee' && parentTenantId.trim() ? parentTenantId.trim() : null,
+        royalty_percentage: tenantType !== 'independent' ? Number(royaltyPercentage) : 0,
+        territory_codes: territoryCodes ? territoryCodes.split(',').map((s) => s.trim()).filter(Boolean) : [],
         capabilities: selectedCapabilities,
         session_id: sessionId,
       });
@@ -281,6 +292,17 @@ export function CreateTenantForm() {
             <div className="p-3 bg-muted rounded-lg border border-border/50">
               <span className="text-xs text-muted-foreground font-medium block">Industry Scope</span>
               <span className="font-semibold text-foreground mt-0.5 block capitalize">{result.tenant.industry}</span>
+            </div>
+            <div className="p-3 bg-muted rounded-lg border border-border/50 col-span-2">
+              <span className="text-xs text-muted-foreground font-medium block">Operational Hierarchy & Franchise Model</span>
+              <span className="font-semibold text-foreground mt-0.5 block capitalize">
+                {operationalMode === 'independent' && 'Single Unit / Solo'}
+                {operationalMode === 'branches' && 'Multi-Branch Network'}
+                {operationalMode === 'verticals' && 'Multi-Vertical Practices'}
+                {operationalMode === 'matrix' && 'Enterprise Matrix (Branches × Verticals)'}
+                {' · '}
+                {tenantType === 'independent' ? 'Standalone' : `${tenantType} (${royaltyPercentage}% royalty)`}
+              </span>
             </div>
             <div className="p-3 bg-muted rounded-lg border border-border/50 col-span-2">
               <span className="text-xs text-muted-foreground font-medium block">Domain / Access Link</span>
@@ -453,6 +475,95 @@ export function CreateTenantForm() {
                 ))}
               </select>
             </div>
+
+            <div className="pt-2">
+              <label htmlFor="operationalMode" className="mb-1 block text-xs font-bold text-foreground/80">
+                Internal Operational Hierarchy & Structure
+              </label>
+              <select
+                id="operationalMode"
+                value={operationalMode}
+                onChange={(e) => setOperationalMode(e.target.value as any)}
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-card focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all cursor-pointer font-medium text-foreground"
+              >
+                <option value="independent">Single Unit / Solo Business (1 Default Branch + 1 Default Vertical — streamlined, zero clutter)</option>
+                <option value="branches">Multi-Branch Network (Multiple physical locations, unified default vertical)</option>
+                <option value="verticals">Multi-Vertical Practices (Multiple service divisions/specialties, unified default branch)</option>
+                <option value="matrix">Enterprise Matrix (Multi-Location × Multi-Practice Cross Matrix)</option>
+              </select>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Defines the internal organizational dimensions for leads, contacts, pipelines, and reporting.
+              </p>
+            </div>
+
+            <div className="pt-2">
+              <label htmlFor="tenantType" className="mb-1 block text-xs font-bold text-foreground/80">
+                Franchise Network Integration
+              </label>
+              <select
+                id="tenantType"
+                value={tenantType}
+                onChange={(e) => setTenantType(e.target.value as any)}
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-card focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all cursor-pointer font-medium text-foreground"
+              >
+                <option value="independent">Independent Organization (Standalone business, non-franchise)</option>
+                <option value="franchisor">Franchisor Corporate HQ (Parent Brand — manages franchisee stores, network analytics & royalties)</option>
+                <option value="franchisee">Franchisee Store / Territory Unit (Child Operator — linked to franchisor brand)</option>
+              </select>
+            </div>
+
+            {tenantType !== 'independent' && (
+              <div className="p-3.5 bg-muted/40 rounded-xl border border-border/60 space-y-3">
+                <div className="flex items-center gap-2 pb-1 border-b border-border/40">
+                  <Network size={14} className="text-fin-orange" />
+                  <span className="text-xs font-bold text-foreground uppercase tracking-wider">
+                    {tenantType === 'franchisor' ? 'Franchisor HQ Parameters' : 'Franchisee Unit Parameters'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-bold text-foreground/80">Default Royalty Rate (%)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.5}
+                      value={royaltyPercentage}
+                      onChange={(e) => setRoyaltyPercentage(Number(e.target.value))}
+                      className="w-full rounded-lg border border-border px-3 py-2 text-xs bg-card font-medium text-foreground"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-bold text-foreground/80">
+                      Territory Zip / Postal Codes
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 10001, 10002, 10003"
+                      value={territoryCodes}
+                      onChange={(e) => setTerritoryCodes(e.target.value)}
+                      className="w-full rounded-lg border border-border px-3 py-2 text-xs bg-card font-medium font-mono text-foreground"
+                    />
+                  </div>
+                </div>
+
+                {tenantType === 'franchisee' && (
+                  <div>
+                    <label className="mb-1 block text-xs font-bold text-foreground/80">
+                      Parent Franchisor Tenant ID (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. tenant_hq_123 or franchisor workspace slug"
+                      value={parentTenantId}
+                      onChange={(e) => setParentTenantId(e.target.value)}
+                      className="w-full rounded-lg border border-border px-3 py-2 text-xs bg-card font-medium font-mono text-foreground"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -681,6 +792,23 @@ export function CreateTenantForm() {
                 <span className="text-muted-foreground font-semibold block uppercase text-[10px]">Entitlement Plan</span>
                 <span className="font-bold text-foreground mt-1 block">
                   {plans?.find(p => p.id === planId)?.name || 'Custom'}
+                </span>
+              </div>
+              <div>
+                <span className="text-muted-foreground font-semibold block uppercase text-[10px]">Operational Hierarchy</span>
+                <span className="font-bold text-foreground mt-1 block">
+                  {operationalMode === 'independent' && 'Single Unit (Solo SMB)'}
+                  {operationalMode === 'branches' && 'Multi-Branch (Locations Only)'}
+                  {operationalMode === 'verticals' && 'Lines of Business (Practices Only)'}
+                  {operationalMode === 'matrix' && 'Enterprise Matrix (Locations × Practices)'}
+                </span>
+              </div>
+              <div className="col-span-2">
+                <span className="text-muted-foreground font-semibold block uppercase text-[10px]">Franchise Model</span>
+                <span className="font-bold text-foreground mt-1 block">
+                  {tenantType === 'independent' && 'Standalone Organization (Non-Franchise)'}
+                  {tenantType === 'franchisor' && `Franchisor Corporate HQ (${royaltyPercentage}% Royalty${territoryCodes ? ` · Territories: ${territoryCodes}` : ''})`}
+                  {tenantType === 'franchisee' && `Franchisee Unit (${royaltyPercentage}% Royalty${parentTenantId ? ` · Parent: ${parentTenantId}` : ''})`}
                 </span>
               </div>
               <div className="col-span-2 border-t border-border/60 pt-3">

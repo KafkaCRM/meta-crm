@@ -13,11 +13,50 @@ import {
   onboardings,
   enrollments,
   callLogs,
+  branches,
+  verticals,
 } from '../db/schema';
 import { validateJson } from '../middleware/validator';
 import { requireAuth } from '../middleware/auth';
 import { requireTenant } from '../middleware/tenant';
 import type { AppEnv } from '../types/context';
+
+function formatParty(p: any) {
+  if (!p) return p;
+  const createdAtIso = p.createdAt instanceof Date ? p.createdAt.toISOString() : (p.createdAt || new Date().toISOString());
+  const updatedAtIso = p.updatedAt instanceof Date ? p.updatedAt.toISOString() : (p.updatedAt || new Date().toISOString());
+  const deletedAtIso = p.deletedAt instanceof Date ? p.deletedAt.toISOString() : (p.deletedAt || null);
+
+  return {
+    ...p,
+    id: p.id,
+    tenant_id: p.tenantId,
+    tenantId: p.tenantId,
+    vertical_id: p.verticalId,
+    verticalId: p.verticalId,
+    assigned_to_id: p.assignedToId,
+    assignedToId: p.assignedToId,
+    type: p.type,
+    name: p.name,
+    email: p.email,
+    phone_raw: p.phoneRaw || p.phone_raw || '',
+    phoneRaw: p.phoneRaw || p.phone_raw || '',
+    phone_normalized: p.phoneNormalized || p.phone_normalized || '',
+    phoneNormalized: p.phoneNormalized || p.phone_normalized || '',
+    source: p.source,
+    attributes: p.attributes || {},
+    merge_status: p.mergeStatus || p.merge_status || 'canonical',
+    mergeStatus: p.mergeStatus || p.merge_status || 'canonical',
+    merged_into_id: p.mergedIntoId || p.merged_into_id || null,
+    mergedIntoId: p.mergedIntoId || p.merged_into_id || null,
+    deleted_at: deletedAtIso,
+    deletedAt: deletedAtIso,
+    created_at: createdAtIso,
+    createdAt: createdAtIso,
+    updated_at: updatedAtIso,
+    updatedAt: updatedAtIso,
+  };
+}
 
 export const partiesRouter = new Hono<AppEnv>();
 
@@ -40,7 +79,8 @@ partiesRouter.get('/', async (c) => {
     isNull(parties.deletedAt),
   ];
 
-  let allowedVerticals = scope.vertical_ids;
+  const isAdmin = ['admin', 'tenant_admin', 'super_admin', 'platform_admin', 'owner'].includes(scope.role);
+  let allowedVerticals = isAdmin ? [] : scope.vertical_ids;
   if (verticalIdsParam) {
     const requested = verticalIdsParam.split(',').filter(Boolean);
     allowedVerticals = allowedVerticals.length
@@ -85,7 +125,7 @@ partiesRouter.get('/', async (c) => {
   });
 
   const hasMore = results.length > limit;
-  const data = hasMore ? results.slice(0, limit) : results;
+  const data = (hasMore ? results.slice(0, limit) : results).map(formatParty);
   const nextCursor = hasMore ? data[data.length - 1]?.id : undefined;
 
   return c.json({ data, next_cursor: nextCursor });
@@ -116,17 +156,19 @@ partiesRouter.get('/:id', async (c) => {
     return c.json({ code: 'NOT_FOUND', message: 'Party not found' }, 404);
   }
 
-  return c.json(party);
+  return c.json(formatParty(party));
 });
 
 // POST /parties - Create party
 const createPartySchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email().optional().nullable(),
-  phone_raw: z.string().min(1, 'Phone is required'),
+  phone_raw: z.string().optional().nullable(),
+  phone: z.string().optional().nullable(),
   type: z.enum(['individual', 'organization']).default('individual'),
   source: z.string().default('manual'),
   vertical_id: z.string().optional().nullable(),
+  branch_brand_assignment_id: z.string().optional().nullable(),
   assigned_to_id: z.string().optional().nullable(),
   attributes: z.record(z.string(), z.any()).optional().default({}),
 });
@@ -135,12 +177,39 @@ partiesRouter.post('/', validateJson(createPartySchema), async (c) => {
   const scope = c.get('scope');
   const body = c.get('validatedJson' as any) as z.infer<typeof createPartySchema>;
 
-  const verticalId = body.vertical_id || scope.vertical_ids[0];
-  if (!verticalId) {
-    return c.json({ code: 'VALIDATION_FAILED', message: 'vertical_id is required' }, 400);
+  const rawPhone = body.phone_raw || body.phone || '';
+  if (!rawPhone.trim()) {
+    return c.json({ code: 'VALIDATION_FAILED', message: 'Phone number is required' }, 400);
   }
 
-  const normalized = body.phone_raw.replace(/[^\d+]/g, '');
+  let verticalId = body.vertical_id || body.branch_brand_assignment_id || scope.vertical_ids[0];
+  if (!verticalId) {
+    const defaultVert = await db.query.verticals.findFirst({
+      where: eq(verticals.tenantId, scope.tenant_id),
+    });
+    if (defaultVert) {
+      verticalId = defaultVert.id;
+    } else {
+      let defaultBranch = await db.query.branches.findFirst({
+        where: eq(branches.tenantId, scope.tenant_id),
+      });
+      if (!defaultBranch) {
+        const [nb] = await db.insert(branches).values({
+          tenantId: scope.tenant_id,
+          name: 'Main Location',
+        }).returning();
+        defaultBranch = nb;
+      }
+      const [nv] = await db.insert(verticals).values({
+        tenantId: scope.tenant_id,
+        branchId: defaultBranch!.id,
+        name: 'General Services',
+      }).returning();
+      verticalId = nv!.id;
+    }
+  }
+
+  const normalized = rawPhone.replace(/[^\d+]/g, '');
 
   // Check for existing duplicate phone in canonical parties
   const existingDuplicate = await db.query.parties.findFirst({
@@ -161,7 +230,7 @@ partiesRouter.post('/', validateJson(createPartySchema), async (c) => {
       type: body.type,
       name: body.name,
       email: body.email,
-      phoneRaw: body.phone_raw,
+      phoneRaw: rawPhone,
       phoneNormalized: normalized,
       source: body.source as any,
       attributes: body.attributes || {},
@@ -181,7 +250,7 @@ partiesRouter.post('/', validateJson(createPartySchema), async (c) => {
     });
   }
 
-  return c.json(created, 201);
+  return c.json(formatParty(created), 201);
 });
 
 // PATCH /parties/:id - Update party

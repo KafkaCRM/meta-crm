@@ -6,6 +6,8 @@ import {
   branches,
   verticals,
   users,
+  userBranches,
+  userVerticals,
   roles,
   userRoles,
   platformUsers,
@@ -20,6 +22,9 @@ import {
   leads,
   inboundEvents,
   integrationConnections,
+  pipelineDefinitions,
+  pipelineStages,
+  pipelineTransitions,
 } from '../db/schema';
 import { requireAuth } from '../middleware/auth';
 import { requirePlatformAdmin } from '../middleware/tenant';
@@ -191,7 +196,19 @@ platformRouter.post('/tenants', async (c) => {
   const scope = c.get('scope');
   const body = await c.req.json().catch(() => ({}));
 
-  const { name, slug, industry, plan_id, owner, capabilities } = body;
+  const {
+    name,
+    slug,
+    industry,
+    plan_id,
+    owner,
+    capabilities,
+    tenant_type,
+    operational_mode,
+    parent_tenant_id,
+    royalty_percentage,
+    territory_codes,
+  } = body;
 
   if (!name || !slug || !industry || !owner?.email) {
     return c.json(
@@ -218,9 +235,16 @@ platformRouter.post('/tenants', async (c) => {
         name,
         slug,
         industry,
-        tenantType: 'independent',
+        tenantType: (tenant_type as any) || 'independent',
+        parentTenantId: parent_tenant_id || null,
+        royaltyPercentage: royalty_percentage !== undefined ? Number(royalty_percentage) : 0,
+        territoryCodes: territory_codes || [],
         status: 'active',
-        configJson: { capabilities: capabilities || [] },
+        configJson: {
+          capabilities: capabilities || [],
+          enabled_capabilities: capabilities || [],
+          operational_mode: operational_mode || (tenant_type === 'franchisor' ? 'franchise' : 'independent'),
+        },
       })
       .returning();
 
@@ -232,6 +256,59 @@ platformRouter.post('/tenants', async (c) => {
         name: `${name} Main Branch`,
       })
       .returning();
+
+    // 2.5 Create default vertical (Anchor Entity)
+    const [defaultVertical] = await tx
+      .insert(verticals)
+      .values({
+        tenantId: newTenant!.id,
+        branchId: mainBranch!.id,
+        name: 'General Services',
+      })
+      .returning();
+
+    // 2.6 Create default pipeline, stages, and transitions
+    const [defaultPipeline] = await tx
+      .insert(pipelineDefinitions)
+      .values({
+        tenantId: newTenant!.id,
+        verticalId: defaultVertical!.id, // Tied to the default vertical of main branch
+        name: 'Default Pipeline',
+        entityType: 'lead',
+      })
+      .returning();
+
+    const createdStages = await tx
+      .insert(pipelineStages)
+      .values([
+        { pipelineDefinitionId: defaultPipeline!.id, name: 'Lead', order: 0, slaHours: 24, terminalOutcome: null },
+        { pipelineDefinitionId: defaultPipeline!.id, name: 'Contacted', order: 1, slaHours: null, terminalOutcome: null },
+        { pipelineDefinitionId: defaultPipeline!.id, name: 'Qualified', order: 2, slaHours: null, terminalOutcome: null },
+        { pipelineDefinitionId: defaultPipeline!.id, name: 'Proposal Sent', order: 3, slaHours: null, terminalOutcome: null },
+        { pipelineDefinitionId: defaultPipeline!.id, name: 'Closed Won', order: 4, slaHours: null, terminalOutcome: 'won' },
+        { pipelineDefinitionId: defaultPipeline!.id, name: 'Closed Lost', order: 5, slaHours: null, terminalOutcome: 'lost' },
+      ])
+      .returning();
+
+    const transitionsToInsert = [];
+    for (let i = 0; i < createdStages.length - 2; i++) {
+      transitionsToInsert.push({
+        pipelineDefinitionId: defaultPipeline!.id,
+        fromStageId: createdStages[i]!.id,
+        toStageId: createdStages[i + 1]!.id,
+      });
+    }
+    const wonStage = createdStages.find((s) => s.terminalOutcome === 'won');
+    const lostStage = createdStages.find((s) => s.terminalOutcome === 'lost');
+    if (wonStage && lostStage) {
+      transitionsToInsert.push(
+        { pipelineDefinitionId: defaultPipeline!.id, fromStageId: createdStages[2]!.id, toStageId: wonStage.id },
+        { pipelineDefinitionId: defaultPipeline!.id, fromStageId: createdStages[2]!.id, toStageId: lostStage.id }
+      );
+    }
+    if (transitionsToInsert.length > 0) {
+      await tx.insert(pipelineTransitions).values(transitionsToInsert);
+    }
 
     // 3. Create owner user
     const [ownerUser] = await tx
@@ -245,6 +322,20 @@ platformRouter.post('/tenants', async (c) => {
         status: 'active',
       })
       .returning();
+
+    // Link owner to userBranches and userVerticals
+    if (ownerUser && mainBranch && defaultVertical) {
+      await tx.insert(userBranches).values({
+        userId: ownerUser.id,
+        branchId: mainBranch.id,
+        tenantId: newTenant!.id,
+      });
+      await tx.insert(userVerticals).values({
+        userId: ownerUser.id,
+        verticalId: defaultVertical.id,
+        tenantId: newTenant!.id,
+      });
+    }
 
     // 4. Create admin role & assignment
     const [adminRole] = await tx

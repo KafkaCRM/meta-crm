@@ -21,6 +21,8 @@ usersRouter.get('/', async (c) => {
     orderBy: [desc(users.createdAt)],
     with: {
       branch: { columns: { id: true, name: true } },
+      userBranches: { with: { branch: { columns: { id: true, name: true } } } },
+      userVerticals: { with: { vertical: { columns: { id: true, name: true } } } },
     },
   });
 
@@ -47,18 +49,32 @@ usersRouter.get('/', async (c) => {
     rolesByUserId.set(r.userId, list);
   }
 
-  const data = tenantUsers.map((u) => ({
-    id: u.id,
-    tenant_id: u.tenantId,
-    name: u.name,
-    email: u.email,
-    phone_number: u.phoneNumber,
-    status: u.status,
-    branch_id: u.branchId,
-    branch: u.branch,
-    roles: rolesByUserId.get(u.id) || [],
-    created_at: u.createdAt,
-  }));
+  const data = tenantUsers.map((u) => {
+    const assignedBranches = (u as any).userBranches?.map((ub: any) => ub.branch).filter(Boolean) || [];
+    if (u.branch && !assignedBranches.some((b: any) => b.id === u.branch!.id)) {
+      assignedBranches.unshift(u.branch);
+    }
+    const branchIds = assignedBranches.map((b: any) => b.id);
+    const assignedVerticals = (u as any).userVerticals?.map((uv: any) => uv.vertical).filter(Boolean) || [];
+    const verticalIds = assignedVerticals.map((v: any) => v.id);
+
+    return {
+      id: u.id,
+      tenant_id: u.tenantId,
+      name: u.name,
+      email: u.email,
+      phone_number: u.phoneNumber,
+      status: u.status,
+      branch_id: u.branchId,
+      branch: u.branch,
+      branches: assignedBranches,
+      branch_ids: branchIds,
+      verticals: assignedVerticals,
+      vertical_ids: verticalIds,
+      roles: rolesByUserId.get(u.id) || [],
+      created_at: u.createdAt,
+    };
+  });
 
   return c.json(data);
 });
@@ -80,7 +96,18 @@ usersRouter.get('/:id', async (c) => {
     return c.json({ code: 'NOT_FOUND', message: 'User not found' }, 404);
   }
 
-  return c.json(user);
+  const assignedBranches = user.userBranches?.map((ub: any) => ub.branch).filter(Boolean) || [];
+  if (user.branch && !assignedBranches.some((b: any) => b.id === user.branch!.id)) {
+    assignedBranches.unshift(user.branch);
+  }
+
+  return c.json({
+    ...user,
+    branches: assignedBranches,
+    branch_ids: assignedBranches.map((b: any) => b.id),
+    verticals: user.userVerticals?.map((uv: any) => uv.vertical).filter(Boolean) || [],
+    vertical_ids: user.userVerticals?.map((uv: any) => uv.verticalId) || [],
+  });
 });
 
 const inviteUserSchema = z.object({
@@ -89,6 +116,7 @@ const inviteUserSchema = z.object({
   phone_number: z.string().min(1, 'Phone number is required'),
   password: z.string().optional(),
   branch_id: z.string().optional().nullable(),
+  branch_ids: z.array(z.string()).optional(),
   role_ids: z.array(z.string()).optional(),
   vertical_ids: z.array(z.string()).optional(),
 });
@@ -100,12 +128,19 @@ usersRouter.post('/invite', validateJson(inviteUserSchema), async (c) => {
   const tempPassword = body.password || `Welcome@${generateToken().slice(0, 8)}`;
   const passwordHash = await hashPassword(tempPassword);
 
+  const allBranchIds = Array.from(new Set([
+    ...(body.branch_ids || []),
+    ...(body.branch_id ? [body.branch_id] : []),
+  ])).filter(Boolean);
+
+  const effectivePrimaryBranchId = body.branch_id || allBranchIds[0] || null;
+
   const result = await db.transaction(async (tx) => {
     const [newUser] = await tx
       .insert(users)
       .values({
         tenantId: scope.tenant_id,
-        branchId: body.branch_id || null,
+        branchId: effectivePrimaryBranchId,
         name: body.name,
         email: body.email || null,
         phoneNumber: body.phone_number,
@@ -113,6 +148,17 @@ usersRouter.post('/invite', validateJson(inviteUserSchema), async (c) => {
         status: 'active',
       })
       .returning();
+
+    // Assign branches to userBranches
+    if (allBranchIds.length > 0) {
+      await tx.insert(userBranches).values(
+        allBranchIds.map((bId) => ({
+          userId: newUser!.id,
+          branchId: bId,
+          tenantId: scope.tenant_id,
+        }))
+      );
+    }
 
     // Assign roles
     if (body.role_ids && body.role_ids.length > 0) {
@@ -169,6 +215,27 @@ usersRouter.patch('/:id', async (c) => {
     if (Object.keys(updateFields).length > 0) {
       const [u] = await tx.update(users).set(updateFields).where(eq(users.id, id)).returning();
       userRow = u!;
+    }
+
+    // Update branches if provided
+    if (Array.isArray(body.branch_ids)) {
+      await tx.delete(userBranches).where(eq(userBranches.userId, id));
+      const bIds = body.branch_ids.filter(Boolean);
+      if (bIds.length > 0) {
+        await tx.insert(userBranches).values(
+          bIds.map((bId: string) => ({
+            userId: id,
+            branchId: bId,
+            tenantId: scope.tenant_id,
+          }))
+        );
+        // Ensure primary branch is set to one of the assigned branches
+        if (!body.branch_id) {
+          await tx.update(users).set({ branchId: bIds[0] }).where(eq(users.id, id));
+        }
+      } else if (body.branch_id === undefined) {
+        await tx.update(users).set({ branchId: null }).where(eq(users.id, id));
+      }
     }
 
     // Update roles if provided

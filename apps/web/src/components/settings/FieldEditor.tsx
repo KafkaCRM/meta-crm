@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Plus, Trash2, Loader2, ChevronDown, ChevronRight, Sliders, Users, Briefcase, MessageSquare, AlertCircle, X, CheckSquare, List } from 'lucide-react';
+import { Plus, Trash2, Loader2, ChevronDown, ChevronRight, Sliders, Users, Briefcase, MessageSquare, AlertCircle, X, CheckSquare, List, UserPlus } from 'lucide-react';
 import { settingsApi, type FieldDefinition } from '@/api/settings';
 import type { VisibilityRuleEntry } from '@meta-crm/types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -11,9 +11,10 @@ import { Badge } from '@/components/ui/badge';
 import { usePermissions } from '@/hooks/usePermissions';
 import { cn } from '@/lib/utils';
 
-const FIELD_TYPES = ['text', 'number', 'date', 'select', 'multi_select', 'boolean', 'phone', 'email'];
+const FIELD_TYPES = ['text', 'number', 'currency', 'date', 'select', 'multi_select', 'boolean', 'phone', 'email'];
 
 const ENTITIES = [
+  { id: 'Lead', label: 'Leads & Form Fields', icon: UserPlus, desc: 'Lead capture forms, industry attributes, and custom intake fields' },
   { id: 'Party', label: 'Contacts', icon: Users, desc: 'Contact profiles and details' },
   { id: 'Case', label: 'Cases', icon: Briefcase, desc: 'Deals, tickets, or applications' },
   { id: 'Interaction', label: 'Interactions', icon: MessageSquare, desc: 'Calls, emails, and meetings' },
@@ -23,7 +24,7 @@ export function FieldEditor() {
   const { can } = usePermissions();
   const canManage = can('manage', 'FieldDefinition');
   const queryClient = useQueryClient();
-  const [entityType, setEntityType] = useState('Party');
+  const [entityType, setEntityType] = useState('Lead');
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     name: '', label: '', field_type: 'text', options: '', required: false, order: 0,

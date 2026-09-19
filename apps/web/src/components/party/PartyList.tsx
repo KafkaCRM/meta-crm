@@ -121,9 +121,10 @@ export function PartyList() {
       }),
       columnHelper.accessor('phone_raw', {
         header: t('party.phone') ?? 'Phone',
-        cell: (info) => (
-          <span className="text-muted-foreground text-sm font-mono">{info.getValue()}</span>
-        ),
+        cell: (info) => {
+          const val = info.getValue() || (info.row.original as any).phoneRaw || '—';
+          return <span className="text-muted-foreground text-sm font-mono">{val}</span>;
+        },
       }),
       columnHelper.accessor('source', {
         header: t('party.source') ?? 'Source',
@@ -132,7 +133,7 @@ export function PartyList() {
       columnHelper.accessor('merge_status', {
         header: 'Status',
         cell: (info) => {
-          const status = info.getValue();
+          const status = info.getValue() || (info.row.original as any).mergeStatus;
           if (status === MergeStatus.Merged) {
             return <span className="text-xs text-[#c41c1c]">Merged</span>;
           }
@@ -141,11 +142,14 @@ export function PartyList() {
       }),
       columnHelper.accessor('created_at', {
         header: 'Created',
-        cell: (info) => (
-          <span className="text-sm text-muted-foreground">
-            {dayjs(info.getValue()).format('DD MMM YYYY')}
-          </span>
-        ),
+        cell: (info) => {
+          const val = info.getValue() || (info.row.original as any).createdAt;
+          return (
+            <span className="text-sm text-muted-foreground">
+              {val ? dayjs(val).format('DD MMM YYYY') : '—'}
+            </span>
+          );
+        },
       }),
     ],
     [t],

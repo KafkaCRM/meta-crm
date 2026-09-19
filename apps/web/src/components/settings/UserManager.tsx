@@ -24,6 +24,8 @@ export function UserManager() {
     password: '',
     autoGeneratePassword: true,
     roleIds: [] as string[],
+    branchIds: [] as string[],
+    verticalIds: [] as string[],
   });
 
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -50,18 +52,29 @@ export function UserManager() {
     if (settingsUserDetail) {
       setSettingsRoleIds(settingsUserDetail.roles?.map((r: any) => r.role_id) ?? []);
       setSettingsVerticalIds(settingsUserDetail.vertical_ids ?? []);
-      const branchIds: string[] = settingsUserDetail.verticals
-        ?.map((v: any) => v.branch_id)
-        .filter((id: string, i: number, arr: string[]) => arr.indexOf(id) === i) ?? [];
-      setSettingsBranchIds(branchIds);
+      const rawBranchIds: string[] = [
+        ...(settingsUserDetail.branch_ids || []),
+        ...(settingsUserDetail.branches?.map((b: any) => b.id) || []),
+        ...(settingsUserDetail.verticals?.map((v: any) => v.branch_id) || []),
+        ...(settingsUserDetail.branch_id ? [settingsUserDetail.branch_id] : []),
+      ];
+      const uniqueBranchIds = Array.from(new Set(rawBranchIds.filter(Boolean)));
+      setSettingsBranchIds(uniqueBranchIds);
     } else if (settingsUser) {
       setSettingsRoleIds(settingsUser.roles?.map((r) => r.role_id) ?? []);
+      const rawBranchIds: string[] = [
+        ...(settingsUser.branch_ids || []),
+        ...(settingsUser.branches?.map((b) => b.id) || []),
+        ...(settingsUser.branch_id ? [settingsUser.branch_id] : []),
+      ];
+      setSettingsBranchIds(Array.from(new Set(rawBranchIds.filter(Boolean))));
+      setSettingsVerticalIds(settingsUser.vertical_ids || []);
     }
   }, [settingsUserDetail, settingsUser]);
 
   const { data: branches } = useQuery({
     queryKey: ['settings', 'branches'],
-    queryFn: () => settingsApi.branches.list(),
+    queryFn: () => settingsApi.branches.list({ accessible: true }),
     staleTime: 30_000,
   });
 
@@ -75,8 +88,12 @@ export function UserManager() {
     ? allVerticals.filter((v: any) => settingsBranchIds.includes(v.branch_id))
     : allVerticals;
 
+  const inviteFilteredVerticals = inviteForm.branchIds.length > 0
+    ? allVerticals.filter((v: any) => inviteForm.branchIds.includes(v.branch_id))
+    : allVerticals;
+
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: { role_ids?: string[]; vertical_ids?: string[] } }) =>
+    mutationFn: ({ id, data }: { id: string; data: { role_ids?: string[]; branch_ids?: string[]; vertical_ids?: string[] } }) =>
       settingsApi.users.update(id, data),
     onSuccess: () => {
       toast.success('User updated successfully');
@@ -102,6 +119,8 @@ export function UserManager() {
       phone_number: string;
       password?: string;
       role_ids?: string[];
+      branch_ids?: string[];
+      vertical_ids?: string[];
     }) => settingsApi.users.invite(data),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['settings', 'users'] });
@@ -117,6 +136,8 @@ export function UserManager() {
         password: '',
         autoGeneratePassword: true,
         roleIds: [],
+        branchIds: [],
+        verticalIds: [],
       });
     },
     onError: (error: any) => toast.error(error?.message || 'Failed to create user'),
@@ -153,6 +174,8 @@ export function UserManager() {
         phone_number: inviteForm.phone_number.trim(),
         password: inviteForm.autoGeneratePassword ? undefined : inviteForm.password,
         role_ids: inviteForm.roleIds,
+        branch_ids: inviteForm.branchIds,
+        vertical_ids: inviteForm.verticalIds,
       });
     },
     [inviteForm, inviteMutation],
@@ -217,13 +240,14 @@ export function UserManager() {
                 <TableHead className="h-10 px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">Email</TableHead>
                 <TableHead className="h-10 px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">Phone</TableHead>
                 <TableHead className="h-10 px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">Roles</TableHead>
+                <TableHead className="h-10 px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">Assigned Branches</TableHead>
                 <TableHead className="h-10 px-4 w-12" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {users?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-32 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={6} className="h-32 text-center text-sm text-muted-foreground">
                     No active users found. {canManage && 'Use the Create User button to add your first member.'}
                   </TableCell>
                 </TableRow>
@@ -259,6 +283,20 @@ export function UserManager() {
                               </Badge>
                             ))
                           : <span className="text-sm text-muted-foreground">—</span>}
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1 max-w-[200px]">
+                        {user.branches && user.branches.length > 0 ? (
+                          user.branches.map((b) => (
+                            <Badge key={b.id} variant="outline" className="text-[10px] font-medium rounded px-1.5 py-0 border-border bg-muted/30 text-foreground/80">
+                              <Building2 size={10} className="mr-1 text-muted-foreground" />
+                              {b.name}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-xs text-muted-foreground">All Branches</span>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell className="px-4 py-3">
@@ -301,7 +339,7 @@ export function UserManager() {
         open={isInviteModalOpen}
         onOpenChange={(open) => {
           if (open) {
-            setInviteForm({ name: '', phone_number: '', password: '', autoGeneratePassword: true, roleIds: [] });
+            setInviteForm({ name: '', phone_number: '', password: '', autoGeneratePassword: true, roleIds: [], branchIds: [], verticalIds: [] });
           }
           if (!open) {
             setValidationErrors({});
@@ -416,6 +454,87 @@ export function UserManager() {
                   </div>
                 )}
 
+                {/* Branches Selector */}
+                {branches && branches.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                      <Building2 size={12} /> Assigned Branches
+                    </label>
+                    <div className="flex flex-wrap gap-1.5 p-1.5 border border-border rounded-lg bg-background/50">
+                      {branches.map((b: any) => {
+                        const isSelected = inviteForm.branchIds.includes(b.id);
+                        return (
+                          <button
+                            key={b.id}
+                            type="button"
+                            onClick={() => {
+                              const newBranchIds = isSelected
+                                ? inviteForm.branchIds.filter((id) => id !== b.id)
+                                : [...inviteForm.branchIds, b.id];
+                              const allowedVerts = allVerticals
+                                .filter((v: any) => newBranchIds.length === 0 || newBranchIds.includes(v.branch_id))
+                                .map((v: any) => v.id);
+                              setInviteForm((f) => ({
+                                ...f,
+                                branchIds: newBranchIds,
+                                verticalIds: f.verticalIds.filter((vId) => allowedVerts.includes(vId)),
+                              }));
+                            }}
+                            className={cn(
+                              "text-xs px-2.5 py-1 rounded-md border transition-all font-medium",
+                              isSelected
+                                ? "bg-primary text-white border-primary shadow-sm"
+                                : "bg-card text-muted-foreground border-border hover:border-slate-400 hover:text-foreground",
+                            )}
+                          >
+                            {b.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Verticals Selector (cascaded by selected branches) */}
+                {allVerticals && allVerticals.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                      <Tags size={12} /> Assigned Verticals
+                    </label>
+                    <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1.5 border border-border rounded-lg bg-background/50">
+                      {inviteFilteredVerticals.length > 0 ? (
+                        inviteFilteredVerticals.map((v: any) => {
+                          const isSelected = inviteForm.verticalIds.includes(v.id);
+                          return (
+                            <button
+                              key={v.id}
+                              type="button"
+                              onClick={() =>
+                                setInviteForm((f) => ({
+                                  ...f,
+                                  verticalIds: f.verticalIds.includes(v.id)
+                                    ? f.verticalIds.filter((id) => id !== v.id)
+                                    : [...f.verticalIds, v.id],
+                                }))
+                              }
+                              className={cn(
+                                "text-xs px-2.5 py-1 rounded-md border transition-all font-medium",
+                                isSelected
+                                  ? "bg-primary text-white border-primary shadow-sm"
+                                  : "bg-card text-muted-foreground border-border hover:border-slate-400 hover:text-foreground",
+                              )}
+                            >
+                              {v.name}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <p className="text-xs text-muted-foreground p-1">No verticals match selected branches</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <DialogFooter className="pt-2 flex gap-2">
                   <Button type="button" variant="outline" onClick={() => { setIsInviteModalOpen(false); setValidationErrors({}); }}
                     className="flex-1 h-9 text-xs border-border text-muted-foreground bg-card hover:bg-muted">
@@ -470,7 +589,7 @@ export function UserManager() {
                 </Button>
                 <Button type="button" onClick={() => {
                   setCreatedUserCredentials(null);
-                   setInviteForm({ name: '', phone_number: '', password: '', autoGeneratePassword: true, roleIds: [] });
+                  setInviteForm({ name: '', phone_number: '', password: '', autoGeneratePassword: true, roleIds: [], branchIds: [], verticalIds: [] });
                 }} className="flex-1 bg-primary text-white hover:bg-primary/90 text-xs h-9">
                   Create Another
                 </Button>
@@ -535,9 +654,14 @@ export function UserManager() {
                       const isSelected = settingsBranchIds.includes(b.id);
                       return (
                         <button key={b.id} type="button"
-                          onClick={() => setSettingsBranchIds((prev) =>
-                            prev.includes(b.id) ? prev.filter((id) => id !== b.id) : [...prev, b.id]
-                          )}
+                          onClick={() => setSettingsBranchIds((prev) => {
+                            const next = prev.includes(b.id) ? prev.filter((id) => id !== b.id) : [...prev, b.id];
+                            const allowedVerts = allVerticals
+                              .filter((v: any) => next.length === 0 || next.includes(v.branch_id))
+                              .map((v: any) => v.id);
+                            setSettingsVerticalIds((vPrev) => vPrev.filter((id) => allowedVerts.includes(id)));
+                            return next;
+                          })}
                           className={cn(
                             "text-xs px-2.5 py-1 rounded-md border transition-all font-medium",
                             isSelected ? "bg-primary text-white border-primary shadow-sm" : "bg-card text-muted-foreground border-border hover:border-slate-400 hover:text-foreground",
@@ -588,7 +712,14 @@ export function UserManager() {
                 </Button>
                 <Button onClick={() => {
                   updateMutation.mutate(
-                    { id: settingsUser.id, data: { role_ids: settingsRoleIds, vertical_ids: settingsVerticalIds } },
+                    {
+                      id: settingsUser.id,
+                      data: {
+                        role_ids: settingsRoleIds,
+                        branch_ids: settingsBranchIds,
+                        vertical_ids: settingsVerticalIds,
+                      },
+                    },
                     {
                       onSuccess: () => {
                         queryClient.invalidateQueries({ queryKey: ['settings', 'users'] });

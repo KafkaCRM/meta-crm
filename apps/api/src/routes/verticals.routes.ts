@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, inArray } from 'drizzle-orm';
 import { db } from '../db';
 import { verticals } from '../db/schema';
 import { validateJson } from '../middleware/validator';
@@ -14,10 +14,15 @@ verticalsRouter.use('*', requireAuth, requireTenant);
 
 verticalsRouter.get('/', async (c) => {
   const scope = c.get('scope');
-  const branchId = c.req.query('branch_id');
+  const branchParam = c.req.query('branch_ids') || c.req.query('branch_id');
 
   const conditions = [eq(verticals.tenantId, scope.tenant_id)];
-  if (branchId) conditions.push(eq(verticals.branchId, branchId));
+  if (branchParam) {
+    const branchIds = branchParam.split(',').filter(Boolean);
+    if (branchIds.length > 0) {
+      conditions.push(inArray(verticals.branchId, branchIds));
+    }
+  }
 
   const results = await db.query.verticals.findMany({
     where: and(...conditions),
@@ -27,7 +32,13 @@ verticalsRouter.get('/', async (c) => {
     },
   });
 
-  return c.json(results);
+  return c.json(results.map(v => ({
+    ...v,
+    branch_id: v.branchId,
+    tenant_id: v.tenantId,
+    created_at: v.createdAt,
+    updated_at: v.updatedAt,
+  })));
 });
 
 const verticalSchema = z.object({

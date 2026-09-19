@@ -5,6 +5,8 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  useDroppable,
+  useDraggable,
 } from '@dnd-kit/core';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
@@ -32,6 +34,10 @@ import {
   Loader2,
   ChevronRight,
   AlertTriangle,
+  GraduationCap,
+  Flame,
+  Zap,
+  Snowflake,
 } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
 import dayjs from 'dayjs';
@@ -47,14 +53,13 @@ interface LeadKanbanProps {
 export function LeadKanban({ pipelineDefinitionId: initialPipelineId }: LeadKanbanProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { selectedBranchId, selectedVerticalIds, isLoading: branchLoading } = useBranch();
-  const pipelineVerticalIds = selectedBranchId ? selectedVerticalIds : [];
-  const hasBranchFilter = !!selectedBranchId && pipelineVerticalIds.length > 0;
+  const { selectedBranchIds, selectedVerticalIds, isLoading: branchLoading } = useBranch();
+  const hasBranchFilter = selectedBranchIds.length > 0;
 
   const { data: pipelines = [] } = useQuery({
-    queryKey: ['settings', 'pipelines', selectedBranchId || 'all', ...pipelineVerticalIds],
-    queryFn: () => settingsApi.pipelines.list(hasBranchFilter ? { vertical_ids: pipelineVerticalIds.join(',') } : undefined),
-    enabled: !selectedBranchId || selectedVerticalIds.length > 0,
+    queryKey: ['settings', 'pipelines', selectedBranchIds.slice().sort().join(',') || 'all', ...selectedVerticalIds],
+    queryFn: () => settingsApi.pipelines.list(hasBranchFilter ? { branch_ids: selectedBranchIds.join(',') } : undefined),
+    enabled: !hasBranchFilter || selectedVerticalIds.length > 0 || !branchLoading,
   });
 
   const [selectedPipelineId, setSelectedPipelineId] = useState(
@@ -66,6 +71,14 @@ export function LeadKanban({ pipelineDefinitionId: initialPipelineId }: LeadKanb
       setSelectedPipelineId(initialPipelineId);
     }
   }, [initialPipelineId]);
+
+  useEffect(() => {
+    if (pipelines.length > 0) {
+      if (!selectedPipelineId || !pipelines.some((p: any) => p.id === selectedPipelineId)) {
+        setSelectedPipelineId(pipelines[0].id);
+      }
+    }
+  }, [pipelines, selectedPipelineId]);
 
   const activePipelineId = selectedPipelineId || (pipelines as any[])?.[0]?.id;
 
@@ -161,53 +174,74 @@ export function LeadKanban({ pipelineDefinitionId: initialPipelineId }: LeadKanb
       ) : (
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
           <div className="flex gap-3 overflow-x-auto pb-4">
-            {stages.map((stage: any) => {
-              const stageLeads = leadsByStage[stage.id] ?? [];
-              return (
-                <div
-                  key={stage.id}
-                  className="flex-shrink-0 w-72"
-                >
-                  {/* Stage header */}
-                  <div className="flex items-center justify-between mb-2 px-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-foreground">{stage.name}</span>
-                      <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
-                        {stageLeads.length}
-                      </span>
-                    </div>
-                    {stage.terminal_outcome && (
-                      <Badge variant={stage.terminal_outcome === 'won' ? 'success' : 'destructive'} className="text-[9px]">
-                        {stage.terminal_outcome}
-                      </Badge>
-                    )}
-                  </div>
-
-                  {/* Drop zone + cards */}
-                  <div
-                    className="space-y-2 min-h-[200px] rounded-xl bg-muted/30 border border-dashed border-border/50 p-2"
-                  >
-                    {stageLeads.length === 0 ? (
-                      <div className="flex items-center justify-center h-24 text-[10px] text-muted-foreground italic">
-                        Drop leads here
-                      </div>
-                    ) : (
-                      stageLeads.map((lead: any) => (
-                        <LeadKanbanCard
-                          key={lead.id}
-                          lead={lead}
-                          stageId={stage.id}
-                          onClick={() => navigate({ to: '/leads/$id', params: { id: lead.id } })}
-                        />
-                      ))
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            {stages.map((stage: any) => (
+              <KanbanColumn
+                key={stage.id}
+                stage={stage}
+                stageLeads={leadsByStage[stage.id] ?? []}
+                onCardClick={(leadId) => navigate({ to: '/leads/$id', params: { id: leadId } })}
+              />
+            ))}
           </div>
         </DndContext>
       )}
+    </div>
+  );
+}
+
+function KanbanColumn({
+  stage,
+  stageLeads,
+  onCardClick,
+}: {
+  stage: any;
+  stageLeads: any[];
+  onCardClick: (id: string) => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: stage.id,
+  });
+
+  return (
+    <div className="flex-shrink-0 w-72">
+      {/* Stage header */}
+      <div className="flex items-center justify-between mb-2 px-1">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-foreground">{stage.name}</span>
+          <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+            {stageLeads.length}
+          </span>
+        </div>
+        {stage.terminal_outcome && (
+          <Badge variant={stage.terminal_outcome === 'won' ? 'success' : 'destructive'} className="text-[9px]">
+            {stage.terminal_outcome}
+          </Badge>
+        )}
+      </div>
+
+      {/* Drop zone + cards */}
+      <div
+        ref={setNodeRef}
+        className={cn(
+          'space-y-2 min-h-[300px] rounded-xl bg-muted/30 border border-dashed p-2 transition-colors',
+          isOver ? 'border-primary bg-primary/10' : 'border-border/50',
+        )}
+      >
+        {stageLeads.length === 0 ? (
+          <div className="flex items-center justify-center h-24 text-[10px] text-muted-foreground italic">
+            Drop leads here
+          </div>
+        ) : (
+          stageLeads.map((lead: any) => (
+            <LeadKanbanCard
+              key={lead.id}
+              lead={lead}
+              stageId={stage.id}
+              onClick={() => onCardClick(lead.id)}
+            />
+          ))
+        )}
+      </div>
     </div>
   );
 }
@@ -221,52 +255,139 @@ function LeadKanbanCard({
   stageId: string;
   onClick: () => void;
 }) {
-  const hoursSinceCreation = dayjs().diff(dayjs(lead.created_at), 'hour');
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: lead.id,
+    data: { lead, stageId },
+  });
+
+  const style = transform
+    ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+        zIndex: isDragging ? 50 : undefined,
+      }
+    : undefined;
+
+  const attrs = (lead.attributes || {}) as Record<string, any>;
+  const course = attrs.course || null;
+  const scoreNum = Number(attrs.score || (lead.status === 'hot' ? 85 : lead.status === 'warm' ? 60 : 38));
+  const whatsappNum = attrs.whatsapp_number || lead.phone;
+  const nextFollowUp = attrs.next_follow_up_date || null;
+  const isOverdue = nextFollowUp && dayjs(nextFollowUp).isBefore(dayjs());
+  const hoursSinceCreation = dayjs().diff(dayjs(lead.created_at || lead.createdAt), 'hour');
   const isStale = hoursSinceCreation > 24 && lead.status !== 'converted';
 
+  const cleanWhatsApp = (whatsappNum || lead.phone || '').replace(/\D/g, '');
+  const waLink = `https://wa.me/${cleanWhatsApp.startsWith('91') ? cleanWhatsApp : `91${cleanWhatsApp}`}?text=${encodeURIComponent(
+    `Hello ${lead.name}, I am reaching out from our admissions team regarding your course inquiry.`
+  )}`;
+
   return (
-    <Card
-      className="bg-card border-border rounded-lg shadow-none hover:shadow-sm transition-shadow cursor-pointer"
-      onClick={onClick}
-    >
-      <CardContent className="p-3 space-y-2">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-foreground truncate">{lead.name}</p>
-            <p className="text-xs text-muted-foreground font-mono truncate">{lead.phone}</p>
-          </div>
-          {lead.status === 'converted' && (
-            <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-              Promoted
-            </span>
-          )}
-        </div>
+    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
+      <Card
+        className={cn(
+          'group bg-card border-border rounded-xl shadow-none hover:shadow-md hover:border-primary/40 transition-all cursor-grab active:cursor-grabbing relative overflow-hidden',
+          isDragging && 'opacity-50 ring-2 ring-primary shadow-lg',
+        )}
+        onClick={onClick}
+      >
+        <CardContent className="p-3 space-y-2">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <p className="text-sm font-bold text-foreground truncate">{lead.name}</p>
+                <span
+                  className={cn(
+                    'inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold border shrink-0',
+                    scoreNum >= 75
+                      ? 'bg-rose-500/10 text-rose-600 border-rose-500/20'
+                      : scoreNum >= 50
+                      ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                      : 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                  )}
+                >
+                  {scoreNum >= 75 ? (
+                    <Flame size={10} className="text-rose-500" />
+                  ) : scoreNum >= 50 ? (
+                    <Zap size={10} className="text-amber-500" />
+                  ) : (
+                    <Snowflake size={10} className="text-blue-500" />
+                  )}
+                  {scoreNum}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground font-mono truncate">{lead.phone}</p>
+            </div>
 
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-          <span className="bg-muted px-1.5 py-0.5 rounded font-medium">{lead.source}</span>
-          {lead.duplicate_risk && (
-            <span className="text-amber-600 flex items-center gap-0.5">
-              <AlertTriangle size={10} />
-              Dupe
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/40">
-          <div className="flex items-center gap-1">
-            <Clock size={10} />
-            <span className={cn(isStale ? 'text-red-500 font-semibold' : '')}>
-              {dayjs(lead.created_at).fromNow()}
-            </span>
+            {lead.status === 'converted' ? (
+              <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                Promoted
+              </span>
+            ) : (
+              <div
+                className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shrink-0"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <a
+                  href={`tel:${lead.phone}`}
+                  className="p-1 rounded-md bg-muted hover:bg-primary hover:text-white transition-colors text-muted-foreground"
+                  title="Call"
+                >
+                  <Phone size={11} />
+                </a>
+                <a
+                  href={waLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-1 rounded-md bg-muted hover:bg-emerald-600 hover:text-white transition-colors text-muted-foreground"
+                  title="WhatsApp"
+                >
+                  <MessageSquare size={11} />
+                </a>
+              </div>
+            )}
           </div>
-          {lead.assigned_to && (
-            <div className="flex items-center gap-1">
-              <User size={10} />
-              <span className="truncate max-w-[80px]">{lead.assigned_to.name}</span>
+
+          {course && (
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-primary bg-primary/5 border border-primary/15 px-2 py-0.5 rounded-md w-fit max-w-full truncate">
+              <GraduationCap size={12} className="shrink-0" />
+              <span className="truncate">{course}</span>
             </div>
           )}
-        </div>
-      </CardContent>
-    </Card>
+
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground flex-wrap">
+            <span className="bg-muted px-1.5 py-0.5 rounded-md font-medium capitalize">{lead.source}</span>
+            {lead.duplicate_risk && (
+              <span className="text-amber-600 flex items-center gap-0.5 font-semibold">
+                <AlertTriangle size={10} />
+                Dupe
+              </span>
+            )}
+            {isOverdue && (
+              <span className="text-rose-600 dark:text-rose-400 flex items-center gap-0.5 font-bold">
+                <Clock size={10} />
+                Overdue
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1.5 border-t border-border/50">
+            <div className="flex items-center gap-1">
+              <Clock size={10} />
+              <span className={cn(isStale ? 'text-amber-600 font-medium' : '')}>
+                {dayjs(lead.created_at || lead.createdAt).fromNow()}
+              </span>
+            </div>
+            {(lead.assigned_to || lead.assignedTo) && (
+              <div className="flex items-center gap-1">
+                <User size={10} />
+                <span className="truncate max-w-[85px] font-medium text-foreground">
+                  {(lead.assigned_to || lead.assignedTo)?.name}
+                </span>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

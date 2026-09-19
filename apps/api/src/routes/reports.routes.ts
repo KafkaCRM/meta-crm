@@ -377,9 +377,6 @@ reportsRouter.get('/my-cases', async (c) => {
     ),
     orderBy: [desc(leads.updatedAt)],
     limit: 10,
-    with: {
-      pipelineStage: true,
-    },
   });
 
   return c.json({
@@ -387,7 +384,7 @@ reportsRouter.get('/my-cases', async (c) => {
       id: l.id,
       title: l.name,
       party_name: l.name,
-      stage: l.pipelineStage?.name || l.status || 'new',
+      stage: l.stage || l.status || 'new',
       last_updated: l.updatedAt.toISOString(),
     })),
   });

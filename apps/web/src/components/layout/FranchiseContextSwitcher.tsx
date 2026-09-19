@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { franchiseApi } from '@/api/franchise';
 import {
@@ -55,6 +56,16 @@ export function FranchiseContextSwitcher() {
               </div>
             )}
           </div>
+          <DropdownMenuSeparator className="my-1 bg-border/60" />
+          <div className="p-1">
+            <Link
+              to="/franchise"
+              className="w-full flex items-center justify-between gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold text-purple-600 dark:text-purple-400 hover:bg-purple-500/10 transition-colors"
+            >
+              <span>HQ Command Console</span>
+              <span className="text-[10px]">➔</span>
+            </Link>
+          </div>
         </DropdownMenuContent>
       </DropdownMenu>
     );
@@ -62,13 +73,16 @@ export function FranchiseContextSwitcher() {
 
   if (status.is_franchisee) {
     return (
-      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-semibold select-none">
+      <Link
+        to="/franchise"
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 text-xs font-semibold select-none transition-colors"
+      >
         <Store size={13} className="text-blue-500" />
         <span className="truncate max-w-[120px]">
           {status.parent_franchisor?.name ? `Store of ${status.parent_franchisor.name}` : 'Franchise Store'}
         </span>
         <CheckCircle2 size={12} className="text-blue-500 shrink-0" />
-      </div>
+      </Link>
     );
   }
 

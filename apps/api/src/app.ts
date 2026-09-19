@@ -25,6 +25,8 @@ import { platformRouter } from './routes/platform.routes';
 import { franchiseRouter } from './routes/franchise.routes';
 import { objectsRouter } from './routes/objects.routes';
 import { integrationsRouter } from './routes/integrations.routes';
+import { interactionsRouter } from './routes/interactions.routes';
+import { pageLayoutsRouter } from './routes/page-layouts.routes';
 
 export const app = new Hono<AppEnv>();
 
@@ -93,6 +95,7 @@ apiV1.route('/verticals', verticalsRouter);
 apiV1.route('/users', usersRouter);
 apiV1.route('/roles', rolesRouter);
 apiV1.route('/field-definitions', fieldsRouter);
+apiV1.route('/fields', fieldsRouter);
 apiV1.route('/labels', labelsRouter);
 apiV1.route('/reports', reportsRouter);
 apiV1.route('/platform', platformRouter);
@@ -101,10 +104,13 @@ apiV1.route('/objects', objectsRouter);
 apiV1.route('/custom-objects', objectsRouter);
 apiV1.route('/connections', integrationsRouter);
 apiV1.route('/integrations', integrationsRouter);
+apiV1.route('/interactions', interactionsRouter);
+apiV1.route('/page-layouts', pageLayoutsRouter);
 
 // Capabilities & Domain Verticals
 apiV1.route('/', capabilitiesRouter);
 apiV1.route('/', academicsRouter);
+apiV1.route('/academics', academicsRouter);
 apiV1.route('/', hrRouter);
 apiV1.route('/', financeRouter);
 apiV1.route('/', operationsRouter);

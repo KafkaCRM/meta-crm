@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { eq, and, or, inArray, desc, lt, isNull, ilike } from 'drizzle-orm';
+import { eq, and, or, inArray, desc, lt, isNull, ilike, sql, count, gte, lte, asc } from 'drizzle-orm';
 import { db } from '../db';
-import { leads, leadEvents, parties, pipelineDefinitions, pipelineStages, users, tenants } from '../db/schema';
+import { leads, leadEvents, parties, pipelineDefinitions, pipelineStages, users, tenants, branches, verticals, campaigns } from '../db/schema';
 import { validateJson } from '../middleware/validator';
 import { requireAuth } from '../middleware/auth';
 import { requireTenant } from '../middleware/tenant';
@@ -112,14 +112,29 @@ leadsRouter.get('/', async (c) => {
   const query = c.req.query();
 
   const limit = Math.min(Number(query['limit']) || 50, 100);
+  const offset = Number(query['offset']) || 0;
   const cursor = query['cursor'];
   const status = query['status'];
   const source = query['source'];
   const name = query['name'];
   const assignedToId = query['assigned_to_id'];
-  const pipelineDefId = query['pipeline_definition_id'];
+  const pipelineDefId = query['pipeline_id'] || query['pipeline_definition_id'];
   const stage = query['stage'];
   const verticalIdsParam = query['vertical_ids'];
+  const branchParam = query['branch_ids'] || query['branch_id'];
+  const verticalId = query['vertical_id'];
+  const campaignId = query['campaign_id'];
+  const course = query['course'];
+  const disposition = query['last_call_disposition'];
+  const segment = query['segment'];
+  const slaBreached = query['sla_breached'];
+  const isDuplicate = query['is_duplicate'] || query['duplicates'];
+  const redFlagged = query['red_flagged'];
+  const dateFrom = query['date_from'];
+  const dateTo = query['date_to'];
+  const followUp = query['follow_up'];
+  const search = query['search'] || query['q'];
+  const sort = query['sort'] || 'newest';
 
   const conditions = [
     eq(leads.tenantId, scope.tenant_id),
@@ -127,7 +142,8 @@ leadsRouter.get('/', async (c) => {
   ];
 
   // Vertical scoping: combine token vertical scope with query parameter filter
-  let allowedVerticals = scope.vertical_ids;
+  const isAdmin = ['admin', 'tenant_admin', 'super_admin', 'platform_admin', 'owner'].includes(scope.role);
+  let allowedVerticals = isAdmin ? [] : scope.vertical_ids;
   if (verticalIdsParam) {
     const requested = verticalIdsParam.split(',').filter(Boolean);
     allowedVerticals = allowedVerticals.length
@@ -138,17 +154,34 @@ leadsRouter.get('/', async (c) => {
     conditions.push(inArray(leads.verticalId, allowedVerticals));
   }
 
-  if (status) conditions.push(eq(leads.status, status as any));
-  if (source) conditions.push(eq(leads.source, source as any));
-  if (name) conditions.push(ilike(leads.name, `%${name}%`));
-  const phone = query['phone'];
-  if (phone) conditions.push(ilike(leads.phone, `%${phone}%`));
-  const email = query['email'];
-  if (email) conditions.push(ilike(leads.email, `%${email}%`));
-  if (pipelineDefId) conditions.push(eq(leads.pipelineDefinitionId, pipelineDefId));
-  if (stage) conditions.push(eq(leads.stage, stage));
+  // Branch filter (via verticals belonging to the branch(es))
+  if (branchParam) {
+    const branchIds = branchParam.split(',').filter(Boolean);
+    if (branchIds.length > 0) {
+      const branchVerticals = await db.query.verticals.findMany({
+        where: and(eq(verticals.tenantId, scope.tenant_id), inArray(verticals.branchId, branchIds)),
+        columns: { id: true },
+      });
+      const ids = branchVerticals.map((v) => v.id);
+      if (ids.length > 0) {
+        conditions.push(inArray(leads.verticalId, ids));
+      } else {
+        conditions.push(eq(leads.id, '__NO_MATCH__'));
+      }
+    }
+  }
 
-  const campaignId = query['campaign_id'];
+  // Vertical filter
+  if (verticalId) {
+    conditions.push(eq(leads.verticalId, verticalId));
+  }
+
+  // Pipeline filter
+  if (pipelineDefId) {
+    conditions.push(eq(leads.pipelineDefinitionId, pipelineDefId));
+  }
+
+  // Campaign filter
   if (campaignId) {
     if (campaignId === 'none' || campaignId === 'unassigned') {
       conditions.push(isNull(leads.campaignId));
@@ -157,11 +190,104 @@ leadsRouter.get('/', async (c) => {
     }
   }
 
+  if (status) conditions.push(eq(leads.status, status as any));
+  if (source) conditions.push(eq(leads.source, source as any));
+  if (stage) conditions.push(eq(leads.stage, stage));
+
   if (assignedToId) {
     if (assignedToId === 'unassigned' || assignedToId === 'null') {
       conditions.push(isNull(leads.assignedToId));
     } else {
       conditions.push(eq(leads.assignedToId, assignedToId));
+    }
+  }
+
+  // Search by name, phone, email, course
+  if (search && search.trim()) {
+    const term = `%${search.trim()}%`;
+    conditions.push(
+      or(
+        ilike(leads.name, term),
+        ilike(leads.phone, term),
+        ilike(leads.email, term),
+        sql`(${leads.attributes}->>'course') ILIKE ${term}`
+      )!
+    );
+  } else if (name) {
+    conditions.push(ilike(leads.name, `%${name}%`));
+  }
+
+  const phone = query['phone'];
+  if (phone) conditions.push(ilike(leads.phone, `%${phone}%`));
+  const email = query['email'];
+  if (email) conditions.push(ilike(leads.email, `%${email}%`));
+
+  // Course filter
+  if (course) {
+    conditions.push(sql`(${leads.attributes}->>'course') = ${course}`);
+  }
+
+  // Last Call Disposition
+  if (disposition) {
+    conditions.push(sql`(${leads.attributes}->>'last_call_disposition') = ${disposition}`);
+  }
+
+  // Segment: All, Hot, Warm, Cold
+  if (segment && segment !== 'all') {
+    if (segment === 'hot') {
+      conditions.push(or(
+        eq(leads.status, 'hot' as any),
+        sql`(${leads.attributes}->>'priority') = 'hot'`,
+        sql`(${leads.attributes}->>'score_label') ILIKE 'hot%'`
+      )!);
+    } else if (segment === 'warm') {
+      conditions.push(or(
+        eq(leads.status, 'warm' as any),
+        sql`(${leads.attributes}->>'priority') = 'warm'`,
+        sql`(${leads.attributes}->>'score_label') ILIKE 'warm%'`
+      )!);
+    } else if (segment === 'cold') {
+      conditions.push(or(
+        eq(leads.status, 'cold' as any),
+        sql`(${leads.attributes}->>'priority') = 'cold'`,
+        sql`(${leads.attributes}->>'score_label') ILIKE 'cold%'`
+      )!);
+    }
+  }
+
+  // Quick toggles: SLA breached, Duplicates, Red flagged
+  if (slaBreached === 'true') {
+    conditions.push(sql`(${leads.attributes}->>'sla_breached') = 'true'`);
+  }
+  if (isDuplicate === 'true') {
+    conditions.push(sql`(${leads.attributes}->>'is_duplicate') = 'true'`);
+  }
+  if (redFlagged === 'true') {
+    conditions.push(sql`(${leads.attributes}->>'red_flagged') = 'true'`);
+  }
+
+  // Date range
+  if (dateFrom) {
+    conditions.push(gte(leads.createdAt, new Date(dateFrom)));
+  }
+  if (dateTo) {
+    const toDate = new Date(dateTo);
+    toDate.setHours(23, 59, 59, 999);
+    conditions.push(lte(leads.createdAt, toDate));
+  }
+
+  // Follow-up filter
+  if (followUp && followUp !== 'all') {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    if (followUp === 'today') {
+      conditions.push(and(
+        gte(sql`(${leads.attributes}->>'next_follow_up_date')::timestamp`, startOfToday),
+        lte(sql`(${leads.attributes}->>'next_follow_up_date')::timestamp`, endOfToday)
+      )!);
+    } else if (followUp === 'overdue') {
+      conditions.push(lt(sql`(${leads.attributes}->>'next_follow_up_date')::timestamp`, now));
     }
   }
 
@@ -175,33 +301,64 @@ leadsRouter.get('/', async (c) => {
     }
   }
 
-  const results = await db.query.leads.findMany({
-    where: and(...conditions),
-    limit: limit + 1,
-    orderBy: [desc(leads.createdAt)],
-    with: {
-      assignedTo: {
-        columns: { id: true, name: true, email: true },
-      },
-      party: {
-        columns: { id: true, name: true, email: true, phoneRaw: true, source: true },
-      },
-      pipelineDefinition: {
-        columns: { id: true, name: true },
-      },
-      campaign: {
-        columns: { id: true, name: true, channel: true, status: true },
-      },
-    },
-  });
+  // Sorting
+  let orderByClause = [desc(leads.createdAt)];
+  if (sort === 'oldest') {
+    orderByClause = [asc(leads.createdAt)];
+  } else if (sort === 'name_asc') {
+    orderByClause = [asc(leads.name)];
+  } else if (sort === 'name_desc') {
+    orderByClause = [desc(leads.name)];
+  }
 
-  const hasMore = results.length > limit;
-  const data = hasMore ? results.slice(0, limit) : results;
+  const [totalCountResult, rawResults] = await Promise.all([
+    db.select({ count: count() }).from(leads).where(and(...conditions)),
+    db.query.leads.findMany({
+      where: and(...conditions),
+      limit: limit + 1,
+      offset: offset > 0 ? offset : undefined,
+      orderBy: orderByClause,
+      with: {
+        assignedTo: {
+          columns: { id: true, name: true, email: true },
+        },
+        party: {
+          columns: { id: true, name: true, email: true, phoneRaw: true, source: true },
+        },
+        vertical: {
+          columns: { id: true, name: true, branchId: true },
+          with: {
+            branch: { columns: { id: true, name: true } },
+          },
+        },
+        pipelineDefinition: {
+          columns: { id: true, name: true },
+          with: {
+            stages: {
+              columns: { id: true, name: true, order: true },
+              orderBy: (stages, { asc }) => [asc(stages.order)],
+            },
+          },
+        },
+        campaign: {
+          columns: { id: true, name: true, channel: true, status: true, branchId: true },
+          with: {
+            branch: { columns: { id: true, name: true } },
+          },
+        },
+      },
+    }),
+  ]);
+
+  const hasMore = rawResults.length > limit;
+  const data = hasMore ? rawResults.slice(0, limit) : rawResults;
   const nextCursor = hasMore ? data[data.length - 1]?.id : undefined;
+  const totalCount = Number(totalCountResult[0]?.count) || data.length;
 
   return c.json({
     data,
     next_cursor: nextCursor,
+    total_count: totalCount,
   });
 });
 
@@ -336,7 +493,8 @@ leadsRouter.get('/:id', async (c) => {
     with: {
       assignedTo: { columns: { id: true, name: true, email: true } },
       party: { columns: { id: true, name: true, email: true, phoneRaw: true, source: true } },
-      campaign: { columns: { id: true, name: true, channel: true, status: true } },
+      campaign: { with: { branch: true } },
+      vertical: { with: { branch: true } },
       pipelineDefinition: {
         with: {
           stages: { orderBy: (stages, { asc }) => [asc(stages.order)] },
@@ -359,16 +517,30 @@ leadsRouter.get('/:id', async (c) => {
 // POST /leads - Create new lead
 const createLeadSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  email: z.string().email().optional().nullable(),
+  email: z.string().email().optional().nullable().or(z.literal('')),
   phone: z.string().min(1, 'Phone is required'),
-  source: z.string().default('manual'),
-  status: z.string().default('new'),
-  notes: z.string().optional().nullable(),
-  campaign_id: z.string().optional().nullable(),
-  assigned_to_id: z.string().optional().nullable(),
+  alternate_phone: z.string().optional().nullable(),
+  whatsapp_number: z.string().optional().nullable(),
+  dob: z.string().optional().nullable(),
+  branch_id: z.string().optional().nullable(),
   vertical_id: z.string().optional().nullable(),
   pipeline_definition_id: z.string().optional().nullable(),
+  campaign_id: z.string().optional().nullable(),
+  source: z.string().default('manual'),
+  course: z.string().optional().nullable(),
+  training_mode: z.string().optional().nullable(),
+  course_fee: z.union([z.string(), z.number()]).optional().nullable(),
+  city: z.string().optional().nullable(),
+  assigned_to_id: z.string().optional().nullable(),
+  assign_round_robin: z.boolean().optional().default(false),
+  status: z.string().default('new'),
   stage: z.string().optional().nullable(),
+  next_follow_up_date: z.string().optional().nullable(),
+  created_at: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
+  parents_number: z.string().optional().nullable(),
+  last_call_disposition: z.string().optional().nullable(),
+  score: z.union([z.string(), z.number()]).optional().nullable(),
   attributes: z.record(z.string(), z.any()).optional().default({}),
 });
 
@@ -376,39 +548,192 @@ leadsRouter.post('/', validateJson(createLeadSchema), async (c) => {
   const scope = c.get('scope');
   const body = c.get('validatedJson' as any) as z.infer<typeof createLeadSchema>;
 
-  // Fix BUG-03: default vertical_id to null, never empty string!
-  const verticalId = body.vertical_id?.trim() || scope.vertical_ids[0] || null;
+  let branchId = body.branch_id || null;
+  let verticalId = body.vertical_id?.trim() || null;
+  let pipelineDefinitionId = body.pipeline_definition_id?.trim() || null;
+  let campaignId = body.campaign_id?.trim() || null;
+
+  // If campaign_id provided, cascade branch, vertical, pipeline if not explicitly set
+  if (campaignId) {
+    const campaign = await db.query.campaigns.findFirst({
+      where: and(eq(campaigns.id, campaignId), eq(campaigns.tenantId, scope.tenant_id)),
+    });
+    if (campaign) {
+      if (!branchId) branchId = campaign.branchId;
+      if (!verticalId) verticalId = campaign.verticalId;
+      if (!pipelineDefinitionId) pipelineDefinitionId = campaign.pipelineId;
+    }
+  }
+
+  // If vertical not set, but branch is set, pick first vertical in this branch
+  if (!verticalId && branchId) {
+    const branchVert = await db.query.verticals.findFirst({
+      where: and(eq(verticals.tenantId, scope.tenant_id), eq(verticals.branchId, branchId)),
+    });
+    if (branchVert) {
+      verticalId = branchVert.id;
+    }
+  }
+
+  // Fallback vertical to admin's vertical if available
+  if (!verticalId && scope.vertical_ids && scope.vertical_ids.length > 0) {
+    verticalId = scope.vertical_ids[0] || null;
+  }
+
+  // If pipeline not set, but vertical is known, look up first pipeline for that vertical
+  if (!pipelineDefinitionId && verticalId) {
+    const vertPipeline = await db.query.pipelineDefinitions.findFirst({
+      where: and(eq(pipelineDefinitions.tenantId, scope.tenant_id), eq(pipelineDefinitions.verticalId, verticalId)),
+    });
+    if (vertPipeline) {
+      pipelineDefinitionId = vertPipeline.id;
+    }
+  }
+
+  // Resolve initial stage if pipeline is set and stage not specified
+  let stage = body.stage || null;
+  if (pipelineDefinitionId && !stage) {
+    const firstStage = await db.query.pipelineStages.findFirst({
+      where: eq(pipelineStages.pipelineDefinitionId, pipelineDefinitionId),
+      orderBy: [asc(pipelineStages.order)],
+    });
+    if (firstStage) {
+      stage = firstStage.id;
+    }
+  }
+
+  // Resolve assigned user (explicit vs round-robin)
+  let assignedToId = body.assigned_to_id || null;
+  if (body.assign_round_robin || !assignedToId) {
+    if (body.assign_round_robin) {
+      const activeUsers = await db.query.users.findMany({
+        where: and(eq(users.tenantId, scope.tenant_id), eq(users.status, 'active')),
+        columns: { id: true },
+      });
+      if (activeUsers.length > 0 && activeUsers[0]) {
+        const counts = await db
+          .select({ uid: leads.assignedToId, cnt: count() })
+          .from(leads)
+          .where(and(eq(leads.tenantId, scope.tenant_id), inArray(leads.assignedToId, activeUsers.map((u) => u.id))))
+          .groupBy(leads.assignedToId);
+        const countMap = new Map(counts.map((c) => [c.uid, Number(c.cnt)]));
+        activeUsers.sort((a, b) => (countMap.get(a.id) || 0) - (countMap.get(b.id) || 0));
+        assignedToId = activeUsers[0].id;
+      }
+    }
+  }
+
+  // Fast duplicate check
+  const cleanPhone = body.phone.replace(/\D/g, '');
+  let isDuplicate = false;
+  let dupLeadId: string | null = null;
+  if (cleanPhone.length >= 7) {
+    const existingLead = await db.query.leads.findFirst({
+      where: and(
+        eq(leads.tenantId, scope.tenant_id),
+        isNull(leads.deletedAt),
+        ilike(leads.phone, `%${cleanPhone.slice(-10)}%`)
+      ),
+      columns: { id: true },
+    });
+    if (existingLead) {
+      isDuplicate = true;
+      dupLeadId = existingLead.id;
+    }
+  }
+
+  // Prepare custom attributes
+  const scoreNum = body.score !== undefined && body.score !== null ? Number(body.score) : (body.status === 'hot' ? 85 : body.status === 'warm' ? 60 : 38);
+  const scoreLabel = scoreNum >= 75 ? `Hot ${scoreNum}` : scoreNum >= 50 ? `Warm ${scoreNum}` : `Cold ${scoreNum}`;
+
+  const attributes: Record<string, any> = {
+    ...(body.attributes || {}),
+    branch_id: branchId,
+    alternate_phone: body.alternate_phone || null,
+    whatsapp_number: body.whatsapp_number || body.phone,
+    dob: body.dob || null,
+    course: body.course || null,
+    training_mode: body.training_mode || null,
+    course_fee: body.course_fee || null,
+    city: body.city || null,
+    parents_number: body.parents_number || null,
+    next_follow_up_date: body.next_follow_up_date || null,
+    last_call_disposition: body.last_call_disposition || 'New Lead',
+    score: scoreNum,
+    score_label: scoreLabel,
+    sla_breached: false,
+    is_duplicate: isDuplicate,
+    duplicate_lead_id: dupLeadId,
+  };
+
+  // Safe enum mappings
+  const validStatuses = ['new', 'contacted', 'qualified', 'proposal_sent', 'hot', 'junk', 'active', 'converted', 'lost'];
+  const rawStatus = (body.status || 'new').toLowerCase();
+  const status = validStatuses.includes(rawStatus) ? (rawStatus as any) : 'new';
+  if (status !== rawStatus) {
+    attributes.raw_status = body.status;
+  }
+
+  const validSources = ['manual', 'csv_import', 'meta_ad', 'google_ad', 'website_webhook', 'justdial', 'whatsapp', 'referral', 'api'];
+  const rawSource = (body.source || 'manual').toLowerCase();
+  const source = validSources.includes(rawSource) ? (rawSource as any) : 'manual';
+  if (source !== rawSource) {
+    attributes.raw_source = body.source;
+  }
+
+  const createdAtDate = body.created_at ? new Date(body.created_at) : new Date();
 
   const [created] = await db
     .insert(leads)
     .values({
       tenantId: scope.tenant_id,
       name: body.name,
-      email: body.email,
+      email: body.email || null,
       phone: body.phone,
-      source: body.source as any,
-      status: (body.status || 'new') as any,
-      notes: body.notes,
-      campaignId: body.campaign_id,
-      assignedToId: body.assigned_to_id,
+      source,
+      status,
+      notes: body.notes || null,
+      campaignId,
+      assignedToId,
       verticalId,
-      pipelineDefinitionId: body.pipeline_definition_id,
-      stage: body.stage,
-      attributes: body.attributes || {},
+      pipelineDefinitionId,
+      stage,
+      attributes,
+      createdAt: isNaN(createdAtDate.getTime()) ? new Date() : createdAtDate,
     })
     .returning();
 
-  if (created) {
-    await db.insert(leadEvents).values({
-      leadId: created.id,
-      tenantId: scope.tenant_id,
-      eventType: 'lead_created',
-      actorId: scope.user_id,
-      metadata: { source: body.source, campaign_id: body.campaign_id },
-    });
+  if (!created) {
+    return c.json({ code: 'CREATION_FAILED', message: 'Failed to create lead' }, 500);
   }
 
-  return c.json(created, 201);
+  await db.insert(leadEvents).values({
+    leadId: created.id,
+    tenantId: scope.tenant_id,
+    eventType: 'lead_created',
+    actorId: scope.user_id,
+    metadata: { source: body.source, campaign_id: campaignId, assigned_to_id: assignedToId },
+  });
+
+  // Return populated lead
+  const fullLead = await db.query.leads.findFirst({
+    where: eq(leads.id, created.id),
+    with: {
+      assignedTo: { columns: { id: true, name: true, email: true } },
+      party: { columns: { id: true, name: true, email: true, phoneRaw: true, source: true } },
+      vertical: {
+        columns: { id: true, name: true, branchId: true },
+        with: { branch: { columns: { id: true, name: true } } },
+      },
+      pipelineDefinition: { columns: { id: true, name: true } },
+      campaign: {
+        columns: { id: true, name: true, channel: true, status: true, branchId: true },
+        with: { branch: { columns: { id: true, name: true } } },
+      },
+    },
+  });
+
+  return c.json(fullLead || created, 201);
 });
 
 // POST /leads/bulk-action - Batch operations (Campaign enrollment, Rep assignment, Status, Delete)
@@ -512,13 +837,69 @@ leadsRouter.patch('/:id', async (c) => {
   const updateData: Record<string, any> = {};
   const changedFields: Record<string, any> = {};
 
-  const allowedFields = ['name', 'email', 'phone', 'source', 'status', 'notes', 'campaign_id', 'assigned_to_id', 'vertical_id', 'attributes'];
+  const allowedFields = [
+    'name',
+    'email',
+    'phone',
+    'source',
+    'status',
+    'stage',
+    'notes',
+    'campaign_id',
+    'assigned_to_id',
+    'vertical_id',
+    'pipeline_definition_id',
+    'attributes',
+  ];
+
   for (const field of allowedFields) {
-    if (body[field] !== undefined) {
-      const dbField = field === 'campaign_id' ? 'campaignId' : field === 'assigned_to_id' ? 'assignedToId' : field === 'vertical_id' ? 'verticalId' : field;
+    if (body[field] !== undefined && field !== 'attributes') {
+      const dbField =
+        field === 'campaign_id'
+          ? 'campaignId'
+          : field === 'assigned_to_id'
+          ? 'assignedToId'
+          : field === 'vertical_id'
+          ? 'verticalId'
+          : field === 'pipeline_definition_id'
+          ? 'pipelineDefinitionId'
+          : field;
       updateData[dbField] = field === 'vertical_id' ? (body[field] || null) : body[field];
       changedFields[field] = body[field];
     }
+  }
+
+  const attrFields = [
+    'alternate_phone',
+    'whatsapp_number',
+    'dob',
+    'branch_id',
+    'course',
+    'training_mode',
+    'course_fee',
+    'city',
+    'parents_number',
+    'last_call_disposition',
+    'score',
+    'next_follow_up_date',
+    'sla_breached',
+    'is_duplicate',
+    'red_flagged',
+  ];
+
+  let mergedAttrs = { ...((existing.attributes as any) || {}), ...(body.attributes || {}) };
+  let attrsModified = body.attributes !== undefined;
+
+  for (const attr of attrFields) {
+    if (body[attr] !== undefined) {
+      mergedAttrs[attr] = body[attr];
+      attrsModified = true;
+      changedFields[attr] = body[attr];
+    }
+  }
+
+  if (attrsModified) {
+    updateData.attributes = mergedAttrs;
   }
 
   const [updated] = await db
@@ -527,7 +908,7 @@ leadsRouter.patch('/:id', async (c) => {
     .where(eq(leads.id, id))
     .returning();
 
-  // Log update audit event (Fixes BUG-07)
+  // Log update audit event
   if (Object.keys(changedFields).length > 0) {
     await db.insert(leadEvents).values({
       leadId: id,
@@ -538,7 +919,24 @@ leadsRouter.patch('/:id', async (c) => {
     });
   }
 
-  return c.json(updated);
+  const fullUpdated = await db.query.leads.findFirst({
+    where: eq(leads.id, id),
+    with: {
+      assignedTo: { columns: { id: true, name: true, email: true } },
+      party: { columns: { id: true, name: true, email: true, phoneRaw: true, source: true } },
+      vertical: {
+        columns: { id: true, name: true, branchId: true },
+        with: { branch: { columns: { id: true, name: true } } },
+      },
+      pipelineDefinition: { columns: { id: true, name: true } },
+      campaign: {
+        columns: { id: true, name: true, channel: true, status: true, branchId: true },
+        with: { branch: { columns: { id: true, name: true } } },
+      },
+    },
+  });
+
+  return c.json(fullUpdated || updated);
 });
 
 // DELETE /leads/:id - Soft-delete lead
@@ -744,10 +1142,6 @@ leadsRouter.post('/:id/convert', async (c) => {
   const id = c.req.param('id');
   const { vertical_id } = await c.req.json().catch(() => ({}));
 
-  if (!vertical_id) {
-    return c.json({ code: 'VALIDATION_FAILED', message: 'vertical_id is required' }, 400);
-  }
-
   const lead = await db.query.leads.findFirst({
     where: and(eq(leads.id, id), eq(leads.tenantId, scope.tenant_id)),
   });
@@ -760,13 +1154,40 @@ leadsRouter.post('/:id/convert', async (c) => {
     return c.json({ code: 'ALREADY_CONVERTED', message: 'This lead has already been converted' }, 400);
   }
 
+  let targetVerticalId = vertical_id || lead.verticalId || scope.vertical_ids[0];
+  if (!targetVerticalId) {
+    const defaultVert = await db.query.verticals.findFirst({
+      where: eq(verticals.tenantId, scope.tenant_id),
+    });
+    if (defaultVert) {
+      targetVerticalId = defaultVert.id;
+    } else {
+      let defaultBranch = await db.query.branches.findFirst({
+        where: eq(branches.tenantId, scope.tenant_id),
+      });
+      if (!defaultBranch) {
+        const [nb] = await db.insert(branches).values({
+          tenantId: scope.tenant_id,
+          name: 'Main Location',
+        }).returning();
+        defaultBranch = nb;
+      }
+      const [nv] = await db.insert(verticals).values({
+        tenantId: scope.tenant_id,
+        branchId: defaultBranch!.id,
+        name: 'General Services',
+      }).returning();
+      targetVerticalId = nv!.id;
+    }
+  }
+
   // Atomic conversion transaction
   const result = await db.transaction(async (tx) => {
     const [party] = await tx
       .insert(parties)
       .values({
         tenantId: scope.tenant_id,
-        verticalId: vertical_id,
+        verticalId: targetVerticalId,
         type: 'individual',
         name: lead.name,
         email: lead.email,

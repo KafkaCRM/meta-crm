@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, asc, inArray } from 'drizzle-orm';
 import { db } from '../db';
-import { branches } from '../db/schema';
+import { branches, verticals, users, userBranches } from '../db/schema';
 import { validateJson } from '../middleware/validator';
 import { requireAuth } from '../middleware/auth';
 import { requireTenant } from '../middleware/tenant';
@@ -14,9 +14,36 @@ branchesRouter.use('*', requireAuth, requireTenant);
 
 branchesRouter.get('/', async (c) => {
   const scope = c.get('scope');
+  const accessibleOnly = c.req.query('accessible') === 'true';
+  const isAdmin = ['admin', 'tenant_admin', 'super_admin', 'platform_admin', 'owner'].includes(scope.role);
+
+  const conditions = [eq(branches.tenantId, scope.tenant_id)];
+
+  if (accessibleOnly && !isAdmin && scope.user_id) {
+    const userBranchRows = await db.query.userBranches.findMany({
+      where: and(eq(userBranches.tenantId, scope.tenant_id), eq(userBranches.userId, scope.user_id)),
+      columns: { branchId: true },
+    });
+    const allowedBranchIds = userBranchRows.map((ub) => ub.branchId);
+
+    const userRow = await db.query.users.findFirst({
+      where: and(eq(users.tenantId, scope.tenant_id), eq(users.id, scope.user_id)),
+      columns: { branchId: true },
+    });
+    if (userRow?.branchId && !allowedBranchIds.includes(userRow.branchId)) {
+      allowedBranchIds.push(userRow.branchId);
+    }
+
+    if (allowedBranchIds.length > 0) {
+      conditions.push(inArray(branches.id, allowedBranchIds));
+    } else {
+      conditions.push(eq(branches.id, '__NO_MATCH__'));
+    }
+  }
+
   const results = await db.query.branches.findMany({
-    where: eq(branches.tenantId, scope.tenant_id),
-    orderBy: [desc(branches.createdAt)],
+    where: and(...conditions),
+    orderBy: [asc(branches.createdAt)],
   });
   return c.json(results);
 });
@@ -42,6 +69,16 @@ branchesRouter.post('/', validateJson(branchSchema), async (c) => {
       managerId: body.manager_id,
     })
     .returning();
+
+  if (created) {
+    await db
+      .insert(verticals)
+      .values({
+        tenantId: scope.tenant_id,
+        branchId: created.id,
+        name: 'General',
+      });
+  }
 
   return c.json(created, 201);
 });

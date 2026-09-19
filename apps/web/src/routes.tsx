@@ -249,6 +249,7 @@ import {
   settingsLayoutBuilderRoute,
 } from './routes/settings';
 import { reportsRoute } from './routes/reports';
+import { franchiseRoute } from './routes/franchise';
 import { appointmentsRoute } from './routes/appointments';
 import { billingRoute } from './routes/billing';
 import { propertiesRoute } from './routes/properties';
@@ -336,6 +337,7 @@ export const routeTree = rootRoute.addChildren([
   assetsRoute,
   campaignsRoute,
   reportsRoute,
+  franchiseRoute,
   integrationsRoute,
   customObjectsIndexRoute,
   customObjectRecordsRoute,

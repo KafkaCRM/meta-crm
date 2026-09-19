@@ -145,93 +145,105 @@ export function SettingsLayout({ children }: SettingsLayoutProps) {
     );
   }
 
+  // Active group section based on current route
+  const activeSection = useMemo(() => {
+    return (
+      NAV.find((section) => section.items.some((item) => item.id === currentSubPageId)) ||
+      NAV[0]
+    );
+  }, [currentSubPageId]);
+
+  const activeSectionVisibleItems = useMemo(() => {
+    return (activeSection?.items || []).filter(
+      (item) =>
+        !item.permission ||
+        can(item.permission[0] as any, item.permission[1] as any) ||
+        can('read' as any, item.permission[1] as any)
+    );
+  }, [activeSection, can]);
+
   return (
-    <div className="flex flex-col md:flex-row h-full min-h-[calc(100vh-56px)] max-w-[1280px] gap-6 md:gap-8 p-4 md:p-6">
-      {/* Mobile Settings Selector */}
-      <div className="md:hidden w-full border-b border-border pb-4">
-        <label htmlFor="settings-mobile-nav" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-2">
-          Settings Section
-        </label>
-        <select
-          id="settings-mobile-nav"
-          value={currentSubPageId || ''}
-          onChange={(e) => navigateTo(e.target.value)}
-          className="w-full h-10 px-3 rounded-lg border border-border bg-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-        >
-          {NAV.map((section) => {
-            const visibleItems = section.items.filter(
-              (item) =>
-                !item.permission ||
-                can(item.permission[0] as any, item.permission[1] as any) ||
-                can('read' as any, item.permission[1] as any),
-            );
-            if (visibleItems.length === 0) return null;
+    <div className="flex flex-col h-full min-h-[calc(100vh-56px)] max-w-[1360px] mx-auto w-full px-4 sm:px-6 py-4 space-y-6">
+      {/* Top Header Navigation Bar (Replaces redundant second vertical sidebar) */}
+      <div className="bg-card/70 backdrop-blur-md border border-border/80 rounded-2xl p-3.5 sm:p-4 shadow-xs space-y-3.5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-border/60">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary flex-shrink-0 shadow-xs">
+              <Settings2 size={18} strokeWidth={2.25} />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-base font-bold tracking-tight text-foreground">
+                  Workspace Administration
+                </h1>
+                <span className="text-[10px] font-semibold font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                  Settings & Studio
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                Configure tenant boundaries, organizational hierarchy, permissions, and extensions
+              </p>
+            </div>
+          </div>
+
+          {/* Section Category Segmented Tabs */}
+          <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-xl border border-border/70 overflow-x-auto self-start md:self-auto scrollbar-none">
+            {NAV.map((section) => {
+              const isSectionActive = activeSection?.group === section.group;
+              const visible = section.items.filter(
+                (item) =>
+                  !item.permission ||
+                  can(item.permission[0] as any, item.permission[1] as any) ||
+                  can('read' as any, item.permission[1] as any)
+              );
+              if (visible.length === 0) return null;
+
+              return (
+                <button
+                  key={section.group}
+                  onClick={() => {
+                    const first = visible[0];
+                    if (first) navigateTo(first.id);
+                  }}
+                  className={cn(
+                    'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap select-none',
+                    isSectionActive
+                      ? 'bg-background text-foreground shadow-xs border border-border/60 font-bold'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-background/40'
+                  )}
+                >
+                  {section.group}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Sub-item Pills for the Active Section */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-none">
+          {activeSectionVisibleItems.map((item) => {
+            const isActive = currentSubPageId === item.id;
             return (
-              <optgroup key={section.group} label={section.group}>
-                {visibleItems.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.label}
-                  </option>
-                ))}
-              </optgroup>
+              <button
+                key={item.id}
+                onClick={() => navigateTo(item.id)}
+                className={cn(
+                  'flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs transition-all cursor-pointer whitespace-nowrap select-none font-medium',
+                  isActive
+                    ? 'bg-primary text-white shadow-xs font-bold'
+                    : 'bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/50'
+                )}
+              >
+                <item.icon size={13} strokeWidth={isActive ? 2.5 : 1.75} />
+                <span>{item.label}</span>
+              </button>
             );
           })}
-        </select>
+        </div>
       </div>
 
-      {/* Settings Navigation Sidebar */}
-      <aside className="w-56 flex-shrink-0 border-r border-border pr-6 py-2 overflow-auto hidden md:block">
-        <nav className="space-y-6">
-          {NAV.map((section) => {
-            const visibleItems = section.items.filter(
-              (item) =>
-                !item.permission ||
-                can(item.permission[0] as any, item.permission[1] as any) ||
-                can('read' as any, item.permission[1] as any),
-            );
-
-            if (visibleItems.length === 0) return null;
-
-            return (
-              <div key={section.group} className="space-y-1.5">
-                <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 select-none">
-                  {section.group}
-                </p>
-                <div className="space-y-0.5">
-                  {visibleItems.map((item) => {
-                    const isActive = currentSubPageId === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => navigateTo(item.id)}
-                        className={cn(
-                          'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 text-left relative group',
-                          isActive
-                            ? 'bg-primary/8 text-primary font-semibold border-l-2 border-primary rounded-l-none pl-2.5 shadow-[inset_1px_0_0_0_rgba(29,78,216,0.05)]'
-                            : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground pl-3 hover:translate-x-0.5',
-                        )}
-                      >
-                        <item.icon
-                          size={14}
-                          strokeWidth={isActive ? 2.25 : 1.75}
-                          className={cn(
-                            'transition-transform duration-200 group-hover:scale-105',
-                            isActive ? 'text-primary' : 'text-muted-foreground/70 group-hover:text-foreground'
-                          )}
-                        />
-                        <span className="flex-1 truncate">{item.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </nav>
-      </aside>
-
-      {/* Settings content */}
-      <main className="flex-1 overflow-auto py-2 min-w-0">
+      {/* Main Settings Page Content - Full Width & Clean */}
+      <main className="flex-1 min-w-0">
         {children}
       </main>
     </div>

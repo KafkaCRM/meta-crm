@@ -26,6 +26,10 @@ export interface User {
   phone_number?: string;
   status: string;
   branch_id?: string;
+  branch_ids?: string[];
+  branches?: Branch[];
+  vertical_ids?: string[];
+  verticals?: Vertical[];
   created_at: string;
   roles?: { role_id: string; role_name: string; assignment_id?: string }[];
 }
@@ -94,9 +98,10 @@ export interface Plugin {
 }
 
 const pipelineSettingsApi = {
-  list: (params?: { branch_id?: string; vertical_id?: string; vertical_ids?: string }) => {
+  list: (params?: { branch_id?: string; branch_ids?: string; vertical_id?: string; vertical_ids?: string }) => {
     const qs = new URLSearchParams();
     if (params?.branch_id) qs.set('branch_id', params.branch_id);
+    if (params?.branch_ids) qs.set('branch_ids', params.branch_ids);
     if (params?.vertical_id) qs.set('vertical_id', params.vertical_id);
     if (params?.vertical_ids) qs.set('vertical_ids', params.vertical_ids);
     const query = qs.toString();
@@ -126,9 +131,10 @@ export const settingsApi = {
   },
 
   verticals: {
-    list: (params?: { branch_id?: string; status?: string }) => {
+    list: (params?: { branch_id?: string; branch_ids?: string; status?: string }) => {
       const qs = new URLSearchParams();
       if (params?.branch_id) qs.set('branch_id', params.branch_id);
+      if (params?.branch_ids) qs.set('branch_ids', params.branch_ids);
       if (params?.status) qs.set('status', params.status);
       const query = qs.toString();
       return apiCall<Vertical[]>(`/verticals${query ? `?${query}` : ''}`);
@@ -149,6 +155,8 @@ export const settingsApi = {
       phone_number: string;
       password?: string;
       role_ids?: string[];
+      branch_id?: string;
+      branch_ids?: string[];
       vertical_ids?: string[];
     }) =>
       apiCall<User & { temporary_password?: string }>('/users/invite', {
@@ -162,6 +170,7 @@ export const settingsApi = {
         phone_number?: string;
         role_ids?: string[];
         branch_id?: string;
+        branch_ids?: string[];
         vertical_ids?: string[];
       },
     ) =>

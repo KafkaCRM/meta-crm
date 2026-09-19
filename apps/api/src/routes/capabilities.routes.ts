@@ -17,6 +17,7 @@ import {
   callLogs,
   stock,
   stockMovements,
+  tenantCapabilities,
 } from '../db/schema';
 import { requireAuth } from '../middleware/auth';
 import { requireTenant } from '../middleware/tenant';
@@ -44,16 +45,30 @@ const ALL_CAPABILITIES = [
 capabilitiesRouter.get('/capabilities', async (c) => {
   const scope = c.get('scope');
 
-  const tenant = await db.query.tenants.findFirst({
-    where: eq(tenants.id, scope.tenant_id),
-    columns: { configJson: true },
-  });
+  const [tenant, dbCaps] = await Promise.all([
+    db.query.tenants.findFirst({
+      where: eq(tenants.id, scope.tenant_id),
+      columns: { configJson: true },
+    }),
+    db.query.tenantCapabilities.findMany({
+      where: and(
+        eq(tenantCapabilities.tenantId, scope.tenant_id),
+        eq(tenantCapabilities.enabled, true),
+      ),
+    }),
+  ]);
 
-  const enabledList: string[] = (tenant?.configJson as any)?.enabled_capabilities || [];
+  const cfg = (tenant?.configJson as Record<string, any>) || {};
+  const configList: string[] = [
+    ...(Array.isArray(cfg.enabled_capabilities) ? cfg.enabled_capabilities : []),
+    ...(Array.isArray(cfg.capabilities) ? cfg.capabilities : []),
+  ];
+  const dbList = dbCaps.map((row) => row.capabilityId);
+  const activeSet = new Set([...configList, ...dbList]);
 
   const results = ALL_CAPABILITIES.map((cap) => ({
     ...cap,
-    enabled: enabledList.includes(cap.id),
+    enabled: activeSet.has(cap.id),
   }));
 
   return c.json(results);
@@ -64,22 +79,34 @@ capabilitiesRouter.post('/capabilities/toggle', async (c) => {
   const scope = c.get('scope');
   const body = await c.req.json().catch(() => ({}));
   const capId = body.id;
-  const enabled = body.enabled;
+  const enabled = Boolean(body.enabled);
 
   if (!capId) {
     return c.json({ code: 'VALIDATION_ERROR', message: 'Capability ID is required' }, 400);
   }
 
-  const tenant = await db.query.tenants.findFirst({
-    where: eq(tenants.id, scope.tenant_id),
-  });
+  const [tenant, existingRow] = await Promise.all([
+    db.query.tenants.findFirst({
+      where: eq(tenants.id, scope.tenant_id),
+    }),
+    db.query.tenantCapabilities.findFirst({
+      where: and(
+        eq(tenantCapabilities.tenantId, scope.tenant_id),
+        eq(tenantCapabilities.capabilityId, capId),
+      ),
+    }),
+  ]);
 
   if (!tenant) {
     return c.json({ code: 'NOT_FOUND', message: 'Tenant not found' }, 404);
   }
 
   const currentConfig = (tenant.configJson as Record<string, any>) || {};
-  let currentList: string[] = currentConfig['enabled_capabilities'] || [];
+  let currentList: string[] = [
+    ...(Array.isArray(currentConfig.enabled_capabilities) ? currentConfig.enabled_capabilities : []),
+    ...(Array.isArray(currentConfig.capabilities) ? currentConfig.capabilities : []),
+  ];
+  currentList = Array.from(new Set(currentList));
 
   if (enabled) {
     if (!currentList.includes(capId)) currentList.push(capId);
@@ -87,11 +114,30 @@ capabilitiesRouter.post('/capabilities/toggle', async (c) => {
     currentList = currentList.filter((id) => id !== capId);
   }
 
-  const newConfig = { ...currentConfig, enabled_capabilities: currentList };
+  const newConfig = {
+    ...currentConfig,
+    enabled_capabilities: currentList,
+    capabilities: currentList,
+  };
 
-  await db.update(tenants).set({ configJson: newConfig }).where(eq(tenants.id, scope.tenant_id));
+  await Promise.all([
+    db.update(tenants).set({ configJson: newConfig }).where(eq(tenants.id, scope.tenant_id)),
+    existingRow
+      ? db
+          .update(tenantCapabilities)
+          .set({ enabled, enabledBy: scope.user_id, enabledAt: new Date() })
+          .where(eq(tenantCapabilities.id, existingRow.id))
+      : enabled
+      ? db.insert(tenantCapabilities).values({
+          tenantId: scope.tenant_id,
+          capabilityId: capId,
+          enabled: true,
+          enabledBy: scope.user_id,
+        })
+      : Promise.resolve(),
+  ]);
 
-  return c.json({ id: capId, enabled: Boolean(enabled) });
+  return c.json({ id: capId, enabled });
 });
 
 // PATCH /capabilities/* - URL param or wildcard toggle
@@ -101,22 +147,34 @@ capabilitiesRouter.patch('/capabilities/*', async (c) => {
   const rawPath = c.req.path;
   const match = rawPath.match(/\/capabilities\/(.+)$/);
   const capId = body.id || (match && match[1] ? decodeURIComponent(match[1]) : '');
-  const enabled = body.enabled;
+  const enabled = Boolean(body.enabled);
 
   if (!capId) {
     return c.json({ code: 'VALIDATION_ERROR', message: 'Capability ID is required' }, 400);
   }
 
-  const tenant = await db.query.tenants.findFirst({
-    where: eq(tenants.id, scope.tenant_id),
-  });
+  const [tenant, existingRow] = await Promise.all([
+    db.query.tenants.findFirst({
+      where: eq(tenants.id, scope.tenant_id),
+    }),
+    db.query.tenantCapabilities.findFirst({
+      where: and(
+        eq(tenantCapabilities.tenantId, scope.tenant_id),
+        eq(tenantCapabilities.capabilityId, capId),
+      ),
+    }),
+  ]);
 
   if (!tenant) {
     return c.json({ code: 'NOT_FOUND', message: 'Tenant not found' }, 404);
   }
 
   const currentConfig = (tenant.configJson as Record<string, any>) || {};
-  let currentList: string[] = currentConfig['enabled_capabilities'] || [];
+  let currentList: string[] = [
+    ...(Array.isArray(currentConfig.enabled_capabilities) ? currentConfig.enabled_capabilities : []),
+    ...(Array.isArray(currentConfig.capabilities) ? currentConfig.capabilities : []),
+  ];
+  currentList = Array.from(new Set(currentList));
 
   if (enabled) {
     if (!currentList.includes(capId)) currentList.push(capId);
@@ -124,11 +182,30 @@ capabilitiesRouter.patch('/capabilities/*', async (c) => {
     currentList = currentList.filter((id) => id !== capId);
   }
 
-  const newConfig = { ...currentConfig, enabled_capabilities: currentList };
+  const newConfig = {
+    ...currentConfig,
+    enabled_capabilities: currentList,
+    capabilities: currentList,
+  };
 
-  await db.update(tenants).set({ configJson: newConfig }).where(eq(tenants.id, scope.tenant_id));
+  await Promise.all([
+    db.update(tenants).set({ configJson: newConfig }).where(eq(tenants.id, scope.tenant_id)),
+    existingRow
+      ? db
+          .update(tenantCapabilities)
+          .set({ enabled, enabledBy: scope.user_id, enabledAt: new Date() })
+          .where(eq(tenantCapabilities.id, existingRow.id))
+      : enabled
+      ? db.insert(tenantCapabilities).values({
+          tenantId: scope.tenant_id,
+          capabilityId: capId,
+          enabled: true,
+          enabledBy: scope.user_id,
+        })
+      : Promise.resolve(),
+  ]);
 
-  return c.json({ id: capId, enabled: Boolean(enabled) });
+  return c.json({ id: capId, enabled });
 });
 
 // --- APPOINTMENTS ---
