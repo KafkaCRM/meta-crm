@@ -165,6 +165,15 @@ export const leadsApi = {
       `/leads/by-stage?pipeline_definition_id=${pipelineDefinitionId}`,
     ),
 
+  checkDuplicate: (params: { phone?: string; email?: string }) => {
+    const qs = new URLSearchParams();
+    if (params.phone) qs.set('phone', params.phone);
+    if (params.email) qs.set('email', params.email);
+    return apiCall<{ is_duplicate: boolean; existing_lead: any | null }>(
+      `/leads/check-duplicate?${qs.toString()}`
+    );
+  },
+
   getEvents: (id: string, params?: { cursor?: string; limit?: number }) => {
     const qs = new URLSearchParams();
     if (params?.cursor) qs.set('cursor', params.cursor);

@@ -35,7 +35,12 @@ export function CurrencySelector() {
 }
 
 export function BranchSelector() {
-  const { selectedBranchId, setSelectedBranchId, branches, isLoading } = useBranch();
+  const { selectedBranchId, setSelectedBranchId, branches, isLoading, isSingleBranch } = useBranch();
+
+  // For individual or solo-branch workspaces, hide the branch selector completely to eliminate clutter
+  if (isSingleBranch) {
+    return null;
+  }
 
   return (
     <div className="w-full">

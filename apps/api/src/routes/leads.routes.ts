@@ -141,6 +141,10 @@ leadsRouter.get('/', async (c) => {
   if (status) conditions.push(eq(leads.status, status as any));
   if (source) conditions.push(eq(leads.source, source as any));
   if (name) conditions.push(ilike(leads.name, `%${name}%`));
+  const phone = query['phone'];
+  if (phone) conditions.push(ilike(leads.phone, `%${phone}%`));
+  const email = query['email'];
+  if (email) conditions.push(ilike(leads.email, `%${email}%`));
   if (pipelineDefId) conditions.push(eq(leads.pipelineDefinitionId, pipelineDefId));
   if (stage) conditions.push(eq(leads.stage, stage));
 
@@ -259,6 +263,63 @@ leadsRouter.get('/by-stage', async (c) => {
     stages: pipeline.stages,
     leads: grouped,
   });
+});
+
+// GET /leads/check-duplicate - Fast live duplicate lookup for phone & email
+leadsRouter.get('/check-duplicate', async (c) => {
+  const scope = c.get('scope');
+  const phone = c.req.query('phone');
+  const email = c.req.query('email');
+
+  if (!phone && !email) {
+    return c.json({ is_duplicate: false, existing_lead: null });
+  }
+
+  const conditions = [
+    eq(leads.tenantId, scope.tenant_id),
+    isNull(leads.deletedAt),
+  ];
+
+  const orConditions = [];
+  if (phone && phone.trim().length >= 7) {
+    const cleanPhone = phone.replace(/\D/g, '');
+    orConditions.push(ilike(leads.phone, `%${cleanPhone.slice(-10)}%`));
+  }
+  if (email && email.trim().length > 3) {
+    orConditions.push(eq(leads.email, email.trim().toLowerCase()));
+  }
+
+  if (orConditions.length === 0) {
+    return c.json({ is_duplicate: false, existing_lead: null });
+  }
+
+  conditions.push(or(...orConditions)!);
+
+  const existing = await db.query.leads.findFirst({
+    where: and(...conditions),
+    with: {
+      assignedTo: { columns: { id: true, name: true, email: true } },
+      campaign: { columns: { id: true, name: true } },
+    },
+  });
+
+  if (existing) {
+    return c.json({
+      is_duplicate: true,
+      existing_lead: {
+        id: existing.id,
+        name: existing.name,
+        phone: existing.phone,
+        email: existing.email,
+        status: existing.status,
+        created_at: existing.createdAt,
+        assigned_to: existing.assignedTo,
+        campaign: existing.campaign,
+      },
+    });
+  }
+
+  return c.json({ is_duplicate: false, existing_lead: null });
 });
 
 // GET /leads/:id - Get single lead

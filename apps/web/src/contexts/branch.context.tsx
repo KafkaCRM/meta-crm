@@ -22,6 +22,8 @@ interface BranchContextValue {
   branches: any[];
   selectedVerticalIds: string[];
   isLoading: boolean;
+  isSingleBranch: boolean;
+  isSoloTenant: boolean;
 }
 
 const BranchContext = createContext<BranchContextValue>({
@@ -30,6 +32,8 @@ const BranchContext = createContext<BranchContextValue>({
   branches: [],
   selectedVerticalIds: [],
   isLoading: false,
+  isSingleBranch: false,
+  isSoloTenant: false,
 });
 
 export function BranchProvider({ children }: { children: ReactNode }) {
@@ -65,6 +69,18 @@ export function BranchProvider({ children }: { children: ReactNode }) {
     }
   }, [selectedBranchId, verticals, isLoading, branches]);
 
+  const isSingleBranch = branches.length <= 1;
+  const isSoloTenant = branches.length === 1;
+
+  // Auto-select the branch if the workspace only has 1 branch (individual / solo tenant)
+  useEffect(() => {
+    const singleBranch = branches[0];
+    if (branches.length === 1 && singleBranch && selectedBranchId !== singleBranch.id) {
+      setSelectedBranchId(singleBranch.id);
+      persistBranchId(singleBranch.id);
+    }
+  }, [branches, selectedBranchId]);
+
   const handleSetBranchId = (id: string) => {
     if (id !== selectedBranchId) {
       prevBranchRef.current = selectedBranchId;
@@ -77,7 +93,17 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <BranchContext.Provider value={{ selectedBranchId, setSelectedBranchId: handleSetBranchId, branches, selectedVerticalIds, isLoading }}>
+    <BranchContext.Provider
+      value={{
+        selectedBranchId,
+        setSelectedBranchId: handleSetBranchId,
+        branches,
+        selectedVerticalIds,
+        isLoading,
+        isSingleBranch,
+        isSoloTenant,
+      }}
+    >
       {children}
     </BranchContext.Provider>
   );
