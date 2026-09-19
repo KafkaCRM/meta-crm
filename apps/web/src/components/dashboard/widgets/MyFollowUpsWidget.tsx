@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useLocation } from '@tanstack/react-router';
+import { useLocation, useNavigate } from '@tanstack/react-router';
 import { reportsApi, type ReportParams } from '@/api/reports';
 import { getDateRangeFromSearch } from '../DateRangePicker';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,6 +28,7 @@ const CHANNEL_COLORS: Record<string, string> = {
 };
 
 export function MyFollowUpsWidget({ className }: MyFollowUpsWidgetProps) {
+  const navigate = useNavigate();
   const location = useLocation();
   const { date_from, date_to } = getDateRangeFromSearch(location.search);
 
@@ -109,7 +110,8 @@ export function MyFollowUpsWidget({ className }: MyFollowUpsWidgetProps) {
             {followUps.map((fu) => (
               <div
                 key={fu.id}
-                className="flex items-center justify-between rounded-lg border border-border p-3"
+                onClick={() => navigate({ to: '/leads/$id', params: { id: fu.id } })}
+                className="flex items-center justify-between rounded-lg border border-border p-3 cursor-pointer hover:bg-background transition-colors"
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <span className={CHANNEL_COLORS[fu.channel] ?? 'text-muted-foreground'}>
@@ -127,6 +129,10 @@ export function MyFollowUpsWidget({ className }: MyFollowUpsWidgetProps) {
                     size="sm"
                     className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
                     title="Call"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.location.href = `tel:${fu.party_name}`;
+                    }}
                   >
                     <Phone size={12} />
                   </Button>

@@ -117,7 +117,7 @@ export function MyCasesWidget({ className }: MyCasesWidgetProps) {
               <button
                 key={c.id}
                 className="flex w-full items-center justify-between rounded-lg border border-border p-3 text-left hover:bg-background transition-colors"
-                onClick={() => navigate({ to: '/cases/$id', params: { id: c.id } })}
+                onClick={() => navigate({ to: '/leads/$id', params: { id: c.id } })}
               >
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-foreground truncate">{c.party_name}</p>
@@ -136,10 +136,10 @@ export function MyCasesWidget({ className }: MyCasesWidgetProps) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate({ to: '/cases', search: { assigned_to_me: 'true' } as any })}
+            onClick={() => navigate({ to: '/leads' })}
             className="w-full h-7 text-xs text-muted-foreground hover:text-foreground"
           >
-            View all cases
+            View all leads
             <ArrowUpRight size={12} className="ml-1" />
           </Button>
         </div>

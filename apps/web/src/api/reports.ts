@@ -132,12 +132,12 @@ export const reportsApi = {
 
   myCases: (params: ReportParams = {}) => {
     const qs = buildQuery(params);
-    return apiCall<MyCasesResponse>(`/cases?assigned_to_me=true&limit=5${qs}`);
+    return apiCall<MyCasesResponse>(`/reports/my-cases${qs}`);
   },
 
   myFollowUps: (params: ReportParams = {}) => {
     const qs = buildQuery(params);
-    return apiCall<MyFollowUpsResponse>(`/interactions?follow_up_today=true&limit=5${qs}`);
+    return apiCall<MyFollowUpsResponse>(`/reports/my-followups${qs}`);
   },
 
   campaigns: (params: ReportParams & { vertical_id?: string; channel?: string; cursor?: string; limit?: string } = {}) => {

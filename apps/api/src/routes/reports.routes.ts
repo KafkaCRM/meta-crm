@@ -364,3 +364,61 @@ reportsRouter.get('/setup-audits', async (c) => {
   });
   return c.json(audits);
 });
+
+// GET /reports/my-cases - Active leads/cases assigned to current user
+reportsRouter.get('/my-cases', async (c) => {
+  const scope = c.get('scope');
+
+  const myLeads = await db.query.leads.findMany({
+    where: and(
+      eq(leads.tenantId, scope.tenant_id),
+      isNull(leads.deletedAt),
+      scope.user_id ? eq(leads.assignedToId, scope.user_id) : undefined
+    ),
+    orderBy: [desc(leads.updatedAt)],
+    limit: 10,
+    with: {
+      pipelineStage: true,
+    },
+  });
+
+  return c.json({
+    cases: myLeads.map((l) => ({
+      id: l.id,
+      title: l.name,
+      party_name: l.name,
+      stage: l.pipelineStage?.name || l.status || 'new',
+      last_updated: l.updatedAt.toISOString(),
+    })),
+  });
+});
+
+// GET /reports/my-followups - Leads with scheduled follow-ups
+reportsRouter.get('/my-followups', async (c) => {
+  const scope = c.get('scope');
+
+  const activeLeads = await db.query.leads.findMany({
+    where: and(
+      eq(leads.tenantId, scope.tenant_id),
+      isNull(leads.deletedAt)
+    ),
+    orderBy: [desc(leads.createdAt)],
+    limit: 25,
+  });
+
+  const followUps = activeLeads
+    .filter((l) => l.status !== 'converted' && l.status !== 'junk')
+    .slice(0, 10)
+    .map((l) => {
+      const followUpDate = (l.attributes as any)?.follow_up_date;
+      return {
+        id: l.id,
+        party_name: l.name,
+        type: l.status === 'new' ? 'First Contact Call' : 'Follow-up Call',
+        time: followUpDate ? new Date(followUpDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Today',
+        channel: l.source === 'whatsapp' ? 'whatsapp' : 'call',
+      };
+    });
+
+  return c.json({ followUps });
+});
