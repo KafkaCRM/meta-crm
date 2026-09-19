@@ -24,6 +24,7 @@ import { pluginsRouter } from './routes/plugins.routes';
 import { platformRouter } from './routes/platform.routes';
 import { franchiseRouter } from './routes/franchise.routes';
 import { objectsRouter } from './routes/objects.routes';
+import { integrationsRouter } from './routes/integrations.routes';
 
 export const app = new Hono<AppEnv>();
 
@@ -98,6 +99,8 @@ apiV1.route('/platform', platformRouter);
 apiV1.route('/franchise', franchiseRouter);
 apiV1.route('/objects', objectsRouter);
 apiV1.route('/custom-objects', objectsRouter);
+apiV1.route('/connections', integrationsRouter);
+apiV1.route('/integrations', integrationsRouter);
 
 // Capabilities & Domain Verticals
 apiV1.route('/', capabilitiesRouter);

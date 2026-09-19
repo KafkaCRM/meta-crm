@@ -133,6 +133,21 @@ export const leadsApi = {
       method: 'DELETE',
     }),
 
+  logInteraction: (
+    id: string,
+    data: {
+      type: 'call' | 'whatsapp' | 'email' | 'note';
+      outcome?: string;
+      notes?: string;
+      status?: string;
+      next_follow_up?: string;
+    }
+  ) =>
+    apiCall<{ success: boolean; event: any }>(`/leads/${id}/log-interaction`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
   addToPipeline: (id: string, pipeline_definition_id: string) =>
     apiCall<LeadResponse>(`/leads/${id}/pipeline`, {
       method: 'POST',

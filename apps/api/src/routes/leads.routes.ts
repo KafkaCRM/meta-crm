@@ -615,6 +615,68 @@ leadsRouter.get('/:id/events', async (c) => {
   return c.json({ data: events });
 });
 
+// POST /leads/:id/log-interaction - Log call, WhatsApp, or note with follow-up
+const logInteractionSchema = z.object({
+  type: z.enum(['call', 'whatsapp', 'email', 'note']),
+  outcome: z.string().optional(),
+  notes: z.string().optional(),
+  status: z.string().optional(),
+  next_follow_up: z.string().optional(),
+});
+
+leadsRouter.post('/:id/log-interaction', validateJson(logInteractionSchema), async (c) => {
+  const scope = c.get('scope');
+  const id = c.req.param('id');
+  const body = c.get('validatedJson' as any) as z.infer<typeof logInteractionSchema>;
+
+  const lead = await db.query.leads.findFirst({
+    where: and(eq(leads.id, id), eq(leads.tenantId, scope.tenant_id)),
+  });
+
+  if (!lead) {
+    return c.json({ code: 'NOT_FOUND', message: 'Lead not found' }, 404);
+  }
+
+  const updateData: Record<string, any> = {};
+  if (body.status) updateData['status'] = body.status;
+  if (body.notes) {
+    const existing = lead.notes ? `${lead.notes}\n---\n` : '';
+    const prefix = `[${body.type.toUpperCase()}${body.outcome ? ` - ${body.outcome}` : ''}]`;
+    updateData['notes'] = `${existing}${prefix}: ${body.notes}`;
+  }
+  if (body.next_follow_up) {
+    const existingAttrs = (lead.attributes as Record<string, any>) || {};
+    updateData['attributes'] = { ...existingAttrs, follow_up_date: body.next_follow_up };
+  }
+
+  if (Object.keys(updateData).length > 0) {
+    await db.update(leads).set(updateData).where(eq(leads.id, id));
+  }
+
+  const [event] = await db
+    .insert(leadEvents)
+    .values({
+      leadId: id,
+      tenantId: scope.tenant_id,
+      eventType:
+        body.type === 'call'
+          ? 'call_logged'
+          : body.type === 'whatsapp'
+            ? 'whatsapp_sent'
+            : 'interaction_logged',
+      actorId: scope.user_id,
+      metadata: {
+        interaction_type: body.type,
+        outcome: body.outcome,
+        notes: body.notes,
+        next_follow_up: body.next_follow_up,
+      },
+    })
+    .returning();
+
+  return c.json({ success: true, event });
+});
+
 // POST /leads/:id/convert - Convert lead to customer party (atomic transaction)
 leadsRouter.post('/:id/convert', async (c) => {
   const scope = c.get('scope');

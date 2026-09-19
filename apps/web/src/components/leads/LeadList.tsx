@@ -22,7 +22,14 @@ import {
   FileText,
   Download,
   Trash2,
+  Users,
+  UserCheck,
+  Calendar,
+  Flame,
+  Sparkles,
 } from 'lucide-react';
+import { useAuth } from '@/contexts/auth.context';
+import { LeadQuickActionDrawer } from './LeadQuickActionDrawer';
 import {
   CompactRecordRow,
   DEFAULT_RECORD_ACTIONS,
@@ -84,6 +91,29 @@ function LeadStatusBadge({ status }: { status: string }) {
   return <OperationalStatusBadge status={operationalStatus} label={status.replace('_', ' ')} />;
 }
 
+export type LeadTab =
+  | 'all'
+  | 'my'
+  | 'followups'
+  | 'untouched'
+  | 'hot'
+  | 'new'
+  | 'unassigned'
+  | 'duplicate'
+  | 'junk';
+
+const SEGMENT_TABS: { id: LeadTab; label: string; icon: React.ReactNode }[] = [
+  { id: 'all', label: 'All Leads', icon: <Users size={13} /> },
+  { id: 'my', label: 'My Assigned', icon: <UserCheck size={13} /> },
+  { id: 'followups', label: "Today's Follow-ups", icon: <Calendar size={13} /> },
+  { id: 'untouched', label: 'Untouched (>24h)', icon: <Clock size={13} /> },
+  { id: 'hot', label: 'Hot Priority', icon: <Flame size={13} className="text-red-500" /> },
+  { id: 'new', label: 'New', icon: <Sparkles size={13} className="text-blue-500" /> },
+  { id: 'unassigned', label: 'Unassigned', icon: <AlertCircle size={13} /> },
+  { id: 'duplicate', label: 'Duplicate Risk', icon: <AlertTriangle size={13} className="text-amber-500" /> },
+  { id: 'junk', label: 'Junk', icon: <Trash2 size={13} /> },
+];
+
 export function LeadList() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -92,9 +122,21 @@ export function LeadList() {
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'new' | 'unassigned' | 'hot' | 'duplicate' | 'junk'>('all');
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<LeadTab>('all');
   const [filters, setFilters] = useState<LeadFilterState>({});
   const [selectedLeads, setSelectedLeads] = useState<LeadResponse[]>([]);
+
+  // Quick Action Drawer state (Calling, WhatsApp, Outcomes)
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerLead, setDrawerLead] = useState<LeadResponse | null>(null);
+  const [drawerMode, setDrawerMode] = useState<'call' | 'whatsapp' | 'note'>('call');
+
+  const handleQuickAction = useCallback((lead: LeadResponse, mode: 'call' | 'whatsapp' | 'note') => {
+    setDrawerLead(lead);
+    setDrawerMode(mode);
+    setDrawerOpen(true);
+  }, []);
 
   // Campaign Opt-in Modal state
   const [optInModalOpen, setOptInModalOpen] = useState(false);
@@ -141,6 +183,8 @@ export function LeadList() {
         params.assigned_to_id = filters.assigned_to_id;
       } else if (activeTab === 'unassigned') {
         params.assigned_to_id = 'unassigned';
+      } else if (activeTab === 'my' && user?.id) {
+        params.assigned_to_id = user.id;
       }
 
       return leadsApi.list(params as any);
@@ -150,12 +194,23 @@ export function LeadList() {
 
   const rawLeads = data?.data ?? [];
 
-  // Client-side filter for duplicate risk tab
+  // Client-side segmented filter for untouched, followups, duplicate tabs
   const leads = useMemo(() => {
+    let result = rawLeads;
     if (activeTab === 'duplicate') {
-      return rawLeads.filter((l: any) => l.duplicate_risk);
+      result = result.filter((l: any) => l.duplicate_risk);
+    } else if (activeTab === 'untouched') {
+      result = result.filter((l: any) => {
+        const hours = dayjs().diff(dayjs(l.created_at), 'hour');
+        return hours >= 24 && l.status !== 'converted' && l.status !== 'junk';
+      });
+    } else if (activeTab === 'followups') {
+      result = result.filter((l: any) => {
+        const d = (l.attributes as any)?.follow_up_date;
+        return d && dayjs(d).isBefore(dayjs().endOf('day'));
+      });
     }
-    return rawLeads;
+    return result;
   }, [rawLeads, activeTab]);
 
   const openPhone = useCallback((phone: string) => {
@@ -241,20 +296,20 @@ export function LeadList() {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    openPhone(phone);
+                    handleQuickAction(row, 'call');
                   }}
-                  className="p-1 rounded bg-muted hover:bg-slate-200/80 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                  title="Call"
+                  className="p-1 rounded bg-muted hover:bg-emerald-50 text-muted-foreground hover:text-emerald-700 transition-colors cursor-pointer"
+                  title="Call & Log Interaction"
                 >
                   <Phone size={11} />
                 </button>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    openWhatsApp(phone);
+                    handleQuickAction(row, 'whatsapp');
                   }}
                   className="p-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-600 hover:text-emerald-700 transition-colors cursor-pointer"
-                  title="WhatsApp"
+                  title="WhatsApp & Log"
                 >
                   <MessageSquare size={11} />
                 </button>
@@ -358,7 +413,7 @@ export function LeadList() {
         },
       }),
     ],
-    [openPhone, openWhatsApp, handleOpenOptIn]
+    [handleQuickAction, handleOpenOptIn]
   );
 
   const handleRowClick = useCallback((row: LeadResponse) => {
@@ -381,36 +436,46 @@ export function LeadList() {
       }
     >
       <div className="space-y-4">
-        {/* Tab Selector */}
-        <div className="flex border-b border-border gap-6 overflow-x-auto scrollbar-none text-sm pt-1">
-          {(['all', 'new', 'unassigned', 'hot', 'duplicate', 'junk'] as const).map((tab) => {
-            const listForCount = rawLeads.filter((l) => {
-              if (tab === 'all') return true;
-              if (tab === 'new') return l.status === 'new';
-              if (tab === 'unassigned') return !l.assigned_to_id;
-              if (tab === 'hot') return l.status === 'hot';
-              if (tab === 'duplicate') return l.duplicate_risk;
-              if (tab === 'junk') return l.status === 'junk';
+        {/* Tab Selector - Linear-Style Quick Views */}
+        <div className="flex border-b border-border gap-2 sm:gap-4 overflow-x-auto scrollbar-none text-sm pt-1">
+          {SEGMENT_TABS.map((tab) => {
+            const listForCount = rawLeads.filter((l: any) => {
+              if (tab.id === 'all') return true;
+              if (tab.id === 'my') return l.assigned_to_id === user?.id;
+              if (tab.id === 'followups') {
+                const d = l.attributes?.follow_up_date;
+                return d && dayjs(d).isBefore(dayjs().endOf('day'));
+              }
+              if (tab.id === 'untouched') {
+                const hours = dayjs().diff(dayjs(l.created_at), 'hour');
+                return hours >= 24 && l.status !== 'converted' && l.status !== 'junk';
+              }
+              if (tab.id === 'hot') return l.status === 'hot';
+              if (tab.id === 'new') return l.status === 'new';
+              if (tab.id === 'unassigned') return !l.assigned_to_id;
+              if (tab.id === 'duplicate') return l.duplicate_risk;
+              if (tab.id === 'junk') return l.status === 'junk';
               return true;
             });
             const count = listForCount.length;
 
             return (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  'pb-2.5 pt-1 font-semibold border-b-2 capitalize transition-all relative text-xs md:text-sm whitespace-nowrap cursor-pointer',
-                  activeTab === tab
-                    ? 'border-primary text-foreground'
+                  'pb-2.5 pt-1 px-1 font-medium border-b-2 transition-all relative text-xs md:text-sm whitespace-nowrap flex items-center gap-1.5 cursor-pointer',
+                  activeTab === tab.id
+                    ? 'border-primary text-foreground font-semibold'
                     : 'border-transparent text-muted-foreground hover:text-foreground'
                 )}
               >
-                {tab === 'duplicate' ? 'Duplicate Risk' : tab}
+                {tab.icon}
+                <span>{tab.label}</span>
                 <span
                   className={cn(
-                    'ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full font-bold',
-                    activeTab === tab ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
+                    'ml-1 text-[9px] px-1.5 py-0.5 rounded-full font-bold transition-colors',
+                    activeTab === tab.id ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
                   )}
                 >
                   {count}
@@ -464,7 +529,7 @@ export function LeadList() {
                 <p className="font-semibold text-foreground">No leads found</p>
                 <p className="text-xs text-muted-foreground mt-1 max-w-xs">
                   {activeTab !== 'all'
-                    ? `No leads match the "${activeTab === 'duplicate' ? 'duplicate risk' : activeTab}" filter right now.`
+                    ? `No leads match the "${SEGMENT_TABS.find((t) => t.id === activeTab)?.label || activeTab}" view right now.`
                     : 'Add a lead manually or connect a third-party integration to start capturing leads.'}
                 </p>
               </div>
@@ -480,30 +545,29 @@ export function LeadList() {
                     onRowClick={handleRowClick}
                     onSelectionChange={setSelectedLeads}
                     getRowActions={(row) => {
-                      const phone = row.phone;
                       return (
                         <div className="flex items-center gap-1">
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 rounded bg-muted hover:bg-emerald-50 hover:text-emerald-600 text-muted-foreground transition-all duration-200 cursor-pointer"
+                            className="h-6 w-6 rounded bg-muted hover:bg-emerald-50 hover:text-emerald-700 text-muted-foreground transition-all duration-200 cursor-pointer"
                             onClick={(e) => {
                               e.stopPropagation();
-                              openPhone(phone);
+                              handleQuickAction(row, 'call');
                             }}
-                            title="Call"
+                            title="Call & Log"
                           >
                             <Phone size={11} />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 rounded bg-muted hover:bg-emerald-50 hover:text-emerald-600 text-muted-foreground transition-all duration-200 cursor-pointer"
+                            className="h-6 w-6 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-600 hover:text-emerald-700 transition-all duration-200 cursor-pointer"
                             onClick={(e) => {
                               e.stopPropagation();
-                              openWhatsApp(phone);
+                              handleQuickAction(row, 'whatsapp');
                             }}
-                            title="WhatsApp"
+                            title="WhatsApp & Log"
                           >
                             <MessageSquare size={11} />
                           </Button>
@@ -590,8 +654,8 @@ export function LeadList() {
                         </div>
                       }
                       actions={[
-                        DEFAULT_RECORD_ACTIONS.call(() => openPhone(lead.phone)),
-                        DEFAULT_RECORD_ACTIONS.whatsapp(() => openWhatsApp(lead.phone)),
+                        DEFAULT_RECORD_ACTIONS.call(() => handleQuickAction(lead, 'call')),
+                        DEFAULT_RECORD_ACTIONS.whatsapp(() => handleQuickAction(lead, 'whatsapp')),
                       ]}
                       onClick={() => handleRowClick(lead)}
                     />
@@ -681,6 +745,17 @@ export function LeadList() {
         onClose={() => setCreateOpen(false)}
         onSuccess={() => {
           setCreateOpen(false);
+          refetch();
+        }}
+      />
+
+      {/* Quick Action Drawer for Call / WhatsApp / Outcome Logging */}
+      <LeadQuickActionDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        lead={drawerLead}
+        initialMode={drawerMode}
+        onSuccess={() => {
           refetch();
         }}
       />

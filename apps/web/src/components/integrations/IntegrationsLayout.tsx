@@ -4,6 +4,7 @@ import { Loader2, MessageSquare, Share2, PhoneCall, Mail, Zap, Calendar, Inbox, 
 import { integrationsApi } from '@/api/integrations';
 import type { IntegrationManifest } from '@/api/integrations';
 import { IntegrationDetail } from './IntegrationDetail';
+import { WebhookSimulator } from './WebhookSimulator';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -27,7 +28,7 @@ function resolveIcon(icon: string) {
 
 export function IntegrationsLayout() {
   const [selected, setSelected] = useState<{ connectionId: string; manifest: IntegrationManifest } | null>(null);
-  const [tab, setTab] = useState<'integrations' | 'connected'>('integrations');
+  const [tab, setTab] = useState<'integrations' | 'connected' | 'simulator'>('integrations');
   const [connectingProvider, setConnectingProvider] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
@@ -128,6 +129,16 @@ export function IntegrationsLayout() {
               : 'border-transparent text-muted-foreground hover:text-foreground',
           )}>
           Connected {connectedConns.length > 0 && `(${connectedConns.length})`}
+        </button>
+        <button onClick={() => setTab('simulator')}
+          className={cn(
+            'px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-[1px] flex items-center gap-1.5 cursor-pointer',
+            tab === 'simulator'
+              ? 'border-primary text-primary font-bold'
+              : 'border-transparent text-muted-foreground hover:text-foreground',
+          )}>
+          <Zap size={14} className="text-amber-500" />
+          Live Webhook & Simulator
         </button>
       </div>
 
@@ -240,6 +251,8 @@ export function IntegrationsLayout() {
           )}
         </div>
       )}
+
+      {tab === 'simulator' && <WebhookSimulator />}
     </div>
   );
 }
